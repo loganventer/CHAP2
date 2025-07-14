@@ -5,7 +5,7 @@ This folder contains HTTP files for testing the CHAP2API endpoints.
 ## Files
 
 - `health.http` - Tests specifically for the health controller
-- `choruses.http` - Tests specifically for the choruses controller (includes CRUD operations)
+- `choruses.http` - Tests specifically for the choruses controller (includes CRUD operations and search functionality)
 - `slide.http` - Tests for slide controller (placeholder for future implementation)
 
 ## How to Use
@@ -72,6 +72,53 @@ curl -X GET http://localhost:5000/api/choruses \
 ]
 ```
 
+### Search Results
+```json
+{
+  "query": "grace",
+  "searchMode": "Contains",
+  "searchIn": "all",
+  "count": 2,
+  "results": [
+    {
+      "id": "12345678-1234-1234-1234-123456789abc",
+      "name": "Amazing Grace",
+      "key": 2,
+      "timeSignature": 1,
+      "chorusText": "Amazing grace, how sweet the sound",
+      "type": 1
+    }
+  ]
+}
+```
+
+## Search Endpoints
+
+### Comprehensive Search
+`GET /api/choruses/search?q={query}&searchIn={scope}&searchMode={mode}`
+
+**Parameters:**
+- `q` (required): Search query
+- `searchIn`: "name", "text", or "all" (default: "all")
+- `searchMode`: "Exact", "Contains", or "Regex" (default: "Contains")
+
+**Examples:**
+```bash
+# Search for "grace" in all fields
+GET /api/choruses/search?q=grace&searchIn=all&searchMode=Contains
+
+# Search for "Amazing" in names only
+GET /api/choruses/search?q=Amazing&searchIn=name&searchMode=Contains
+
+# Search with regex pattern
+GET /api/choruses/search?q=gr.*ce&searchIn=all&searchMode=Regex
+```
+
+### Exact Name Match
+`GET /api/choruses/by-name/{name}`
+
+Returns a single chorus with exact name match (case-insensitive).
+
 ## Notes
 
 - Make sure the API is running before testing
@@ -80,4 +127,5 @@ curl -X GET http://localhost:5000/api/choruses \
 - Controllers inherit from `ChapControllerAbstractBase` for consistent logging
 - Choruses use GUID-based identification for unique file storage
 - Enum values default to NotSet (0) when not specified
-- Case-insensitive name validation prevents duplicate choruses 
+- Case-insensitive name validation prevents duplicate choruses
+- Search is optimized for real-time performance with multiple search modes 

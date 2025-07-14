@@ -66,18 +66,49 @@ public class SlideController : ChapControllerAbstractBase
         }
 
         // Check if a chorus with the same name already exists
-        if (await _chorusResource.ChorusExistsAsync(chorus.Name))
+        var existingChorus = await _chorusResource.GetChorusByNameAsync(chorus.Name);
+        
+        if (existingChorus != null)
         {
-            return Conflict($"A chorus with the name '{chorus.Name}' already exists.");
+            // If the text content is different, update the existing chorus
+            if (!string.Equals(existingChorus.ChorusText, chorus.ChorusText, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Updating existing chorus '{Name}' with new text content", chorus.Name);
+                
+                // Update the existing chorus with new text content
+                existingChorus.ChorusText = chorus.ChorusText;
+                await _chorusResource.UpdateChorusAsync(existingChorus);
+                
+                return Ok(new 
+                { 
+                    message = $"Updated existing chorus '{chorus.Name}' with new text content",
+                    chorus = existingChorus,
+                    originalFilename = filename,
+                    action = "updated"
+                });
+            }
+            else
+            {
+                // Text content is the same, no update needed
+                return Ok(new 
+                { 
+                    message = $"Chorus '{chorus.Name}' already exists with identical text content",
+                    chorus = existingChorus,
+                    originalFilename = filename,
+                    action = "no_change"
+                });
+            }
         }
 
+        // No existing chorus found, create a new one
         await _chorusResource.AddChorusAsync(chorus);
         
         return Created($"/api/choruses/{chorus.Id}", new 
         { 
             message = $"Successfully converted PowerPoint file to chorus: {chorus.Name}",
             chorus = chorus,
-            originalFilename = filename
+            originalFilename = filename,
+            action = "created"
         });
     }
 } 

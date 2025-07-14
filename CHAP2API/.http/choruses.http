@@ -94,4 +94,34 @@ Content-Type: application/json
   "Type": 1
 }
 
+###
+
+# Search choruses - Comprehensive search
+GET {{apiBase}}/api/choruses/search?q=grace&searchIn=all&searchMode=Contains
+Content-Type: application/json
+
+###
+
+# Search choruses by name only
+GET {{apiBase}}/api/choruses/search?q=Amazing&searchIn=name&searchMode=Contains
+Content-Type: application/json
+
+###
+
+# Search choruses by text content only
+GET {{apiBase}}/api/choruses/search?q=sweet&searchIn=text&searchMode=Contains
+Content-Type: application/json
+
+###
+
+# Search choruses with regex
+GET {{apiBase}}/api/choruses/search?q=gr.*ce&searchIn=all&searchMode=Regex
+Content-Type: application/json
+
+###
+
+# Get chorus by exact name match
+GET {{apiBase}}/api/choruses/by-name/Amazing Grace
+Content-Type: application/json
+
 ### 

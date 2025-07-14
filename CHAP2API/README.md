@@ -44,11 +44,13 @@ The project follows clean architecture principles with proper separation of conc
 ## Controllers
 
 ### ChorusesController
-Manages musical chorus data with full CRUD operations:
+Manages musical chorus data with full CRUD operations and search functionality:
 - `POST /api/choruses` - Add a new chorus
 - `GET /api/choruses` - Get all choruses
 - `GET /api/choruses/{id}` - Get a specific chorus by ID
 - `PUT /api/choruses/{id}` - Update a chorus
+- `GET /api/choruses/search` - Search choruses with multiple modes
+- `GET /api/choruses/by-name/{name}` - Get chorus by exact name match
 
 ### HealthController
 Provides health monitoring endpoints:
@@ -66,6 +68,8 @@ Converts PowerPoint slide files directly to chorus structure:
 - `GET /api/choruses` - Get all choruses
 - `GET /api/choruses/{id}` - Get a specific chorus by ID
 - `PUT /api/choruses/{id}` - Update a chorus
+- `GET /api/choruses/search` - Search choruses with multiple modes
+- `GET /api/choruses/by-name/{name}` - Get chorus by exact name match
 
 ### Health Monitoring
 - `GET /api/health/ping` - Health check
@@ -103,6 +107,8 @@ Use the provided HTTP files in the `.http/` folder to test the API:
 - **Case-insensitive name validation** - Prevents duplicate names regardless of case
 - **NotSet defaults** - Enum properties default to NotSet (0) when not specified
 - **Full CRUD operations** - Create, Read, Update operations
+- **Comprehensive search** - Multiple search modes (Exact, Contains, Regex) across names and text
+- **Real-time search optimization** - Efficient search algorithms for responsive performance
 
 ## Adding New Controllers
 

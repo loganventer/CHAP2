@@ -6,7 +6,11 @@
     "compounds": [
         {
             "name": "Debug API and Console",
-            "configurations": ["CHAP2API", "CHAP2Console"]
+            "configurations": ["CHAP2API", "CHAP2SearchConsole"]
+        },
+        {
+            "name": "Debug API and Search",
+            "configurations": ["CHAP2API", "CHAP2SearchConsole"]
         }
     ],
     "configurations": [
@@ -23,13 +27,13 @@
             }
         },
         {
-            "name": "CHAP2Console",
+            "name": "CHAP2SearchConsole",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/CHAP2Console/bin/Debug/net9.0/CHAP2Console.dll",
-            "cwd": "${workspaceFolder}/CHAP2Console",
+            "program": "${workspaceFolder}/CHAP2.SearchConsole/bin/Debug/net9.0/CHAP2.SearchConsole.dll",
+            "cwd": "${workspaceFolder}/CHAP2.SearchConsole",
             "stopAtEntry": false,
-            "preLaunchTask": "build CHAP2Console",
+            "preLaunchTask": "build CHAP2SearchConsole",
             "env": {
                 "DOTNET_ENVIRONMENT": "Development"
             }

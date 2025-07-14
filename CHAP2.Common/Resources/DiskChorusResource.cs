@@ -62,6 +62,14 @@ public class DiskChorusResource : IChorusResource
         return JsonSerializer.Deserialize<Chorus>(json);
     }
 
+    public async Task<Chorus?> GetChorusByNameAsync(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        
+        var choruses = await GetAllChorusesAsync();
+        return choruses.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+    }
+
     public async Task<bool> ChorusExistsAsync(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);

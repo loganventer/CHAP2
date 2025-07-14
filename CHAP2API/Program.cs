@@ -13,6 +13,7 @@ builder.Services.AddOpenApi();
 // Register custom services
 builder.Services.AddScoped<ApiInterfaces.IServices, ApiServices.Services>();
 builder.Services.AddSingleton<ISlideToChorusService, CommonServices.SlideToChorusService>();
+builder.Services.AddScoped<ISearchService, CommonServices.SearchService>();
 
 // Configure chorus resources
 builder.Services.Configure<ChorusResourceOptions>(

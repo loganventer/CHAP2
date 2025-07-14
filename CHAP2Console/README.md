@@ -6,6 +6,8 @@ A console debugging application for testing the CHAP2API slide conversion endpoi
 
 - Reads .ppsx files from the file system
 - Sends binary data to the slide conversion endpoint
+- Searches for choruses containing "heer" after upload
+- Displays all matching choruses with detailed information
 - Configurable API base URL
 - Command-line argument support
 - JSON response formatting
@@ -62,6 +64,27 @@ Success! Response:
   },
   "originalFilename": "sample.ppsx"
 }
+
+Searching for choruses containing 'heer'...
+Found 2 choruses containing 'heer':
+
+--- Chorus 1 ---
+  Id: 12345678-1234-1234-1234-123456789abc
+  Name: Hy is Heer G
+  Key: NotSet
+  TimeSignature: NotSet
+  Type: NotSet
+  ChorusText:
+  [Extracted text from PowerPoint slides]
+
+--- Chorus 2 ---
+  Id: 87654321-4321-4321-4321-cba987654321
+  Name: Another Heer Chorus
+  Key: NotSet
+  TimeSignature: NotSet
+  Type: NotSet
+  ChorusText:
+  [Extracted text from PowerPoint slides]
 ```
 
 ## Error Handling

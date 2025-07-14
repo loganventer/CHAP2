@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using CHAP2.Common.Models;
 
 namespace CHAP2Console;
 
@@ -113,6 +114,7 @@ class Program
             
             Console.WriteLine($"Response Status: {response.StatusCode}");
             
+            string? chorusName = null;
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -121,10 +123,22 @@ class Program
                     var responseJson = JsonSerializer.Deserialize<JsonElement>(responseContent);
                     Console.WriteLine("Success! Response:");
                     Console.WriteLine(JsonSerializer.Serialize(responseJson, new JsonSerializerOptions { WriteIndented = true }));
+                    if (responseJson.TryGetProperty("chorus", out var chorusObj))
+                    {
+                        if (chorusObj.TryGetProperty("name", out var nameProp))
+                            chorusName = nameProp.GetString();
+                    }
                 }
                 else
                 {
                     Console.WriteLine("Success!");
+                    // Try to parse chorusName anyway
+                    var responseJson = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                    if (responseJson.TryGetProperty("chorus", out var chorusObj))
+                    {
+                        if (chorusObj.TryGetProperty("name", out var nameProp))
+                            chorusName = nameProp.GetString();
+                    }
                 }
             }
             else
@@ -132,11 +146,146 @@ class Program
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Error: {errorContent}");
             }
+
+            // Real-time search with key-by-key input
+            var searchDelayMs = configuration.GetValue<int>("SearchDelayMs", 500);
+            var minSearchLength = configuration.GetValue<int>("MinSearchLength", 2);
+            
+            Console.WriteLine("\n=== Real-Time Search ===");
+            Console.WriteLine($"Type to search choruses. Search triggers after {searchDelayMs}ms delay (min {minSearchLength} chars).");
+            Console.WriteLine("Press Enter to select, Ctrl+C to exit.\n");
+
+            var searchString = "";
+            var currentResults = new List<Chorus>();
+            var searchCancellationTokenSource = new CancellationTokenSource();
+            var searchTask = Task.CompletedTask;
+
+            Console.Write("Search: ");
+
+            while (true)
+            {
+                var key = Console.ReadKey(true);
+                
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    if (currentResults.Count == 1)
+                    {
+                        Console.WriteLine("\n=== SINGLE CHORUS FOUND ===");
+                        DisplayChorus(currentResults[0]);
+                        break;
+                    }
+                    else if (currentResults.Count > 1)
+                    {
+                        Console.WriteLine($"\nMultiple choruses found ({currentResults.Count}). Continue typing to narrow down.");
+                        Console.Write("Search: " + searchString);
+                    }
+                    continue;
+                }
+                else if (key.Key == ConsoleKey.Escape)
+                {
+                    Console.WriteLine("\nExiting search.");
+                    break;
+                }
+                else if (key.Key == ConsoleKey.Backspace)
+                {
+                    if (searchString.Length > 0)
+                    {
+                        searchString = searchString[..^1];
+                        Console.Write("\b \b");
+                    }
+                }
+                else if (key.KeyChar >= 32 && key.KeyChar <= 126) // Printable characters
+                {
+                    searchString += key.KeyChar;
+                    Console.Write(key.KeyChar);
+                }
+
+                // Cancel previous search and start new one
+                searchCancellationTokenSource.Cancel();
+                searchCancellationTokenSource = new CancellationTokenSource();
+                var token = searchCancellationTokenSource.Token;
+
+                searchTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(searchDelayMs, token); // Configurable delay
+                        
+                        if (string.IsNullOrWhiteSpace(searchString) || searchString.Length < minSearchLength)
+                        {
+                            currentResults.Clear();
+                            Console.WriteLine($"\rSearch: {searchString} (Type at least {minSearchLength} characters)");
+                            return;
+                        }
+
+                        var searchResponse = await httpClient.GetAsync($"api/choruses/search?q={Uri.EscapeDataString(searchString)}&searchIn=all&searchMode=Contains", token);
+                        if (searchResponse.IsSuccessStatusCode)
+                        {
+                            var searchJson = await searchResponse.Content.ReadAsStringAsync(token);
+                            var searchResult = JsonSerializer.Deserialize<JsonElement>(searchJson);
+                            
+                            if (searchResult.TryGetProperty("results", out var results))
+                            {
+                                currentResults = JsonSerializer.Deserialize<List<Chorus>>(results.GetRawText()) ?? new List<Chorus>();
+                                
+                                // Clear current line and show results
+                                Console.Write($"\rSearch: {searchString} ({currentResults.Count} results)");
+                                
+                                if (currentResults.Count == 1)
+                                {
+                                    Console.WriteLine("\n=== SINGLE CHORUS FOUND ===");
+                                    DisplayChorus(currentResults[0]);
+                                    Environment.Exit(0);
+                                }
+                                else if (currentResults.Count > 0)
+                                {
+                                    Console.WriteLine();
+                                    for (int i = 0; i < Math.Min(currentResults.Count, 5); i++)
+                                    {
+                                        var chorus = currentResults[i];
+                                        Console.WriteLine($"  {i + 1}. {chorus.Name}");
+                                    }
+                                    if (currentResults.Count > 5)
+                                    {
+                                        Console.WriteLine($"  ... and {currentResults.Count - 5} more");
+                                    }
+                                    Console.Write("Search: " + searchString);
+                                }
+                                else
+                                {
+                                    Console.WriteLine(" (No results)");
+                                    Console.Write("Search: " + searchString);
+                                }
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Search was cancelled, ignore
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"\nSearch error: {ex.Message}");
+                        Console.Write("Search: " + searchString);
+                    }
+                }, token);
+            }
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "An error occurred");
             Console.WriteLine($"Error: {ex.Message}");
         }
+    }
+
+    private static void DisplayChorus(Chorus chorus)
+    {
+        Console.WriteLine($"  Id: {chorus.Id}");
+        Console.WriteLine($"  Name: {chorus.Name}");
+        Console.WriteLine($"  Key: {chorus.Key}");
+        Console.WriteLine($"  TimeSignature: {chorus.TimeSignature}");
+        Console.WriteLine($"  Type: {chorus.Type}");
+        Console.WriteLine("  ChorusText:");
+        Console.WriteLine(chorus.ChorusText);
     }
 }

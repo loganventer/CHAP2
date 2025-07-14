@@ -24,11 +24,11 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "build CHAP2Console",
+      "label": "build CHAP2SearchConsole",
       "type": "process",
       "command": "dotnet",
       "args": ["build"],
-      "options": { "cwd": "${workspaceFolder}/CHAP2Console" },
+      "options": { "cwd": "${workspaceFolder}/CHAP2.SearchConsole" },
       "problemMatcher": "$msCompile"
     },
     {
