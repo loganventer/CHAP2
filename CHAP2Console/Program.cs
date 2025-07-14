@@ -97,7 +97,7 @@ class Program
             
             Console.WriteLine("API is accessible, proceeding with file upload...");
             
-            var request = new HttpRequestMessage(HttpMethod.Post, "/api/slide/convert");
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/slide/convert");
             request.Content = new ByteArrayContent(fileBytes);
             request.Headers.Add("X-Filename", fileName);
             request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
@@ -106,7 +106,7 @@ class Program
             Console.WriteLine("Calling API...");
             Console.WriteLine($"Content-Type: {request.Content.Headers.ContentType}");
             Console.WriteLine($"X-Filename: {request.Headers.GetValues("X-Filename").FirstOrDefault()}");
-            Console.WriteLine($"Request URL: {httpClient.BaseAddress}/api/slide/convert");
+            Console.WriteLine($"Request URL: {httpClient.BaseAddress}api/slide/convert");
             Console.WriteLine($"File size being sent: {fileBytes.Length} bytes");
             
             var response = await httpClient.SendAsync(request);

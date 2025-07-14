@@ -17,15 +17,19 @@
     },
     {
       "label": "build CHAP2API",
-      "type": "shell",
-      "command": "dotnet build",
-      "options": { "cwd": "${workspaceFolder}/CHAP2API" }
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build"],
+      "options": { "cwd": "${workspaceFolder}/CHAP2API" },
+      "problemMatcher": "$msCompile"
     },
     {
       "label": "build CHAP2Console",
-      "type": "shell",
-      "command": "dotnet build",
-      "options": { "cwd": "${workspaceFolder}/CHAP2Console" }
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build"],
+      "options": { "cwd": "${workspaceFolder}/CHAP2Console" },
+      "problemMatcher": "$msCompile"
     },
     {
       "label": "run CHAP2API",

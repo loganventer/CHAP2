@@ -17,7 +17,10 @@
             "program": "${workspaceFolder}/CHAP2API/bin/Debug/net9.0/CHAP2API.dll",
             "cwd": "${workspaceFolder}/CHAP2API",
             "stopAtEntry": false,
-            "preLaunchTask": "build CHAP2API"
+            "preLaunchTask": "build CHAP2API",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
         },
         {
             "name": "CHAP2Console",
@@ -26,7 +29,10 @@
             "program": "${workspaceFolder}/CHAP2Console/bin/Debug/net9.0/CHAP2Console.dll",
             "cwd": "${workspaceFolder}/CHAP2Console",
             "stopAtEntry": false,
-            "preLaunchTask": "build CHAP2Console"
+            "preLaunchTask": "build CHAP2Console",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
         }
     ]
 }

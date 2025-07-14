@@ -24,18 +24,18 @@ public class SlideController : ChapControllerAbstractBase
     /// </summary>
     [HttpPost("convert")]
     [Consumes("application/octet-stream")]
-    public async Task<IActionResult> ConvertSlideToChorus([FromBody] Stream fileStream, [FromHeader(Name = "X-Filename")] string filename)
+    public async Task<IActionResult> ConvertSlideToChorus([FromHeader(Name = "X-Filename")] string filename)
     {
         _logger.LogInformation("=== SLIDE CONVERT ENDPOINT HIT ===");
         LogAction("ConvertSlideToChorus", new { filename = filename });
         _logger.LogInformation("Request Content-Type: {ContentType}", Request.ContentType);
         _logger.LogInformation("Request Headers: {Headers}", string.Join(", ", Request.Headers.Keys));
 
-        // Read the stream into a byte array
+        // Read the request body directly
         byte[] fileContent;
         using (var memoryStream = new MemoryStream())
         {
-            await fileStream.CopyToAsync(memoryStream);
+            await Request.Body.CopyToAsync(memoryStream);
             fileContent = memoryStream.ToArray();
         }
 
