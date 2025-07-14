@@ -2,9 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
-using CHAP2.Common.Models;
 using CHAP2.Console.Common.Configuration;
+using CHAP2.Console.Bulk.Services;
 
 namespace CHAP2.Console.Bulk;
 
@@ -34,101 +33,69 @@ class Program
                     configuration.GetSection("BulkConversionSettings"));
                 services.Configure<ApiClientSettings>(
                     configuration.GetSection("ApiClientSettings"));
+                
+                // Register services
+                services.AddScoped<IBulkUploadService, BulkUploadService>();
             })
             .Build();
 
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
-        var httpClientFactory = host.Services.GetRequiredService<IHttpClientFactory>();
+        using var scope = host.Services.CreateScope();
+        var bulkUploadService = scope.ServiceProvider.GetRequiredService<IBulkUploadService>();
 
         try
         {
-            // Get file path from args or config
-            var filePath = args.Length > 0 ? args[0] : configuration["DefaultPpsxFilePath"];
+            // Get path from args or config
+            var path = args.Length > 0 ? args[0] : configuration["DefaultFolderPath"];
             
-            if (string.IsNullOrWhiteSpace(filePath))
+            if (string.IsNullOrWhiteSpace(path))
             {
-                System.Console.WriteLine("Please provide a file path as an argument or configure DefaultPpsxFilePath in appsettings.json");
-                System.Console.WriteLine("Usage: dotnet run [filepath]");
+                System.Console.WriteLine("CHAP2 Bulk Upload Console");
+                System.Console.WriteLine("==========================");
+                System.Console.WriteLine();
+                System.Console.WriteLine("Usage: dotnet run [folder-path]");
+                System.Console.WriteLine();
+                System.Console.WriteLine("Examples:");
+                System.Console.WriteLine("  dotnet run ./slides");
+                System.Console.WriteLine("  dotnet run ../presentations");
+                System.Console.WriteLine("  dotnet run C:\\MySlides");
+                System.Console.WriteLine();
+                System.Console.WriteLine("The application will recursively scan the specified folder");
+                System.Console.WriteLine("for .ppsx and .pptx files and upload them to the CHAP2API.");
                 return;
             }
 
             // Resolve relative path
-            var fullPath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(Directory.GetCurrentDirectory(), filePath);
+            var fullPath = Path.IsPathRooted(path) ? path : Path.Combine(Directory.GetCurrentDirectory(), path);
             
-            if (!File.Exists(fullPath))
+            if (!Directory.Exists(fullPath))
             {
-                System.Console.WriteLine($"File not found: {fullPath}");
+                System.Console.WriteLine($"Folder not found: {fullPath}");
+                System.Console.WriteLine("Please provide a valid folder path.");
                 return;
             }
 
-            if (!fullPath.EndsWith(".ppsx", StringComparison.OrdinalIgnoreCase))
+            System.Console.WriteLine("CHAP2 Bulk Upload Console");
+            System.Console.WriteLine("==========================");
+            System.Console.WriteLine($"Target folder: {fullPath}");
+            System.Console.WriteLine($"API Base URL: {configuration["ApiBaseUrl"]}");
+            System.Console.WriteLine();
+
+            // Perform bulk upload
+            var successfulUploads = await bulkUploadService.UploadFolderAsync(fullPath);
+
+            if (successfulUploads > 0)
             {
-                System.Console.WriteLine("Only .ppsx files are supported");
-                return;
-            }
-
-            var debugApiCall = configuration.GetValue<bool>("DebugApiCall");
-
-            System.Console.WriteLine($"Reading file: {fullPath}");
-            
-            // Read the file as binary
-            var fileBytes = await File.ReadAllBytesAsync(fullPath);
-            var fileName = Path.GetFileName(fullPath);
-            
-            if (debugApiCall)
-            {
-                System.Console.WriteLine($"File size: {fileBytes.Length} bytes");
-                System.Console.WriteLine($"Filename: {fileName}");
-            }
-
-            // Call the API
-            using var httpClient = httpClientFactory.CreateClient("CHAP2API");
-            
-            // Test if API is accessible first
-            System.Console.WriteLine("Testing API connectivity...");
-            try
-            {
-                var healthResponse = await httpClient.GetAsync("/api/health/ping");
-                if (!healthResponse.IsSuccessStatusCode)
-                {
-                    System.Console.WriteLine("API is not accessible. Make sure the API is running.");
-                    return;
-                }
-                System.Console.WriteLine("API is accessible.");
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine($"Error connecting to API: {ex.Message}");
-                return;
-            }
-
-            System.Console.WriteLine("Calling API...");
-            
-            // Create the request
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/slide/convert");
-            request.Content = new ByteArrayContent(fileBytes);
-            request.Headers.Add("X-Filename", fileName);
-            request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-
-            var response = await httpClient.SendAsync(request);
-
-            System.Console.WriteLine($"Response Status: {(int)response.StatusCode} {response.StatusCode}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                System.Console.WriteLine("Success! Response:");
-                System.Console.WriteLine(responseContent);
+                System.Console.WriteLine($"✅ Bulk upload completed successfully! {successfulUploads} files uploaded.");
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                System.Console.WriteLine($"Error: {errorContent}");
+                System.Console.WriteLine("❌ No files were uploaded successfully.");
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred");
+            logger.LogError(ex, "An error occurred during bulk upload");
             System.Console.WriteLine($"Error: {ex.Message}");
         }
     }
