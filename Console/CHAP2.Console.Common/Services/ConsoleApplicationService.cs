@@ -83,7 +83,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
         var searchCancellationTokenSource = new CancellationTokenSource();
         var cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
 
-        // Initial display
+        // Initial display with proper cursor positioning
         _resultsObserver?.OnResultsChanged(currentResults, searchString);
 
         Task? lastSearchTask = null;
@@ -142,8 +142,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
                     {
                         searchString = searchString[..^1];
                         _logger.LogInformation("Removed character from search string. Current string: '{SearchString}'", searchString);
-                        // Update search prompt without clearing screen
-                        UpdateSearchPrompt(searchString);
+                        // Let the observer handle the UI update
                         await ProcessSearchString(searchString, searchDelayMs, minSearchLength, currentResults, searchCancellationTokenSource, cts, lastSearchTask, cancellationToken);
                     }
                     else
@@ -159,33 +158,12 @@ public class ConsoleApplicationService : IConsoleApplicationService
                     {
                         searchString += key.KeyChar;
                         _logger.LogInformation("Added character '{Char}' to search string. Current string: '{SearchString}'", key.KeyChar, searchString);
-                        // Update search prompt without clearing screen
-                        UpdateSearchPrompt(searchString);
+                        // Let the observer handle the UI update
                         await ProcessSearchString(searchString, searchDelayMs, minSearchLength, currentResults, searchCancellationTokenSource, cts, lastSearchTask, cancellationToken);
                     }
                     break;
             }
         }
-    }
-
-    private void UpdateSearchPrompt(string searchString)
-    {
-        // Save current cursor position
-        var currentLeft = System.Console.CursorLeft;
-        var currentTop = System.Console.CursorTop;
-        
-        // Move to the search prompt line (assuming it's at the top)
-        System.Console.SetCursorPosition(0, 2); // After header
-        System.Console.Write($"Search: {searchString}");
-        // Clear to end of line, ensuring we clear any remaining characters
-        var remainingSpace = System.Console.WindowWidth - (8 + searchString.Length);
-        if (remainingSpace > 0)
-        {
-            System.Console.Write(new string(' ', remainingSpace));
-        }
-        
-        // Restore cursor position
-        System.Console.SetCursorPosition(currentLeft, currentTop);
     }
 
     private async Task ProcessSearchString(string searchString, int searchDelayMs, int minSearchLength, 
@@ -217,7 +195,8 @@ public class ConsoleApplicationService : IConsoleApplicationService
                 if (searchString.Length < minSearchLength)
                 {
                     _logger.LogInformation("Search string '{SearchString}' is too short (length: {Length}, min: {MinLength})", searchString, searchString.Length, minSearchLength);
-                    // Don't update observer for short strings, just show the prompt
+                    // Update observer to show the current search string even if it's too short
+                    _resultsObserver?.OnResultsChanged(currentResults, searchString);
                     return;
                 }
 

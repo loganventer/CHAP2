@@ -11,31 +11,34 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
 
     public void OnResultsChanged(List<Chorus> results, string searchTerm)
     {
-        // Only clear screen and redraw if we have results or if search term is empty
+        // Clear screen and redraw for any search term (including short ones)
+        System.Console.Clear();
+        
+        // Draw header
+        DrawHeader();
+        
+        // Draw search prompt at the top
+        DrawSearchPrompt(searchTerm);
+        
+        // If we have results, draw them
         if (results != null && results.Count > 0)
         {
-            // Clear the entire console and redraw
-            System.Console.Clear();
-            
-            // Draw header
-            DrawHeader();
-            
-            // Draw search prompt at the top
-            DrawSearchPrompt(searchTerm);
-            
-            // Draw results below the prompt
             DrawResults(results, searchTerm);
         }
         else if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            // Clear screen for empty search
-            System.Console.Clear();
-            DrawHeader();
-            DrawSearchPrompt(searchTerm);
+            // Show instructions for empty search
             System.Console.WriteLine("Type to search choruses. Search triggers after each keystroke with delay.");
             System.Console.WriteLine("Press Enter to select, Escape to clear, Ctrl+C to exit.");
         }
-        // For short search terms, don't clear screen - just let the prompt update
+        else
+        {
+            // Show message for short search terms
+            System.Console.WriteLine($"Type at least {searchTerm.Length} characters to search...");
+        }
+        
+        // Position cursor at the end of the search prompt for proper caret positioning
+        PositionCursorAtSearchPrompt(searchTerm);
     }
 
     private void DrawHeader()
@@ -51,6 +54,23 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
         System.Console.Write(searchTerm);
         System.Console.WriteLine();
         System.Console.WriteLine();
+    }
+
+    private void PositionCursorAtSearchPrompt(string searchTerm)
+    {
+        // Calculate the position where the cursor should be after the search prompt
+        // Header: 3 lines (title + separator + empty line)
+        // Search prompt: "Search: " (8 characters) + searchTerm length
+        var cursorLeft = 8 + searchTerm.Length; // Position after "Search: " + searchTerm
+        var cursorTop = 3; // After header (3 lines)
+        
+        // Ensure cursor position is within console bounds
+        if (cursorLeft >= System.Console.WindowWidth)
+        {
+            cursorLeft = System.Console.WindowWidth - 1;
+        }
+        
+        System.Console.SetCursorPosition(cursorLeft, cursorTop);
     }
 
     private void DrawResults(List<Chorus> results, string searchTerm)
@@ -119,8 +139,6 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
             System.Console.WriteLine($"    Preview: {preview}");
         }
     }
-
-
 
     private string BoldTerm(string input, string term)
     {
