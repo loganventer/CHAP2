@@ -1,5 +1,8 @@
 using CHAP2.Common.Resources;
 using CHAP2.Common.Interfaces;
+using CommonServices = CHAP2.Common.Services;
+using ApiServices = CHAP2API.Services;
+using ApiInterfaces = CHAP2API.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
 // Register custom services
-builder.Services.AddScoped<CHAP2API.Interfaces.IServices, CHAP2API.Services.Services>();
+builder.Services.AddScoped<ApiInterfaces.IServices, ApiServices.Services>();
+builder.Services.AddSingleton<ISlideToChorusService, CommonServices.SlideToChorusService>();
+
+// Configure chorus resources
 builder.Services.Configure<ChorusResourceOptions>(
     builder.Configuration.GetSection("ChorusResource"));
 builder.Services.AddSingleton<IChorusResource>(provider =>

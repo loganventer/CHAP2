@@ -55,7 +55,9 @@ Provides health monitoring endpoints:
 - `GET /api/health/ping` - Health check endpoint
 
 ### SlideController
-Placeholder for future slide management functionality.
+Converts PowerPoint slide files directly to chorus structure:
+- `POST /api/slide/convert` - Convert PowerPoint file (.ppsx, raw binary in body, X-Filename header required) to chorus
+- `GET /api/slide` - Get slide files info (placeholder)
 
 ## API Endpoints
 
@@ -67,6 +69,10 @@ Placeholder for future slide management functionality.
 
 ### Health Monitoring
 - `GET /api/health/ping` - Health check
+
+### Slide Management
+- `POST /api/slide/convert` - Convert PowerPoint file (.ppsx, raw binary in body, X-Filename header required) to chorus
+- `GET /api/slide` - Get slide files info (placeholder)
 
 ## Running the Application
 
