@@ -12,25 +12,25 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
     public void OnResultsChanged(List<Chorus> results, string searchTerm)
     {
         // Save current cursor position
-        int origLeft = Console.CursorLeft;
-        int origTop = Console.CursorTop;
+        int origLeft = System.Console.CursorLeft;
+        int origTop = System.Console.CursorTop;
 
         // Always print the prompt at the top
-        Console.SetCursorPosition(0, 0);
-        Console.Write($"Search: {searchTerm}");
-        Console.Write(new string(' ', Console.WindowWidth - (8 + searchTerm.Length))); // Clear to end of line
+        System.Console.SetCursorPosition(0, 0);
+        System.Console.Write($"Search: {searchTerm}");
+        System.Console.Write(new string(' ', System.Console.WindowWidth - (8 + searchTerm.Length))); // Clear to end of line
 
         // Results start at line 1
-        Console.SetCursorPosition(0, 1);
+        System.Console.SetCursorPosition(0, 1);
 
         // Clear previous results area
         for (int i = 0; i < _lastResultsLineCount; i++)
         {
-            Console.Write(new string(' ', Console.WindowWidth - 1));
-            if (i < _lastResultsLineCount - 1) Console.WriteLine();
+            System.Console.Write(new string(' ', System.Console.WindowWidth - 1));
+            if (i < _lastResultsLineCount - 1) System.Console.WriteLine();
         }
         // Move back to start of results area
-        Console.SetCursorPosition(0, 1);
+        System.Console.SetCursorPosition(0, 1);
 
         // Draw new results
         int linesWritten = 0;
@@ -40,20 +40,20 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
             for (int i = 0; i < displayCount; i++)
             {
                 var chorus = results[i];
-                Console.WriteLine($"{i + 1}.");
+                System.Console.WriteLine($"{i + 1}.");
                 linesWritten++;
                 linesWritten += DisplaySearchResult(chorus, searchTerm);
             }
             if (results.Count > displayCount)
             {
-                Console.WriteLine($"  ... and {results.Count - displayCount} more");
+                System.Console.WriteLine($"  ... and {results.Count - displayCount} more");
                 linesWritten++;
             }
         }
         _lastResultsLineCount = linesWritten;
 
         // Restore cursor to prompt line, after the search term
-        Console.SetCursorPosition(8 + searchTerm.Length, 0);
+        System.Console.SetCursorPosition(8 + searchTerm.Length, 0);
     }
 
     private int DisplaySearchResult(Chorus chorus, string searchTerm)
@@ -64,7 +64,7 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
         if (!string.IsNullOrEmpty(chorus.Name) && !string.IsNullOrEmpty(searchTerm) &&
             chorus.Name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            Console.WriteLine($"    Title: {BoldTerm(chorus.Name, searchTerm)}");
+            System.Console.WriteLine($"    Title: {BoldTerm(chorus.Name, searchTerm)}");
             lines++;
             found = true;
         }
@@ -76,7 +76,7 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
             {
                 if (line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    Console.WriteLine($"    Text: {BoldTerm(line, searchTerm)}");
+                    System.Console.WriteLine($"    Text: {BoldTerm(line, searchTerm)}");
                     lines++;
                     found = true;
                 }
@@ -84,7 +84,7 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
         }
         if (!found)
         {
-            Console.WriteLine($"    Title: {chorus.Name}");
+            System.Console.WriteLine($"    Title: {chorus.Name}");
             lines++;
         }
         return lines;
