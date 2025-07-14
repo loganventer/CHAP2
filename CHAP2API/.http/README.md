@@ -14,6 +14,8 @@ This folder contains HTTP files for testing the CHAP2API endpoints.
 The HTTP files use variables for easy configuration:
 - `@apiBase` - Default API base URL (http://localhost:5000)
 
+**Note:** For GET and PUT requests, replace the placeholder GUID with an actual GUID from a POST response.
+
 ### With VS Code
 1. Install the "REST Client" extension
 2. Open any `.http` file
