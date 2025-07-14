@@ -43,6 +43,7 @@ class Program
                     configuration.GetSection("ApiClientSettings"));
                 
                 // Register services
+                services.AddSingleton<ISearchCacheService, MemorySearchCacheService>();
                 services.AddScoped<IApiClientService, ApiClientService>();
                 services.AddScoped<IConsoleApplicationService, ConsoleApplicationService>();
             })
@@ -64,6 +65,12 @@ class Program
         }
         
         var consoleService = scope.ServiceProvider.GetRequiredService<IConsoleApplicationService>();
+        // Register the observer
+        var observer = new ConsoleSearchResultsObserver();
+        if (consoleService is ConsoleApplicationService concreteService)
+        {
+            concreteService.RegisterResultsObserver(observer);
+        }
 
         try
         {

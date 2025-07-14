@@ -65,32 +65,45 @@ POST   /api/slide/convert         # Convert PowerPoint file to chorus
 GET    /api/health/ping           # Health check
 ```
 
-### CHAP2.SearchConsole
-**Console Application** - Interactive search and slide conversion tool.
+### Console Applications
+**Console Applications** - Interactive tools for searching and managing choruses.
 
-#### Features:
-- **Dual Mode Operation** - Search mode (default) and convert mode
-- **Real-time Search** - Interactive search with configurable delays
-- **Slide Conversion** - Convert .ppsx files to chorus structures
-- **Service Layer Integration** - Uses shared services from CHAP2.Common
+#### CHAP2.SearchConsole
+- **Interactive Search** - Real-time search with configurable delays
+- **Observer-based UI** - Modern UI with prompt at top, results below
+- **Memory Cache** - 10-minute cache for search results
+- **Service Layer Integration** - Uses shared services from CHAP2.Console.Common
+
+#### CHAP2.Console.Bulk
+- **Bulk Conversion** - Convert multiple PowerPoint files to choruses
+- **Batch Processing** - Process entire directories of .ppsx/.pptx files
+- **Progress Tracking** - Real-time progress updates during conversion
+
+#### CHAP2.Console.Common
+- **Shared Services** - Common services and interfaces for console applications
+- **ApiClientService** - HTTP communication with CHAP2API
+- **SearchService** - Search functionality with caching
+- **RegexHelperService** - Regex operations and utilities
+- **MemorySearchCacheService** - 10-minute memory cache for search results
 
 #### Usage:
 ```bash
-# Interactive search (default)
+# Interactive search console
+cd Console/CHAP2.SearchConsole
 dotnet run
 
-# Convert a slide file
-dotnet run convert path/to/file.ppsx
+# Bulk conversion console
+cd Console/CHAP2.Console.Bulk
+dotnet run
 
-# Convert using configured default file
-dotnet run convert
+# Or use VS Code launch configurations
 ```
 
 #### Configuration:
 - **SearchDelayMs** - Delay before triggering search (default: 300ms)
 - **MinSearchLength** - Minimum characters before searching (default: 2)
 - **ApiBaseUrl** - API base URL (default: http://localhost:5000)
-- **DefaultPpsxFilePath** - Default file for convert mode
+- **CacheDurationMinutes** - Search cache duration (default: 10 minutes)
 
 ## Service Layer Architecture
 
@@ -104,7 +117,7 @@ Centralized HTTP communication service providing:
 ### IConsoleApplicationService
 Business logic service for console applications providing:
 - Interactive search functionality
-- Slide conversion workflow
+- Observer-based UI updates
 - Display formatting for choruses
 - Error handling and user feedback
 
@@ -123,12 +136,15 @@ Shared regex utility service providing:
 - **Real-time Performance** - Optimized for responsive search
 - **Cancellation Support** - Previous searches cancelled when new input arrives
 - **Safe Regex Operations** - Centralized regex handling with error recovery
+- **Memory Cache for Search** - Search results in the console are cached for 10 minutes, reducing redundant API calls and improving responsiveness
+- **Observer-based UI** - The search console uses an observer pattern to keep the prompt at the top and results below, updating only the results area for a modern, flicker-free experience
 
 ### Slide Conversion
 - **PowerPoint Support** - .ppsx and .pptx files
 - **Binary Processing** - Direct file-to-chorus conversion
 - **No File Storage** - Converts directly to chorus structure
 - **Error Handling** - Comprehensive validation and error reporting
+- **Bulk Processing** - Process multiple files in batch operations
 
 ### Data Management
 - **GUID-based Storage** - Unique identification system
@@ -162,7 +178,7 @@ Shared regex utility service providing:
 
 4. **Run the search console**
    ```bash
-   cd CHAP2.SearchConsole
+   cd Console/CHAP2.SearchConsole
    dotnet run
    ```
 
@@ -180,9 +196,10 @@ Use the provided HTTP files in `CHAP2API/.http/`:
 - `slide.http` - Slide conversion tests
 
 ### Console Testing
-The search console provides interactive testing:
+The console applications provide interactive testing:
 - Real-time search with immediate feedback
-- Slide conversion with result verification
+- Observer-based UI with smooth updates
+- Memory cache performance testing
 - Error handling and connectivity testing
 
 ## Configuration
@@ -199,13 +216,13 @@ The search console provides interactive testing:
 }
 ```
 
-### Console Configuration (`CHAP2.SearchConsole/appsettings.json`)
+### Console Configuration (`Console/CHAP2.SearchConsole/appsettings.json`)
 ```json
 {
   "ApiBaseUrl": "http://localhost:5000",
   "SearchDelayMs": 300,
   "MinSearchLength": 2,
-  "DefaultPpsxFilePath": "./sample.ppsx"
+  "CacheDurationMinutes": 10
 }
 ```
 
@@ -216,6 +233,8 @@ The search console provides interactive testing:
 - **Dependency Inversion** - High-level modules don't depend on low-level modules
 - **Testability** - Easy to unit test with dependency injection
 - **Maintainability** - Clear structure makes changes predictable
+- **Memory Cache Layer** - Search results are cached for 10 minutes in a common-layer service, reducing API load and improving performance
+- **Observer Pattern UI** - The UI uses an observer pattern to keep the search prompt at the top and results below, updating only the results area for a modern, responsive experience
 
 ### Performance
 - **Async/Await** - Non-blocking operations throughout
@@ -237,7 +256,7 @@ The search console provides interactive testing:
 1. **Domain Layer** - Add models/interfaces to CHAP2.Common
 2. **Service Layer** - Implement business logic in services
 3. **API Layer** - Add controllers and endpoints
-4. **Console Layer** - Add console functionality if needed
+4. **Console Layer** - Add console functionality using CHAP2.Console.Common services
 
 ### Code Standards
 - **Clean Architecture** - Follow dependency inversion

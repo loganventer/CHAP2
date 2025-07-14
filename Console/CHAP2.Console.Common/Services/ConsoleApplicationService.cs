@@ -11,6 +11,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
     private readonly IApiClientService _apiClientService;
     private readonly ILogger<ConsoleApplicationService> _logger;
     private readonly ConsoleSettings _consoleSettings;
+    private ISearchResultsObserver? _resultsObserver;
 
     public ConsoleApplicationService(
         IApiClientService apiClientService, 
@@ -157,22 +158,28 @@ public class ConsoleApplicationService : IConsoleApplicationService
                         _logger.LogInformation("Forced fallback mode: Searching for '{SearchString}' (length: {Length})", searchString, searchString.Length);
                         var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: fallbackToken1);
                         currentResults = results ?? new List<Chorus>();
+                        _resultsObserver?.OnResultsChanged(currentResults, searchString);
                         _logger.LogInformation("Forced fallback mode: Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
 
                         if (!string.IsNullOrWhiteSpace(searchString))
                         {
-                            System.Console.Clear();
-                            var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
-                            for (int i = 0; i < displayCount; i++)
+                            // Only clear screen and show results if we have results
+                            if (currentResults.Any())
                             {
-                                var chorus = currentResults[i];
-                                System.Console.WriteLine($"{i + 1}.");
-                                DisplaySearchResult(chorus, searchString);
+                                System.Console.Clear();
+                                var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
+                                for (int i = 0; i < displayCount; i++)
+                                {
+                                    var chorus = currentResults[i];
+                                    System.Console.WriteLine($"{i + 1}.");
+                                    DisplaySearchResult(chorus, searchString);
+                                }
+                                if (currentResults.Count > _consoleSettings.MaxDisplayResults)
+                                {
+                                    System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
+                                }
                             }
-                            if (currentResults.Count > _consoleSettings.MaxDisplayResults)
-                            {
-                                System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
-                            }
+                            // If no results, just continue typing without clearing screen
                         }
                         System.Console.Write($"Search: {searchString}");
                     }
@@ -253,24 +260,30 @@ public class ConsoleApplicationService : IConsoleApplicationService
                                 _logger.LogInformation("Searching for: '{SearchString}' (length: {Length})", searchString, searchString.Length);
                                 var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: fallbackToken2);
                                 currentResults = results ?? new List<Chorus>();
+                                _resultsObserver?.OnResultsChanged(currentResults, searchString);
                                 _logger.LogInformation("Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
 
-                                if (!string.IsNullOrWhiteSpace(searchString))
+                                                        if (!string.IsNullOrWhiteSpace(searchString))
+                        {
+                            // Only clear screen and show results if we have results
+                            if (currentResults.Any())
+                            {
+                                System.Console.Clear();
+                                var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
+                                for (int i = 0; i < displayCount; i++)
                                 {
-                                    System.Console.Clear();
-                                    var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
-                                    for (int i = 0; i < displayCount; i++)
-                                    {
-                                        var chorus = currentResults[i];
-                                        System.Console.WriteLine($"{i + 1}.");
-                                        DisplaySearchResult(chorus, searchString);
-                                    }
-                                    if (currentResults.Count > _consoleSettings.MaxDisplayResults)
-                                    {
-                                        System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
-                                    }
+                                    var chorus = currentResults[i];
+                                    System.Console.WriteLine($"{i + 1}.");
+                                    DisplaySearchResult(chorus, searchString);
                                 }
-                                System.Console.Write($"Search: {searchString}");
+                                if (currentResults.Count > _consoleSettings.MaxDisplayResults)
+                                {
+                                    System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
+                                }
+                            }
+                            // If no results, just continue typing without clearing screen
+                        }
+                        System.Console.Write($"Search: {searchString}");
                             }
                             catch (OperationCanceledException)
                             {
@@ -451,22 +464,28 @@ public class ConsoleApplicationService : IConsoleApplicationService
                     _logger.LogInformation("Searching for: '{SearchString}' (length: {Length})", searchString, searchString.Length);
                     var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: token);
                     currentResults = results ?? new List<Chorus>();
+                    _resultsObserver?.OnResultsChanged(currentResults, searchString);
                     _logger.LogInformation("Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
 
                     if (!string.IsNullOrWhiteSpace(searchString))
                     {
-                        System.Console.Clear();
-                        var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
-                        for (int i = 0; i < displayCount; i++)
+                        // Only clear screen and show results if we have results
+                        if (currentResults.Any())
                         {
-                            var chorus = currentResults[i];
-                            System.Console.WriteLine($"{i + 1}.");
-                            DisplaySearchResult(chorus, searchString);
+                            System.Console.Clear();
+                            var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
+                            for (int i = 0; i < displayCount; i++)
+                            {
+                                var chorus = currentResults[i];
+                                System.Console.WriteLine($"{i + 1}.");
+                                DisplaySearchResult(chorus, searchString);
+                            }
+                            if (currentResults.Count > _consoleSettings.MaxDisplayResults)
+                            {
+                                System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
+                            }
                         }
-                        if (currentResults.Count > _consoleSettings.MaxDisplayResults)
-                        {
-                            System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
-                        }
+                        // If no results, just continue typing without clearing screen
                     }
                     System.Console.Write($"Search: {searchString}");
                 }
@@ -555,4 +574,6 @@ public class ConsoleApplicationService : IConsoleApplicationService
             System.Console.WriteLine($"    Title: {chorus.Name}");
         }
     }
+
+    public void RegisterResultsObserver(ISearchResultsObserver observer) => _resultsObserver = observer;
 } 

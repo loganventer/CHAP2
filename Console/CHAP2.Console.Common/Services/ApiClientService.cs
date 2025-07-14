@@ -9,11 +9,13 @@ public class ApiClientService : IApiClientService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ApiClientService> _logger;
+    private readonly ISearchCacheService _cache;
 
-    public ApiClientService(IHttpClientFactory httpClientFactory, ILogger<ApiClientService> logger)
+    public ApiClientService(IHttpClientFactory httpClientFactory, ILogger<ApiClientService> logger, ISearchCacheService cache)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task<bool> TestConnectivityAsync(CancellationToken cancellationToken = default)
@@ -109,6 +111,11 @@ public class ApiClientService : IApiClientService
     {
         try
         {
+            if (_cache.TryGet(searchTerm, out var cachedResults))
+            {
+                _logger.LogInformation("Cache hit for search term: {SearchTerm}", searchTerm);
+                return cachedResults;
+            }
             var url = $"api/choruses/search?q={Uri.EscapeDataString(searchTerm)}&searchIn={searchIn}&searchMode={searchMode}";
             var response = await _httpClientFactory.CreateClient("CHAP2API").GetAsync(url, cancellationToken);
 
@@ -133,6 +140,7 @@ public class ApiClientService : IApiClientService
                     {
                         _logger.LogInformation("Chorus: Id={Id}, Name='{Name}', Type={Type}", chorus?.Id, chorus?.Name, chorus?.Type);
                     }
+                    _cache.Set(searchTerm, choruses, TimeSpan.FromMinutes(10));
                     return choruses;
                 }
                 else

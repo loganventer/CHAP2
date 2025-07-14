@@ -11,6 +11,8 @@ A console application for the CHAP2API providing interactive, real-time search f
 - **Comprehensive results**: Shows chorus names and preview text
 - **Error handling**: Graceful handling of API errors and network issues
 - **Cancellation support**: Previous searches cancelled when new input arrives
+- **Memory cache**: Search results are cached in memory for 10 minutes, reducing redundant API calls and improving responsiveness
+- **Observer-based UI**: The search UI uses an observer pattern to keep the prompt at the top and results below, updating only the results area for a smooth, flicker-free experience
 
 ## Usage
 
@@ -96,4 +98,6 @@ Search: heer g (1 results)
 - **Error Handling**: Centralized error handling in service layer
 - **Maintainability**: Easy to modify business logic in one place
 - **Configuration-driven**: Environment-specific settings
-- **Modular Design**: Easy to add new features 
+- **Modular Design**: Easy to add new features
+- **Memory Cache Layer**: Search results are cached for 10 minutes in a common-layer service, reducing API load and improving performance
+- **Observer Pattern UI**: The UI uses an observer pattern to keep the search prompt at the top and results below, updating only the results area for a modern, responsive experience 
