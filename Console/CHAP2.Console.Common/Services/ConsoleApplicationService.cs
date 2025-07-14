@@ -78,127 +78,18 @@ public class ConsoleApplicationService : IConsoleApplicationService
 
     public async Task RunInteractiveSearchAsync(int searchDelayMs, int minSearchLength, CancellationToken cancellationToken = default)
     {
-        System.Console.WriteLine("CHAP2 Search Console - Interactive Search Mode");
-        System.Console.WriteLine("=============================================");
-        
-        if (_consoleSettings.ShowSearchDelay)
-        {
-            System.Console.WriteLine($"Search Delay: {searchDelayMs}ms");
-        }
-        
-        if (_consoleSettings.ShowMinSearchLength)
-        {
-            System.Console.WriteLine($"Minimum Search Length: {minSearchLength}");
-        }
-        
-        System.Console.WriteLine();
-        System.Console.WriteLine("Type to search choruses. Search triggers after each keystroke with delay.");
-        System.Console.WriteLine("Press Enter to select, Escape to clear, Ctrl+C to exit.\n");
-
         var searchString = "";
         var currentResults = new List<Chorus>();
         var searchCancellationTokenSource = new CancellationTokenSource();
         var cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
 
-        System.Console.Write($"Search: {searchString}");
+        // Initial display
+        _resultsObserver?.OnResultsChanged(currentResults, searchString);
 
         Task? lastSearchTask = null;
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            // Check if we should force fallback mode
-            if (_consoleSettings.ForceFallbackInputMode)
-            {
-                System.Console.WriteLine("Fallback input mode enabled.");
-                System.Console.WriteLine("Type your search term and press Enter (or 'quit' to exit):");
-                var input = System.Console.ReadLine();
-                if (input == null) continue;
-                
-                if (input.ToLower() == "quit")
-                {
-                    break;
-                }
-                
-                searchString = input;
-                _logger.LogInformation("Forced fallback mode: Processing search string '{SearchString}'", searchString);
-                System.Console.WriteLine($"Searching for: {searchString}");
-                
-                // Cancel previous search
-                searchCancellationTokenSource.Cancel();
-                searchCancellationTokenSource = new CancellationTokenSource();
-                cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
-                var fallbackToken1 = cts.Token;
-
-                if (lastSearchTask != null && !lastSearchTask.IsCompleted)
-                {
-                    try { await lastSearchTask; } catch { /* ignore */ }
-                }
-
-                lastSearchTask = Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (string.IsNullOrWhiteSpace(searchString))
-                        {
-                            currentResults.Clear();
-                            _logger.LogInformation("Forced fallback mode: Search string is empty, clearing results");
-                            System.Console.WriteLine("Search cleared.");
-                            System.Console.Write($"Search: {searchString}");
-                            return;
-                        }
-
-                        if (searchString.Length < minSearchLength)
-                        {
-                            _logger.LogInformation("Forced fallback mode: Search string '{SearchString}' is too short (length: {Length}, min: {MinLength})", searchString, searchString.Length, minSearchLength);
-                            System.Console.WriteLine($"Type at least {minSearchLength} characters to search");
-                            System.Console.Write($"Search: {searchString}");
-                            return;
-                        }
-
-                        _logger.LogInformation("Forced fallback mode: Searching for '{SearchString}' (length: {Length})", searchString, searchString.Length);
-                        var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: fallbackToken1);
-                        currentResults = results ?? new List<Chorus>();
-                        _resultsObserver?.OnResultsChanged(currentResults, searchString);
-                        _logger.LogInformation("Forced fallback mode: Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
-
-                        if (!string.IsNullOrWhiteSpace(searchString))
-                        {
-                            // Only clear screen and show results if we have results
-                            if (currentResults.Any())
-                            {
-                                System.Console.Clear();
-                                var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
-                                for (int i = 0; i < displayCount; i++)
-                                {
-                                    var chorus = currentResults[i];
-                                    System.Console.WriteLine($"{i + 1}.");
-                                    DisplaySearchResult(chorus, searchString);
-                                }
-                                if (currentResults.Count > _consoleSettings.MaxDisplayResults)
-                                {
-                                    System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
-                                }
-                            }
-                            // If no results, just continue typing without clearing screen
-                        }
-                        System.Console.Write($"Search: {searchString}");
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        _logger.LogInformation("Forced fallback mode: Search for '{SearchString}' was cancelled", searchString);
-                        // Search was cancelled, ignore
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Forced fallback mode: Error during search for '{SearchString}'", searchString);
-                        System.Console.WriteLine(" (Error occurred)");
-                        System.Console.Write($"Search: {searchString}");
-                    }
-                }, fallbackToken1);
-                await lastSearchTask;
-                continue;
-            }
-
             ConsoleKeyInfo key;
             try
             {
@@ -206,7 +97,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
             }
             catch (InvalidOperationException)
             {
-                // Console input is redirected, use Console.Read() as fallback
+                // Console input is redirected, use fallback mode
                 System.Console.WriteLine("\nConsole input is redirected. Using fallback input mode.");
                 System.Console.WriteLine("Type your search term and press Enter (or 'quit' to exit):");
                 var input = System.Console.ReadLine();
@@ -217,291 +108,139 @@ public class ConsoleApplicationService : IConsoleApplicationService
                     break;
                 }
                 
-                // Simulate character-by-character input by processing each character
-                foreach (char c in input)
-                {
-                    if (c >= 32 && c <= 126) // Printable characters
-                    {
-                        searchString += c;
-                        System.Console.Write(c);
-                        _logger.LogInformation("Added character '{Char}' to search string. Current string: '{SearchString}'", c, searchString);
-                        
-                        // Cancel previous search
-                        searchCancellationTokenSource.Cancel();
-                        searchCancellationTokenSource = new CancellationTokenSource();
-                        cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
-                        var fallbackToken2 = cts.Token;
-
-                        if (lastSearchTask != null && !lastSearchTask.IsCompleted)
-                        {
-                            try { await lastSearchTask; } catch { /* ignore */ }
-                        }
-
-                        lastSearchTask = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                _logger.LogInformation("Starting search delay for string: '{SearchString}'", searchString);
-                                await Task.Delay(searchDelayMs, fallbackToken2);
-                                
-                                if (string.IsNullOrWhiteSpace(searchString))
-                                {
-                                    currentResults.Clear();
-                                    _logger.LogInformation("Search string is empty, clearing results");
-                                    return;
-                                }
-
-                                if (searchString.Length < minSearchLength)
-                                {
-                                    _logger.LogInformation("Search string '{SearchString}' is too short (length: {Length}, min: {MinLength})", searchString, searchString.Length, minSearchLength);
-                                    return;
-                                }
-
-                                _logger.LogInformation("Searching for: '{SearchString}' (length: {Length})", searchString, searchString.Length);
-                                var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: fallbackToken2);
-                                currentResults = results ?? new List<Chorus>();
-                                _resultsObserver?.OnResultsChanged(currentResults, searchString);
-                                _logger.LogInformation("Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
-
-                                                        if (!string.IsNullOrWhiteSpace(searchString))
-                        {
-                            // Only clear screen and show results if we have results
-                            if (currentResults.Any())
-                            {
-                                System.Console.Clear();
-                                var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
-                                for (int i = 0; i < displayCount; i++)
-                                {
-                                    var chorus = currentResults[i];
-                                    System.Console.WriteLine($"{i + 1}.");
-                                    DisplaySearchResult(chorus, searchString);
-                                }
-                                if (currentResults.Count > _consoleSettings.MaxDisplayResults)
-                                {
-                                    System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
-                                }
-                            }
-                            // If no results, just continue typing without clearing screen
-                        }
-                        System.Console.Write($"Search: {searchString}");
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                _logger.LogInformation("Search for '{SearchString}' was cancelled", searchString);
-                                // Search was cancelled, ignore
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError(ex, "Error during search for '{SearchString}'", searchString);
-                                System.Console.WriteLine(" (Error occurred)");
-                            }
-                        }, fallbackToken2);
-                        await lastSearchTask;
-                    }
-                }
-                
-                // Clear for next input
-                searchString = "";
-                currentResults.Clear();
-                System.Console.WriteLine();
-                System.Console.Write($"Search: {searchString}");
+                searchString = input;
+                await ProcessSearchString(searchString, searchDelayMs, minSearchLength, currentResults, searchCancellationTokenSource, cts, lastSearchTask, cancellationToken);
                 continue;
             }
-            
-            if (key.Key == ConsoleKey.Enter)
+
+            // Handle key input
+            switch (key.Key)
             {
-                if (currentResults.Count == 1)
-                {
-                    System.Console.WriteLine("\n=== SINGLE CHORUS FOUND ===");
-                    DisplayChorus(currentResults[0]);
-                    System.Console.WriteLine("\nPress any key to continue searching...");
-                    System.Console.ReadKey(true);
-                    
-                    // Clear and start new search
+                case ConsoleKey.Enter:
+                    if (currentResults.Count == 1)
+                    {
+                        var selectedChorus = currentResults[0];
+                        System.Console.Clear();
+                        System.Console.WriteLine("=== SINGLE CHORUS FOUND ===");
+                        DisplayChorus(selectedChorus);
+                        System.Console.WriteLine("\nPress any key to continue searching...");
+                        System.Console.ReadKey(true);
+                        searchString = "";
+                        currentResults.Clear();
+                        _resultsObserver?.OnResultsChanged(currentResults, searchString);
+                    }
+                    break;
+
+                case ConsoleKey.Escape:
                     searchString = "";
                     currentResults.Clear();
-                    searchCancellationTokenSource.Cancel();
-                    searchCancellationTokenSource = new CancellationTokenSource();
-                    cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
-                    
-                    if (_consoleSettings.ClearScreenOnSearch)
-                    {
-                        System.Console.Clear();
-                    }
-                    System.Console.WriteLine("CHAP2 Search Console - Interactive Search Mode");
-                    System.Console.WriteLine("=============================================");
-                    
-                    if (_consoleSettings.ShowSearchDelay)
-                    {
-                        System.Console.WriteLine($"Search Delay: {searchDelayMs}ms");
-                    }
-                    
-                    if (_consoleSettings.ShowMinSearchLength)
-                    {
-                        System.Console.WriteLine($"Minimum Search Length: {minSearchLength}");
-                    }
-                    
-                    System.Console.WriteLine();
-                    System.Console.WriteLine("Type to search choruses. Search triggers after each keystroke with delay.");
-                    System.Console.WriteLine("Press Enter to select, Escape to clear, Ctrl+C to exit.\n");
-                    System.Console.Write($"Search: {searchString}");
-                }
-                else if (currentResults.Count > 1)
-                {
-                    System.Console.WriteLine($"\nMultiple choruses found ({currentResults.Count}). Continue typing to narrow down.");
-                    System.Console.Write($"Search: {searchString}");
-                }
-                else
-                {
-                    System.Console.WriteLine("\nNo results found. Continue typing to search.");
-                    System.Console.Write($"Search: {searchString}");
-                }
-                continue;
-            }
-            else if (key.Key == ConsoleKey.Escape)
-            {
-                searchString = "";
-                currentResults.Clear();
-                searchCancellationTokenSource.Cancel();
-                searchCancellationTokenSource = new CancellationTokenSource();
-                cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
-                System.Console.WriteLine("\nSearch cleared.");
-                System.Console.Write($"Search: {searchString}");
-                continue;
-            }
-            else if (key.Key == ConsoleKey.Backspace)
-            {
-                if (searchString.Length > 0)
-                {
-                    searchString = searchString[..^1];
-                    System.Console.Write("\b \b");
-                }
-            }
-            else if (key.KeyChar >= 32 && key.KeyChar <= 126) // Printable characters
-            {
-                searchString += key.KeyChar;
-                System.Console.Write(key.KeyChar);
-                _logger.LogInformation("Added character '{Char}' to search string. Current string: '{SearchString}'", key.KeyChar, searchString);
-            }
-
-            // Cancel previous search and clear screen
-            searchCancellationTokenSource.Cancel();
-            searchCancellationTokenSource = new CancellationTokenSource();
-            cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
-            var token = cts.Token;
-
-            if (lastSearchTask != null && !lastSearchTask.IsCompleted)
-            {
-                try { await lastSearchTask; } catch { /* ignore */ }
-            }
-
-            lastSearchTask = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting search delay for string: '{SearchString}'", searchString);
-                    await Task.Delay(searchDelayMs, token);
-                    
-                    if (string.IsNullOrWhiteSpace(searchString))
-                    {
-                        currentResults.Clear();
-                        _logger.LogInformation("Search string is empty, clearing results");
-                        if (_consoleSettings.ClearScreenOnSearch)
-                        {
-                            System.Console.Clear();
-                        }
-                        System.Console.WriteLine("CHAP2 Search Console - Interactive Search Mode");
-                        System.Console.WriteLine("=============================================");
-                        
-                        if (_consoleSettings.ShowSearchDelay)
-                        {
-                            System.Console.WriteLine($"Search Delay: {searchDelayMs}ms");
-                        }
-                        
-                        if (_consoleSettings.ShowMinSearchLength)
-                        {
-                            System.Console.WriteLine($"Minimum Search Length: {minSearchLength}");
-                        }
-                        
-                        System.Console.WriteLine();
-                        System.Console.WriteLine("Type to search choruses. Search triggers after each keystroke with delay.");
-                        System.Console.WriteLine("Press Enter to select, Escape to clear, Ctrl+C to exit.\n");
-                        System.Console.Write($"Search: {searchString}");
-                        return;
-                    }
-
-                    // Clear screen and show current search status
-                    if (_consoleSettings.ClearScreenOnSearch)
-                    {
-                        System.Console.Clear();
-                    }
-                    System.Console.WriteLine("CHAP2 Search Console - Interactive Search Mode");
-                    System.Console.WriteLine("=============================================");
-                    
-                    if (_consoleSettings.ShowSearchDelay)
-                    {
-                        System.Console.WriteLine($"Search Delay: {searchDelayMs}ms");
-                    }
-                    
-                    if (_consoleSettings.ShowMinSearchLength)
-                    {
-                        System.Console.WriteLine($"Minimum Search Length: {minSearchLength}");
-                    }
-                    
-                    System.Console.WriteLine();
-                    System.Console.WriteLine("Type to search choruses. Search triggers after each keystroke with delay.");
-                    System.Console.WriteLine("Press Enter to select, Escape to clear, Ctrl+C to exit.\n");
-                    System.Console.Write($"Search: {searchString}");
-
-                    if (searchString.Length < minSearchLength)
-                    {
-                        _logger.LogInformation("Search string '{SearchString}' is too short (length: {Length}, min: {MinLength})", searchString, searchString.Length, minSearchLength);
-                        System.Console.WriteLine($" (Type at least {minSearchLength} characters to search)");
-                        return;
-                    }
-
-                    // Make the API call only if minimum length is met
-                    _logger.LogInformation("Searching for: '{SearchString}' (length: {Length})", searchString, searchString.Length);
-                    var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: token);
-                    currentResults = results ?? new List<Chorus>();
                     _resultsObserver?.OnResultsChanged(currentResults, searchString);
-                    _logger.LogInformation("Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
+                    break;
 
-                    if (!string.IsNullOrWhiteSpace(searchString))
+                case ConsoleKey.Backspace:
+                    if (searchString.Length > 0)
                     {
-                        // Only clear screen and show results if we have results
-                        if (currentResults.Any())
-                        {
-                            System.Console.Clear();
-                            var displayCount = Math.Min(currentResults.Count, _consoleSettings.MaxDisplayResults);
-                            for (int i = 0; i < displayCount; i++)
-                            {
-                                var chorus = currentResults[i];
-                                System.Console.WriteLine($"{i + 1}.");
-                                DisplaySearchResult(chorus, searchString);
-                            }
-                            if (currentResults.Count > _consoleSettings.MaxDisplayResults)
-                            {
-                                System.Console.WriteLine($"  ... and {currentResults.Count - _consoleSettings.MaxDisplayResults} more");
-                            }
-                        }
-                        // If no results, just continue typing without clearing screen
+                        searchString = searchString[..^1];
+                        _logger.LogInformation("Removed character from search string. Current string: '{SearchString}'", searchString);
+                        // Update search prompt without clearing screen
+                        UpdateSearchPrompt(searchString);
+                        await ProcessSearchString(searchString, searchDelayMs, minSearchLength, currentResults, searchCancellationTokenSource, cts, lastSearchTask, cancellationToken);
                     }
-                    System.Console.Write($"Search: {searchString}");
-                }
-                catch (OperationCanceledException)
-                {
-                    _logger.LogInformation("Search for '{SearchString}' was cancelled", searchString);
-                    // Search was cancelled, ignore
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error during search for '{SearchString}'", searchString);
-                    System.Console.WriteLine(" (Error occurred)");
-                }
-            }, token);
-            await lastSearchTask;
+                    else
+                    {
+                        // If search string is empty, clear results and redraw
+                        currentResults.Clear();
+                        _resultsObserver?.OnResultsChanged(currentResults, searchString);
+                    }
+                    break;
+
+                default:
+                    if (key.KeyChar >= 32 && key.KeyChar <= 126) // Printable characters
+                    {
+                        searchString += key.KeyChar;
+                        _logger.LogInformation("Added character '{Char}' to search string. Current string: '{SearchString}'", key.KeyChar, searchString);
+                        // Update search prompt without clearing screen
+                        UpdateSearchPrompt(searchString);
+                        await ProcessSearchString(searchString, searchDelayMs, minSearchLength, currentResults, searchCancellationTokenSource, cts, lastSearchTask, cancellationToken);
+                    }
+                    break;
+            }
         }
+    }
+
+    private void UpdateSearchPrompt(string searchString)
+    {
+        // Save current cursor position
+        var currentLeft = System.Console.CursorLeft;
+        var currentTop = System.Console.CursorTop;
+        
+        // Move to the search prompt line (assuming it's at the top)
+        System.Console.SetCursorPosition(0, 2); // After header
+        System.Console.Write($"Search: {searchString}");
+        // Clear to end of line, ensuring we clear any remaining characters
+        var remainingSpace = System.Console.WindowWidth - (8 + searchString.Length);
+        if (remainingSpace > 0)
+        {
+            System.Console.Write(new string(' ', remainingSpace));
+        }
+        
+        // Restore cursor position
+        System.Console.SetCursorPosition(currentLeft, currentTop);
+    }
+
+    private async Task ProcessSearchString(string searchString, int searchDelayMs, int minSearchLength, 
+        List<Chorus> currentResults, CancellationTokenSource searchCancellationTokenSource, 
+        CancellationTokenSource cts, Task? lastSearchTask, CancellationToken cancellationToken)
+    {
+        // Cancel previous search
+        searchCancellationTokenSource.Cancel();
+        searchCancellationTokenSource = new CancellationTokenSource();
+        cts = CancellationTokenSource.CreateLinkedTokenSource(searchCancellationTokenSource.Token);
+
+        if (lastSearchTask != null && !lastSearchTask.IsCompleted)
+        {
+            try { await lastSearchTask; } catch { /* ignore */ }
+        }
+
+        lastSearchTask = Task.Run(async () =>
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(searchString))
+                {
+                    currentResults.Clear();
+                    _logger.LogInformation("Search string is empty, clearing results");
+                    _resultsObserver?.OnResultsChanged(currentResults, searchString);
+                    return;
+                }
+
+                if (searchString.Length < minSearchLength)
+                {
+                    _logger.LogInformation("Search string '{SearchString}' is too short (length: {Length}, min: {MinLength})", searchString, searchString.Length, minSearchLength);
+                    // Don't update observer for short strings, just show the prompt
+                    return;
+                }
+
+                _logger.LogInformation("Starting search delay for string: '{SearchString}'", searchString);
+                await Task.Delay(searchDelayMs, cts.Token);
+
+                _logger.LogInformation("Searching for '{SearchString}' (length: {Length})", searchString, searchString.Length);
+                var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: cts.Token);
+                currentResults = results ?? new List<Chorus>();
+                _resultsObserver?.OnResultsChanged(currentResults, searchString);
+                _logger.LogInformation("Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Search for '{SearchString}' was cancelled", searchString);
+                // Search was cancelled, ignore
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during search for '{SearchString}'", searchString);
+                // Don't update the observer on error, keep previous results
+            }
+        }, cts.Token);
     }
 
     public void DisplayChorus(Chorus? chorus)

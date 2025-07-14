@@ -89,21 +89,12 @@ class Program
         var searchDelayMs = configuration.GetValue<int>("SearchDelayMs", 300);
         var minSearchLength = configuration.GetValue<int>("MinSearchLength", 2);
         
-        System.Console.WriteLine("CHAP2 Search Console - Interactive Search Mode");
-        System.Console.WriteLine("=============================================");
-        System.Console.WriteLine($"API Base URL: {configuration["ApiBaseUrl"]}");
-        System.Console.WriteLine($"Search Delay: {searchDelayMs}ms");
-        System.Console.WriteLine($"Minimum Search Length: {minSearchLength}");
-        System.Console.WriteLine();
-
         // Test API connectivity
         var isConnected = await consoleService.TestApiConnectivityAsync();
         if (!isConnected)
         {
             return;
         }
-
-        System.Console.WriteLine("API is accessible. Starting interactive search...\n");
 
         // Run interactive search
         await consoleService.RunInteractiveSearchAsync(searchDelayMs, minSearchLength);

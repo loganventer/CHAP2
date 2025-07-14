@@ -7,88 +7,120 @@ namespace CHAP2.Console.Common.Services;
 
 public class ConsoleSearchResultsObserver : ISearchResultsObserver
 {
-    private int _lastResultsLineCount = 0;
+    private readonly int _maxResultsToShow = 10;
 
     public void OnResultsChanged(List<Chorus> results, string searchTerm)
     {
-        // Save current cursor position
-        int origLeft = System.Console.CursorLeft;
-        int origTop = System.Console.CursorTop;
-
-        // Always print the prompt at the top
-        System.Console.SetCursorPosition(0, 0);
-        System.Console.Write($"Search: {searchTerm}");
-        System.Console.Write(new string(' ', System.Console.WindowWidth - (8 + searchTerm.Length))); // Clear to end of line
-
-        // Results start at line 1
-        System.Console.SetCursorPosition(0, 1);
-
-        // Clear previous results area
-        for (int i = 0; i < _lastResultsLineCount; i++)
-        {
-            System.Console.Write(new string(' ', System.Console.WindowWidth - 1));
-            if (i < _lastResultsLineCount - 1) System.Console.WriteLine();
-        }
-        // Move back to start of results area
-        System.Console.SetCursorPosition(0, 1);
-
-        // Draw new results
-        int linesWritten = 0;
+        // Only clear screen and redraw if we have results or if search term is empty
         if (results != null && results.Count > 0)
         {
-            var displayCount = Math.Min(results.Count, 10); // Show up to 10 results
-            for (int i = 0; i < displayCount; i++)
-            {
-                var chorus = results[i];
-                System.Console.WriteLine($"{i + 1}.");
-                linesWritten++;
-                linesWritten += DisplaySearchResult(chorus, searchTerm);
-            }
-            if (results.Count > displayCount)
-            {
-                System.Console.WriteLine($"  ... and {results.Count - displayCount} more");
-                linesWritten++;
-            }
+            // Clear the entire console and redraw
+            System.Console.Clear();
+            
+            // Draw header
+            DrawHeader();
+            
+            // Draw search prompt at the top
+            DrawSearchPrompt(searchTerm);
+            
+            // Draw results below the prompt
+            DrawResults(results, searchTerm);
         }
-        _lastResultsLineCount = linesWritten;
-
-        // Restore cursor to prompt line, after the search term
-        System.Console.SetCursorPosition(8 + searchTerm.Length, 0);
+        else if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            // Clear screen for empty search
+            System.Console.Clear();
+            DrawHeader();
+            DrawSearchPrompt(searchTerm);
+            System.Console.WriteLine("Type to search choruses. Search triggers after each keystroke with delay.");
+            System.Console.WriteLine("Press Enter to select, Escape to clear, Ctrl+C to exit.");
+        }
+        // For short search terms, don't clear screen - just let the prompt update
     }
 
-    private int DisplaySearchResult(Chorus chorus, string searchTerm)
+    private void DrawHeader()
     {
-        int lines = 0;
-        bool found = false;
-        // Title
-        if (!string.IsNullOrEmpty(chorus.Name) && !string.IsNullOrEmpty(searchTerm) &&
+        System.Console.WriteLine("CHAP2 Search Console - Interactive Search Mode");
+        System.Console.WriteLine("=============================================");
+        System.Console.WriteLine();
+    }
+
+    private void DrawSearchPrompt(string searchTerm)
+    {
+        System.Console.Write("Search: ");
+        System.Console.Write(searchTerm);
+        System.Console.WriteLine();
+        System.Console.WriteLine();
+    }
+
+    private void DrawResults(List<Chorus> results, string searchTerm)
+    {
+        if (results == null || results.Count == 0)
+        {
+            System.Console.WriteLine("No results found.");
+            return;
+        }
+
+        var displayCount = Math.Min(results.Count, _maxResultsToShow);
+        
+        for (int i = 0; i < displayCount; i++)
+        {
+            var chorus = results[i];
+            System.Console.WriteLine($"{i + 1}. {chorus.Name}");
+            
+            // Show matching content if search term is provided
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                DisplayMatchingContent(chorus, searchTerm);
+            }
+            
+            System.Console.WriteLine(); // Add spacing between results
+        }
+        
+        if (results.Count > displayCount)
+        {
+            System.Console.WriteLine($"... and {results.Count - displayCount} more results");
+        }
+    }
+
+    private void DisplayMatchingContent(Chorus chorus, string searchTerm)
+    {
+        bool foundMatch = false;
+        
+        // Check if search term is in the title
+        if (!string.IsNullOrEmpty(chorus.Name) && 
             chorus.Name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
         {
             System.Console.WriteLine($"    Title: {BoldTerm(chorus.Name, searchTerm)}");
-            lines++;
-            found = true;
+            foundMatch = true;
         }
-        // ChorusText
-        if (!string.IsNullOrEmpty(chorus.ChorusText) && !string.IsNullOrEmpty(searchTerm))
+        
+        // Check if search term is in the chorus text
+        if (!string.IsNullOrEmpty(chorus.ChorusText))
         {
             var textLines = chorus.ChorusText.Split('\n');
             foreach (var line in textLines)
             {
-                if (line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
+                if (!string.IsNullOrEmpty(line) && 
+                    line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    System.Console.WriteLine($"    Text: {BoldTerm(line, searchTerm)}");
-                    lines++;
-                    found = true;
+                    System.Console.WriteLine($"    Text: {BoldTerm(line.Trim(), searchTerm)}");
+                    foundMatch = true;
                 }
             }
         }
-        if (!found)
+        
+        // If no specific matches found, show a preview of the chorus
+        if (!foundMatch && !string.IsNullOrEmpty(chorus.ChorusText))
         {
-            System.Console.WriteLine($"    Title: {chorus.Name}");
-            lines++;
+            var preview = chorus.ChorusText.Split('\n')[0].Trim();
+            if (preview.Length > 50)
+                preview = preview.Substring(0, 47) + "...";
+            System.Console.WriteLine($"    Preview: {preview}");
         }
-        return lines;
     }
+
+
 
     private string BoldTerm(string input, string term)
     {
@@ -98,6 +130,9 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
         var before = input.Substring(0, idx);
         var match = input.Substring(idx, term.Length);
         var after = input.Substring(idx + term.Length);
-        return before + "\x1b[1m" + match + "\x1b[0m" + after;
+        
+        // Use bright red text on bright cyan background with bold formatting for maximum visibility
+        // \x1b[1;91;106m = Bold + Bright Red + Bright Cyan Background
+        return before + "\x1b[1;91;106m" + match + "\x1b[0m" + after;
     }
 } 
