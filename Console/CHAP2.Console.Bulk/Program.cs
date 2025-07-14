@@ -65,8 +65,8 @@ class Program
                 return;
             }
 
-            // Resolve relative path
-            var fullPath = Path.IsPathRooted(path) ? path : Path.Combine(Directory.GetCurrentDirectory(), path);
+            // Resolve path (handle home directory ~ and relative paths)
+            var fullPath = ResolvePath(path);
             
             if (!Directory.Exists(fullPath))
             {
@@ -98,5 +98,35 @@ class Program
             logger.LogError(ex, "An error occurred during bulk upload");
             System.Console.WriteLine($"Error: {ex.Message}");
         }
+    }
+
+    private static string ResolvePath(string path)
+    {
+        // Handle home directory expansion (~)
+        if (path.StartsWith("~"))
+        {
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var pathWithoutTilde = path.Substring(1);
+            // Remove leading slash if present to avoid absolute path issues
+            if (pathWithoutTilde.StartsWith("/"))
+            {
+                pathWithoutTilde = pathWithoutTilde.Substring(1);
+            }
+            var resolvedPath = Path.Combine(homeDir, pathWithoutTilde);
+            System.Console.WriteLine($"Debug: Original path: '{path}'");
+            System.Console.WriteLine($"Debug: Home directory: '{homeDir}'");
+            System.Console.WriteLine($"Debug: Path without tilde: '{pathWithoutTilde}'");
+            System.Console.WriteLine($"Debug: Resolved path: '{resolvedPath}'");
+            return resolvedPath;
+        }
+        
+        // Handle absolute paths
+        if (Path.IsPathRooted(path))
+        {
+            return path;
+        }
+        
+        // Handle relative paths
+        return Path.Combine(Directory.GetCurrentDirectory(), path);
     }
 }
