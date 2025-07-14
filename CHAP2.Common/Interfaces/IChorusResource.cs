@@ -8,4 +8,7 @@ public interface IChorusResource
 {
     Task AddChorusAsync(Chorus chorus);
     Task<IReadOnlyList<Chorus>> GetAllChorusesAsync();
+    Task UpdateChorusAsync(Chorus chorus);
+    Task<Chorus?> GetChorusByIdAsync(Guid id);
+    Task<bool> ChorusExistsAsync(string name);
 } 

@@ -5,7 +5,8 @@ This folder contains HTTP files for testing the CHAP2API endpoints.
 ## Files
 
 - `health.http` - Tests specifically for the health controller
-- `choruses.http` - Tests specifically for the choruses controller
+- `choruses.http` - Tests specifically for the choruses controller (includes CRUD operations)
+- `slide.http` - Tests for slide controller (placeholder for future implementation)
 
 ## How to Use
 
@@ -51,11 +52,20 @@ curl -X GET http://localhost:5000/api/choruses \
 ```json
 [
   {
+    "id": "12345678-1234-1234-1234-123456789abc",
     "name": "Amazing Grace",
     "key": 2,
     "timeSignature": 1,
     "chorusText": "Amazing grace, how sweet the sound",
     "type": 1
+  },
+  {
+    "id": "87654321-4321-4321-4321-cba987654321",
+    "name": "New Chorus",
+    "key": 0,
+    "timeSignature": 0,
+    "chorusText": "This is a new chorus text",
+    "type": 0
   }
 ]
 ```
@@ -65,4 +75,7 @@ curl -X GET http://localhost:5000/api/choruses \
 - Make sure the API is running before testing
 - Default port is 5000
 - All endpoints are prefixed with `/api`
-- Controllers inherit from `ChapControllerAbstractBase` for consistent logging 
+- Controllers inherit from `ChapControllerAbstractBase` for consistent logging
+- Choruses use GUID-based identification for unique file storage
+- Enum values default to NotSet (0) when not specified
+- Case-insensitive name validation prevents duplicate choruses 

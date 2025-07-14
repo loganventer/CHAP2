@@ -8,15 +8,89 @@ Content-Type: application/json
 
 ###
 
-# Add or update a chorus
+# Add a new chorus with NotSet values (will use defaults)
 POST {{apiBase}}/api/choruses
 Content-Type: application/json
 
 {
-  "Name": "Sample Chorus",
+  "Name": "New Chorus",
+  "ChorusText": "This is a new chorus text"
+}
+
+###
+
+# Add a new chorus with specific values
+POST {{apiBase}}/api/choruses
+Content-Type: application/json
+
+{
+  "Name": "Amazing Grace",
   "Key": 2,
   "TimeSignature": 1,
-  "ChorusText": "This is the chorus text",
+  "ChorusText": "Amazing grace, how sweet the sound",
+  "Type": 1
+}
+
+###
+
+# Try to add the same chorus again (should return 409 Conflict)
+POST {{apiBase}}/api/choruses
+Content-Type: application/json
+
+{
+  "Name": "Amazing Grace",
+  "Key": 2,
+  "TimeSignature": 1,
+  "ChorusText": "Amazing grace, how sweet the sound",
+  "Type": 1
+}
+
+###
+
+# Try to add with different case (should return 409 Conflict - case insensitive)
+POST {{apiBase}}/api/choruses
+Content-Type: application/json
+
+{
+  "Name": "amazing grace",
+  "Key": 2,
+  "TimeSignature": 1,
+  "ChorusText": "Amazing grace, how sweet the sound",
+  "Type": 1
+}
+
+###
+
+# Try to add with all caps (should return 409 Conflict - case insensitive)
+POST {{apiBase}}/api/choruses
+Content-Type: application/json
+
+{
+  "Name": "AMAZING GRACE",
+  "Key": 2,
+  "TimeSignature": 1,
+  "ChorusText": "Amazing grace, how sweet the sound",
+  "Type": 1
+}
+
+###
+
+# Get a specific chorus by ID (replace {id} with actual GUID)
+GET {{apiBase}}/api/choruses/{id}
+Content-Type: application/json
+
+###
+
+# Update a chorus (replace {id} with actual GUID)
+PUT {{apiBase}}/api/choruses/{id}
+Content-Type: application/json
+
+{
+  "Id": "{id}",
+  "Name": "Updated Amazing Grace",
+  "Key": 2,
+  "TimeSignature": 1,
+  "ChorusText": "Amazing grace, how sweet the sound, that saved a wretch like me",
   "Type": 1
 }
 

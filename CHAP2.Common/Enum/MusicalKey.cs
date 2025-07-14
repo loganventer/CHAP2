@@ -2,6 +2,7 @@ namespace CHAP2.Common.Enum;
 
 public enum MusicalKey
 {
+    NotSet = 0,
     F = 1,
     C = 2,
     G = 3,

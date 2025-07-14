@@ -22,12 +22,10 @@ public class DiskChorusResource : IChorusResource
 
     public async Task AddChorusAsync(Chorus chorus)
     {
-        // Create a safe filename from the chorus name
-        var safeName = string.Join("", chorus.Name.Split(' ', '-', '_', '.', '/', '\\')
-            .Where(w => !string.IsNullOrEmpty(w))
-            .Select((w, i) => i == 0 ? w.ToLowerInvariant() : char.ToUpperInvariant(w[0]) + w.Substring(1).ToLowerInvariant()));
+        ArgumentNullException.ThrowIfNull(chorus);
         
-        var fileName = Path.Combine(_folderPath, $"{safeName}.json");
+        // Use GUID for filename to ensure uniqueness and handle name changes
+        var fileName = Path.Combine(_folderPath, $"{chorus.Id}.json");
         var json = JsonSerializer.Serialize(chorus, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(fileName, json);
     }
@@ -43,5 +41,32 @@ public class DiskChorusResource : IChorusResource
                 result.Add(chorus);
         }
         return result;
+    }
+
+    public async Task UpdateChorusAsync(Chorus chorus)
+    {
+        ArgumentNullException.ThrowIfNull(chorus);
+        
+        var fileName = Path.Combine(_folderPath, $"{chorus.Id}.json");
+        var json = JsonSerializer.Serialize(chorus, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(fileName, json);
+    }
+
+    public async Task<Chorus?> GetChorusByIdAsync(Guid id)
+    {
+        var fileName = Path.Combine(_folderPath, $"{id}.json");
+        if (!File.Exists(fileName))
+            return null;
+            
+        var json = await File.ReadAllTextAsync(fileName);
+        return JsonSerializer.Deserialize<Chorus>(json);
+    }
+
+    public async Task<bool> ChorusExistsAsync(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        
+        var choruses = await GetAllChorusesAsync();
+        return choruses.Any(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 } 

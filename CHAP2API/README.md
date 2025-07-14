@@ -31,10 +31,10 @@ CHAP2API/
 The project follows clean architecture principles with proper separation of concerns:
 
 ### Domain Models (CHAP2.Common)
-- **Models/** - Domain entities (Chorus)
-- **Enum/** - Enumerations (MusicalKey, TimeSignature, ChorusType)
+- **Models/** - Domain entities (Chorus with GUID identification)
+- **Enum/** - Enumerations (MusicalKey, TimeSignature, ChorusType with NotSet defaults)
 - **Interfaces/** - Domain interfaces (IChorusResource)
-- **Resources/** - Data access implementations
+- **Resources/** - Data access implementations (GUID-based file storage)
 
 ### API Layer (CHAP2API)
 - **Custom Controller Base** - All controllers inherit from `ChapControllerAbstractBase`
@@ -47,6 +47,8 @@ The project follows clean architecture principles with proper separation of conc
 Manages musical chorus data with full CRUD operations:
 - `POST /api/choruses` - Add a new chorus
 - `GET /api/choruses` - Get all choruses
+- `GET /api/choruses/{id}` - Get a specific chorus by ID
+- `PUT /api/choruses/{id}` - Update a chorus
 
 ### HealthController
 Provides health monitoring endpoints:
@@ -60,6 +62,8 @@ Placeholder for future slide management functionality.
 ### Chorus Management
 - `POST /api/choruses` - Add a new chorus
 - `GET /api/choruses` - Get all choruses
+- `GET /api/choruses/{id}` - Get a specific chorus by ID
+- `PUT /api/choruses/{id}` - Update a chorus
 
 ### Health Monitoring
 - `GET /api/health/ping` - Health check
@@ -84,9 +88,15 @@ Placeholder for future slide management functionality.
 
 Use the provided HTTP files in the `.http/` folder to test the API:
 
-- `.http/choruses.http` - Chorus-specific tests
+- `.http/choruses.http` - Chorus-specific tests (includes CRUD operations and duplicate prevention)
 - `.http/health.http` - Health endpoint tests
-- `.http/slide.http` - Slide endpoint tests
+- `.http/slide.http` - Slide endpoint tests (placeholder)
+
+### Key Features Tested:
+- **GUID-based identification** - Each chorus has a unique GUID
+- **Case-insensitive name validation** - Prevents duplicate names regardless of case
+- **NotSet defaults** - Enum properties default to NotSet (0) when not specified
+- **Full CRUD operations** - Create, Read, Update operations
 
 ## Adding New Controllers
 
