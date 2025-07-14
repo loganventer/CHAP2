@@ -76,17 +76,17 @@ Content-Type: application/json
 ###
 
 # Get a specific chorus by ID (replace with actual GUID from POST response)
-GET {{apiBase}}/api/choruses/12345678-1234-1234-1234-123456789abc
+GET {{apiBase}}/api/choruses/dbe187c7-1443-428e-b058-1f216103bef5
 Content-Type: application/json
 
 ###
 
 # Update a chorus (replace with actual GUID from POST response)
-PUT {{apiBase}}/api/choruses/12345678-1234-1234-1234-123456789abc
+PUT {{apiBase}}/api/choruses/dbe187c7-1443-428e-b058-1f216103bef5
 Content-Type: application/json
 
 {
-  "Id": "12345678-1234-1234-1234-123456789abc",
+  "Id": "dbe187c7-1443-428e-b058-1f216103bef5",
   "Name": "Updated Amazing Grace",
   "Key": 2,
   "TimeSignature": 1,
