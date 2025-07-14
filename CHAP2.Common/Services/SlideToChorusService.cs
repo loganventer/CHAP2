@@ -11,8 +11,18 @@ using CHAP2.Common.Interfaces;
 
 namespace CHAP2.Common.Services
 {
+    // In API, inject values from SlideConversionSettings
     public class SlideToChorusService : ISlideToChorusService
     {
+        private readonly ChorusType _defaultChorusType;
+        private readonly TimeSignature _defaultTimeSignature;
+
+        public SlideToChorusService(ChorusType defaultChorusType, TimeSignature defaultTimeSignature)
+        {
+            _defaultChorusType = defaultChorusType;
+            _defaultTimeSignature = defaultTimeSignature;
+        }
+
         public Chorus ConvertToChorus(byte[] fileContent, string filename)
         {
             var chorusName = ExtractChorusNameFromFilename(filename);
@@ -21,11 +31,11 @@ namespace CHAP2.Common.Services
 
             return new Chorus
             {
-                Name = chorusName,
+                Name = chorusName ?? string.Empty,
                 Key = musicalKey ?? MusicalKey.NotSet,
-                TimeSignature = TimeSignature.NotSet,
+                TimeSignature = _defaultTimeSignature,
                 ChorusText = chorusText,
-                Type = ChorusType.NotSet
+                Type = _defaultChorusType
             };
         }
 
@@ -46,6 +56,17 @@ namespace CHAP2.Common.Services
                 }
             }
             return null;
+        }
+
+        private static T ParseEnumOrDefault<T>(string value, T defaultValue) where T : struct
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return defaultValue;
+
+            if (System.Enum.TryParse<T>(value, true, out var result))
+                return result;
+
+            return defaultValue;
         }
 
         private static string ExtractChorusTextFromPowerPoint(byte[] fileContent, string filename)

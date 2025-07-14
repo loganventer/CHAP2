@@ -1,5 +1,7 @@
 using CHAP2.Common.Resources;
 using CHAP2.Common.Interfaces;
+using CHAP2API.Configuration;
+using CHAP2.Common.Enum;
 using CommonServices = CHAP2.Common.Services;
 using ApiServices = CHAP2API.Services;
 using ApiInterfaces = CHAP2API.Interfaces;
@@ -12,22 +14,39 @@ builder.Services.AddOpenApi();
 
 // Register custom services
 builder.Services.AddScoped<ApiInterfaces.IServices, ApiServices.Services>();
-builder.Services.AddSingleton<ISlideToChorusService, CommonServices.SlideToChorusService>();
 builder.Services.AddScoped<ISearchService, CommonServices.SearchService>();
+builder.Services.AddScoped<IRegexHelperService, CommonServices.RegexHelperService>();
 
-// Configure chorus resources
+// Configure settings
 builder.Services.Configure<ChorusResourceOptions>(
     builder.Configuration.GetSection("ChorusResource"));
+builder.Services.Configure<ApiSettings>(
+    builder.Configuration.GetSection("ApiSettings"));
+builder.Services.Configure<SearchSettings>(
+    builder.Configuration.GetSection("SearchSettings"));
+builder.Services.Configure<SlideConversionSettings>(
+    builder.Configuration.GetSection("SlideConversionSettings"));
+
 builder.Services.AddSingleton<IChorusResource>(provider =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChorusResourceOptions>>().Value;
     return new DiskChorusResource(options);
 });
 
+// Register SlideToChorusService with values from SlideConversionSettings
+builder.Services.AddSingleton<ISlideToChorusService>(provider =>
+{
+    var settings = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<SlideConversionSettings>>().Value;
+    var defaultChorusType = Enum.TryParse<ChorusType>(settings.DefaultChorusType, true, out var ct) ? ct : ChorusType.NotSet;
+    var defaultTimeSignature = Enum.TryParse<TimeSignature>(settings.DefaultTimeSignature, true, out var ts) ? ts : TimeSignature.NotSet;
+    return new CommonServices.SlideToChorusService(defaultChorusType, defaultTimeSignature);
+});
+
 // Add controllers with a global route prefix
 builder.Services.AddControllers(options =>
 {
-    options.Conventions.Insert(0, new GlobalRoutePrefixConvention("api"));
+    var apiSettings = builder.Configuration.GetSection("ApiSettings").Get<ApiSettings>() ?? new ApiSettings();
+    options.Conventions.Insert(0, new GlobalRoutePrefixConvention(apiSettings.GlobalRoutePrefix));
 });
 
 var app = builder.Build();

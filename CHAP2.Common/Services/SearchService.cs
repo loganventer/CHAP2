@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using CHAP2.Common.Models;
 using CHAP2.Common.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -8,23 +7,27 @@ namespace CHAP2.Common.Services;
 public class SearchService : ISearchService
 {
     private readonly IChorusResource _chorusResource;
+    private readonly IRegexHelperService _regexHelper;
     private readonly ILogger<SearchService> _logger;
 
-    public SearchService(IChorusResource chorusResource, ILogger<SearchService> logger)
+    public SearchService(IChorusResource chorusResource, IRegexHelperService regexHelper, ILogger<SearchService> logger)
     {
         _chorusResource = chorusResource;
+        _regexHelper = regexHelper;
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<Chorus>> SearchByNameAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains)
+    public async Task<IReadOnlyList<Chorus>> SearchByNameAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
         
-        var allChoruses = await _chorusResource.GetAllChorusesAsync();
+        var allChoruses = await _chorusResource.GetAllChorusesAsync(cancellationToken);
         var results = new List<Chorus>();
 
         foreach (var chorus in allChoruses)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             if (MatchesSearch(chorus.Name, searchTerm, searchMode))
             {
                 results.Add(chorus);
@@ -37,15 +40,17 @@ public class SearchService : ISearchService
         return results;
     }
 
-    public async Task<IReadOnlyList<Chorus>> SearchByTextAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains)
+    public async Task<IReadOnlyList<Chorus>> SearchByTextAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
         
-        var allChoruses = await _chorusResource.GetAllChorusesAsync();
+        var allChoruses = await _chorusResource.GetAllChorusesAsync(cancellationToken);
         var results = new List<Chorus>();
 
         foreach (var chorus in allChoruses)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             if (MatchesSearch(chorus.ChorusText, searchTerm, searchMode))
             {
                 results.Add(chorus);
@@ -58,15 +63,17 @@ public class SearchService : ISearchService
         return results;
     }
 
-    public async Task<IReadOnlyList<Chorus>> SearchAllAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains)
+    public async Task<IReadOnlyList<Chorus>> SearchAllAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
         
-        var allChoruses = await _chorusResource.GetAllChorusesAsync();
+        var allChoruses = await _chorusResource.GetAllChorusesAsync(cancellationToken);
         var results = new HashSet<Chorus>(); // Use HashSet to avoid duplicates
 
         foreach (var chorus in allChoruses)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             if (MatchesSearch(chorus.Name, searchTerm, searchMode) || 
                 MatchesSearch(chorus.ChorusText, searchTerm, searchMode))
             {
@@ -80,7 +87,7 @@ public class SearchService : ISearchService
         return results.ToList();
     }
 
-    private static bool MatchesSearch(string text, string searchTerm, SearchMode searchMode)
+    private bool MatchesSearch(string text, string searchTerm, SearchMode searchMode)
     {
         if (string.IsNullOrWhiteSpace(text))
             return false;
@@ -89,7 +96,7 @@ public class SearchService : ISearchService
         {
             SearchMode.Exact => string.Equals(text, searchTerm, StringComparison.OrdinalIgnoreCase),
             SearchMode.Contains => text.Contains(searchTerm, StringComparison.OrdinalIgnoreCase),
-            SearchMode.Regex => Regex.IsMatch(text, searchTerm, RegexOptions.IgnoreCase),
+            SearchMode.Regex => _regexHelper.IsRegexMatch(text, searchTerm),
             _ => false
         };
     }

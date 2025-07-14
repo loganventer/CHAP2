@@ -1,0 +1,13 @@
+using CHAP2.Common.Models;
+
+namespace CHAP2.Console.Common.Interfaces;
+
+public interface IConsoleApplicationService
+{
+    Task<bool> TestApiConnectivityAsync(CancellationToken cancellationToken = default);
+    Task<Chorus?> ConvertSlideFileAsync(string filePath, CancellationToken cancellationToken = default);
+    Task<List<Chorus>> SearchChorusesAsync(string searchTerm, CancellationToken cancellationToken = default);
+    Task RunInteractiveSearchAsync(int searchDelayMs, int minSearchLength, CancellationToken cancellationToken = default);
+    void DisplayChorus(Chorus chorus);
+    void DisplayChoruses(List<Chorus> choruses);
+} 

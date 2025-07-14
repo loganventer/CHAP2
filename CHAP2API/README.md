@@ -2,6 +2,23 @@
 
 A .NET Web API project for managing musical choruses with clean architecture and dependency injection.
 
+## Architecture
+
+The project follows clean architecture principles with proper separation of concerns:
+
+### Domain Models (CHAP2.Common)
+- **Models/** - Domain entities (Chorus with GUID identification)
+- **Enum/** - Enumerations (MusicalKey, TimeSignature, ChorusType with NotSet defaults)
+- **Interfaces/** - Domain interfaces (IChorusResource, ISearchService, ISlideToChorusService)
+- **Services/** - Business logic implementations (SearchService, SlideToChorusService)
+- **Resources/** - Data access implementations (GUID-based file storage)
+
+### API Layer (CHAP2API)
+- **Custom Controller Base** - All controllers inherit from `ChapControllerAbstractBase`
+- **Global Route Prefix** - All endpoints prefixed with `/api`
+- **Dependency Injection** - Properly configured services
+- **CancellationToken Support** - Full async cancellation support throughout
+
 ## Project Structure
 
 ```
@@ -10,7 +27,7 @@ CHAP2API/
 │   ├── ChapControllerAbstractBase.cs    # Abstract base controller
 │   ├── ChorusesController.cs            # Chorus management endpoints
 │   ├── HealthController.cs              # Health monitoring endpoints
-│   └── SlideController.cs               # Slide management (placeholder)
+│   └── SlideController.cs               # Slide conversion endpoints
 ├── Interfaces/
 │   ├── IController.cs                   # Base controller interface
 │   └── IServices.cs                     # Application services interface
@@ -25,21 +42,6 @@ CHAP2API/
 ├── GlobalRoutePrefixConvention.cs       # Global route prefix configuration
 └── README.md                            # This file
 ```
-
-## Architecture
-
-The project follows clean architecture principles with proper separation of concerns:
-
-### Domain Models (CHAP2.Common)
-- **Models/** - Domain entities (Chorus with GUID identification)
-- **Enum/** - Enumerations (MusicalKey, TimeSignature, ChorusType with NotSet defaults)
-- **Interfaces/** - Domain interfaces (IChorusResource)
-- **Resources/** - Data access implementations (GUID-based file storage)
-
-### API Layer (CHAP2API)
-- **Custom Controller Base** - All controllers inherit from `ChapControllerAbstractBase`
-- **Global Route Prefix** - All endpoints prefixed with `/api`
-- **Dependency Injection** - Properly configured services
 
 ## Controllers
 
@@ -59,7 +61,6 @@ Provides health monitoring endpoints:
 ### SlideController
 Converts PowerPoint slide files directly to chorus structure:
 - `POST /api/slide/convert` - Convert PowerPoint file (.ppsx, raw binary in body, X-Filename header required) to chorus
-- `GET /api/slide` - Get slide files info (placeholder)
 
 ## API Endpoints
 
@@ -76,7 +77,6 @@ Converts PowerPoint slide files directly to chorus structure:
 
 ### Slide Management
 - `POST /api/slide/convert` - Convert PowerPoint file (.ppsx, raw binary in body, X-Filename header required) to chorus
-- `GET /api/slide` - Get slide files info (placeholder)
 
 ## Running the Application
 
@@ -100,7 +100,7 @@ Use the provided HTTP files in the `.http/` folder to test the API:
 
 - `.http/choruses.http` - Chorus-specific tests (includes CRUD operations and duplicate prevention)
 - `.http/health.http` - Health endpoint tests
-- `.http/slide.http` - Slide endpoint tests (placeholder)
+- `.http/slide.http` - Slide endpoint tests
 
 ### Key Features Tested:
 - **GUID-based identification** - Each chorus has a unique GUID
@@ -109,6 +109,7 @@ Use the provided HTTP files in the `.http/` folder to test the API:
 - **Full CRUD operations** - Create, Read, Update operations
 - **Comprehensive search** - Multiple search modes (Exact, Contains, Regex) across names and text
 - **Real-time search optimization** - Efficient search algorithms for responsive performance
+- **Cancellation support** - All async operations support cancellation tokens
 
 ## Adding New Controllers
 
@@ -164,4 +165,24 @@ public class MyController : ChapControllerAbstractBase
         _myService = myService;
     }
 }
-``` 
+```
+
+## Architecture Benefits
+
+### Clean Architecture
+- **Separation of Concerns** - Clear boundaries between layers
+- **Dependency Inversion** - High-level modules don't depend on low-level modules
+- **Testability** - Easy to unit test with dependency injection
+- **Maintainability** - Clear structure makes changes predictable
+
+### Performance
+- **Async/Await** - Non-blocking operations throughout
+- **Cancellation Support** - Proper resource cleanup
+- **Efficient Search** - Optimized search algorithms
+- **JSON Storage** - Human-readable file format
+
+### Scalability
+- **Service Layer** - Easy to add new services
+- **Interface-based Design** - Easy to swap implementations
+- **Configuration-driven** - Environment-specific settings
+- **Modular Structure** - Easy to add new features 

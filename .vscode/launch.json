@@ -5,12 +5,16 @@
     "version": "0.2.0",
     "compounds": [
         {
-            "name": "Debug API and Console",
+            "name": "Debug API and Search Console",
             "configurations": ["CHAP2API", "CHAP2SearchConsole"]
         },
         {
-            "name": "Debug API and Search",
-            "configurations": ["CHAP2API", "CHAP2SearchConsole"]
+            "name": "Debug API and Bulk Console",
+            "configurations": ["CHAP2API", "CHAP2BulkConsole"]
+        },
+        {
+            "name": "Debug API, Search, and Bulk Console",
+            "configurations": ["CHAP2API", "CHAP2SearchConsole", "CHAP2BulkConsole"]
         }
     ],
     "configurations": [
@@ -30,10 +34,22 @@
             "name": "CHAP2SearchConsole",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/CHAP2.SearchConsole/bin/Debug/net9.0/CHAP2.SearchConsole.dll",
-            "cwd": "${workspaceFolder}/CHAP2.SearchConsole",
+            "program": "${workspaceFolder}/Console/CHAP2.SearchConsole/bin/Debug/net9.0/CHAP2.SearchConsole.dll",
+            "cwd": "${workspaceFolder}/Console/CHAP2.SearchConsole",
             "stopAtEntry": false,
             "preLaunchTask": "build CHAP2SearchConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "CHAP2BulkConsole",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/Console/CHAP2.Console.Bulk/bin/Debug/net9.0/CHAP2.Console.Bulk.dll",
+            "cwd": "${workspaceFolder}/Console/CHAP2.Console.Bulk",
+            "stopAtEntry": false,
+            "preLaunchTask": "build CHAP2BulkConsole",
             "env": {
                 "DOTNET_ENVIRONMENT": "Development"
             }

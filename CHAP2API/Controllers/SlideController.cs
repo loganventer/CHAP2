@@ -2,6 +2,8 @@ using CHAP2API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using CHAP2.Common.Models;
 using CHAP2.Common.Interfaces;
+using CHAP2API.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace CHAP2API.Controllers;
 
@@ -11,12 +13,18 @@ public class SlideController : ChapControllerAbstractBase
 {
     private readonly IChorusResource _chorusResource;
     private readonly ISlideToChorusService _slideToChorusService;
+    private readonly SlideConversionSettings _slideSettings;
     
-    public SlideController(ILogger<SlideController> logger, IChorusResource chorusResource, ISlideToChorusService slideToChorusService)
+    public SlideController(
+        ILogger<SlideController> logger, 
+        IChorusResource chorusResource, 
+        ISlideToChorusService slideToChorusService,
+        IOptions<SlideConversionSettings> slideSettings)
         : base(logger)
     {
         _chorusResource = chorusResource;
         _slideToChorusService = slideToChorusService;
+        _slideSettings = slideSettings.Value;
     }
 
     /// <summary>
@@ -44,6 +52,14 @@ public class SlideController : ChapControllerAbstractBase
             _logger.LogWarning("No file data provided");
             return BadRequest("No file data provided or file is empty");
         }
+        
+        if (fileContent.Length > _slideSettings.MaxFileSizeBytes)
+        {
+            _logger.LogWarning("File size exceeds maximum allowed size: {FileSize} > {MaxSize}", 
+                fileContent.Length, _slideSettings.MaxFileSizeBytes);
+            return BadRequest($"File size exceeds maximum allowed size of {_slideSettings.MaxFileSizeBytes / 1024 / 1024}MB");
+        }
+        
         if (string.IsNullOrWhiteSpace(filename))
         {
             _logger.LogWarning("No filename header provided");
@@ -52,9 +68,9 @@ public class SlideController : ChapControllerAbstractBase
 
         // Validate file extension
         var extension = Path.GetExtension(filename).ToLowerInvariant();
-        if (extension != ".ppsx")
+        if (!_slideSettings.AllowedExtensions.Contains(extension))
         {
-            return BadRequest("Only .ppsx files are allowed");
+            return BadRequest($"Only {string.Join(", ", _slideSettings.AllowedExtensions)} files are allowed");
         }
 
         // Use the service to convert to Chorus
