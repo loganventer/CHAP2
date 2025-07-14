@@ -3,22 +3,30 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "Debug API and Console",
+            "configurations": ["CHAP2API", "CHAP2Console"]
+        }
+    ],
     "configurations": [
         {
-            "name": "Launch CHAP2API",
+            "name": "CHAP2API",
             "type": "coreclr",
             "request": "launch",
             "program": "${workspaceFolder}/CHAP2API/bin/Debug/net9.0/CHAP2API.dll",
             "cwd": "${workspaceFolder}/CHAP2API",
+            "stopAtEntry": false,
             "preLaunchTask": "build CHAP2API"
         },
         {
-            "name": "Launch Frontend (npm start)",
-            "type": "pwa-node",
+            "name": "CHAP2Console",
+            "type": "coreclr",
             "request": "launch",
-            "cwd": "${workspaceFolder}/frontend",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": ["start"]
+            "program": "${workspaceFolder}/CHAP2Console/bin/Debug/net9.0/CHAP2Console.dll",
+            "cwd": "${workspaceFolder}/CHAP2Console",
+            "stopAtEntry": false,
+            "preLaunchTask": "build CHAP2Console"
         }
     ]
 }

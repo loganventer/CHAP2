@@ -23,16 +23,30 @@ public class SlideController : ChapControllerAbstractBase
     /// Convert PowerPoint slide file (raw .ppsx binary) to chorus structure
     /// </summary>
     [HttpPost("convert")]
-    public async Task<IActionResult> ConvertSlideToChorus([FromBody] byte[] fileContent, [FromHeader(Name = "X-Filename")] string filename)
+    [Consumes("application/octet-stream")]
+    public async Task<IActionResult> ConvertSlideToChorus([FromBody] Stream fileStream, [FromHeader(Name = "X-Filename")] string filename)
     {
-        LogAction("ConvertSlideToChorus", new { filename = filename, size = fileContent?.Length });
-        
+        _logger.LogInformation("=== SLIDE CONVERT ENDPOINT HIT ===");
+        LogAction("ConvertSlideToChorus", new { filename = filename });
+        _logger.LogInformation("Request Content-Type: {ContentType}", Request.ContentType);
+        _logger.LogInformation("Request Headers: {Headers}", string.Join(", ", Request.Headers.Keys));
+
+        // Read the stream into a byte array
+        byte[] fileContent;
+        using (var memoryStream = new MemoryStream())
+        {
+            await fileStream.CopyToAsync(memoryStream);
+            fileContent = memoryStream.ToArray();
+        }
+
         if (fileContent == null || fileContent.Length == 0)
         {
+            _logger.LogWarning("No file data provided");
             return BadRequest("No file data provided or file is empty");
         }
         if (string.IsNullOrWhiteSpace(filename))
         {
+            _logger.LogWarning("No filename header provided");
             return BadRequest("Filename header (X-Filename) is required");
         }
 
