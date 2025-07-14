@@ -1,0 +1,14 @@
+# .NET build outputs
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+
+# macOS
+.DS_Store
+
+# Data files
+data/chorus/*.json 

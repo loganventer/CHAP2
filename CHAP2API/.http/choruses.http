@@ -1,0 +1,23 @@
+### Choruses Controller Tests
+
+@apiBase = http://localhost:5000
+
+# Get all choruses
+GET {{apiBase}}/api/choruses
+Content-Type: application/json
+
+###
+
+# Add or update a chorus
+POST {{apiBase}}/api/choruses
+Content-Type: application/json
+
+{
+  "Name": "Sample Chorus",
+  "Key": 2,
+  "TimeSignature": 1,
+  "ChorusText": "This is the chorus text",
+  "Type": 1
+}
+
+### 

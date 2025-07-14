@@ -1,0 +1,9 @@
+### Slide Controller Tests
+
+@apiBase = http://localhost:5000
+
+# Get all slides (placeholder, implement endpoint in controller when ready)
+GET {{apiBase}}/api/slide
+Content-Type: application/json
+
+### 
