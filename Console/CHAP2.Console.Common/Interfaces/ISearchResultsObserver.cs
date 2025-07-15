@@ -6,4 +6,5 @@ using CHAP2.Common.Models;
 public interface ISearchResultsObserver
 {
     void OnResultsChanged(List<Chorus> results, string searchTerm);
+    void ForceRefresh();
 } 

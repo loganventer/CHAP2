@@ -16,7 +16,7 @@ public class ConsoleDisplaySettings
     public string HeaderTitle { get; set; } = "CHAP2 Search Console - Interactive Search Mode";
     public string HeaderSeparator { get; set; } = "=============================================";
     public string InstructionsText { get; set; } = "Type to search choruses. Search triggers after each keystroke with delay.";
-    public string InstructionsControls { get; set; } = "Press Enter to select, Escape to clear, Ctrl+C to exit.";
+    public string InstructionsControls { get; set; } = "Press Enter to select, Escape to clear search, Ctrl+C to exit.";
     public string NoResultsText { get; set; } = "No results found.";
     public string MoreResultsText { get; set; } = "... and {0} more results";
     public string ShortSearchText { get; set; } = "Type at least {0} characters to search...";

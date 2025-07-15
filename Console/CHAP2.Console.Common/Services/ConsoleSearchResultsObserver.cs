@@ -14,20 +14,48 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
     private readonly ConsoleDisplaySettings _settings;
     private readonly ISelectionService _selectionService;
     private int _currentWindowStartIndex = 0;
+    private (int width, int height) _lastWindowSize;
+    private (int width, int height) _lastBufferSize;
+    private int _lastCursorTop;
+    private int _lastCursorLeft;
 
     public ConsoleSearchResultsObserver(IOptions<ConsoleDisplaySettings> settings, ISelectionService selectionService)
     {
         _settings = settings.Value;
         _selectionService = selectionService;
+        _lastWindowSize = (System.Console.WindowWidth, System.Console.WindowHeight);
+        _lastBufferSize = (System.Console.BufferWidth, System.Console.BufferHeight);
+        _lastCursorTop = System.Console.CursorTop;
+        _lastCursorLeft = System.Console.CursorLeft;
     }
 
     public void OnResultsChanged(List<Chorus> results, string searchTerm)
     {
-        // Clear screen and redraw for any search term (including short ones)
-        System.Console.Clear();
+        // Check if window size or buffer size has changed (indicating font size change)
+        var currentWindowSize = (System.Console.WindowWidth, System.Console.WindowHeight);
+        var currentBufferSize = (System.Console.BufferWidth, System.Console.BufferHeight);
+        var windowSizeChanged = _lastWindowSize != currentWindowSize;
+        var bufferSizeChanged = currentBufferSize != _lastBufferSize;
         
-        // Reset window start index when results change
-        _currentWindowStartIndex = 0;
+        // Also check if the effective display area has changed (font size changes)
+        var effectiveDisplayChanged = HasEffectiveDisplayChanged();
+        
+        if (windowSizeChanged || bufferSizeChanged || effectiveDisplayChanged)
+        {
+            // Window, buffer, or effective display changed, clear screen and reset window position
+            System.Console.Clear();
+            _currentWindowStartIndex = 0;
+            _lastWindowSize = currentWindowSize;
+            _lastBufferSize = currentBufferSize;
+        }
+        else
+        {
+            // Clear screen and redraw for any search term (including short ones)
+            System.Console.Clear();
+            
+            // Reset window start index when results change
+            _currentWindowStartIndex = 0;
+        }
         
         // Draw header
         DrawHeader();
@@ -433,5 +461,35 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
     private void SetCurrentWindowStartIndex(int startIndex)
     {
         _currentWindowStartIndex = startIndex;
+    }
+
+    public void ForceRefresh()
+    {
+        // Force a complete refresh by clearing the screen and resetting all tracking
+        System.Console.Clear();
+        _lastWindowSize = (System.Console.WindowWidth, System.Console.WindowHeight);
+        _lastBufferSize = (System.Console.BufferWidth, System.Console.BufferHeight);
+        _currentWindowStartIndex = 0;
+        
+        // Small delay to ensure console has stabilized after font size changes
+        Thread.Sleep(10);
+    }
+    
+    private bool HasEffectiveDisplayChanged()
+    {
+        // Check if the cursor position has moved significantly, which can indicate font size changes
+        var currentCursorTop = System.Console.CursorTop;
+        var currentCursorLeft = System.Console.CursorLeft;
+        
+        // If cursor position has changed significantly, it might indicate a font size change
+        // This is a heuristic approach since .NET doesn't provide direct font size information
+        var cursorMovedSignificantly = Math.Abs(currentCursorTop - _lastCursorTop) > 2 || 
+                                     Math.Abs(currentCursorLeft - _lastCursorLeft) > 2;
+        
+        // Update last cursor position
+        _lastCursorTop = currentCursorTop;
+        _lastCursorLeft = currentCursorLeft;
+        
+        return cursorMovedSignificantly;
     }
 } 

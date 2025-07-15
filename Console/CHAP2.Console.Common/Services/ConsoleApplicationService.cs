@@ -14,6 +14,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
     private readonly ISelectionService _selectionService;
     private readonly IConsoleDisplayService _displayService;
     private ISearchResultsObserver? _resultsObserver;
+    private static bool _isShowingDialog = false; // Static flag to disable background monitoring during dialogs
 
     public ConsoleApplicationService(
         IApiClientService apiClientService, 
@@ -99,10 +100,78 @@ public class ConsoleApplicationService : IConsoleApplicationService
         // Initial display with proper cursor positioning
         _resultsObserver?.OnResultsChanged(currentResults, searchString);
 
+        // Set window/buffer/cursor tracking AFTER initial display
+        // lastWindowSize = (System.Console.WindowWidth, System.Console.WindowHeight);
+        // lastBufferSize = (System.Console.BufferWidth, System.Console.BufferHeight);
+        // lastCursorTop = System.Console.CursorTop;
+
         Task? lastSearchTask = null;
+        
+        // Start a background task to monitor window size changes
+        var windowMonitorCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var windowMonitorTask = Task.Run(async () =>
+        {
+            // Use separate tracking variables for the background task
+            var monitorLastWindowSize = (System.Console.WindowWidth, System.Console.WindowHeight);
+            var monitorLastBufferSize = (System.Console.BufferWidth, System.Console.BufferHeight);
+            var monitorLastCursorTop = System.Console.CursorTop;
+            
+            while (!windowMonitorCts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(500, windowMonitorCts.Token); // Check every 500ms instead of 100ms
+                    
+                    var currentWindowSize = (System.Console.WindowWidth, System.Console.WindowHeight);
+                    var currentBufferSize = (System.Console.BufferWidth, System.Console.BufferHeight);
+                    
+                    var windowSizeChanged = currentWindowSize != monitorLastWindowSize;
+                    var bufferSizeChanged = currentBufferSize != monitorLastBufferSize;
+                    
+                    // Only refresh on actual window/buffer size changes, not cursor position
+                    if (windowSizeChanged || bufferSizeChanged)
+                    {
+                        _logger.LogInformation("Background monitor: Display configuration changed - Window: {OldWindow}->{NewWindow}, Buffer: {OldBuffer}->{NewBuffer}", 
+                            monitorLastWindowSize, currentWindowSize, monitorLastBufferSize, currentBufferSize);
+                        
+                        monitorLastWindowSize = currentWindowSize;
+                        monitorLastBufferSize = currentBufferSize;
+                        
+                        // Force a complete refresh of the display
+                        if (isInDetailView && selectedChorus != null)
+                        {
+                            _logger.LogInformation("Background monitor: Refreshing detail view due to display change");
+                            _displayService.DisplayChorusDetail(selectedChorus);
+                        }
+                        else if (!isInDetailView && !_isShowingDialog)
+                        {
+                            _logger.LogInformation("Background monitor: Refreshing search results due to display change");
+                            _resultsObserver?.ForceRefresh();
+                            _resultsObserver?.OnResultsChanged(currentResults, searchString);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("Background monitor: Skipping refresh due to dialog or detail view");
+                        }
+                        
+                        // Small delay to ensure the console has stabilized
+                        await Task.Delay(50, windowMonitorCts.Token);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in window monitor task");
+                }
+            }
+        }, windowMonitorCts.Token);
 
         while (!cancellationToken.IsCancellationRequested)
         {
+
             ConsoleKeyInfo key;
             try
             {
@@ -111,7 +180,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
             catch (InvalidOperationException)
             {
                 // Console input is redirected, use fallback mode
-                System.Console.WriteLine("\nConsole input is redirected. Using fallback input mode.");
+                System.Console.WriteLine("\nConsole input is redirected. Using fallback mode.");
                 System.Console.WriteLine("Type your search term and press Enter (or 'quit' to exit):");
                 var input = System.Console.ReadLine();
                 if (input == null) continue;
@@ -182,9 +251,58 @@ public class ConsoleApplicationService : IConsoleApplicationService
                     }
                     else
                     {
-                        // Quit the application when Escape is pressed on main screen
-                        _logger.LogInformation("Escape pressed on main screen - exiting application");
-                        return;
+                        // If already at initial state, quit; otherwise, clear search/results
+                        if (string.IsNullOrWhiteSpace(searchString) && currentResults.Count == 0)
+                        {
+                            _logger.LogInformation("Escape pressed on main screen at initial state - showing quit confirmation");
+                            if (ShowQuitConfirmation())
+                            {
+                                _logger.LogInformation("User confirmed quit - exiting application");
+                                
+                                // Show a nice thank you message
+                                System.Console.Clear();
+                                var windowWidth = System.Console.WindowWidth;
+                                var windowHeight = System.Console.WindowHeight;
+                                
+                                var thankYouMessage = "Thank you for using CHAP2!";
+                                var subtitleMessage = "May your music bring joy and inspiration.";
+                                var farewellMessage = "Goodbye! 👋";
+                                
+                                var thankYouLeft = (windowWidth - thankYouMessage.Length) / 2;
+                                var subtitleLeft = (windowWidth - subtitleMessage.Length) / 2;
+                                var farewellLeft = (windowWidth - farewellMessage.Length) / 2;
+                                var centerRow = windowHeight / 2;
+                                
+                                System.Console.SetCursorPosition(thankYouLeft, centerRow - 1);
+                                System.Console.WriteLine(thankYouMessage);
+                                
+                                System.Console.SetCursorPosition(subtitleLeft, centerRow);
+                                System.Console.WriteLine(subtitleMessage);
+                                
+                                System.Console.SetCursorPosition(farewellLeft, centerRow + 1);
+                                System.Console.WriteLine(farewellMessage);
+                                
+                                // Small delay to show the message
+                                Thread.Sleep(1500);
+                                
+                                return;
+                            }
+                            else
+                            {
+                                _logger.LogInformation("User cancelled quit - returning to search");
+                                // Redraw the initial search screen
+                                _resultsObserver?.OnResultsChanged(currentResults, searchString);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogInformation("Escape pressed on main screen - clearing search and results");
+                            searchString = "";
+                            currentResults.Clear();
+                            _selectionService.UpdateTotalItems(0);
+                            _selectionService.ResetSelection();
+                            _resultsObserver?.OnResultsChanged(currentResults, searchString);
+                        }
                     }
                     break;
 
@@ -208,6 +326,17 @@ public class ConsoleApplicationService : IConsoleApplicationService
                     break;
 
                 default:
+                    if (isInDetailView)
+                    {
+                        // Allow manual refresh with 'R' or 'r' in detail view
+                        if (key.KeyChar == 'R' || key.KeyChar == 'r')
+                        {
+                            _logger.LogInformation("Manual refresh (R) pressed in detail view");
+                            if (selectedChorus != null)
+                                _displayService.DisplayChorusDetail(selectedChorus);
+                            break;
+                        }
+                    }
                     if (!isInDetailView)
                     {
                         // Handle number keys for song selection
@@ -260,6 +389,17 @@ public class ConsoleApplicationService : IConsoleApplicationService
                     }
                     break;
             }
+        }
+        
+        // Clean up the window monitor task
+        windowMonitorCts.Cancel();
+        try
+        {
+            await windowMonitorTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancelled
         }
     }
 
@@ -336,7 +476,14 @@ public class ConsoleApplicationService : IConsoleApplicationService
                 var results = await _apiClientService.SearchChorusesAsync(searchString, cancellationToken: cts.Token);
                 currentResults.Clear();
                 if (results != null)
-                    currentResults.AddRange(results);
+                {
+                    var lowerSearch = searchString.ToLowerInvariant();
+                    var sorted = results.OrderByDescending(r =>
+                        (!string.IsNullOrEmpty(r.Name) && r.Name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 2 :
+                        (!string.IsNullOrEmpty(r.ChorusText) && r.ChorusText.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 1 : 0
+                    ).ThenBy(r => r.Name).ToList();
+                    currentResults.AddRange(sorted);
+                }
                 _resultsObserver?.OnResultsChanged(currentResults, searchString);
                 _logger.LogInformation("Search for '{SearchString}' returned {ResultCount} results", searchString, currentResults.Count);
             }
@@ -446,11 +593,69 @@ public class ConsoleApplicationService : IConsoleApplicationService
 
     private void ReturnToSearch(ref bool isInDetailView, ref Chorus? selectedChorus, ref string searchString, ref List<Chorus> currentResults)
     {
+        _logger.LogInformation("Returning to search view from detail view");
+        
         isInDetailView = false;
         selectedChorus = null;
         _selectionService.IsInDetailView = false;
         searchString = "";
         currentResults.Clear();
+        
+        // Reset selection service for fresh start
+        _selectionService.UpdateTotalItems(0);
+        _selectionService.ResetSelection();
+        
+        _logger.LogInformation("Redrawing search view with empty results and search string");
+        _logger.LogInformation("Observer is null: {ObserverIsNull}", _resultsObserver == null);
+        
+        // Force a complete refresh
+        _resultsObserver?.ForceRefresh();
         _resultsObserver?.OnResultsChanged(currentResults, searchString);
+        
+        _logger.LogInformation("Search view redraw completed");
+        
+        // Small delay to let the display settle
+        Thread.Sleep(100);
+    }
+
+    private bool ShowQuitConfirmation()
+    {
+        // Set dialog flag to prevent background monitor interference
+        _isShowingDialog = true;
+        
+        var windowWidth = System.Console.WindowWidth;
+        var windowHeight = System.Console.WindowHeight;
+        
+        // Calculate center position for the dialog
+        var dialogWidth = 40;
+        var dialogHeight = 5;
+        var left = (windowWidth - dialogWidth) / 2;
+        var top = (windowHeight - dialogHeight) / 2;
+        
+        // Clear the screen
+        System.Console.Clear();
+        
+        // Draw the bordered dialog
+        DrawFrame(left, top, dialogWidth, dialogHeight);
+        
+        // Add the confirmation text
+        var message = "Are you sure you want to quit? (Y/N)";
+        var messageLeft = left + (dialogWidth - message.Length) / 2;
+        System.Console.SetCursorPosition(messageLeft, top + 2);
+        System.Console.Write(message);
+        
+        // Position cursor for input
+        System.Console.SetCursorPosition(left + dialogWidth / 2, top + 3);
+        
+        // Small delay to prevent background interference
+        Thread.Sleep(200);
+        
+        // Wait for key input
+        var key = System.Console.ReadKey(true);
+        
+        // Clear dialog flag
+        _isShowingDialog = false;
+        
+        return key.KeyChar == 'Y' || key.KeyChar == 'y';
     }
 } 
