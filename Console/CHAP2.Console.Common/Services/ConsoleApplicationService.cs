@@ -658,4 +658,26 @@ public class ConsoleApplicationService : IConsoleApplicationService
         
         return key.KeyChar == 'Y' || key.KeyChar == 'y';
     }
+
+    public void ClearScreenWithDelay(string message = "Goodbye!")
+    {
+        // Clear the screen
+        System.Console.Clear();
+        
+        // Center the message on screen
+        var windowWidth = System.Console.WindowWidth;
+        var windowHeight = System.Console.WindowHeight;
+        var left = (windowWidth - message.Length) / 2;
+        var top = windowHeight / 2;
+        
+        // Position cursor and write message
+        System.Console.SetCursorPosition(left, top);
+        System.Console.Write(message);
+        
+        // Wait 500ms before continuing
+        Thread.Sleep(500);
+        
+        // Clear the screen again
+        System.Console.Clear();
+    }
 } 

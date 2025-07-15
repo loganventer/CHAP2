@@ -9,4 +9,5 @@ public interface IConsoleApplicationService
     Task<List<Chorus>> SearchChorusesAsync(string searchTerm, CancellationToken cancellationToken = default);
     Task RunInteractiveSearchAsync(int searchDelayMs, int minSearchLength, CancellationToken cancellationToken = default);
     void RegisterResultsObserver(ISearchResultsObserver observer);
+    void ClearScreenWithDelay(string message = "Goodbye!");
 } 

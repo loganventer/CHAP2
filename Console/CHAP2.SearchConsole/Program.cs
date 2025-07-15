@@ -96,6 +96,12 @@ class Program
         {
             logger.LogError(ex, "An error occurred");
             System.Console.WriteLine($"Error: {ex.Message}");
+            
+            // Clear screen with delay before exiting on error
+            if (consoleService is ConsoleApplicationService errorConcreteService)
+            {
+                errorConcreteService.ClearScreenWithDelay("An error occurred. Exiting...");
+            }
         }
     }
 
@@ -108,10 +114,21 @@ class Program
         var isConnected = await consoleService.TestApiConnectivityAsync();
         if (!isConnected)
         {
+            // Clear screen with delay before exiting
+            if (consoleService is ConsoleApplicationService apiConcreteService)
+            {
+                apiConcreteService.ClearScreenWithDelay("API connection failed. Exiting...");
+            }
             return;
         }
 
         // Run interactive search
         await consoleService.RunInteractiveSearchAsync(searchDelayMs, minSearchLength);
+        
+        // Clear screen with delay after normal completion
+        if (consoleService is ConsoleApplicationService completionConcreteService)
+        {
+            completionConcreteService.ClearScreenWithDelay("Search completed. Goodbye!");
+        }
     }
 }
