@@ -3,6 +3,7 @@ using CHAP2.Domain.Entities;
 using CHAP2.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using CHAP2.Infrastructure.DTOs;
 
 namespace CHAP2.Infrastructure.Repositories;
 
@@ -24,7 +25,10 @@ public class DiskChorusRepository : IChorusRepository
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            Converters = { 
+                new CHAP2.Domain.ValueObjects.ChorusMetadataJsonConverter()
+            }
         };
         
         Directory.CreateDirectory(_folderPath);
@@ -42,7 +46,8 @@ public class DiskChorusRepository : IChorusRepository
         try
         {
             var json = await File.ReadAllTextAsync(fileName, cancellationToken);
-            var chorus = JsonSerializer.Deserialize<Chorus>(json, _jsonOptions);
+            var chorusDto = JsonSerializer.Deserialize<ChorusDto>(json, _jsonOptions);
+            var chorus = chorusDto?.ToEntity();
             
             if (chorus != null)
             {
@@ -93,8 +98,8 @@ public class DiskChorusRepository : IChorusRepository
                 try
                 {
                     var json = await File.ReadAllTextAsync(file, cancellationToken);
-                    var chorus = JsonSerializer.Deserialize<Chorus>(json, _jsonOptions);
-                    return chorus;
+                    var chorusDto = JsonSerializer.Deserialize<ChorusDto>(json, _jsonOptions);
+                    return chorusDto?.ToEntity();
                 }
                 catch (Exception ex)
                 {
@@ -133,7 +138,8 @@ public class DiskChorusRepository : IChorusRepository
         try
         {
             var fileName = Path.Combine(_folderPath, $"{chorus.Id}.json");
-            var json = JsonSerializer.Serialize(chorus, _jsonOptions);
+            var chorusDto = ChorusDto.FromEntity(chorus);
+            var json = JsonSerializer.Serialize(chorusDto, _jsonOptions);
             await File.WriteAllTextAsync(fileName, json, cancellationToken);
             
             _logger.LogInformation("Added chorus with ID {ChorusId} and name '{ChorusName}'", chorus.Id, chorus.Name);
@@ -153,7 +159,8 @@ public class DiskChorusRepository : IChorusRepository
         try
         {
             var fileName = Path.Combine(_folderPath, $"{chorus.Id}.json");
-            var json = JsonSerializer.Serialize(chorus, _jsonOptions);
+            var chorusDto = ChorusDto.FromEntity(chorus);
+            var json = JsonSerializer.Serialize(chorusDto, _jsonOptions);
             await File.WriteAllTextAsync(fileName, json, cancellationToken);
             
             _logger.LogInformation("Updated chorus with ID {ChorusId} and name '{ChorusName}'", chorus.Id, chorus.Name);

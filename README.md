@@ -27,6 +27,7 @@ CHAP2/
 - **CQRS**: Command and Query responsibilities are split into `IChorusCommandService` and `IChorusQueryService`.
 - **Domain Events**: Business events (e.g., `ChorusCreatedEvent`) are raised and dispatched via `IDomainEventDispatcher`.
 - **Repository Pattern**: Consistent naming (`GetByIdAsync`, `AddAsync`, etc.) and abstraction for data access.
+- **Domain Factory Methods**: `Chorus.Create()` for manual creation, `Chorus.CreateFromSlide()` for slide conversions.
 - **Dependency Injection**: All services and repositories are registered via DI for testability and flexibility.
 - **Testability**: All business logic is in the Application and Domain layers, easily unit tested.
 

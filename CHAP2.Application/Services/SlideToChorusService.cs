@@ -33,12 +33,9 @@ public class SlideToChorusService : ISlideToChorusService
             // In a real implementation, you would parse the PowerPoint file content
             // to extract the actual text content
             
-            var chorus = Chorus.Create(
+            var chorus = Chorus.CreateFromSlide(
                 name: chorusName,
-                chorusText: $"Converted from {filename}",
-                key: MusicalKey.NotSet,
-                type: ChorusType.NotSet,
-                timeSignature: TimeSignature.NotSet
+                chorusText: $"Converted from {filename}"
             );
 
             _logger.LogInformation("Successfully converted slide to chorus: {ChorusName}", chorus.Name);

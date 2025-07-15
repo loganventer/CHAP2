@@ -57,6 +57,32 @@ public class Chorus : IEquatable<Chorus>
         return chorus;
     }
 
+    /// <summary>
+    /// Create a chorus from slide conversion with default musical properties
+    /// </summary>
+    public static Chorus CreateFromSlide(string name, string chorusText)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Chorus name cannot be empty.");
+        
+        if (string.IsNullOrWhiteSpace(chorusText))
+            throw new DomainException("Chorus text cannot be empty.");
+
+        var chorus = new Chorus
+        {
+            Id = Guid.NewGuid(),
+            Name = name.Trim(),
+            ChorusText = chorusText.Trim(),
+            Key = MusicalKey.NotSet,
+            Type = ChorusType.NotSet,
+            TimeSignature = TimeSignature.NotSet,
+            CreatedAt = DateTime.UtcNow,
+            Metadata = new ChorusMetadata()
+        };
+        chorus.DomainEvents.Add(new ChorusCreatedEvent(chorus.Id, chorus.Name));
+        return chorus;
+    }
+
     public void Update(string name, string chorusText, MusicalKey key, ChorusType type, TimeSignature timeSignature)
     {
         if (string.IsNullOrWhiteSpace(name))
