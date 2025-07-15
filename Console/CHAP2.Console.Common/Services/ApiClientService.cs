@@ -3,6 +3,9 @@ using CHAP2.Console.Common.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Console.Common.Configuration;
 using CHAP2.Application.Interfaces;
+using CHAP2.Console.Common.DTOs;
+using CHAP2.Domain.Enums;
+using CHAP2.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Console.Common.Services;
@@ -89,11 +92,25 @@ public class ApiClientService : IApiClientService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                var responseJson = JsonSerializer.Deserialize<JsonElement>(responseContent);
-                
-                if (responseJson.TryGetProperty("chorus", out var chorusObj))
+                var options = new JsonSerializerOptions
                 {
-                    return JsonSerializer.Deserialize<Chorus>(chorusObj.GetRawText());
+                    PropertyNameCaseInsensitive = true
+                };
+                
+                var slideResponse = JsonSerializer.Deserialize<SlideConversionResponseDto>(responseContent, options);
+                if (slideResponse?.Chorus != null)
+                {
+                    var chorus = Chorus.CreateFromSlide(slideResponse.Chorus.Name, slideResponse.Chorus.ChorusText);
+                    
+                    // Update the ID to match the one from the API
+                    var chorusType = typeof(Chorus);
+                    var idProperty = chorusType.GetProperty("Id");
+                    if (idProperty != null)
+                    {
+                        idProperty.SetValue(chorus, Guid.Parse(slideResponse.Chorus.Id));
+                    }
+                    
+                    return chorus;
                 }
             }
             else
@@ -127,18 +144,32 @@ public class ApiClientService : IApiClientService
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("Search API response: {Content}", content);
-                var searchResult = JsonSerializer.Deserialize<JsonElement>(content);
                 
-                if (searchResult.TryGetProperty("results", out var results))
+                var options = new JsonSerializerOptions
                 {
-                    _logger.LogInformation("Raw results JSON: {ResultsJson}", results.GetRawText());
-                    
-                    var options = new JsonSerializerOptions
+                    PropertyNameCaseInsensitive = true
+                };
+                
+                var searchResponse = JsonSerializer.Deserialize<SearchResponseDto>(content, options);
+                if (searchResponse?.Results != null)
+                {
+                    var choruses = new List<Chorus>();
+                    foreach (var dto in searchResponse.Results)
                     {
-                        PropertyNameCaseInsensitive = true
-                    };
+                        // Create chorus using factory method with default values for slide-converted choruses
+                        var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                        
+                        // Update the ID to match the one from the API
+                        var chorusType = typeof(Chorus);
+                        var idProperty = chorusType.GetProperty("Id");
+                        if (idProperty != null)
+                        {
+                            idProperty.SetValue(chorus, Guid.Parse(dto.Id));
+                        }
+                        
+                        choruses.Add(chorus);
+                    }
                     
-                    var choruses = JsonSerializer.Deserialize<List<Chorus>>(results.GetRawText(), options) ?? new List<Chorus>();
                     _logger.LogInformation("Deserialized {Count} choruses from search results", choruses.Count);
                     foreach (var chorus in choruses)
                     {
@@ -149,7 +180,7 @@ public class ApiClientService : IApiClientService
                 }
                 else
                 {
-                    _logger.LogWarning("No 'results' property found in search response");
+                    _logger.LogWarning("No results found in search response");
                 }
             }
             else
@@ -176,7 +207,26 @@ public class ApiClientService : IApiClientService
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                return JsonSerializer.Deserialize<Chorus>(content);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                
+                var chorusDto = JsonSerializer.Deserialize<ChorusResponseDto>(content, options);
+                if (chorusDto != null)
+                {
+                    var chorus = Chorus.CreateFromSlide(chorusDto.Name, chorusDto.ChorusText);
+                    
+                    // Update the ID to match the one from the API
+                    var chorusType = typeof(Chorus);
+                    var idProperty = chorusType.GetProperty("Id");
+                    if (idProperty != null)
+                    {
+                        idProperty.SetValue(chorus, Guid.Parse(chorusDto.Id));
+                    }
+                    
+                    return chorus;
+                }
             }
 
             return null;
@@ -197,7 +247,26 @@ public class ApiClientService : IApiClientService
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                return JsonSerializer.Deserialize<Chorus>(content);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                
+                var chorusDto = JsonSerializer.Deserialize<ChorusResponseDto>(content, options);
+                if (chorusDto != null)
+                {
+                    var chorus = Chorus.CreateFromSlide(chorusDto.Name, chorusDto.ChorusText);
+                    
+                    // Update the ID to match the one from the API
+                    var chorusType = typeof(Chorus);
+                    var idProperty = chorusType.GetProperty("Id");
+                    if (idProperty != null)
+                    {
+                        idProperty.SetValue(chorus, Guid.Parse(chorusDto.Id));
+                    }
+                    
+                    return chorus;
+                }
             }
 
             return null;
@@ -218,7 +287,32 @@ public class ApiClientService : IApiClientService
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                return JsonSerializer.Deserialize<List<Chorus>>(content) ?? new List<Chorus>();
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                
+                var chorusDtos = JsonSerializer.Deserialize<List<ChorusResponseDto>>(content, options);
+                if (chorusDtos != null)
+                {
+                    var choruses = new List<Chorus>();
+                    foreach (var dto in chorusDtos)
+                    {
+                        var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                        
+                        // Update the ID to match the one from the API
+                        var chorusType = typeof(Chorus);
+                        var idProperty = chorusType.GetProperty("Id");
+                        if (idProperty != null)
+                        {
+                            idProperty.SetValue(chorus, Guid.Parse(dto.Id));
+                        }
+                        
+                        choruses.Add(chorus);
+                    }
+                    
+                    return choruses;
+                }
             }
 
             return new List<Chorus>();
