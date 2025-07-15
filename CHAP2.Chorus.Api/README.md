@@ -8,7 +8,7 @@ A .NET Web API for managing musical choruses, following **IDesign Clean Architec
 
 - **Domain Layer**: Rich entities, enums, value objects, and domain events (e.g., `ChorusCreatedEvent`).
 - **Application Layer**: CQRS services (`IChorusQueryService`, `IChorusCommandService`), orchestrating use cases and dispatching domain events.
-- **Infrastructure Layer**: Repository implementations (e.g., `DiskChorusRepository`) with consistent async method naming.
+- **Infrastructure Layer**: Repository implementations (e.g., `DiskChorusRepository`) with consistent async method naming and DTO pattern for data persistence.
 - **API Layer**: Controllers delegate to application services, use DI, and support async/cancellation.
 
 ---
@@ -18,6 +18,15 @@ A .NET Web API for managing musical choruses, following **IDesign Clean Architec
 - **CQRS**: All reads go through `IChorusQueryService`, all writes through `IChorusCommandService`.
 - **Domain Events**: Raised in the domain model and dispatched by `IDomainEventDispatcher` after state changes.
 - **Repository Naming**: All repositories use `GetByIdAsync`, `GetByNameAsync`, `AddAsync`, `UpdateAsync`, `DeleteAsync`, etc.
+
+---
+
+## 📊 Data Persistence Strategy
+
+- **DTO Pattern**: `ChorusDto` in Infrastructure layer handles JSON serialization/deserialization, preserving domain purity.
+- **Backward Compatibility**: JSON converters handle legacy data format while maintaining clean domain model.
+- **File Storage**: Each chorus stored as individual JSON file with GUID-based naming in `data/chorus/`.
+- **Metadata Handling**: Musical key, type, and time signature properly serialized with enum values.
 
 ---
 
