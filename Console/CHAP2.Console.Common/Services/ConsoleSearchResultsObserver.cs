@@ -194,11 +194,14 @@ public class ConsoleSearchResultsObserver : ISearchResultsObserver
         // Get console window width to handle long search terms
         var windowWidth = System.Console.WindowWidth;
         var maxSearchTermLength = windowWidth - _settings.SearchPromptPrefixLength - _settings.SafetyMargin;
+        if (maxSearchTermLength < 0) maxSearchTermLength = 0;
         
         if (searchTerm.Length > maxSearchTermLength)
         {
             // Truncate the search term for display but keep the full term for functionality
-            var displayTerm = searchTerm.Substring(0, maxSearchTermLength - _settings.TruncationSuffixLength) + _settings.TruncationSuffix;
+            var substringLength = maxSearchTermLength - _settings.TruncationSuffixLength;
+            if (substringLength < 0) substringLength = 0;
+            var displayTerm = searchTerm.Substring(0, substringLength) + _settings.TruncationSuffix;
             System.Console.Write(displayTerm);
         }
         else
