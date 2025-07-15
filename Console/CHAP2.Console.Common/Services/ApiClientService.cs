@@ -1,6 +1,8 @@
 using System.Text.Json;
 using CHAP2.Console.Common.Interfaces;
 using CHAP2.Common.Models;
+using CHAP2.Console.Common.Configuration;
+using CHAP2.Common.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Console.Common.Services;
@@ -10,12 +12,14 @@ public class ApiClientService : IApiClientService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ApiClientService> _logger;
     private readonly ISearchCacheService _cache;
+    private readonly ConsoleApiSettings _settings;
 
-    public ApiClientService(IHttpClientFactory httpClientFactory, ILogger<ApiClientService> logger, ISearchCacheService cache)
+    public ApiClientService(IHttpClientFactory httpClientFactory, ILogger<ApiClientService> logger, ISearchCacheService cache, IConfigurationService configService)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _cache = cache;
+        _settings = configService.GetConfiguration<ConsoleApiSettings>("ConsoleApiSettings");
     }
 
     public async Task<bool> TestConnectivityAsync(CancellationToken cancellationToken = default)
@@ -32,7 +36,7 @@ public class ApiClientService : IApiClientService
             }
             
             // Add a timeout to prevent hanging
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_settings.ConnectivityTestTimeoutSeconds));
             using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
             
             var response = await httpClient.GetAsync("/api/health/ping", combinedCts.Token);
@@ -46,7 +50,7 @@ public class ApiClientService : IApiClientService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogError("API connectivity test timed out after 10 seconds");
+            _logger.LogError("API connectivity test timed out after {TimeoutSeconds} seconds", _settings.ConnectivityTestTimeoutSeconds);
             return false;
         }
         catch (Exception ex)
@@ -140,7 +144,7 @@ public class ApiClientService : IApiClientService
                     {
                         _logger.LogInformation("Chorus: Id={Id}, Name='{Name}', Type={Type}", chorus?.Id, chorus?.Name, chorus?.Type);
                     }
-                    _cache.Set(searchTerm, choruses, TimeSpan.FromMinutes(10));
+                    _cache.Set(searchTerm, choruses, TimeSpan.FromMinutes(_settings.CacheDurationMinutes));
                     return choruses;
                 }
                 else

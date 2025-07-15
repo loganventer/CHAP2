@@ -112,6 +112,7 @@ public class ChorusesController : ChapControllerAbstractBase
         {
             "name" => await _searchService.SearchByNameAsync(q, searchMode, cancellationToken),
             "text" => await _searchService.SearchByTextAsync(q, searchMode, cancellationToken),
+            "key" => await _searchService.SearchByKeyAsync(q, searchMode, cancellationToken),
             "all" or _ => await _searchService.SearchAllAsync(q, searchMode, cancellationToken)
         };
 
@@ -180,4 +181,6 @@ public class ChorusesController : ChapControllerAbstractBase
         await _chorusResource.UpdateChorusAsync(chorus, cancellationToken);
         return Ok(chorus);
     }
+
+
 } 

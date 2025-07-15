@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using CHAP2.Console.Common.Interfaces;
 using CHAP2.Console.Common.Services;
 using CHAP2.Console.Common.Configuration;
+using CHAP2.Common.Interfaces;
+using CHAP2.Common.Services;
 
 namespace CHAP2.SearchConsole;
 
@@ -36,16 +38,29 @@ class Program
                     System.Console.WriteLine($"HttpClient BaseAddress set to: {client.BaseAddress}");
                 });
                 
+                // Register IConfigurationService
+                services.AddSingleton<IConfigurationService>(provider =>
+                {
+                    return new ConfigurationService(configuration);
+                });
+                
                 // Configure settings
                 services.Configure<ConsoleSettings>(
                     configuration.GetSection("ConsoleSettings"));
                 services.Configure<ApiClientSettings>(
                     configuration.GetSection("ApiClientSettings"));
+                services.Configure<ConsoleDisplaySettings>(
+                    configuration.GetSection("ConsoleDisplaySettings"));
+                services.Configure<ConsoleApiSettings>(
+                    configuration.GetSection("ConsoleApiSettings"));
                 
                 // Register services
                 services.AddSingleton<ISearchCacheService, MemorySearchCacheService>();
                 services.AddScoped<IApiClientService, ApiClientService>();
+                services.AddScoped<IConsoleDisplayService, ConsoleDisplayService>();
                 services.AddScoped<IConsoleApplicationService, ConsoleApplicationService>();
+                services.AddScoped<ISearchResultsObserver, ConsoleSearchResultsObserver>();
+                services.AddScoped<ISelectionService, SelectionService>();
             })
             .Build();
 
@@ -66,7 +81,7 @@ class Program
         
         var consoleService = scope.ServiceProvider.GetRequiredService<IConsoleApplicationService>();
         // Register the observer
-        var observer = new ConsoleSearchResultsObserver();
+        var observer = scope.ServiceProvider.GetRequiredService<ISearchResultsObserver>();
         if (consoleService is ConsoleApplicationService concreteService)
         {
             concreteService.RegisterResultsObserver(observer);

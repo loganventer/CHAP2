@@ -8,6 +8,5 @@ public interface IConsoleApplicationService
     Task<Chorus?> ConvertSlideFileAsync(string filePath, CancellationToken cancellationToken = default);
     Task<List<Chorus>> SearchChorusesAsync(string searchTerm, CancellationToken cancellationToken = default);
     Task RunInteractiveSearchAsync(int searchDelayMs, int minSearchLength, CancellationToken cancellationToken = default);
-    void DisplayChorus(Chorus chorus);
-    void DisplayChoruses(List<Chorus> choruses);
+    void RegisterResultsObserver(ISearchResultsObserver observer);
 } 

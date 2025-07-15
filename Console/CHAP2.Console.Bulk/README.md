@@ -1,16 +1,16 @@
-# CHAP2Console
+# CHAP2.Console.Bulk
 
-A console debugging application for testing the CHAP2API slide conversion endpoint.
+A console application for bulk conversion of PowerPoint files to choruses.
 
 ## Features
 
-- Reads .ppsx files from the file system
+- Recursively scans directories for .ppsx and .pptx files
 - Sends binary data to the slide conversion endpoint
-- Searches for choruses containing "heer" after upload
-- Displays all matching choruses with detailed information
+- Processes multiple files in batch operations
+- Real-time progress tracking during conversion
 - Configurable API base URL
 - Command-line argument support
-- JSON response formatting
+- Comprehensive error handling and reporting
 
 ## Configuration
 

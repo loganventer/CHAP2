@@ -17,22 +17,33 @@ This project provides reusable services and interfaces that are shared across mu
   - Error handling and logging
   - HTTP client factory integration
 
-### SearchService
-- **Interface**: `ISearchService`
-- **Purpose**: Provides search functionality for choruses
+### ConsoleDisplayService
+- **Interface**: `IConsoleDisplayService`
+- **Purpose**: Handles console UI display operations
 - **Features**:
-  - Real-time search with configurable delays
-  - Minimum search length validation
-  - Search cancellation support
-  - Result formatting with highlighted matches
+  - Chorus detail display formatting
+  - Screen layout and positioning
+  - Text normalization and wrapping
+  - Console output management
 
-### RegexHelperService
-- **Interface**: `IRegexHelperService`
-- **Purpose**: Provides regex functionality for search operations
+### SelectionService
+- **Interface**: `ISelectionService`
+- **Purpose**: Manages selection state and navigation
 - **Features**:
-  - Case-insensitive regex matching
-  - Reusable regex patterns
-  - Performance optimization
+  - Selection index tracking
+  - Navigation (up/down) logic
+  - Number-based selection
+  - Auto-selection for single results
+  - Detail view state management
+
+### ConsoleSearchResultsObserver
+- **Interface**: `ISearchResultsObserver`
+- **Purpose**: Observer pattern implementation for search result updates
+- **Features**:
+  - Real-time UI updates
+  - Selection highlighting
+  - Column-based result display
+  - Context-aware text truncation
 
 ### MemorySearchCacheService
 - **Interface**: `ISearchCacheService`
@@ -49,7 +60,25 @@ This project provides reusable services and interfaces that are shared across mu
 - **Purpose**: Observer pattern interface for search result updates
 - **Usage**: Implemented by UI components to receive real-time search updates
 - **Methods**:
-  - `OnSearchResultsChanged()`: Called when search results change
+  - `OnResultsChanged()`: Called when search results change
+
+### IConsoleDisplayService
+- **Purpose**: Interface for console display operations
+- **Usage**: Injected into console applications for UI operations
+- **Methods**:
+  - `DisplayChorus()`: Display single chorus
+  - `DisplayChoruses()`: Display list of choruses
+  - `DisplayChorusDetail()`: Display chorus in detail view
+  - `ClearScreen()`, `SetCursorPosition()`, `WriteLine()`, `Write()`: Console I/O operations
+
+### ISelectionService
+- **Purpose**: Interface for selection state management
+- **Usage**: Manages navigation and selection in console applications
+- **Methods**:
+  - `MoveUp()`, `MoveDown()`: Navigation
+  - `SelectCurrent()`: Select current item
+  - `TrySelectByNumber()`: Number-based selection
+  - `UpdateTotalItems()`: Update available items count
 
 ## Configuration
 
@@ -63,14 +92,16 @@ The library supports configuration through `IConfiguration` for:
 
 ```csharp
 // Register services in DI container
-services.AddSingleton<IApiClientService, ApiClientService>();
-services.AddSingleton<ISearchService, SearchService>();
-services.AddSingleton<IRegexHelperService, RegexHelperService>();
+services.AddScoped<IApiClientService, ApiClientService>();
+services.AddScoped<IConsoleDisplayService, ConsoleDisplayService>();
+services.AddScoped<ISelectionService, SelectionService>();
+services.AddScoped<ISearchResultsObserver, ConsoleSearchResultsObserver>();
 services.AddSingleton<ISearchCacheService, MemorySearchCacheService>();
 
 // Use in console applications
-var searchService = serviceProvider.GetRequiredService<ISearchService>();
-var results = await searchService.SearchAsync("search term");
+var displayService = serviceProvider.GetRequiredService<IConsoleDisplayService>();
+var selectionService = serviceProvider.GetRequiredService<ISelectionService>();
+displayService.DisplayChorusDetail(chorus);
 ```
 
 ## Architecture Benefits

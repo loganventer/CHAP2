@@ -33,6 +33,8 @@ class Program
                     configuration.GetSection("BulkConversionSettings"));
                 services.Configure<ApiClientSettings>(
                     configuration.GetSection("ApiClientSettings"));
+                services.Configure<ConsoleApiSettings>(
+                    configuration.GetSection("ConsoleApiSettings"));
                 
                 // Register services
                 services.AddScoped<IBulkUploadService, BulkUploadService>();

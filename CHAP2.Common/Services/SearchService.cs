@@ -63,6 +63,31 @@ public class SearchService : ISearchService
         return results;
     }
 
+    public async Task<IReadOnlyList<Chorus>> SearchByKeyAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
+        
+        var allChoruses = await _chorusResource.GetAllChorusesAsync(cancellationToken);
+        var results = new List<Chorus>();
+
+        foreach (var chorus in allChoruses)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            // Convert the key to string for searching
+            var keyString = chorus.Key.ToString();
+            if (MatchesSearch(keyString, searchTerm, searchMode))
+            {
+                results.Add(chorus);
+            }
+        }
+
+        _logger.LogInformation("SearchByKey found {Count} results for term '{SearchTerm}' with mode {SearchMode}", 
+            results.Count, searchTerm, searchMode);
+        
+        return results;
+    }
+
     public async Task<IReadOnlyList<Chorus>> SearchAllAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);

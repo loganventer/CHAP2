@@ -82,8 +82,9 @@ GET    /api/health/ping           # Health check
 #### CHAP2.Console.Common
 - **Shared Services** - Common services and interfaces for console applications
 - **ApiClientService** - HTTP communication with CHAP2API
-- **SearchService** - Search functionality with caching
-- **RegexHelperService** - Regex operations and utilities
+- **ConsoleDisplayService** - UI display operations and text formatting
+- **SelectionService** - Selection state management and navigation
+- **ConsoleSearchResultsObserver** - Observer pattern for search result updates
 - **MemorySearchCacheService** - 10-minute memory cache for search results
 
 #### Usage:
@@ -118,8 +119,15 @@ Centralized HTTP communication service providing:
 Business logic service for console applications providing:
 - Interactive search functionality
 - Observer-based UI updates
-- Display formatting for choruses
 - Error handling and user feedback
+- Search orchestration and navigation logic
+
+### IConsoleDisplayService
+UI service for console display operations providing:
+- Chorus detail display formatting
+- Screen layout and positioning
+- Text normalization and wrapping
+- Console output management
 
 ### IRegexHelperService
 Shared regex utility service providing:
@@ -220,9 +228,24 @@ The console applications provide interactive testing:
 ```json
 {
   "ApiBaseUrl": "http://localhost:5000",
-  "SearchDelayMs": 300,
+  "SearchDelayMs": 500,
   "MinSearchLength": 2,
-  "CacheDurationMinutes": 10
+  "ConsoleSettings": {
+    "MaxDisplayResults": 10,
+    "ClearScreenOnSearch": true
+  },
+  "ConsoleDisplaySettings": {
+    "HeaderLines": 3,
+    "SearchPromptLines": 2,
+    "MinResultsToShow": 1,
+    "MinTitleColumnWidth": 30,
+    "MinKeyColumnWidth": 8,
+    "TotalContextCharacters": 20
+  },
+  "ApiClientSettings": {
+    "TimeoutSeconds": 30,
+    "RetryAttempts": 3
+  }
 }
 ```
 
