@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using CHAP2.Common.Models;
+using CHAP2.Domain.Entities;
 using CHAP2.Console.Common.Interfaces;
 
 namespace CHAP2.Console.Common.Services;

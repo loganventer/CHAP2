@@ -7,7 +7,7 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/CHAP2API/CHAP2API.csproj"
+        "${workspaceFolder}/CHAP2.Chorus.Api/CHAP2.Chorus.Api.csproj"
       ],
       "group": {
         "kind": "build",
@@ -16,11 +16,11 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "build CHAP2API",
+      "label": "build CHAP2.Chorus.Api",
       "type": "process",
       "command": "dotnet",
       "args": ["build"],
-      "options": { "cwd": "${workspaceFolder}/CHAP2API" },
+      "options": { "cwd": "${workspaceFolder}/CHAP2.Chorus.Api" },
       "problemMatcher": "$msCompile"
     },
     {
@@ -40,10 +40,10 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "run CHAP2API",
+      "label": "run CHAP2.Chorus.Api",
       "type": "shell",
       "command": "dotnet run",
-      "options": { "cwd": "${workspaceFolder}/CHAP2API" }
+      "options": { "cwd": "${workspaceFolder}/CHAP2.Chorus.Api" }
     },
     {
       "label": "run CHAP2SearchConsole",

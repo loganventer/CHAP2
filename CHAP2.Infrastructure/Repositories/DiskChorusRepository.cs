@@ -1,0 +1,227 @@
+using CHAP2.Application.Interfaces;
+using CHAP2.Domain.Entities;
+using CHAP2.Domain.Enums;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
+
+namespace CHAP2.Infrastructure.Repositories;
+
+public class DiskChorusRepository : IChorusRepository
+{
+    private readonly string _folderPath;
+    private readonly ILogger<DiskChorusRepository> _logger;
+    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly SemaphoreSlim _fileLock = new(1, 1);
+
+    public DiskChorusRepository(string folderPath, ILogger<DiskChorusRepository> logger)
+    {
+        _folderPath = Path.IsPathRooted(folderPath)
+            ? folderPath
+            : Path.Combine(Directory.GetCurrentDirectory(), folderPath);
+        _logger = logger;
+        
+        _jsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+        
+        Directory.CreateDirectory(_folderPath);
+    }
+
+    public async Task<Chorus?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var fileName = Path.Combine(_folderPath, $"{id}.json");
+        if (!File.Exists(fileName))
+        {
+            _logger.LogDebug("Chorus with ID {ChorusId} not found", id);
+            return null;
+        }
+            
+        try
+        {
+            var json = await File.ReadAllTextAsync(fileName, cancellationToken);
+            var chorus = JsonSerializer.Deserialize<Chorus>(json, _jsonOptions);
+            
+            if (chorus != null)
+            {
+                _logger.LogDebug("Retrieved chorus with ID {ChorusId} and name '{ChorusName}'", id, chorus.Name);
+            }
+            
+            return chorus;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reading chorus with ID {ChorusId} from file {FileName}", id, fileName);
+            return null;
+        }
+    }
+
+    public async Task<Chorus?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        
+        var allChoruses = await GetAllAsync(cancellationToken);
+        var chorus = allChoruses.FirstOrDefault(c => 
+            string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+            
+        if (chorus != null)
+        {
+            _logger.LogDebug("Found chorus with name '{ChorusName}' and ID {ChorusId}", name, chorus.Id);
+        }
+        else
+        {
+            _logger.LogDebug("No chorus found with name '{ChorusName}'", name);
+        }
+        
+        return chorus;
+    }
+
+    public async Task<IReadOnlyList<Chorus>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var files = Directory.GetFiles(_folderPath, "*.json");
+            if (files.Length == 0)
+            {
+                return new List<Chorus>();
+            }
+
+            var tasks = files.Select(async file =>
+            {
+                try
+                {
+                    var json = await File.ReadAllTextAsync(file, cancellationToken);
+                    var chorus = JsonSerializer.Deserialize<Chorus>(json, _jsonOptions);
+                    return chorus;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to deserialize chorus from file {FileName}", file);
+                    return null;
+                }
+            });
+
+            var results = await Task.WhenAll(tasks);
+            var validChoruses = results.OfType<Chorus>().ToList();
+            
+            _logger.LogInformation("Loaded {Count} choruses from {FileCount} files", validChoruses.Count, files.Length);
+            return validChoruses;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading choruses from directory {FolderPath}", _folderPath);
+            throw;
+        }
+    }
+
+    public async Task<IReadOnlyList<Chorus>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        
+        var tasks = ids.Select(id => GetByIdAsync(id, cancellationToken));
+        var results = await Task.WhenAll(tasks);
+        return results.OfType<Chorus>().ToList();
+    }
+
+    public async Task<Chorus> AddAsync(Chorus chorus, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(chorus);
+        
+        await _fileLock.WaitAsync(cancellationToken);
+        try
+        {
+            var fileName = Path.Combine(_folderPath, $"{chorus.Id}.json");
+            var json = JsonSerializer.Serialize(chorus, _jsonOptions);
+            await File.WriteAllTextAsync(fileName, json, cancellationToken);
+            
+            _logger.LogInformation("Added chorus with ID {ChorusId} and name '{ChorusName}'", chorus.Id, chorus.Name);
+            return chorus;
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
+    }
+
+    public async Task<Chorus> UpdateAsync(Chorus chorus, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(chorus);
+        
+        await _fileLock.WaitAsync(cancellationToken);
+        try
+        {
+            var fileName = Path.Combine(_folderPath, $"{chorus.Id}.json");
+            var json = JsonSerializer.Serialize(chorus, _jsonOptions);
+            await File.WriteAllTextAsync(fileName, json, cancellationToken);
+            
+            _logger.LogInformation("Updated chorus with ID {ChorusId} and name '{ChorusName}'", chorus.Id, chorus.Name);
+            return chorus;
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var fileName = Path.Combine(_folderPath, $"{id}.json");
+        if (!File.Exists(fileName))
+        {
+            _logger.LogWarning("Attempted to delete non-existent chorus with ID {ChorusId}", id);
+            return;
+        }
+
+        await _fileLock.WaitAsync(cancellationToken);
+        try
+        {
+            File.Delete(fileName);
+            _logger.LogInformation("Deleted chorus with ID {ChorusId}", id);
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
+    }
+
+    public async Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        
+        var allChoruses = await GetAllAsync(cancellationToken);
+        var exists = allChoruses.Any(c => 
+            string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+            
+        _logger.LogDebug("Chorus with name '{ChorusName}' exists: {Exists}", name, exists);
+        return exists;
+    }
+
+    public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var fileName = Path.Combine(_folderPath, $"{id}.json");
+        return Task.FromResult(File.Exists(fileName));
+    }
+
+    public async Task<IReadOnlyList<Chorus>> SearchAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
+        
+        var all = await GetAllAsync(cancellationToken);
+        return all.Where(c => c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                             c.ChorusText.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    public async Task<IReadOnlyList<Chorus>> GetByKeyAsync(MusicalKey key, CancellationToken cancellationToken = default)
+    {
+        var all = await GetAllAsync(cancellationToken);
+        return all.Where(c => c.Key == key).ToList();
+    }
+
+    public async Task<IReadOnlyList<Chorus>> GetByTimeSignatureAsync(TimeSignature timeSignature, CancellationToken cancellationToken = default)
+    {
+        var all = await GetAllAsync(cancellationToken);
+        return all.Where(c => c.TimeSignature == timeSignature).ToList();
+    }
+} 

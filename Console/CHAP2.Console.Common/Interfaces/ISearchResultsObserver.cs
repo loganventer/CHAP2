@@ -1,7 +1,7 @@
 namespace CHAP2.Console.Common.Interfaces;
 
 using System.Collections.Generic;
-using CHAP2.Common.Models;
+using CHAP2.Domain.Entities;
 
 public interface ISearchResultsObserver
 {

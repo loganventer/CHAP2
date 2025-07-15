@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using CHAP2.Console.Common.Configuration;
-using CHAP2.Common.Models;
+using CHAP2.Domain.Entities;
 using System.Text.Json;
 
 namespace CHAP2.Console.Bulk.Services;

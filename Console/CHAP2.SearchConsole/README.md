@@ -1,6 +1,6 @@
 # CHAP2.SearchConsole
 
-A console application for the CHAP2API providing interactive, real-time search for choruses.
+A console application for the CHAP2.Chorus.Api providing interactive, real-time search for choruses using CQRS and shared services.
 
 ## Features
 
@@ -13,6 +13,7 @@ A console application for the CHAP2API providing interactive, real-time search f
 - **Cancellation support**: Previous searches cancelled when new input arrives
 - **Memory cache**: Search results are cached in memory for 10 minutes, reducing redundant API calls and improving responsiveness
 - **Observer-based UI**: The search UI uses an observer pattern to keep the prompt at the top and results below, updating only the results area for a smooth, flicker-free experience
+- **CQRS**: All search operations use the query service (`IChorusQueryService`) via the shared `ApiClientService`.
 
 ## Usage
 
@@ -24,13 +25,11 @@ A console application for the CHAP2API providing interactive, real-time search f
 ## Configuration
 
 Edit `appsettings.json` to configure:
-
-- `ApiBaseUrl`: The base URL of the CHAP2API (default: http://localhost:5000)
+- `ApiBaseUrl`: The base URL of the CHAP2.Chorus.Api (default: http://localhost:5000)
 - `SearchDelayMs`: Delay before triggering search (default: 300ms)
 - `MinSearchLength`: Minimum characters before searching (default: 2)
 
 ## Interactive Search Controls
-
 - **Type**: Enter search terms character by character
 - **Backspace**: Remove characters from search term
 - **Escape**: Clear the current search term
@@ -68,36 +67,21 @@ Search: heer g (1 results)
 === SINGLE CHORUS FOUND ===
   Id: 12345678-1234-1234-1234-123456789abc
   Name: Hy is Heer G
-  Key: NotSet
-  TimeSignature: NotSet
-  Type: NotSet
-  ChorusText:
-  Hy is Heer, Hy is Heer
-  Hy is Heer, Hy is Heer
-  Hy is Heer, Hy is Heer
   ...
 ```
 
 ## Prerequisites
-
-1. Make sure the CHAP2API is running on the configured URL
+1. Make sure the CHAP2.Chorus.Api is running on the configured URL
 2. The API must have the search endpoint available (`/api/choruses/search`)
 
-## Performance
-
-- **Debounced searches**: Reduces API calls with configurable delay
-- **Cancellation support**: Previous searches are cancelled when new input arrives
-- **Minimum search length**: Prevents unnecessary API calls for short terms
-- **Efficient display**: Shows relevant information without overwhelming output
+## Troubleshooting
+- **API not reachable**: Check `ApiBaseUrl` and ensure the API is running.
+- **No results**: Try a different search term or check API data.
+- **Network errors**: Check your connection and API logs.
 
 ## Architecture Benefits
-
-- **Separation of Concerns**: Console logic separated from HTTP communication
-- **Dependency Injection**: Services properly configured and testable
-- **Shared Services**: Business logic reused across applications
-- **Error Handling**: Centralized error handling in service layer
-- **Maintainability**: Easy to modify business logic in one place
-- **Configuration-driven**: Environment-specific settings
-- **Modular Design**: Easy to add new features
-- **Memory Cache Layer**: Search results are cached for 10 minutes in a common-layer service, reducing API load and improving performance
-- **Observer Pattern UI**: The UI uses an observer pattern to keep the search prompt at the top and results below, updating only the results area for a modern, responsive experience 
+- **CQRS**: All search operations use the query service.
+- **Observer Pattern UI**: UI updates only the results area for a modern, responsive experience.
+- **Memory Cache Layer**: Search results are cached for 10 minutes in a common-layer service, reducing API load and improving performance.
+- **Shared Services**: Uses `ApiClientService` and `ConsoleDisplayService` from CHAP2.Console.Common.
+- **Maintainability**: Easy to extend for new search features or UI improvements. 

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using CHAP2.Common.Models;
+using CHAP2.Domain.Entities;
 
 namespace CHAP2.Console.Common.Interfaces;
 

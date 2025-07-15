@@ -1,8 +1,8 @@
 using System.Text.Json;
 using CHAP2.Console.Common.Interfaces;
-using CHAP2.Common.Models;
+using CHAP2.Domain.Entities;
 using CHAP2.Console.Common.Configuration;
-using CHAP2.Common.Interfaces;
+using CHAP2.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Console.Common.Services;

@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 using CHAP2.Console.Common.Interfaces;
 using CHAP2.Console.Common.Services;
 using CHAP2.Console.Common.Configuration;
-using CHAP2.Common.Interfaces;
-using CHAP2.Common.Services;
+using CHAP2.Application.Interfaces;
+using CHAP2.Application.Services;
 
 namespace CHAP2.SearchConsole;
 

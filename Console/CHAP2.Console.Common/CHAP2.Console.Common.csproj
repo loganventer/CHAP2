@@ -12,7 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../CHAP2.Common/CHAP2.Common.csproj" />
+    <ProjectReference Include="../../CHAP2.Application/CHAP2.Application.csproj" />
+    <ProjectReference Include="../../CHAP2.Infrastructure/CHAP2.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

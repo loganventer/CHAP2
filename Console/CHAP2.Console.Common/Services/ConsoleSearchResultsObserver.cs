@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CHAP2.Common.Models;
-using CHAP2.Common.Enum;
+using CHAP2.Domain.Entities;
+using CHAP2.Domain.Enums;
 using CHAP2.Console.Common.Interfaces;
 using CHAP2.Console.Common.Configuration;
 using Microsoft.Extensions.Options;

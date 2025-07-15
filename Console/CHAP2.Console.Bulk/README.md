@@ -1,22 +1,27 @@
 # CHAP2.Console.Bulk
 
-A console application for bulk conversion of PowerPoint files to choruses.
+A console application for bulk conversion of PowerPoint files to choruses, using CQRS and shared services from CHAP2.Console.Common.
 
 ## Features
 
 - Recursively scans directories for .ppsx and .pptx files
-- Sends binary data to the slide conversion endpoint
+- Sends binary data to the slide conversion endpoint of CHAP2.Chorus.Api
 - Processes multiple files in batch operations
 - Real-time progress tracking during conversion
 - Configurable API base URL
 - Command-line argument support
 - Comprehensive error handling and reporting
+- Uses shared API client and display services from CHAP2.Console.Common
+
+## CQRS & Architecture
+- All API communication uses the shared `ApiClientService`.
+- Follows repository and service naming conventions (`AddAsync`, `GetByNameAsync`, etc.).
+- Clean separation of concerns for maintainability and testability.
 
 ## Configuration
 
 Edit `appsettings.json` to configure:
-
-- `ApiBaseUrl`: The base URL of the CHAP2API (default: http://localhost:5000)
+- `ApiBaseUrl`: The base URL of the CHAP2.Chorus.Api (default: http://localhost:5000)
 - `DefaultPpsxFilePath`: Default file path if no argument is provided
 
 ## Usage
@@ -38,10 +43,9 @@ dotnet run /absolute/path/to/file.ppsx
 ```
 
 ## Prerequisites
-
-1. Make sure the CHAP2API is running on the configured URL
+1. Make sure the CHAP2.Chorus.Api is running on the configured URL
 2. Ensure your .ppsx file exists and is accessible
-3. The file must have a .ppsx extension
+3. The file must have a .ppsx or .pptx extension
 
 ## Example Output
 
@@ -54,43 +58,18 @@ Response Status: 201
 Success! Response:
 {
   "message": "Successfully converted PowerPoint file to chorus: sample",
-  "chorus": {
-    "id": "12345678-1234-1234-1234-123456789abc",
-    "name": "sample",
-    "key": 0,
-    "timeSignature": 0,
-    "chorusText": "Chorus text extracted from PowerPoint file: sample",
-    "type": 0
-  },
+  "chorus": { ... },
   "originalFilename": "sample.ppsx"
 }
-
-Searching for choruses containing 'heer'...
-Found 2 choruses containing 'heer':
-
---- Chorus 1 ---
-  Id: 12345678-1234-1234-1234-123456789abc
-  Name: Hy is Heer G
-  Key: NotSet
-  TimeSignature: NotSet
-  Type: NotSet
-  ChorusText:
-  [Extracted text from PowerPoint slides]
-
---- Chorus 2 ---
-  Id: 87654321-4321-4321-4321-cba987654321
-  Name: Another Heer Chorus
-  Key: NotSet
-  TimeSignature: NotSet
-  Type: NotSet
-  ChorusText:
-  [Extracted text from PowerPoint slides]
 ```
 
-## Error Handling
+## Error Handling & Troubleshooting
+- File not found or invalid extension
+- API connection issues (check `ApiBaseUrl` and that the API is running)
+- Server errors (check API logs for details)
+- File too large (see API's max file size setting)
 
-The application will display helpful error messages for:
-- File not found
-- Invalid file extension (non-.ppsx files)
-- API connection issues
-- Server errors 
+## Architecture Benefits
+- **CQRS**: All write operations use command endpoints.
+- **Shared Services**: Uses `ApiClientService` and `ConsoleDisplayService` from CHAP2.Console.Common.
+- **Maintainability**: Easy to extend for new file types or endpoints. 

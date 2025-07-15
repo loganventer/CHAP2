@@ -6,26 +6,26 @@
     "compounds": [
         {
             "name": "Debug API and Search Console",
-            "configurations": ["CHAP2API", "CHAP2SearchConsole"]
+            "configurations": ["CHAP2.Chorus.Api", "CHAP2SearchConsole"]
         },
         {
             "name": "Debug API and Bulk Console",
-            "configurations": ["CHAP2API", "CHAP2BulkConsole"]
+            "configurations": ["CHAP2.Chorus.Api", "CHAP2BulkConsole"]
         },
         {
             "name": "Debug API, Search, and Bulk Console",
-            "configurations": ["CHAP2API", "CHAP2SearchConsole", "CHAP2BulkConsole"]
+            "configurations": ["CHAP2.Chorus.Api", "CHAP2SearchConsole", "CHAP2BulkConsole"]
         }
     ],
     "configurations": [
         {
-            "name": "CHAP2API",
+            "name": "CHAP2.Chorus.Api",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/CHAP2API/bin/Debug/net9.0/CHAP2API.dll",
-            "cwd": "${workspaceFolder}/CHAP2API",
+            "program": "${workspaceFolder}/CHAP2.Chorus.Api/bin/Debug/net9.0/CHAP2.Chorus.Api.dll",
+            "cwd": "${workspaceFolder}/CHAP2.Chorus.Api",
             "stopAtEntry": false,
-            "preLaunchTask": "build CHAP2API",
+            "preLaunchTask": "build CHAP2.Chorus.Api",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             }
