@@ -49,29 +49,30 @@ public class SlideToChorusService : ISlideToChorusService
                 textWithoutTitle = string.Join("\n", lines.Skip(1)).Trim();
             }
 
+            var chorus = Chorus.CreateFromSlide(
+                name: cleanTitle,
+                chorusText: textWithoutTitle
+            );
+            
+            // Set the key if found
             if (key != MusicalKey.NotSet)
             {
-                var chorus = Chorus.Create(
-                    name: cleanTitle,
-                    chorusText: textWithoutTitle,
-                    key: key,
-                    type: ChorusType.NotSet,
-                    timeSignature: TimeSignature.NotSet
-                );
-                _logger.LogInformation("Successfully converted slide to chorus: {ChorusName} with key {Key} and {TextLength} characters", 
-                    chorus.Name, key, textWithoutTitle.Length);
-                return chorus;
+                var chorusType = typeof(Chorus);
+                var keyProperty = chorusType.GetProperty("Key");
+                if (keyProperty != null)
+                {
+                    keyProperty.SetValue(chorus, key);
+                    _logger.LogInformation("Successfully converted slide to chorus: {ChorusName} with key {Key} and {TextLength} characters", 
+                        chorus.Name, key, textWithoutTitle.Length);
+                }
             }
             else
             {
-                var chorus = Chorus.CreateFromSlide(
-                    name: cleanTitle,
-                    chorusText: textWithoutTitle
-                );
                 _logger.LogInformation("Successfully converted slide to chorus: {ChorusName} (no key detected) with {TextLength} characters", 
                     chorus.Name, textWithoutTitle.Length);
-                return chorus;
             }
+            
+            return chorus;
         }
         catch (Exception ex)
         {

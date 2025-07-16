@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using CHAP2.Console.Common.Configuration;
 using CHAP2.Domain.Entities;
 using System.Text.Json;
+using CHAP2.Console.Common.DTOs;
 
 namespace CHAP2.Console.Bulk.Services;
 
@@ -141,15 +142,46 @@ public class BulkUploadService : IBulkUploadService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                
                 try
                 {
                     var options = new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     };
-                    result.Chorus = JsonSerializer.Deserialize<Chorus>(responseContent, options);
-                    result.Success = true;
+                    var slideResponse = JsonSerializer.Deserialize<SlideConversionResponseDto>(responseContent, options);
+                    if (slideResponse?.Chorus != null)
+                    {
+                        // Map DTO to domain entity using factory method
+                        var chorus = Chorus.CreateFromSlide(slideResponse.Chorus.Name, slideResponse.Chorus.ChorusText);
+                        // Set additional properties if needed (e.g., key, type, time signature)
+                        var chorusType = typeof(Chorus);
+                        var idProperty = chorusType.GetProperty("Id");
+                        if (idProperty != null)
+                        {
+                            idProperty.SetValue(chorus, Guid.Parse(slideResponse.Chorus.Id));
+                        }
+                        var keyProperty = chorusType.GetProperty("Key");
+                        if (keyProperty != null)
+                        {
+                            keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)slideResponse.Chorus.Key);
+                        }
+                        var typeProperty = chorusType.GetProperty("Type");
+                        if (typeProperty != null)
+                        {
+                            typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)slideResponse.Chorus.Type);
+                        }
+                        var tsProperty = chorusType.GetProperty("TimeSignature");
+                        if (tsProperty != null)
+                        {
+                            tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)slideResponse.Chorus.TimeSignature);
+                        }
+                        result.Chorus = chorus;
+                        result.Success = true;
+                    }
+                    else
+                    {
+                        result.ErrorMessage = "No chorus returned from API.";
+                    }
                 }
                 catch (JsonException ex)
                 {

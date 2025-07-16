@@ -21,11 +21,18 @@ class Program
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
+                // Add configuration
+                services.AddSingleton<IConfiguration>(configuration);
+                
+                // Add HttpClient
                 services.AddHttpClient("CHAP2API", client =>
                 {
-                    client.BaseAddress = new Uri(configuration["ApiBaseUrl"] ?? "http://localhost:5000");
+                    var apiBaseUrl = configuration["ApiBaseUrl"] ?? "http://localhost:5000";
+                    System.Console.WriteLine($"Configuring HttpClient with base URL: {apiBaseUrl}");
+                    client.BaseAddress = new Uri(apiBaseUrl);
                 });
                 
+                // Add configuration services
                 services.Configure<BulkConversionSettings>(
                     configuration.GetSection("BulkConversionSettings"));
                 services.Configure<ApiClientSettings>(
@@ -33,6 +40,7 @@ class Program
                 services.Configure<ConsoleApiSettings>(
                     configuration.GetSection("ConsoleApiSettings"));
                 
+                // Add services
                 services.AddScoped<IBulkUploadService, BulkUploadService>();
             })
             .Build();
@@ -75,6 +83,7 @@ class Program
             System.Console.WriteLine("==========================");
             System.Console.WriteLine($"Target folder: {fullPath}");
             System.Console.WriteLine($"API Base URL: {configuration["ApiBaseUrl"]}");
+            System.Console.WriteLine($"Configuration keys: {string.Join(", ", configuration.AsEnumerable().Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
             System.Console.WriteLine();
 
             var successfulUploads = await bulkUploadService.UploadFolderAsync(fullPath);

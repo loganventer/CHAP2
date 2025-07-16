@@ -11,6 +11,17 @@ builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 
+// Add CORS support
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.Configure<ChorusResourceOptions>(
     builder.Configuration.GetSection("ChorusResource"));
 builder.Services.Configure<ApiSettings>(
@@ -49,6 +60,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseCors();
 app.UseResponseCompression();
 app.MapControllers();
 app.Run();

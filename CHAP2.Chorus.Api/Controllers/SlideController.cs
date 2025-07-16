@@ -29,17 +29,26 @@ public class SlideController : ChapControllerAbstractBase
     [Consumes("application/octet-stream")]
     public async Task<IActionResult> ConvertSlideToChorus([FromHeader(Name = "X-Filename")] string filename)
     {
+        _logger.LogInformation("=== SLIDE CONVERT ENDPOINT HIT ===");
+        _logger.LogInformation("Request Content-Type: {ContentType}", Request.ContentType);
+        _logger.LogInformation("Request Headers: {Headers}", string.Join(", ", Request.Headers.Keys));
+        _logger.LogInformation("Filename header: {Filename}", filename);
+        
         LogAction("ConvertSlideToChorus", new { filename });
 
         var fileContent = await ReadRequestBodyAsync();
+        _logger.LogInformation("File content length: {Length} bytes", fileContent?.Length ?? 0);
+        
         if (!ValidateFileContent(fileContent, filename))
         {
+            _logger.LogWarning("File validation failed");
             return BadRequest("Invalid file content or filename");
         }
 
         var chorus = _slideToChorusService.ConvertToChorus(fileContent, filename);
         if (string.IsNullOrWhiteSpace(chorus.Name))
         {
+            _logger.LogWarning("Could not extract chorus name from slide file");
             return BadRequest("Could not extract chorus name from slide file");
         }
 
