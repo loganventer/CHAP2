@@ -592,7 +592,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
         return key.KeyChar == 'Y' || key.KeyChar == 'y';
     }
 
-    public void ClearScreenWithDelay(string message = "Thank you for using CHAP2! Have a wonderful day! 👋")
+    public void ClearScreenWithDelay(string message = "Thanks for searching with CHAP2! 🎵✨ Have a beautiful day! 👋💫")
     {
         // Clear the screen
         System.Console.Clear();
