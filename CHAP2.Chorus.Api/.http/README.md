@@ -12,7 +12,7 @@ This folder contains HTTP files for testing the CHAP2API endpoints.
 
 ### Variables
 The HTTP files use variables for easy configuration:
-- `@apiBase` - Default API base URL (http://localhost:5000)
+- `@apiBase` - Default API base URL (http://localhost:5050)
 
 **Note:** For GET and PUT requests, replace the placeholder GUID with an actual GUID from a POST response.
 
@@ -31,11 +31,11 @@ You can also run these requests manually using curl:
 
 ```bash
 # Test health ping
-curl -X GET http://localhost:5000/api/health/ping \
+curl -X GET http://localhost:5050/api/health/ping \
   -H "Content-Type: application/json"
 
 # Test choruses endpoint
-curl -X GET http://localhost:5000/api/choruses \
+curl -X GET http://localhost:5050/api/choruses \
   -H "Content-Type: application/json"
 ```
 

@@ -35,17 +35,27 @@ public class ChorusDto
 
     public Chorus ToEntity()
     {
-        // Use the factory method to create a proper entity
-        var chorus = Chorus.CreateFromSlide(Name, ChorusText);
+        // Check if musical properties are set, otherwise use CreateFromSlide
+        Chorus chorus;
+        if (Key == MusicalKey.NotSet || Type == ChorusType.NotSet || TimeSignature == TimeSignature.NotSet)
+        {
+            // Use CreateFromSlide for legacy data or incomplete data
+            chorus = Chorus.CreateFromSlide(Name, ChorusText);
+        }
+        else
+        {
+            // Use Create for complete data with all musical properties
+            chorus = Chorus.Create(Name, ChorusText, Key, Type, TimeSignature);
+        }
         
         // Use reflection to set the properties that can't be set through public methods
         var type = typeof(Chorus);
         
-        // Set ID
+        // Set ID (override the new ID with the original one)
         var idProperty = type.GetProperty(nameof(Id));
         idProperty?.SetValue(chorus, Id);
         
-        // Set musical properties if they're not NotSet
+        // Set musical properties if they're not NotSet (for CreateFromSlide case)
         if (Key != MusicalKey.NotSet)
         {
             var keyProperty = type.GetProperty(nameof(Key));

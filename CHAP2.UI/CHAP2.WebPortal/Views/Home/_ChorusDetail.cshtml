@@ -1,0 +1,79 @@
+@model CHAP2.Domain.Entities.Chorus
+
+<div class="detail-modal-content">
+    <div class="detail-header">
+        <div class="chorus-info">
+            <h2 class="chorus-title">@Model.Name</h2>
+            <div class="chorus-meta">
+                <span class="meta-item">
+                    <i class="fas fa-music"></i>
+                    Key: <strong>@Model.Key</strong>
+                </span>
+                <span class="meta-item">
+                    <i class="fas fa-layer-group"></i>
+                    Type: <strong>@Model.Type</strong>
+                </span>
+                <span class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    Time: <strong>@Model.TimeSignature</strong>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-body">
+        <div class="lyrics-section">
+            <h3><i class="fas fa-align-left"></i> Lyrics</h3>
+            <div class="lyrics-container">
+                @{
+                    var lines = Model.ChorusText.Split('\n');
+                    foreach (var line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            <div class="lyrics-line">@line</div>
+                        }
+                        else
+                        {
+                            <div class="lyrics-line empty-line"></div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="details-section">
+            <h3><i class="fas fa-info-circle"></i> Details</h3>
+            <div class="details-grid">
+                <div class="detail-item">
+                    <label>ID</label>
+                    <span>@Model.Id</span>
+                </div>
+                <div class="detail-item">
+                    <label>Created</label>
+                    <span>@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                </div>
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    <div class="detail-item">
+                        <label>Updated</label>
+                        <span>@Model.UpdatedAt.Value.ToString("MMM dd, yyyy")</span>
+                    </div>
+                }
+                <div class="detail-item">
+                    <label>Text Length</label>
+                    <span>@Model.ChorusText.Length characters</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-actions">
+        <button class="btn-primary" onclick="openInNewWindow('@Model.Id')">
+            <i class="fas fa-external-link-alt"></i> Open in New Window
+        </button>
+        <button class="btn-secondary" onclick="printChorus()">
+            <i class="fas fa-print"></i> Print
+        </button>
+    </div>
+</div> 

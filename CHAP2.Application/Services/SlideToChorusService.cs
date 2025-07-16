@@ -153,14 +153,33 @@ public class SlideToChorusService : ISlideToChorusService
                 {
                     foreach (var paragraph in textBody.Elements<DocumentFormat.OpenXml.Drawing.Paragraph>())
                     {
-                        foreach (var run in paragraph.Elements<DocumentFormat.OpenXml.Drawing.Run>())
+                        foreach (var childElement in paragraph.Elements())
                         {
-                            var text = run.Text?.Text;
-                            if (!string.IsNullOrWhiteSpace(text))
+                            if (childElement is DocumentFormat.OpenXml.Drawing.Run run)
                             {
-                                textBuilder.Append(text);
+                                var text = run.Text?.Text;
+                                if (!string.IsNullOrWhiteSpace(text))
+                                {
+                                    textBuilder.Append(text);
+                                }
+                            }
+                            else if (childElement is DocumentFormat.OpenXml.Drawing.Break)
+                            {
+                                // Handle line breaks within paragraphs
+                                textBuilder.AppendLine();
+                            }
+                            else if (childElement is DocumentFormat.OpenXml.Drawing.Text textElement)
+                            {
+                                // Handle direct text elements
+                                var text = textElement.Text;
+                                if (!string.IsNullOrWhiteSpace(text))
+                                {
+                                    textBuilder.Append(text);
+                                }
                             }
                         }
+                        
+                        // Add newline after each paragraph
                         textBuilder.AppendLine();
                     }
                 }

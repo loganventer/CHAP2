@@ -1,0 +1,124 @@
+@{
+    ViewData["Title"] = "Search";
+}
+
+<div class="search-container">
+    <div class="search-header">
+        <div class="logo-section">
+            <i class="fas fa-music logo-icon"></i>
+            <h1 class="app-title">CHAP2 Web Portal</h1>
+            <p class="app-subtitle">Musical Chorus Search</p>
+        </div>
+        <div class="search-status" id="searchStatus">
+            <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
+            <span id="statusText">Connecting...</span>
+        </div>
+    </div>
+
+    <div class="search-input-container">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" 
+                   id="searchInput" 
+                   class="search-input" 
+                   placeholder="Search choruses by name, text, or musical key..."
+                   autocomplete="off">
+            <div class="search-actions">
+                <button class="clear-btn" id="clearBtn" style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="search-info">
+            <span class="search-delay-info">Search triggers after typing stops</span>
+            <span class="min-length-info">Minimum 2 characters</span>
+        </div>
+    </div>
+
+    <div class="results-container">
+        <div class="results-header" id="resultsHeader" style="display: none;">
+            <div class="results-count" id="resultsCount"></div>
+            <div class="results-controls">
+                <button class="btn-secondary" id="exportBtn" style="display: none;">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+
+        <div class="results-table-container">
+            <table class="results-table" id="resultsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th class="col-number">#</th>
+                        <th class="col-title">Title</th>
+                        <th class="col-key">Key</th>
+                        <th class="col-type">Type</th>
+                        <th class="col-time">Time</th>
+                        <th class="col-context">Context</th>
+                        <th class="col-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="no-results" id="noResults" style="display: none;">
+            <div class="no-results-content">
+                <i class="fas fa-search no-results-icon"></i>
+                <h3>No Results Found</h3>
+                <p>Try a different search term or check your spelling.</p>
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>Searching...</p>
+        </div>
+    </div>
+
+    <div class="search-tips">
+        <div class="tips-header">
+            <i class="fas fa-lightbulb"></i>
+            <span>Search Tips</span>
+        </div>
+        <div class="tips-content">
+            <div class="tip">
+                <strong>Musical Keys:</strong> Search for "C", "F", "Bb", etc.
+            </div>
+            <div class="tip">
+                <strong>Title Search:</strong> Type part of a chorus name
+            </div>
+            <div class="tip">
+                <strong>Text Search:</strong> Search within chorus lyrics
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 id="modalTitle">Chorus Details</h2>
+            <button class="modal-close" id="modalClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-content" id="modalContent">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSearch();
+            testConnectivity();
+        });
+    </script>
+} 

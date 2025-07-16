@@ -1,6 +1,6 @@
 # CHAP2 - Musical Chorus Management System
 
-A .NET solution for managing musical choruses, following **IDesign Clean Architecture** and CQRS principles. Features a Web API, interactive search console, and bulk slide conversion tools.
+A .NET solution for managing musical choruses, following **IDesign Clean Architecture** and CQRS principles. Features a Web API, interactive search console, bulk slide conversion tools, and a modern web portal.
 
 ---
 
@@ -13,10 +13,57 @@ CHAP2/
 ├── CHAP2.Infrastructure/   # Data access, repository implementations, DTOs
 ├── CHAP2.Shared/           # DTOs and shared utilities
 ├── CHAP2.Chorus.Api/       # Web API (REST, CQRS, DI, OpenAPI)
-└── Console/
-    ├── CHAP2.Console.Common/    # Shared console services
-    ├── CHAP2.SearchConsole/     # Interactive search console
-    └── CHAP2.Console.Bulk/      # Bulk conversion console
+├── CHAP2.UI/
+│   ├── CHAP2.WebPortal/    # Modern web portal (ASP.NET Core + TypeScript)
+│   └── Console/
+│       ├── CHAP2.Console.Common/    # Shared console services
+│       ├── CHAP2.SearchConsole/     # Interactive search console
+│       └── CHAP2.Console.Bulk/      # Bulk conversion console
+```
+
+---
+
+## 🚀 How to Build & Run
+
+### Prerequisites
+- .NET 9.0 SDK
+- Node.js 18+ (for TypeScript/web portal)
+
+### Build Everything
+```bash
+dotnet build
+```
+
+### Run the API
+```bash
+cd CHAP2.Chorus.Api
+dotnet run
+# API will be available at http://localhost:5050
+```
+
+### Run the Search Console
+```bash
+cd CHAP2.UI/Console/CHAP2.SearchConsole
+dotnet run
+```
+
+### Run the Bulk Console
+```bash
+cd CHAP2.UI/Console/CHAP2.Console.Bulk
+dotnet run
+```
+
+### Run the Web Portal
+```bash
+cd CHAP2.UI/CHAP2.WebPortal
+npm install
+npm run build
+# or for development
+npm run watch
+# then in another terminal
+dotnet run
+# Web portal will be available at http://localhost:5001 and https://localhost:7000
+# or use F5 in Cursor/VSCode
 ```
 
 ---
@@ -32,36 +79,6 @@ CHAP2/
 - **Backward Compatibility**: JSON converters handle legacy data format while maintaining clean domain model.
 - **Dependency Injection**: All services and repositories are registered via DI for testability and flexibility.
 - **Testability**: All business logic is in the Application and Domain layers, easily unit tested.
-
----
-
-## 🚀 How to Build & Run
-
-### Prerequisites
-- .NET 9.0 SDK
-
-### Build Everything
-```bash
-dotnet build
-```
-
-### Run the API
-```bash
-cd CHAP2.Chorus.Api
-dotnet run
-```
-
-### Run the Search Console
-```bash
-cd Console/CHAP2.SearchConsole
-dotnet run
-```
-
-### Run the Bulk Console
-```bash
-cd Console/CHAP2.Console.Bulk
-dotnet run
-```
 
 ---
 
@@ -103,9 +120,21 @@ dotnet run
 
 ---
 
+## 🌐 Web Portal (CHAP2.UI/CHAP2.WebPortal)
+- **Modern UI**: ASP.NET Core MVC + TypeScript + CSS
+- **Real-time search**: Search choruses with instant feedback
+- **Chorus details**: Animated, frosted-glass detail view with musical background
+- **TypeScript**: Strict, modular, and source-mapped for browser debugging
+- **Hot reload**: Use `npm run watch` for instant frontend updates
+- **Accessibility**: Keyboard navigation, ARIA, and high-contrast support
+- **See `CHAP2.UI/CHAP2.WebPortal/README.md` for more**
+
+---
+
 ## 🧪 Testing
 - Use `.http` files in `CHAP2.Chorus.Api/.http/` for API endpoint testing.
 - Console apps provide interactive/manual testing for search and bulk conversion.
+- Web portal can be tested interactively in the browser.
 
 ---
 
@@ -114,7 +143,8 @@ dotnet run
 - Add new use cases/services in `CHAP2.Application` (implement CQRS interfaces).
 - Add new data sources in `CHAP2.Infrastructure` (implement repository interfaces).
 - Add new endpoints/controllers in `CHAP2.Chorus.Api` (use DI and CQRS services).
-- Add new console tools in `Console/` (reuse `CHAP2.Console.Common`).
+- Add new console tools in `CHAP2.UI/Console/` (reuse `CHAP2.Console.Common`).
+- Add new web features in `CHAP2.UI/CHAP2.WebPortal` (reuse shared DTOs/services).
 
 ---
 
@@ -124,4 +154,16 @@ dotnet run
 - **Testability**
 - **Maintainability**
 - **Scalability**
-- **Performance** 
+- **Performance**
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+- Follow the iDesign/Clean Architecture principles
+- Add/modify tests for new features
+- Update documentation as needed
+- Open an issue or pull request for discussion
+
+--- 
