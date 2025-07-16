@@ -3,14 +3,9 @@ class ChorusDisplay {
     constructor() {
         this.currentChorusIndex = 0;
         this.choruses = [];
-        // Using consistent font size instead of auto-fit
-        this.currentFontSize = 1.5;
-        this.minFontSize = 0.8;
-        this.maxFontSize = 2.5;
-        this.fontSizeStep = 0.1;
         
         // Pagination settings
-        this.maxDisplayLines = window.chorusDisplayConfig?.maxDisplayLines || 20; // Configurable maximum lines per page
+        this.maxDisplayLines = window.chorusDisplayConfig?.maxDisplayLines || 8; // Configurable maximum lines per page
         this.currentPage = 0;
         this.totalPages = 0;
         this.currentChorusLines = [];
@@ -55,9 +50,6 @@ class ChorusDisplay {
         document.getElementById('nextBtn').addEventListener('click', () => this.navigate(1));
         
         // Control buttons
-        document.getElementById('zoomInBtn').addEventListener('click', () => this.zoomIn());
-        document.getElementById('zoomOutBtn').addEventListener('click', () => this.zoomOut());
-        document.getElementById('resetBtn').addEventListener('click', () => this.resetZoom());
         document.getElementById('printBtn').addEventListener('click', () => this.print());
         document.getElementById('closeBtn').addEventListener('click', () => this.close());
         
@@ -66,18 +58,6 @@ class ChorusDisplay {
         
         // Window resize
         window.addEventListener('resize', () => this.updateDisplay());
-        
-        // Mouse wheel for zoom
-        document.addEventListener('wheel', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                if (e.deltaY < 0) {
-                    this.zoomIn();
-                } else {
-                    this.zoomOut();
-                }
-            }
-        });
     }
     
     handleKeyboard(e) {
@@ -89,19 +69,6 @@ class ChorusDisplay {
             case 'ArrowRight':
                 e.preventDefault();
                 this.navigate(1);
-                break;
-            case '+':
-            case '=':
-                e.preventDefault();
-                this.zoomIn();
-                break;
-            case '-':
-                e.preventDefault();
-                this.zoomOut();
-                break;
-            case '0':
-                e.preventDefault();
-                this.resetZoom();
                 break;
             case 'p':
                 if (e.ctrlKey || e.metaKey) {
@@ -263,63 +230,9 @@ class ChorusDisplay {
         }
     }
     
-    autoFitText() {
-        const container = document.querySelector('.chorus-content');
-        const text = document.querySelector('.chorus-text');
-        
-        if (!container || !text) return;
-        
-        const containerHeight = container.clientHeight;
-        const containerWidth = container.clientWidth;
-        
-        // Reset font size to find the optimal size
-        text.style.fontSize = '1rem';
-        
-        let fontSize = 1;
-        const maxFontSize = Math.min(containerWidth / 20, containerHeight / 30); // Rough estimate
-        
-        // Binary search for optimal font size
-        let min = 0.5;
-        let max = maxFontSize;
-        
-        while (min <= max) {
-            fontSize = (min + max) / 2;
-            text.style.fontSize = `${fontSize}rem`;
-            
-            if (text.scrollHeight <= containerHeight && text.scrollWidth <= containerWidth) {
-                min = fontSize + 0.1;
-            } else {
-                max = fontSize - 0.1;
-            }
-        }
-        
-        // Apply the found font size
-        this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, fontSize));
-        text.style.fontSize = `${this.currentFontSize}rem`;
-    }
+    // Removed autoFitText method
     
-    zoomIn() {
-        this.currentFontSize = Math.min(this.maxFontSize, this.currentFontSize + this.fontSizeStep);
-        this.applyFontSize();
-    }
-    
-    zoomOut() {
-        this.currentFontSize = Math.max(this.minFontSize, this.currentFontSize - this.fontSizeStep);
-        this.applyFontSize();
-    }
-    
-    resetZoom() {
-        this.currentFontSize = 1;
-        this.applyFontSize();
-        this.autoFitText();
-    }
-    
-    applyFontSize() {
-        const text = document.querySelector('.chorus-text');
-        if (text) {
-            text.style.fontSize = `${this.currentFontSize}rem`;
-        }
-    }
+    // Removed zoom-related methods
     
     print() {
         window.print();
