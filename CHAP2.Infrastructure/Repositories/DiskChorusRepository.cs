@@ -225,7 +225,8 @@ public class DiskChorusRepository : IChorusRepository
         })
         .Where(result => result.Score > 0)
         .OrderByDescending(result => result.Score)
-        .ThenBy(result => result.Chorus.Name)
+        .ThenBy(result => result.Chorus.Key.ToString())
+        .ThenBy(result => result.Chorus.Name, StringComparer.OrdinalIgnoreCase)
         .Select(result => result.Chorus)
         .ToList();
         
