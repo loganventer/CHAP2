@@ -236,10 +236,19 @@ public class DiskChorusRepository : IChorusRepository
     {
         var score = 0;
         
-        // Key match gets highest priority (score 100)
+        // Key match gets highest priority
         if (MatchesMusicalKey(chorus.Key, searchTerm))
         {
-            score += 100;
+            // Exact key match gets highest priority (score 200)
+            if (IsExactKeyMatch(chorus.Key, searchTerm))
+            {
+                score += 200;
+            }
+            // Other key variations get high priority (score 100)
+            else
+            {
+                score += 100;
+            }
         }
         
         // Title match gets medium priority (score 50)
@@ -267,6 +276,19 @@ public class DiskChorusRepository : IChorusRepository
         }
         
         return score;
+    }
+
+    private static bool IsExactKeyMatch(MusicalKey key, string searchTerm)
+    {
+        if (key == MusicalKey.NotSet) return false;
+        
+        // Check for exact matches
+        var keyName = key.ToString().ToLowerInvariant();
+        if (keyName == searchTerm) return true;
+        
+        // Check for exact matches in variations
+        var variations = GetKeyVariations(key);
+        return variations.Any(variation => variation == searchTerm);
     }
 
     private static bool MatchesMusicalKey(MusicalKey key, string searchTerm)
