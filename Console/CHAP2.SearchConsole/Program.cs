@@ -112,7 +112,7 @@ class Program
         
         if (consoleService is ConsoleApplicationService completionConcreteService)
         {
-            completionConcreteService.ClearScreenWithDelay("Search completed. Goodbye!");
+            completionConcreteService.ClearScreenWithDelay();
         }
     }
 }
