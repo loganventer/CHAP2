@@ -245,10 +245,10 @@ public class DiskChorusRepository : IChorusRepository
             {
                 score += 200;
             }
-            // Other key variations get high priority (score 100)
+            // Other key variations get high priority (score 100-199 based on key name)
             else
             {
-                score += 100;
+                score += 100 + GetKeySortValue(chorus.Key);
             }
         }
         
@@ -356,6 +356,34 @@ public class DiskChorusRepository : IChorusRepository
         }
         
         return variations;
+    }
+
+    private static int GetKeySortValue(MusicalKey key)
+    {
+        // Return a value that will sort keys alphabetically
+        return key switch
+        {
+            MusicalKey.A => 1,
+            MusicalKey.AFlat => 2,
+            MusicalKey.ASharp => 3,
+            MusicalKey.B => 4,
+            MusicalKey.BFlat => 5,
+            MusicalKey.C => 6,
+            MusicalKey.CFlat => 7,
+            MusicalKey.CSharp => 8,
+            MusicalKey.D => 9,
+            MusicalKey.DFlat => 10,
+            MusicalKey.DSharp => 11,
+            MusicalKey.E => 12,
+            MusicalKey.EFlat => 13,
+            MusicalKey.F => 14,
+            MusicalKey.FFlat => 15,
+            MusicalKey.FSharp => 16,
+            MusicalKey.G => 17,
+            MusicalKey.GFlat => 18,
+            MusicalKey.GSharp => 19,
+            _ => 0
+        };
     }
 
     public async Task<IReadOnlyList<Chorus>> GetByKeyAsync(MusicalKey key, CancellationToken cancellationToken = default)
