@@ -171,55 +171,103 @@ public class SlideToChorusService : ISlideToChorusService
 
     private (string CleanTitle, MusicalKey Key) ExtractKeyFromMultipleSources(string filename, string slideTitle)
     {
+        _logger.LogInformation("Extracting key from filename: '{Filename}' and slide title: '{SlideTitle}'", filename, slideTitle);
+        
         var (slideTitleWithoutKey, slideKey) = ExtractKeyFromText(slideTitle, _keyPatterns);
+        _logger.LogInformation("From slide title - Key: {Key}, Title without key: '{TitleWithoutKey}'", slideKey, slideTitleWithoutKey);
         
         if (slideKey != MusicalKey.NotSet)
         {
+            _logger.LogInformation("Found key in slide title: {Key}", slideKey);
             return (ToTitleCase(slideTitleWithoutKey), slideKey);
         }
         
         var (filenameWithoutKey, filenameKey) = ExtractKeyFromText(filename, _keyPatterns);
+        _logger.LogInformation("From filename - Key: {Key}, Filename without key: '{FilenameWithoutKey}'", filenameKey, filenameWithoutKey);
+        
+        if (filenameKey != MusicalKey.NotSet)
+        {
+            _logger.LogInformation("Found key in filename: {Key}", filenameKey);
+        }
+        
         return (ToTitleCase(filenameWithoutKey), filenameKey);
     }
 
     private (string TextWithoutKey, MusicalKey Key) ExtractKeyFromText(string text, Dictionary<string, MusicalKey> keyPatterns)
     {
         if (string.IsNullOrWhiteSpace(text))
+        {
+            _logger.LogDebug("Text is null or whitespace, returning NotSet");
             return (string.Empty, MusicalKey.NotSet);
+        }
 
         var originalText = text.Trim();
+        _logger.LogDebug("Processing text: '{OriginalText}'", originalText);
         
+        // First, try to find key in parentheses
         var parenMatch = System.Text.RegularExpressions.Regex.Match(originalText, @"\(([^)]+)\)");
         if (parenMatch.Success)
         {
             var keyInParens = parenMatch.Groups[1].Value.Trim();
+            _logger.LogDebug("Found parentheses with content: '{KeyInParens}'", keyInParens);
+            
             if (keyPatterns.TryGetValue(keyInParens, out var key))
             {
                 var textWithoutParens = originalText.Replace(parenMatch.Value, "").Trim();
+                _logger.LogDebug("Matched key in parentheses: {Key}, text without parens: '{TextWithoutParens}'", key, textWithoutParens);
                 return (textWithoutParens, key);
+            }
+            else
+            {
+                _logger.LogDebug("No key pattern match found for: '{KeyInParens}'", keyInParens);
             }
         }
         
+        // Try to find key at the end of the text (common in filenames)
         var words = originalText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length == 0) return (originalText, MusicalKey.NotSet);
+        if (words.Length == 0) 
+        {
+            _logger.LogDebug("No words found in text");
+            return (originalText, MusicalKey.NotSet);
+        }
         
+        // Check last word for single character key
         var lastWord = words[^1];
+        _logger.LogDebug("Checking last word: '{LastWord}'", lastWord);
+        
         if (keyPatterns.TryGetValue(lastWord, out var singleKey))
         {
             var textWithoutKey = string.Join(" ", words.Take(words.Length - 1));
+            _logger.LogDebug("Matched single word key: {Key}, text without key: '{TextWithoutKey}'", singleKey, textWithoutKey);
             return (textWithoutKey, singleKey);
         }
         
+        // Check for two-word keys (like "C sharp", "B flat")
         if (words.Length > 1)
         {
             var lastTwoWords = $"{words[^2]} {words[^1]}";
+            _logger.LogDebug("Checking last two words: '{LastTwoWords}'", lastTwoWords);
+            
             if (keyPatterns.TryGetValue(lastTwoWords, out var twoWordKey))
             {
                 var textWithoutKey = string.Join(" ", words.Take(words.Length - 2));
+                _logger.LogDebug("Matched two-word key: {Key}, text without key: '{TextWithoutKey}'", twoWordKey, textWithoutKey);
                 return (textWithoutKey, twoWordKey);
             }
         }
         
+        // Try to find single letter keys anywhere in the text (for cases like "Amazing Grace C")
+        foreach (var word in words)
+        {
+            if (keyPatterns.TryGetValue(word, out var foundKey))
+            {
+                var textWithoutKey = string.Join(" ", words.Where(w => w != word));
+                _logger.LogDebug("Matched key in word '{Word}': {Key}, text without key: '{TextWithoutKey}'", word, foundKey, textWithoutKey);
+                return (textWithoutKey, foundKey);
+            }
+        }
+        
+        _logger.LogDebug("No key pattern matches found for text: '{OriginalText}'", originalText);
         return (originalText, MusicalKey.NotSet);
     }
 
@@ -232,23 +280,46 @@ public class SlideToChorusService : ISlideToChorusService
 
     private Dictionary<string, MusicalKey> InitializeKeyPatterns()
     {
-        return new Dictionary<string, MusicalKey>(StringComparer.OrdinalIgnoreCase)
+        var patterns = new Dictionary<string, MusicalKey>(StringComparer.OrdinalIgnoreCase)
         {
+            // Natural keys
             { "C", MusicalKey.C }, { "D", MusicalKey.D }, { "E", MusicalKey.E }, { "F", MusicalKey.F }, 
             { "G", MusicalKey.G }, { "A", MusicalKey.A }, { "B", MusicalKey.B },
             
+            // Sharp keys
             { "C#", MusicalKey.CSharp }, { "C♯", MusicalKey.CSharp }, { "C-sharp", MusicalKey.CSharp }, { "Cis", MusicalKey.CSharp },
             { "D#", MusicalKey.DSharp }, { "D♯", MusicalKey.DSharp }, { "D-sharp", MusicalKey.DSharp }, { "Dis", MusicalKey.DSharp },
             { "F#", MusicalKey.FSharp }, { "F♯", MusicalKey.FSharp }, { "F-sharp", MusicalKey.FSharp }, { "Fis", MusicalKey.FSharp },
             { "G#", MusicalKey.GSharp }, { "G♯", MusicalKey.GSharp }, { "G-sharp", MusicalKey.GSharp }, { "Gis", MusicalKey.GSharp },
             { "A#", MusicalKey.ASharp }, { "A♯", MusicalKey.ASharp }, { "A-sharp", MusicalKey.ASharp }, { "Ais", MusicalKey.ASharp },
             
+            // Flat keys
             { "Cb", MusicalKey.CFlat }, { "C-flat", MusicalKey.CFlat },
             { "Db", MusicalKey.DFlat }, { "D♭", MusicalKey.DFlat }, { "D-flat", MusicalKey.DFlat }, { "Des", MusicalKey.DFlat },
             { "Eb", MusicalKey.EFlat }, { "E♭", MusicalKey.EFlat }, { "E-flat", MusicalKey.EFlat }, { "E-mol", MusicalKey.EFlat }, { "Es", MusicalKey.EFlat },
             { "Gb", MusicalKey.GFlat }, { "G♭", MusicalKey.GFlat }, { "G-flat", MusicalKey.GFlat }, { "Ges", MusicalKey.GFlat },
             { "Ab", MusicalKey.AFlat }, { "A♭", MusicalKey.AFlat }, { "A-flat", MusicalKey.AFlat }, { "As", MusicalKey.AFlat },
             { "Bb", MusicalKey.BFlat }, { "B♭", MusicalKey.BFlat }, { "B-flat", MusicalKey.BFlat }, { "B-mol", MusicalKey.BFlat }, { "Bes", MusicalKey.BFlat },
+            
+            // Additional common notations
+            { "C major", MusicalKey.C }, { "D major", MusicalKey.D }, { "E major", MusicalKey.E }, { "F major", MusicalKey.F },
+            { "G major", MusicalKey.G }, { "A major", MusicalKey.A }, { "B major", MusicalKey.B },
+            { "C minor", MusicalKey.C }, { "D minor", MusicalKey.D }, { "E minor", MusicalKey.E }, { "F minor", MusicalKey.F },
+            { "G minor", MusicalKey.G }, { "A minor", MusicalKey.A }, { "B minor", MusicalKey.B },
+            
+            // Key in key format (e.g., "Key of C", "Key: C")
+            { "Key of C", MusicalKey.C }, { "Key of D", MusicalKey.D }, { "Key of E", MusicalKey.E }, { "Key of F", MusicalKey.F },
+            { "Key of G", MusicalKey.G }, { "Key of A", MusicalKey.A }, { "Key of B", MusicalKey.B },
+            { "Key: C", MusicalKey.C }, { "Key: D", MusicalKey.D }, { "Key: E", MusicalKey.E }, { "Key: F", MusicalKey.F },
+            { "Key: G", MusicalKey.G }, { "Key: A", MusicalKey.A }, { "Key: B", MusicalKey.B },
         };
+        
+        _logger.LogInformation("Initialized {Count} key patterns", patterns.Count);
+        foreach (var pattern in patterns.Take(10)) // Log first 10 for debugging
+        {
+            _logger.LogDebug("Key pattern: '{Pattern}' -> {Key}", pattern.Key, pattern.Value);
+        }
+        
+        return patterns;
     }
 } 

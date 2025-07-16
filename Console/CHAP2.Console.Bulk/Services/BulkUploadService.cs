@@ -44,19 +44,10 @@ public class BulkUploadService : IBulkUploadService
             throw new DirectoryNotFoundException($"Folder not found: {folderPath}");
         }
 
-        System.Console.WriteLine($"Scanning folder: {folderPath}");
-        
-        // Find all .ppsx files recursively
+        // Find all .ppsx and .pptx files recursively
         var ppsxFiles = Directory.GetFiles(folderPath, "*.ppsx", SearchOption.AllDirectories);
         var pptxFiles = Directory.GetFiles(folderPath, "*.pptx", SearchOption.AllDirectories);
         var allFiles = ppsxFiles.Concat(pptxFiles).ToList();
-
-        System.Console.WriteLine($"Found {allFiles.Count} PowerPoint files:");
-        foreach (var file in allFiles)
-        {
-            System.Console.WriteLine($"  {file}");
-        }
-        System.Console.WriteLine();
 
         if (allFiles.Count == 0)
         {
@@ -65,7 +56,6 @@ public class BulkUploadService : IBulkUploadService
         }
 
         // Test API connectivity
-        System.Console.WriteLine("Testing API connectivity...");
         using var httpClient = _httpClientFactory.CreateClient("CHAP2API");
         try
         {
@@ -75,7 +65,6 @@ public class BulkUploadService : IBulkUploadService
                 System.Console.WriteLine("API is not accessible. Make sure the API is running.");
                 return 0;
             }
-            System.Console.WriteLine("API is accessible.");
         }
         catch (Exception ex)
         {
@@ -83,38 +72,31 @@ public class BulkUploadService : IBulkUploadService
             return 0;
         }
 
-        System.Console.WriteLine($"Starting bulk upload of {allFiles.Count} files...");
-        System.Console.WriteLine();
-
         var successfulUploads = 0;
         var failedUploads = 0;
 
         for (int i = 0; i < allFiles.Count; i++)
         {
             var file = allFiles[i];
-            System.Console.WriteLine($"[{i + 1}/{allFiles.Count}] Processing: {Path.GetFileName(file)}");
-            
             try
             {
                 var result = await UploadFileAsync(file, cancellationToken);
                 if (result.Success)
                 {
                     successfulUploads++;
-                    System.Console.WriteLine($"  ✅ Success: {result.Chorus?.Name ?? "Unknown chorus"}");
+                    System.Console.WriteLine($"✅ {result.Chorus?.Name ?? Path.GetFileName(file)}");
                 }
                 else
                 {
                     failedUploads++;
-                    System.Console.WriteLine($"  ❌ Failed: {result.ErrorMessage}");
+                    System.Console.WriteLine($"❌ {result.FileName}: {result.ErrorMessage}");
                 }
             }
             catch (Exception ex)
             {
                 failedUploads++;
-                System.Console.WriteLine($"  ❌ Error: {ex.Message}");
+                System.Console.WriteLine($"❌ {Path.GetFileName(file)}: {ex.Message}");
             }
-
-            System.Console.WriteLine();
         }
 
         System.Console.WriteLine("=== BULK UPLOAD SUMMARY ===");
