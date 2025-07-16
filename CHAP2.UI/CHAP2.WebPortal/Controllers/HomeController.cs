@@ -42,9 +42,9 @@ public class HomeController : Controller
             {
                 id = r.Id,
                 name = r.Name,
-                key = r.Key.ToString(),
-                type = r.Type.ToString(),
-                timeSignature = r.TimeSignature.ToString(),
+                key = (int)r.Key,
+                type = (int)r.Type,
+                timeSignature = (int)r.TimeSignature,
                 chorusText = r.ChorusText,
                 createdAt = r.CreatedAt
             });

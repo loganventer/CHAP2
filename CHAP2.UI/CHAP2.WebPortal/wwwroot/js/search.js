@@ -247,6 +247,41 @@ function displayResults(results, searchTerm) {
     animateResults();
 }
 
+// Enum conversion helpers
+const MusicalKeys = {
+    0: 'Not Set',
+    1: 'C', 2: 'C#', 3: 'D', 4: 'D#', 5: 'E', 6: 'F', 7: 'F#', 8: 'G', 9: 'G#', 10: 'A', 11: 'A#', 12: 'B',
+    13: 'C♭', 14: 'D♭', 15: 'E♭', 16: 'F♭', 17: 'G♭', 18: 'A♭', 19: 'B♭'
+};
+
+const ChorusTypes = {
+    0: 'Not Set',
+    1: 'Traditional', 2: 'Contemporary', 3: 'Gospel', 4: 'Hymn', 5: 'Worship',
+    6: 'Praise', 7: 'Spiritual', 8: 'Folk', 9: 'Classical', 10: 'Jazz',
+    11: 'Pop', 12: 'Rock', 13: 'Country', 14: 'Blues', 15: 'Reggae',
+    16: 'Latin', 17: 'African', 18: 'Asian', 19: 'European', 20: 'Other'
+};
+
+const TimeSignatures = {
+    0: 'Not Set',
+    1: '4/4', 2: '3/4', 3: '6/8', 4: '2/4', 5: '4/8', 6: '3/8', 7: '2/2',
+    8: '5/4', 9: '6/4', 10: '9/8', 11: '12/8', 12: '7/4', 13: '8/4',
+    14: '5/8', 15: '7/8', 16: '8/8', 17: '2/16', 18: '3/16', 19: '4/16',
+    20: '5/16', 21: '6/16', 22: '7/16', 23: '8/16', 24: '9/16', 25: '12/16'
+};
+
+function getKeyDisplay(keyValue) {
+    return MusicalKeys[keyValue] || 'Unknown';
+}
+
+function getTypeDisplay(typeValue) {
+    return ChorusTypes[typeValue] || 'Unknown';
+}
+
+function getTimeSignatureDisplay(timeValue) {
+    return TimeSignatures[timeValue] || 'Unknown';
+}
+
 // Create result row
 function createResultRow(result, index) {
     const row = document.createElement('tr');
@@ -259,9 +294,9 @@ function createResultRow(result, index) {
     row.innerHTML = `
         <td class="result-number">${index}</td>
         <td class="result-title">${highlightedTitle}</td>
-        <td class="result-key">${result.key}</td>
-        <td class="result-type">${result.type}</td>
-        <td class="result-time">${result.timeSignature}</td>
+        <td class="result-key">${getKeyDisplay(result.key)}</td>
+        <td class="result-type">${getTypeDisplay(result.type)}</td>
+        <td class="result-time">${getTimeSignatureDisplay(result.timeSignature)}</td>
         <td class="result-context">${utils.truncateText(result.chorusText, 80)}</td>
         <td class="result-actions">
             <button class="action-btn" onclick="showDetail('${result.id}')" data-tooltip="View Details">
