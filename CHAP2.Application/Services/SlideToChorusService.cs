@@ -256,17 +256,17 @@ public class SlideToChorusService : ISlideToChorusService
         var originalText = text.Trim();
         _logger.LogDebug("Processing text: '{OriginalText}'", originalText);
         
-        // First, try to find key in parentheses
-        var parenMatch = System.Text.RegularExpressions.Regex.Match(originalText, @"\(([^)]+)\)");
+        // First, try to find key in parentheses at the end of the text
+        var parenMatch = System.Text.RegularExpressions.Regex.Match(originalText, @"\(([^)]+)\)\s*$");
         if (parenMatch.Success)
         {
             var keyInParens = parenMatch.Groups[1].Value.Trim();
-            _logger.LogDebug("Found parentheses with content: '{KeyInParens}'", keyInParens);
+            _logger.LogDebug("Found parentheses at end with content: '{KeyInParens}'", keyInParens);
             
             if (keyPatterns.TryGetValue(keyInParens, out var key))
             {
                 var textWithoutParens = originalText.Replace(parenMatch.Value, "").Trim();
-                _logger.LogDebug("Matched key in parentheses: {Key}, text without parens: '{TextWithoutParens}'", key, textWithoutParens);
+                _logger.LogDebug("Matched key in parentheses at end: {Key}, text without parens: '{TextWithoutParens}'", key, textWithoutParens);
                 return (textWithoutParens, key);
             }
             else
@@ -275,7 +275,7 @@ public class SlideToChorusService : ISlideToChorusService
             }
         }
         
-        // Try to find key at the end of the text (common in filenames)
+        // Try to find key at the end of the text (single letter or word)
         var words = originalText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (words.Length == 0) 
         {
@@ -290,11 +290,11 @@ public class SlideToChorusService : ISlideToChorusService
         if (keyPatterns.TryGetValue(lastWord, out var singleKey))
         {
             var textWithoutKey = string.Join(" ", words.Take(words.Length - 1));
-            _logger.LogDebug("Matched single word key: {Key}, text without key: '{TextWithoutKey}'", singleKey, textWithoutKey);
+            _logger.LogDebug("Matched single word key at end: {Key}, text without key: '{TextWithoutKey}'", singleKey, textWithoutKey);
             return (textWithoutKey, singleKey);
         }
         
-        // Check for two-word keys (like "C sharp", "B flat")
+        // Check for two-word keys at the end (like "C sharp", "B flat")
         if (words.Length > 1)
         {
             var lastTwoWords = $"{words[^2]} {words[^1]}";
@@ -303,23 +303,12 @@ public class SlideToChorusService : ISlideToChorusService
             if (keyPatterns.TryGetValue(lastTwoWords, out var twoWordKey))
             {
                 var textWithoutKey = string.Join(" ", words.Take(words.Length - 2));
-                _logger.LogDebug("Matched two-word key: {Key}, text without key: '{TextWithoutKey}'", twoWordKey, textWithoutKey);
+                _logger.LogDebug("Matched two-word key at end: {Key}, text without key: '{TextWithoutKey}'", twoWordKey, textWithoutKey);
                 return (textWithoutKey, twoWordKey);
             }
         }
         
-        // Try to find single letter keys anywhere in the text (for cases like "Amazing Grace C")
-        foreach (var word in words)
-        {
-            if (keyPatterns.TryGetValue(word, out var foundKey))
-            {
-                var textWithoutKey = string.Join(" ", words.Where(w => w != word));
-                _logger.LogDebug("Matched key in word '{Word}': {Key}, text without key: '{TextWithoutKey}'", word, foundKey, textWithoutKey);
-                return (textWithoutKey, foundKey);
-            }
-        }
-        
-        _logger.LogDebug("No key pattern matches found for text: '{OriginalText}'", originalText);
+        _logger.LogDebug("No key pattern matches found at end of text: '{OriginalText}'", originalText);
         return (originalText, MusicalKey.NotSet);
     }
 
