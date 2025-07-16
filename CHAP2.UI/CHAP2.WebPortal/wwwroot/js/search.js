@@ -311,11 +311,11 @@ function createResultRow(result, index) {
         <td class="result-time">${getTimeSignatureDisplay(result.timeSignature)}</td>
         <td class="result-context">${utils.truncateText(result.chorusText, 80)}</td>
         <td class="result-actions">
-            <button class="action-btn" onclick="showDetail('${result.id}')" data-tooltip="View Details">
-                <i class="fas fa-eye"></i>
-            </button>
             <button class="action-btn" onclick="openInNewWindow('${result.id}')" data-tooltip="Open in New Window">
                 <i class="fas fa-external-link-alt"></i>
+            </button>
+            <button class="action-btn" onclick="showDetail('${result.id}')" data-tooltip="View Details">
+                <i class="fas fa-eye"></i>
             </button>
             <button class="action-btn" onclick="copyChorusText('${result.id}')" data-tooltip="Copy Lyrics">
                 <i class="fas fa-copy"></i>
@@ -329,7 +329,10 @@ function createResultRow(result, index) {
     // Add click handler for row
     row.addEventListener('click', function(e) {
         if (!e.target.closest('.action-btn')) {
-            showDetail(result.id);
+            // Always open chorus display in new window
+            const url = `/Home/ChorusDisplay/${result.id}`;
+            const windowFeatures = 'width=1200,height=800,scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no';
+            window.open(url, '_blank', windowFeatures);
         }
     });
     
@@ -416,10 +419,10 @@ async function showDetail(chorusId) {
     }
 }
 
-// Open chorus in new window
+// Open chorus display in new window
 function openInNewWindow(chorusId) {
-    const url = `/Home/Detail/${chorusId}`;
-    const windowFeatures = 'width=1000,height=800,scrollbars=yes,resizable=yes';
+    const url = `/Home/ChorusDisplay/${chorusId}`;
+    const windowFeatures = 'scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no,maximized=yes';
     window.open(url, '_blank', windowFeatures);
 }
 

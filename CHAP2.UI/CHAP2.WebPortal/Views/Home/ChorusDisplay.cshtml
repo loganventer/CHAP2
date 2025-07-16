@@ -1,0 +1,98 @@
+@model CHAP2.Domain.Entities.Chorus
+@{
+    ViewData["Title"] = Model.Name;
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.Name - CHAP2</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/chorus-display.css" asp-append-version="true" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="chorus-display-page">
+    <!-- Animated Background -->
+    <div class="animated-background">
+        <div class="floating-notes">
+            <div class="note note-1">♪</div>
+            <div class="note note-2">♫</div>
+            <div class="note note-3">♬</div>
+            <div class="note note-4">♩</div>
+            <div class="note note-5">♭</div>
+            <div class="note note-6">♯</div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation-container">
+        <button class="nav-btn prev-btn" id="prevBtn" title="Previous Chorus">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="nav-btn next-btn" id="nextBtn" title="Next Chorus">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="chorus-container">
+        <div class="chorus-header">
+            <h1 class="chorus-title" id="chorusTitle">@Model.Name</h1>
+            <div class="chorus-key" id="chorusKey">@Model.Key</div>
+        </div>
+        
+        <div class="chorus-content">
+            <div class="chorus-text" id="chorusText">
+                @{
+                    var lines = Model.ChorusText.Split('\n');
+                    foreach (var line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            <div class="text-line">@line</div>
+                        }
+                        else
+                        {
+                            <div class="text-line empty-line"></div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-container">
+        <button class="control-btn" id="zoomInBtn" title="Zoom In">
+            <i class="fas fa-search-plus"></i>
+        </button>
+        <button class="control-btn" id="zoomOutBtn" title="Zoom Out">
+            <i class="fas fa-search-minus"></i>
+        </button>
+        <button class="control-btn" id="resetBtn" title="Reset Zoom">
+            <i class="fas fa-undo"></i>
+        </button>
+        <button class="control-btn" id="printBtn" title="Print">
+            <i class="fas fa-print"></i>
+        </button>
+        <button class="control-btn" id="closeBtn" title="Close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script>
+        // Pass chorus data to JavaScript
+        window.chorusData = {
+            id: '@Model.Id',
+            name: '@Html.Raw(Json.Serialize(Model.Name))',
+            key: '@Model.Key',
+            text: '@Html.Raw(Json.Serialize(Model.ChorusText))'
+        };
+    </script>
+    <script src="~/js/chorus-display.js" asp-append-version="true"></script>
+</body>
+</html> 

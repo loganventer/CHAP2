@@ -79,6 +79,26 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> ChorusDisplay(string id)
+    {
+        try
+        {
+            var chorus = await _chorusApiService.GetChorusByIdAsync(id);
+            if (chorus == null)
+            {
+                return NotFound();
+            }
+
+            return View("ChorusDisplay", chorus);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting chorus display for ID: {Id}", id);
+            return NotFound();
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> DetailPartial(string id)
     {
         try

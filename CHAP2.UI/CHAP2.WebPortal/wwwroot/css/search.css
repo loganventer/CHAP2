@@ -288,10 +288,13 @@
 /* Result Row Styling */
 .result-row {
     transition: all var(--transition-fast);
+    cursor: pointer;
 }
 
 .result-row:hover {
     transform: translateX(4px);
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-md);
 }
 
 .result-number {
