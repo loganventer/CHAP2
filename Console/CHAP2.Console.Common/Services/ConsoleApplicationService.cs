@@ -397,10 +397,24 @@ public class ConsoleApplicationService : IConsoleApplicationService
                 if (results != null)
                 {
                     var lowerSearch = searchString.ToLowerInvariant();
-                    var sorted = results.OrderByDescending(r =>
-                        (!string.IsNullOrEmpty(r.Name) && r.Name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 2 :
-                        (!string.IsNullOrEmpty(r.ChorusText) && r.ChorusText.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 1 : 0
-                    ).ThenBy(r => r.Name).ToList();
+                    List<Chorus> sorted;
+                    if (IsValidMusicalKey(searchString))
+                    {
+                        // Order by key match first, then existing logic
+                        sorted = results
+                            .OrderByDescending(r => r.Key.ToString().Equals(searchString, StringComparison.OrdinalIgnoreCase))
+                            .ThenByDescending(r => (!string.IsNullOrEmpty(r.Name) && r.Name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 2 :
+                                                (!string.IsNullOrEmpty(r.ChorusText) && r.ChorusText.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 1 : 0)
+                            .ThenBy(r => r.Name)
+                            .ToList();
+                    }
+                    else
+                    {
+                        sorted = results.OrderByDescending(r =>
+                            (!string.IsNullOrEmpty(r.Name) && r.Name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 2 :
+                            (!string.IsNullOrEmpty(r.ChorusText) && r.ChorusText.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0) ? 1 : 0
+                        ).ThenBy(r => r.Name).ToList();
+                    }
                     currentResults.AddRange(sorted);
                 }
                 _resultsObserver?.OnResultsChanged(currentResults, searchString);
@@ -578,7 +592,7 @@ public class ConsoleApplicationService : IConsoleApplicationService
         return key.KeyChar == 'Y' || key.KeyChar == 'y';
     }
 
-    public void ClearScreenWithDelay(string message = "Goodbye!")
+    public void ClearScreenWithDelay(string message = "Thank you for using CHAP2! Have a wonderful day! 👋")
     {
         // Clear the screen
         System.Console.Clear();
@@ -593,8 +607,8 @@ public class ConsoleApplicationService : IConsoleApplicationService
         System.Console.SetCursorPosition(left, top);
         System.Console.Write(message);
         
-        // Wait 500ms before continuing
-        Thread.Sleep(500);
+        // Wait 1 second before continuing
+        Thread.Sleep(1000);
         
         // Clear the screen again
         System.Console.Clear();

@@ -216,8 +216,80 @@ public class DiskChorusRepository : IChorusRepository
         ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
         
         var all = await GetAllAsync(cancellationToken);
-        return all.Where(c => c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                             c.ChorusText.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+        var normalizedSearchTerm = searchTerm.ToLowerInvariant();
+        
+        return all.Where(c => 
+            // Search in name and text
+            c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            c.ChorusText.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            // Search in musical key with variations
+            MatchesMusicalKey(c.Key, normalizedSearchTerm)).ToList();
+    }
+
+    private static bool MatchesMusicalKey(MusicalKey key, string searchTerm)
+    {
+        if (key == MusicalKey.NotSet) return false;
+        
+        // Get the key name and normalize it
+        var keyName = key.ToString().ToLowerInvariant();
+        
+        // Direct match
+        if (keyName.Contains(searchTerm)) return true;
+        
+        // Handle common musical key variations
+        var keyVariations = GetKeyVariations(key);
+        return keyVariations.Any(variation => variation.Contains(searchTerm));
+    }
+
+    private static IEnumerable<string> GetKeyVariations(MusicalKey key)
+    {
+        var variations = new List<string>();
+        
+        switch (key)
+        {
+            case MusicalKey.CSharp:
+                variations.AddRange(new[] { "c#", "c sharp", "cis", "c-sharp" });
+                break;
+            case MusicalKey.DSharp:
+                variations.AddRange(new[] { "d#", "d sharp", "dis", "d-sharp" });
+                break;
+            case MusicalKey.FSharp:
+                variations.AddRange(new[] { "f#", "f sharp", "fis", "f-sharp" });
+                break;
+            case MusicalKey.GSharp:
+                variations.AddRange(new[] { "g#", "g sharp", "gis", "g-sharp" });
+                break;
+            case MusicalKey.ASharp:
+                variations.AddRange(new[] { "a#", "a sharp", "ais", "a-sharp" });
+                break;
+            case MusicalKey.CFlat:
+                variations.AddRange(new[] { "cb", "c flat", "ces", "c-flat" });
+                break;
+            case MusicalKey.DFlat:
+                variations.AddRange(new[] { "db", "d flat", "des", "d-flat" });
+                break;
+            case MusicalKey.EFlat:
+                variations.AddRange(new[] { "eb", "e flat", "es", "e-flat" });
+                break;
+            case MusicalKey.FFlat:
+                variations.AddRange(new[] { "fb", "f flat", "fes", "f-flat" });
+                break;
+            case MusicalKey.GFlat:
+                variations.AddRange(new[] { "gb", "g flat", "ges", "g-flat" });
+                break;
+            case MusicalKey.AFlat:
+                variations.AddRange(new[] { "ab", "a flat", "as", "a-flat" });
+                break;
+            case MusicalKey.BFlat:
+                variations.AddRange(new[] { "bb", "b flat", "bes", "b-flat" });
+                break;
+            default:
+                // For natural keys (C, D, E, F, G, A, B), just add the basic name
+                variations.Add(key.ToString().ToLowerInvariant());
+                break;
+        }
+        
+        return variations;
     }
 
     public async Task<IReadOnlyList<Chorus>> GetByKeyAsync(MusicalKey key, CancellationToken cancellationToken = default)
