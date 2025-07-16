@@ -28,7 +28,7 @@
       "type": "process",
       "command": "dotnet",
       "args": ["build"],
-      "options": { "cwd": "${workspaceFolder}/Console/CHAP2.SearchConsole" },
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.SearchConsole" },
       "problemMatcher": "$msCompile"
     },
     {
@@ -36,7 +36,15 @@
       "type": "process",
       "command": "dotnet",
       "args": ["build"],
-      "options": { "cwd": "${workspaceFolder}/Console/CHAP2.Console.Bulk" },
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Bulk" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build CHAP2WebPortal",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build"],
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/CHAP2.WebPortal" },
       "problemMatcher": "$msCompile"
     },
     {
@@ -49,13 +57,19 @@
       "label": "run CHAP2SearchConsole",
       "type": "shell",
       "command": "dotnet run",
-      "options": { "cwd": "${workspaceFolder}/Console/CHAP2.SearchConsole" }
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.SearchConsole" }
     },
     {
       "label": "run CHAP2BulkConsole",
       "type": "shell",
       "command": "dotnet run",
-      "options": { "cwd": "${workspaceFolder}/Console/CHAP2.Console.Bulk" }
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Bulk" }
+    },
+    {
+      "label": "run CHAP2WebPortal",
+      "type": "shell",
+      "command": "dotnet run",
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/CHAP2.WebPortal" }
     }
   ]
 } 

@@ -18,6 +18,7 @@ class Program
             services.AddScoped<IConsoleApplicationService, ConsoleApplicationService>();
             services.AddScoped<ISearchResultsObserver, ConsoleSearchResultsObserver>();
             services.AddScoped<ISelectionService, SelectionService>();
+            services.AddScoped<IConfigurationService, ConfigurationService>();
         });
 
         var logger = host.Services.GetRequiredService<ILogger<Program>>();

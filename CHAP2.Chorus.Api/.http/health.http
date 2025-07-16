@@ -1,6 +1,6 @@
 ### Health Controller Tests
 
-@apiBase = http://localhost:5000
+@apiBase = http://localhost:5050
 
 # Ping health endpoint
 GET {{apiBase}}/api/health/ping

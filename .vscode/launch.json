@@ -15,6 +15,14 @@
         {
             "name": "Debug API, Search, and Bulk Console",
             "configurations": ["CHAP2.Chorus.Api", "CHAP2SearchConsole", "CHAP2BulkConsole"]
+        },
+        {
+            "name": "Debug API and Web Portal",
+            "configurations": ["CHAP2.Chorus.Api", "CHAP2WebPortal"]
+        },
+        {
+            "name": "Debug All Components",
+            "configurations": ["CHAP2.Chorus.Api", "CHAP2SearchConsole", "CHAP2BulkConsole", "CHAP2WebPortal"]
         }
     ],
     "configurations": [
@@ -27,15 +35,16 @@
             "stopAtEntry": false,
             "preLaunchTask": "build CHAP2.Chorus.Api",
             "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5000;https://localhost:7000"
             }
         },
         {
             "name": "CHAP2SearchConsole",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/Console/CHAP2.SearchConsole/bin/Debug/net9.0/CHAP2.SearchConsole.dll",
-            "cwd": "${workspaceFolder}/Console/CHAP2.SearchConsole",
+            "program": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.SearchConsole/bin/Debug/net9.0/CHAP2.SearchConsole.dll",
+            "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.SearchConsole",
             "stopAtEntry": false,
             "preLaunchTask": "build CHAP2SearchConsole",
             "env": {
@@ -46,12 +55,25 @@
             "name": "CHAP2BulkConsole",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/Console/CHAP2.Console.Bulk/bin/Debug/net9.0/CHAP2.Console.Bulk.dll",
-            "cwd": "${workspaceFolder}/Console/CHAP2.Console.Bulk",
+            "program": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Bulk/bin/Debug/net9.0/CHAP2.Console.Bulk.dll",
+            "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Bulk",
             "stopAtEntry": false,
             "preLaunchTask": "build CHAP2BulkConsole",
             "env": {
                 "DOTNET_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "CHAP2WebPortal",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/CHAP2.UI/CHAP2.WebPortal/bin/Debug/net9.0/CHAP2.Web.dll",
+            "cwd": "${workspaceFolder}/CHAP2.UI/CHAP2.WebPortal",
+            "stopAtEntry": false,
+            "preLaunchTask": "build CHAP2WebPortal",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5001;https://localhost:7001"
             }
         }
     ]

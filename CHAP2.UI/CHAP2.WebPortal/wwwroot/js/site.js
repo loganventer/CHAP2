@@ -1,7 +1,8 @@
 // Global variables
 let searchTimeout;
 let currentSearchTerm = '';
-let searchDelay = 500; // milliseconds
+let searchDelay = 300; // milliseconds - match console app
+let minSearchLength = 2; // minimum characters - match console app
 
 // Utility functions
 const utils = {
@@ -228,11 +229,11 @@ function initializeKeyboardShortcuts() {
             }
         }
         
-        // Enter to trigger search
+        // Enter to trigger search (optional - search is now automatic)
         if (event.key === 'Enter' && event.target.id === 'searchInput') {
             event.preventDefault();
             const searchInput = event.target;
-            if (searchInput.value.trim().length >= 2) {
+            if (searchInput.value.trim().length >= minSearchLength) {
                 performSearch(searchInput.value.trim());
             }
         }
@@ -247,29 +248,38 @@ function initializeAccessibility() {
         searchInput.setAttribute('aria-label', 'Search choruses by name, text, or musical key');
     }
     
-    // Add focus indicators
-    const focusableElements = document.querySelectorAll('button, input, a, [tabindex]');
-    focusableElements.forEach(element => {
-        element.addEventListener('focus', function() {
-            this.classList.add('focus-visible');
+    // Add keyboard navigation for results
+    const resultsTable = document.getElementById('resultsTable');
+    if (resultsTable) {
+        resultsTable.addEventListener('keydown', function(event) {
+            const rows = this.querySelectorAll('.result-row');
+            const currentRow = event.target.closest('.result-row');
+            
+            if (!currentRow) return;
+            
+            const currentIndex = Array.from(rows).indexOf(currentRow);
+            
+            switch (event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    if (currentIndex < rows.length - 1) {
+                        rows[currentIndex + 1].focus();
+                    }
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    if (currentIndex > 0) {
+                        rows[currentIndex - 1].focus();
+                    }
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    const chorusId = currentRow.getAttribute('data-id');
+                    if (chorusId) {
+                        showDetail(chorusId);
+                    }
+                    break;
+            }
         });
-        
-        element.addEventListener('blur', function() {
-            this.classList.remove('focus-visible');
-        });
-    });
-    
-    // Add skip links
-    const skipLink = document.createElement('a');
-    skipLink.href = '#main-content';
-    skipLink.className = 'skip-link';
-    skipLink.textContent = 'Skip to main content';
-    document.body.insertBefore(skipLink, document.body.firstChild);
-}
-
-// Global functions
-window.utils = utils;
-window.showNotification = utils.showNotification;
-window.copyToClipboard = utils.copyToClipboard;
-window.downloadText = utils.downloadText;
-window.isValidMusicalKey = utils.isValidMusicalKey; 
+    }
+} 

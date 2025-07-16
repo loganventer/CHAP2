@@ -12,6 +12,10 @@ public static class HttpClientConfiguration
             var apiBaseUrl = configuration[ConfigSections.ApiBaseUrl] ?? SharedApiSettings.DefaultApiBaseUrl;
             client.BaseAddress = new Uri(apiBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(SharedApiSettings.DefaultTimeoutSeconds);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
         });
 
         return services;

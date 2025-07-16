@@ -1,18 +1,24 @@
 // Search functionality
 let searchResults = [];
 let isSearching = false;
+let isConnected = false;
+let currentSearchTerm = '';
+let searchTimeout = null;
 
 // Initialize search functionality
 function initializeSearch() {
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearBtn');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statusText = document.getElementById('statusText');
     
     if (searchInput) {
-        // Debounced search
-        const debouncedSearch = utils.debounce(performSearch, searchDelay);
+        // Debounced search function
+        const debouncedSearch = debounce(performSearch, searchDelay);
         
         searchInput.addEventListener('input', function() {
             const value = this.value.trim();
+            currentSearchTerm = value;
             
             // Show/hide clear button
             if (value.length > 0) {
@@ -22,17 +28,21 @@ function initializeSearch() {
                 clearResults();
             }
             
-            // Perform search if minimum length
-            if (value.length >= 2) {
+            // Perform search automatically on every keystroke
+            if (value.length >= minSearchLength) {
                 debouncedSearch(value);
             } else if (value.length === 0) {
                 clearResults();
+            } else if (value.length === 1) {
+                // Special handling for single character - treat as key search
+                debouncedSearch(value);
             }
         });
         
         // Clear button functionality
         clearBtn.addEventListener('click', function() {
             searchInput.value = '';
+            currentSearchTerm = '';
             searchInput.focus();
             clearResults();
             this.style.display = 'none';
@@ -46,12 +56,54 @@ function initializeSearch() {
         searchInput.addEventListener('blur', function() {
             this.parentElement.classList.remove('focused');
         });
+        
+        // Enter key handling (optional - for accessibility)
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = this.value.trim();
+                if (value.length >= minSearchLength) {
+                    performSearch(value);
+                }
+            }
+        });
     }
+    
+    // Update status indicator
+    function updateStatus(connected) {
+        isConnected = connected;
+        if (statusIndicator && statusText) {
+            if (connected) {
+                statusIndicator.className = 'fas fa-circle status-indicator connected';
+                statusText.textContent = 'Connected';
+            } else {
+                statusIndicator.className = 'fas fa-circle status-indicator disconnected';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+    }
+    
+    // Test connectivity on startup
+    testConnectivity().then(connected => {
+        updateStatus(connected);
+    });
+}
+
+// Debounce function
+function debounce(func, wait) {
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(searchTimeout);
+            func(...args);
+        };
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(later, wait);
+    };
 }
 
 // Perform search
 async function performSearch(searchTerm) {
-    if (isSearching || searchTerm.length < 2) return;
+    if (isSearching || !searchTerm) return;
     
     currentSearchTerm = searchTerm;
     isSearching = true;
@@ -60,7 +112,25 @@ async function performSearch(searchTerm) {
     showLoading();
     
     try {
-        const response = await fetch(`/Home/Search?q=${encodeURIComponent(searchTerm)}`);
+        // Determine search type based on term length and content
+        let searchUrl = `/Home/Search?q=${encodeURIComponent(searchTerm)}`;
+        
+        // For single character, treat as potential key search
+        if (searchTerm.length === 1) {
+            const upperTerm = searchTerm.toUpperCase();
+            const validKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'BB', 'AB', 'EB', 'DB', 'GB'];
+            if (validKeys.includes(upperTerm)) {
+                searchUrl += '&searchIn=key';
+            }
+        }
+        
+        const response = await fetch(searchUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -73,6 +143,12 @@ async function performSearch(searchTerm) {
         }
         
         searchResults = data.results || [];
+        
+        // Apply sorting similar to console app
+        if (searchResults.length > 0) {
+            searchResults = sortSearchResults(searchResults, searchTerm);
+        }
+        
         displayResults(searchResults, searchTerm);
         
     } catch (error) {
@@ -81,6 +157,49 @@ async function performSearch(searchTerm) {
     } finally {
         isSearching = false;
         hideLoading();
+    }
+}
+
+// Sort search results similar to console app
+function sortSearchResults(results, searchTerm) {
+    const lowerSearch = searchTerm.toLowerCase();
+    const upperSearch = searchTerm.toUpperCase();
+    
+    // Check if search term is a valid musical key
+    const validKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'BB', 'AB', 'EB', 'DB', 'GB'];
+    const isKeySearch = validKeys.includes(upperSearch);
+    
+    if (isKeySearch) {
+        // For key searches: exact key match first, then alphabetically by title
+        return results.sort((a, b) => {
+            const aExactMatch = a.key && a.key.toString().toUpperCase() === upperSearch;
+            const bExactMatch = b.key && b.key.toString().toUpperCase() === upperSearch;
+            
+            if (aExactMatch && !bExactMatch) return -1;
+            if (!aExactMatch && bExactMatch) return 1;
+            
+            // Both have same exact match status, sort by title
+            return (a.name || '').localeCompare(b.name || '');
+        });
+    } else {
+        // For text searches: title match first, then text match, then alphabetically by title
+        return results.sort((a, b) => {
+            const aTitleMatch = a.name && a.name.toLowerCase().includes(lowerSearch);
+            const bTitleMatch = b.name && b.name.toLowerCase().includes(lowerSearch);
+            const aTextMatch = a.chorusText && a.chorusText.toLowerCase().includes(lowerSearch);
+            const bTextMatch = b.chorusText && b.chorusText.toLowerCase().includes(lowerSearch);
+            
+            // Title match priority
+            if (aTitleMatch && !bTitleMatch) return -1;
+            if (!aTitleMatch && bTitleMatch) return 1;
+            
+            // Text match priority
+            if (aTextMatch && !bTextMatch) return -1;
+            if (!aTextMatch && bTextMatch) return 1;
+            
+            // Alphabetical by title
+            return (a.name || '').localeCompare(b.name || '');
+        });
     }
 }
 
@@ -175,7 +294,13 @@ async function showDetail(chorusId) {
     const modalTitle = document.getElementById('modalTitle');
     
     try {
-        const response = await fetch(`/Home/DetailPartial/${chorusId}`);
+        const response = await fetch(`/Home/DetailPartial/${chorusId}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'text/html',
+                'Content-Type': 'text/html'
+            }
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -226,130 +351,111 @@ function closeModal() {
     const modal = document.getElementById('detailModal');
     modal.style.display = 'none';
     document.body.style.overflow = '';
-    
-    // Return focus to search input
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.focus();
-    }
 }
 
-// Clear results
+// Clear search results
 function clearResults() {
     const resultsTable = document.getElementById('resultsTable');
     const resultsHeader = document.getElementById('resultsHeader');
+    const resultsBody = document.getElementById('resultsBody');
     const noResults = document.getElementById('noResults');
     
     resultsTable.style.display = 'none';
     resultsHeader.style.display = 'none';
     noResults.style.display = 'none';
-    
+    resultsBody.innerHTML = '';
     searchResults = [];
-    currentSearchTerm = '';
 }
 
 // Show loading state
 function showLoading() {
-    const loading = document.getElementById('loading');
-    const resultsTable = document.getElementById('resultsTable');
-    const resultsHeader = document.getElementById('resultsHeader');
-    const noResults = document.getElementById('noResults');
-    
-    loading.style.display = 'flex';
-    resultsTable.style.display = 'none';
-    resultsHeader.style.display = 'none';
-    noResults.style.display = 'none';
+    const loadingIndicator = document.getElementById('loading');
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'flex';
+    }
 }
 
 // Hide loading state
 function hideLoading() {
-    const loading = document.getElementById('loading');
-    loading.style.display = 'none';
+    const loadingIndicator = document.getElementById('loading');
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'none';
+    }
 }
 
-// Show error
+// Show error message
 function showError(message) {
-    const noResults = document.getElementById('noResults');
-    const noResultsContent = noResults.querySelector('.no-results-content');
-    
-    noResultsContent.innerHTML = `
-        <i class="fas fa-exclamation-triangle no-results-icon"></i>
-        <h3>Search Error</h3>
-        <p>${message}</p>
-    `;
-    
-    noResults.style.display = 'flex';
+    utils.showNotification(message, 'error');
 }
 
-// Animate results
+// Animate results appearance
 function animateResults() {
     const rows = document.querySelectorAll('.result-row');
     rows.forEach((row, index) => {
-        row.style.animationDelay = `${index * 50}ms`;
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateY(0)';
+        }, index * 50);
     });
 }
 
 // Test API connectivity
 async function testConnectivity() {
-    const statusIndicator = document.getElementById('statusIndicator');
-    const statusText = document.getElementById('statusText');
-    
     try {
-        const response = await fetch('/Home/TestConnectivity');
-        const data = await response.json();
-        
-        if (data.connected) {
-            statusIndicator.className = 'fas fa-circle status-indicator connected';
-            statusText.textContent = 'Connected';
-        } else {
-            statusIndicator.className = 'fas fa-circle status-indicator disconnected';
-            statusText.textContent = 'Disconnected';
-        }
+        const response = await fetch('/Home/TestConnectivity', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.ok;
     } catch (error) {
         console.error('Connectivity test failed:', error);
-        statusIndicator.className = 'fas fa-circle status-indicator disconnected';
-        statusText.textContent = 'Connection Error';
+        return false;
     }
 }
 
-// Export results
+// Export search results
 function exportResults() {
     if (searchResults.length === 0) {
         utils.showNotification('No results to export', 'info');
         return;
     }
     
-    const exportData = searchResults.map(result => ({
-        Title: result.name,
-        Key: result.key,
-        Type: result.type,
-        TimeSignature: result.timeSignature,
-        Lyrics: result.chorusText
-    }));
+    const csv = convertToCSV(searchResults);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chorus_search_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
     
-    const csv = convertToCSV(exportData);
-    const filename = `chorus_search_${new Date().toISOString().split('T')[0]}.csv`;
-    
-    utils.downloadText(csv, filename);
+    utils.showNotification('Results exported successfully!', 'success');
 }
 
-// Convert data to CSV
+// Convert results to CSV
 function convertToCSV(data) {
-    if (data.length === 0) return '';
+    const headers = ['Title', 'Key', 'Type', 'Time Signature', 'Text'];
+    const csvContent = [
+        headers.join(','),
+        ...data.map(item => [
+            `"${(item.name || '').replace(/"/g, '""')}"`,
+            `"${(item.key || '').replace(/"/g, '""')}"`,
+            `"${(item.type || '').replace(/"/g, '""')}"`,
+            `"${(item.timeSignature || '').replace(/"/g, '""')}"`,
+            `"${(item.chorusText || '').replace(/"/g, '""')}"`
+        ].join(','))
+    ].join('\n');
     
-    const headers = Object.keys(data[0]);
-    const csvRows = [headers.join(',')];
-    
-    for (const row of data) {
-        const values = headers.map(header => {
-            const value = row[header];
-            const escaped = value.toString().replace(/"/g, '""');
-            return `"${escaped}"`;
-        });
-        csvRows.push(values.join(','));
-    }
-    
-    return csvRows.join('\n');
+    return csvContent;
 }
 
 // Event listeners
@@ -375,6 +481,44 @@ document.addEventListener('DOMContentLoaded', function() {
     if (exportBtn) {
         exportBtn.addEventListener('click', exportResults);
     }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Escape key - clear search or close modal
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('detailModal');
+            if (modal.style.display === 'flex') {
+                closeModal();
+            } else {
+                const searchInput = document.getElementById('searchInput');
+                const clearBtn = document.getElementById('clearBtn');
+                if (searchInput && searchInput.value) {
+                    searchInput.value = '';
+                    clearBtn.style.display = 'none';
+                    clearResults();
+                    searchInput.focus();
+                }
+            }
+        }
+        
+        // Ctrl/Cmd + K - focus search input
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+        
+        // Enter key on search results - open first result
+        if (e.key === 'Enter' && document.activeElement.id === 'searchInput') {
+            const firstResult = document.querySelector('.result-row');
+            if (firstResult) {
+                const chorusId = firstResult.getAttribute('data-id');
+                showDetail(chorusId);
+            }
+        }
+    });
 });
 
 // Global functions

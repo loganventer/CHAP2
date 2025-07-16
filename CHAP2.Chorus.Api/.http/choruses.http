@@ -1,6 +1,6 @@
 ### Choruses Controller Tests
 
-@apiBase = http://localhost:5000
+@apiBase = http://localhost:5050
 
 # Get all choruses
 GET {{apiBase}}/api/choruses
