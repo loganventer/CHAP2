@@ -218,12 +218,55 @@ public class DiskChorusRepository : IChorusRepository
         var all = await GetAllAsync(cancellationToken);
         var normalizedSearchTerm = searchTerm.ToLowerInvariant();
         
-        return all.Where(c => 
-            // Search in name and text
-            c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-            c.ChorusText.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-            // Search in musical key with variations
-            MatchesMusicalKey(c.Key, normalizedSearchTerm)).ToList();
+        var scoredResults = all.Select(c => new
+        {
+            Chorus = c,
+            Score = CalculateSearchScore(c, normalizedSearchTerm)
+        })
+        .Where(result => result.Score > 0)
+        .OrderByDescending(result => result.Score)
+        .ThenBy(result => result.Chorus.Name)
+        .Select(result => result.Chorus)
+        .ToList();
+        
+        return scoredResults;
+    }
+
+    private static int CalculateSearchScore(Chorus chorus, string searchTerm)
+    {
+        var score = 0;
+        
+        // Key match gets highest priority (score 100)
+        if (MatchesMusicalKey(chorus.Key, searchTerm))
+        {
+            score += 100;
+        }
+        
+        // Title match gets medium priority (score 50)
+        if (chorus.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        {
+            score += 50;
+            
+            // Bonus for exact title match (score +25)
+            if (chorus.Name.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 25;
+            }
+            
+            // Bonus for title starting with search term (score +10)
+            if (chorus.Name.StartsWith(searchTerm, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 10;
+            }
+        }
+        
+        // Text match gets lowest priority (score 10)
+        if (chorus.ChorusText.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        {
+            score += 10;
+        }
+        
+        return score;
     }
 
     private static bool MatchesMusicalKey(MusicalKey key, string searchTerm)
