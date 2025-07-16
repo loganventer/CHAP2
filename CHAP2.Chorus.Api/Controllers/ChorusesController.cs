@@ -1,6 +1,4 @@
-using CHAP2.Chorus.Api.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using CHAP2.Domain.Entities;
 using CHAP2.Domain.Enums;
 using CHAP2.Domain.Exceptions;
 using CHAP2.Application.Interfaces;
@@ -9,9 +7,6 @@ using Microsoft.Extensions.Options;
 
 namespace CHAP2.Chorus.Api.Controllers;
 
-/// <summary>
-/// Choruses controller
-/// </summary>
 [ApiController]
 [Route("[controller]")]
 public class ChorusesController : ChapControllerAbstractBase
@@ -32,9 +27,6 @@ public class ChorusesController : ChapControllerAbstractBase
         _searchSettings = searchSettings.Value;
     }
 
-    /// <summary>
-    /// Add a new chorus
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddChorus([FromBody] CreateChorusRequest request, CancellationToken cancellationToken = default)
     {
@@ -67,9 +59,6 @@ public class ChorusesController : ChapControllerAbstractBase
         }
     }
 
-    /// <summary>
-    /// Get all choruses
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetAllChoruses(CancellationToken cancellationToken = default)
     {
@@ -79,9 +68,6 @@ public class ChorusesController : ChapControllerAbstractBase
         return Ok(choruses);
     }
 
-    /// <summary>
-    /// Get a chorus by ID
-    /// </summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetChorusById(Guid id, CancellationToken cancellationToken = default)
     {
@@ -98,14 +84,11 @@ public class ChorusesController : ChapControllerAbstractBase
         }
     }
 
-    /// <summary>
-    /// Search choruses with comprehensive search capabilities
-    /// </summary>
     [HttpGet("search")]
     public async Task<IActionResult> SearchChoruses(
         [FromQuery] string? q = null,
         [FromQuery] SearchMode searchMode = SearchMode.Contains,
-        [FromQuery] string? searchIn = null, // "name", "text", "key", or "all"
+        [FromQuery] string? searchIn = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(q))
@@ -113,7 +96,6 @@ public class ChorusesController : ChapControllerAbstractBase
             return BadRequest("Search query 'q' is required");
         }
 
-        // Use configured defaults if not provided
         if (searchMode == SearchMode.Contains && !string.IsNullOrEmpty(_searchSettings.DefaultSearchMode))
         {
             if (System.Enum.TryParse<SearchMode>(_searchSettings.DefaultSearchMode, true, out var defaultMode))
@@ -138,7 +120,6 @@ public class ChorusesController : ChapControllerAbstractBase
 
             var results = await _chorusQueryService.SearchChorusesAsync(q, searchMode, searchScope, cancellationToken);
 
-            // Apply max results limit from configuration
             if (results.Count > _searchSettings.MaxSearchResults)
             {
                 results = results.Take(_searchSettings.MaxSearchResults).ToList();
@@ -160,9 +141,6 @@ public class ChorusesController : ChapControllerAbstractBase
         }
     }
 
-    /// <summary>
-    /// Get a chorus by exact name match (case-insensitive)
-    /// </summary>
     [HttpGet("by-name/{name}")]
     public async Task<IActionResult> GetChorusByName(string name, CancellationToken cancellationToken = default)
     {
@@ -179,9 +157,6 @@ public class ChorusesController : ChapControllerAbstractBase
         }
     }
 
-    /// <summary>
-    /// Update a chorus
-    /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateChorus(Guid id, [FromBody] UpdateChorusRequest request, CancellationToken cancellationToken = default)
     {
@@ -219,9 +194,6 @@ public class ChorusesController : ChapControllerAbstractBase
         }
     }
 
-    /// <summary>
-    /// Delete a chorus
-    /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteChorus(Guid id, CancellationToken cancellationToken = default)
     {

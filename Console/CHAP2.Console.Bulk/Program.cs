@@ -11,7 +11,6 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // Build configuration
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -19,7 +18,6 @@ class Program
             .AddCommandLine(args)
             .Build();
 
-        // Build host
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
@@ -28,7 +26,6 @@ class Program
                     client.BaseAddress = new Uri(configuration["ApiBaseUrl"] ?? "http://localhost:5000");
                 });
                 
-                // Configure settings
                 services.Configure<BulkConversionSettings>(
                     configuration.GetSection("BulkConversionSettings"));
                 services.Configure<ApiClientSettings>(
@@ -36,7 +33,6 @@ class Program
                 services.Configure<ConsoleApiSettings>(
                     configuration.GetSection("ConsoleApiSettings"));
                 
-                // Register services
                 services.AddScoped<IBulkUploadService, BulkUploadService>();
             })
             .Build();
@@ -47,7 +43,6 @@ class Program
 
         try
         {
-            // Get path from args or config
             var path = args.Length > 0 ? args[0] : configuration["DefaultFolderPath"];
             
             if (string.IsNullOrWhiteSpace(path))
@@ -67,7 +62,6 @@ class Program
                 return;
             }
 
-            // Resolve path (handle home directory ~ and relative paths)
             var fullPath = ResolvePath(path);
             
             if (!Directory.Exists(fullPath))
@@ -83,7 +77,6 @@ class Program
             System.Console.WriteLine($"API Base URL: {configuration["ApiBaseUrl"]}");
             System.Console.WriteLine();
 
-            // Perform bulk upload
             var successfulUploads = await bulkUploadService.UploadFolderAsync(fullPath);
 
             if (successfulUploads > 0)
@@ -104,12 +97,10 @@ class Program
 
     private static string ResolvePath(string path)
     {
-        // Handle home directory expansion (~)
         if (path.StartsWith("~"))
         {
             var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var pathWithoutTilde = path.Substring(1);
-            // Remove leading slash if present to avoid absolute path issues
             if (pathWithoutTilde.StartsWith("/"))
             {
                 pathWithoutTilde = pathWithoutTilde.Substring(1);
@@ -122,13 +113,11 @@ class Program
             return resolvedPath;
         }
         
-        // Handle absolute paths
         if (Path.IsPathRooted(path))
         {
             return path;
         }
         
-        // Handle relative paths
         return Path.Combine(Directory.GetCurrentDirectory(), path);
     }
 }

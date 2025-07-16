@@ -5,8 +5,6 @@ using Microsoft.Extensions.Logging;
 using CHAP2.Console.Common.Interfaces;
 using CHAP2.Console.Common.Services;
 using CHAP2.Console.Common.Configuration;
-using CHAP2.Application.Interfaces;
-using CHAP2.Application.Services;
 
 namespace CHAP2.SearchConsole;
 
@@ -14,7 +12,6 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // Build configuration
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -22,14 +19,12 @@ class Program
             .AddCommandLine(args)
             .Build();
 
-        // Build host
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
                 var apiBaseUrl = configuration["ApiBaseUrl"] ?? "http://localhost:5000";
                 System.Console.WriteLine($"Configuring HttpClient with BaseAddress: {apiBaseUrl}");
                 
-                // Add HttpClient with explicit configuration
                 services.AddHttpClient("CHAP2API", client =>
                 {
                     var baseUri = new Uri(apiBaseUrl);
@@ -38,13 +33,11 @@ class Program
                     System.Console.WriteLine($"HttpClient BaseAddress set to: {client.BaseAddress}");
                 });
                 
-                // Register IConfigurationService
                 services.AddSingleton<IConfigurationService>(provider =>
                 {
                     return new ConfigurationService(configuration);
                 });
                 
-                // Configure settings
                 services.Configure<ConsoleSettings>(
                     configuration.GetSection("ConsoleSettings"));
                 services.Configure<ApiClientSettings>(
@@ -54,7 +47,6 @@ class Program
                 services.Configure<ConsoleApiSettings>(
                     configuration.GetSection("ConsoleApiSettings"));
                 
-                // Register services
                 services.AddSingleton<ISearchCacheService, MemorySearchCacheService>();
                 services.AddScoped<IApiClientService, ApiClientService>();
                 services.AddScoped<IConsoleDisplayService, ConsoleDisplayService>();
@@ -67,7 +59,6 @@ class Program
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         using var scope = host.Services.CreateScope();
         
-        // Debug: Test HttpClient creation
         try
         {
             var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
@@ -80,7 +71,6 @@ class Program
         }
         
         var consoleService = scope.ServiceProvider.GetRequiredService<IConsoleApplicationService>();
-        // Register the observer
         var observer = scope.ServiceProvider.GetRequiredService<ISearchResultsObserver>();
         if (consoleService is ConsoleApplicationService concreteService)
         {
@@ -89,7 +79,6 @@ class Program
 
         try
         {
-            // Always run search mode
             await RunSearchMode(configuration, consoleService, logger);
         }
         catch (Exception ex)
@@ -97,7 +86,6 @@ class Program
             logger.LogError(ex, "An error occurred");
             System.Console.WriteLine($"Error: {ex.Message}");
             
-            // Clear screen with delay before exiting on error
             if (consoleService is ConsoleApplicationService errorConcreteService)
             {
                 errorConcreteService.ClearScreenWithDelay("An error occurred. Exiting...");
@@ -110,11 +98,9 @@ class Program
         var searchDelayMs = configuration.GetValue<int>("SearchDelayMs", 300);
         var minSearchLength = configuration.GetValue<int>("MinSearchLength", 2);
         
-        // Test API connectivity
         var isConnected = await consoleService.TestApiConnectivityAsync();
         if (!isConnected)
         {
-            // Clear screen with delay before exiting
             if (consoleService is ConsoleApplicationService apiConcreteService)
             {
                 apiConcreteService.ClearScreenWithDelay("API connection failed. Exiting...");
@@ -122,10 +108,8 @@ class Program
             return;
         }
 
-        // Run interactive search
         await consoleService.RunInteractiveSearchAsync(searchDelayMs, minSearchLength);
         
-        // Clear screen with delay after normal completion
         if (consoleService is ConsoleApplicationService completionConcreteService)
         {
             completionConcreteService.ClearScreenWithDelay("Search completed. Goodbye!");

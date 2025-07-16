@@ -1,7 +1,6 @@
 using CHAP2.Domain.Enums;
 using CHAP2.Domain.ValueObjects;
 using CHAP2.Domain.Exceptions;
-using System.Collections.Generic;
 using CHAP2.Domain.Events;
 
 namespace CHAP2.Domain.Entities;
@@ -19,7 +18,6 @@ public class Chorus : IEquatable<Chorus>
     public ChorusMetadata Metadata { get; private set; }
     public List<IDomainEvent> DomainEvents { get; } = new();
 
-    // Private constructor for EF Core and internal use
     private Chorus() 
     {
         Metadata = new ChorusMetadata();
@@ -57,9 +55,6 @@ public class Chorus : IEquatable<Chorus>
         return chorus;
     }
 
-    /// <summary>
-    /// Create a chorus from slide conversion with default musical properties
-    /// </summary>
     public static Chorus CreateFromSlide(string name, string chorusText)
     {
         if (string.IsNullOrWhiteSpace(name))

@@ -2,10 +2,7 @@ using System.Text.Json;
 using CHAP2.Console.Common.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Console.Common.Configuration;
-using CHAP2.Application.Interfaces;
 using CHAP2.Console.Common.DTOs;
-using CHAP2.Domain.Enums;
-using CHAP2.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Console.Common.Services;
@@ -38,7 +35,6 @@ public class ApiClientService : IApiClientService
                 return false;
             }
             
-            // Add a timeout to prevent hanging
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_settings.ConnectivityTestTimeoutSeconds));
             using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
             
@@ -102,7 +98,6 @@ public class ApiClientService : IApiClientService
                 {
                     var chorus = Chorus.CreateFromSlide(slideResponse.Chorus.Name, slideResponse.Chorus.ChorusText);
                     
-                    // Update the ID to match the one from the API
                     var chorusType = typeof(Chorus);
                     var idProperty = chorusType.GetProperty("Id");
                     if (idProperty != null)
@@ -156,10 +151,8 @@ public class ApiClientService : IApiClientService
                     var choruses = new List<Chorus>();
                     foreach (var dto in searchResponse.Results)
                     {
-                        // Create chorus using factory method with default values for slide-converted choruses
                         var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
                         
-                        // Update the ID to match the one from the API
                         var chorusType = typeof(Chorus);
                         var idProperty = chorusType.GetProperty("Id");
                         if (idProperty != null)
@@ -217,7 +210,6 @@ public class ApiClientService : IApiClientService
                 {
                     var chorus = Chorus.CreateFromSlide(chorusDto.Name, chorusDto.ChorusText);
                     
-                    // Update the ID to match the one from the API
                     var chorusType = typeof(Chorus);
                     var idProperty = chorusType.GetProperty("Id");
                     if (idProperty != null)
@@ -257,7 +249,6 @@ public class ApiClientService : IApiClientService
                 {
                     var chorus = Chorus.CreateFromSlide(chorusDto.Name, chorusDto.ChorusText);
                     
-                    // Update the ID to match the one from the API
                     var chorusType = typeof(Chorus);
                     var idProperty = chorusType.GetProperty("Id");
                     if (idProperty != null)
@@ -292,15 +283,14 @@ public class ApiClientService : IApiClientService
                     PropertyNameCaseInsensitive = true
                 };
                 
-                var chorusDtos = JsonSerializer.Deserialize<List<ChorusResponseDto>>(content, options);
-                if (chorusDtos != null)
+                var chorusesDto = JsonSerializer.Deserialize<List<ChorusResponseDto>>(content, options);
+                if (chorusesDto != null)
                 {
                     var choruses = new List<Chorus>();
-                    foreach (var dto in chorusDtos)
+                    foreach (var dto in chorusesDto)
                     {
                         var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
                         
-                        // Update the ID to match the one from the API
                         var chorusType = typeof(Chorus);
                         var idProperty = chorusType.GetProperty("Id");
                         if (idProperty != null)
