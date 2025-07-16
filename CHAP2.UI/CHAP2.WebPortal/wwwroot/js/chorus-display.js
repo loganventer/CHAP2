@@ -3,10 +3,17 @@ class ChorusDisplay {
     constructor() {
         this.currentChorusIndex = 0;
         this.choruses = [];
-        this.currentFontSize = 1;
-        this.minFontSize = 0.5;
-        this.maxFontSize = 3;
+        // Using consistent font size instead of auto-fit
+        this.currentFontSize = 1.5;
+        this.minFontSize = 0.8;
+        this.maxFontSize = 2.5;
         this.fontSizeStep = 0.1;
+        
+        // Pagination settings
+        this.maxDisplayLines = window.chorusDisplayConfig?.maxDisplayLines || 20; // Configurable maximum lines per page
+        this.currentPage = 0;
+        this.totalPages = 0;
+        this.currentChorusLines = [];
         
         this.init();
     }
@@ -14,7 +21,12 @@ class ChorusDisplay {
     init() {
         this.loadChoruses();
         this.setupEventListeners();
-        this.autoFitText();
+        
+        // Process initial chorus data if available
+        if (window.chorusData) {
+            this.updateDisplay(window.chorusData);
+        }
+        
         this.updateNavigationButtons();
     }
     
@@ -53,7 +65,7 @@ class ChorusDisplay {
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
         
         // Window resize
-        window.addEventListener('resize', () => this.autoFitText());
+        window.addEventListener('resize', () => this.updateDisplay());
         
         // Mouse wheel for zoom
         document.addEventListener('wheel', (e) => {
@@ -106,24 +118,24 @@ class ChorusDisplay {
     async navigate(direction) {
         if (this.choruses.length === 0) return;
         
-        let newIndex = this.currentChorusIndex + direction;
-        
-        // Loop around
-        if (newIndex < 0) {
-            newIndex = this.choruses.length - 1;
-        } else if (newIndex >= this.choruses.length) {
-            newIndex = 0;
-        }
-        
-        const chorus = this.choruses[newIndex];
-        if (chorus) {
-            this.currentChorusIndex = newIndex;
-            this.showLoading();
-            await this.loadChorus(chorus.id);
-            this.autoFitText();
+        // Only navigate between pages of the current chorus
+        if (this.totalPages > 1) {
+            let newPage = this.currentPage + direction;
+            
+            // Loop around pages within the current chorus
+            if (newPage < 0) {
+                newPage = this.totalPages - 1;
+            } else if (newPage >= this.totalPages) {
+                newPage = 0;
+            }
+            
+            this.currentPage = newPage;
+            this.displayCurrentPage();
             this.updateNavigationButtons();
-            this.hideLoading();
-            this.showNotification(`Now viewing: ${chorus.name}`, 'info');
+            this.showNotification(`Page ${this.currentPage + 1} of ${this.totalPages}`, 'info');
+        } else {
+            // If there's only one page, show a notification that there are no more pages
+            this.showNotification('This chorus has only one page', 'info');
         }
     }
     
@@ -183,28 +195,71 @@ class ChorusDisplay {
         document.getElementById('chorusTitle').textContent = chorusData.name;
         document.getElementById('chorusKey').textContent = chorusData.key;
         
-        const chorusText = document.getElementById('chorusText');
-        const lines = chorusData.text.split('\n');
+        // Split text into lines and store for pagination
+        this.currentChorusLines = chorusData.text.split('\n').filter(line => line.trim() !== '');
+        this.totalPages = Math.ceil(this.currentChorusLines.length / this.maxDisplayLines);
+        this.currentPage = 0;
         
-        chorusText.innerHTML = lines.map(line => {
-            if (line.trim()) {
-                return `<div class="text-line">${line}</div>`;
-            } else {
-                return '<div class="text-line empty-line"></div>';
-            }
+        console.log(`Chorus: ${chorusData.name}`);
+        console.log(`Total lines: ${this.currentChorusLines.length}`);
+        console.log(`Max display lines: ${this.maxDisplayLines}`);
+        console.log(`Total pages: ${this.totalPages}`);
+        
+        this.displayCurrentPage();
+    }
+    
+    displayCurrentPage() {
+        const chorusText = document.getElementById('chorusText');
+        const startIndex = this.currentPage * this.maxDisplayLines;
+        const endIndex = Math.min(startIndex + this.maxDisplayLines, this.currentChorusLines.length);
+        const pageLines = this.currentChorusLines.slice(startIndex, endIndex);
+        
+        console.log(`Displaying page ${this.currentPage + 1}:`);
+        console.log(`Start index: ${startIndex}, End index: ${endIndex}`);
+        console.log(`Lines to display: ${pageLines.length}`);
+        console.log(`Page lines:`, pageLines);
+        
+        chorusText.innerHTML = pageLines.map(line => {
+            return `<div class="text-line">${line}</div>`;
         }).join('');
+        
+        // Update navigation buttons after displaying the page
+        this.updateNavigationButtons();
     }
     
     updateNavigationButtons() {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         
-        if (this.choruses.length <= 1) {
-            prevBtn.style.display = 'none';
-            nextBtn.style.display = 'none';
-        } else {
+        // Show navigation buttons if there are multiple choruses or multiple pages
+        const shouldShowNav = this.choruses.length > 1 || this.totalPages > 1;
+        
+        if (shouldShowNav) {
             prevBtn.style.display = 'flex';
             nextBtn.style.display = 'flex';
+            
+            // Update tooltips based on navigation state
+            if (this.totalPages > 1) {
+                prevBtn.title = 'Previous Page';
+                nextBtn.title = 'Next Page';
+            } else {
+                // Hide navigation buttons if there's only one page
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                return;
+            }
+        } else {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+        }
+        
+        // Update page indicator
+        const pageIndicator = document.getElementById('pageIndicator');
+        if (this.totalPages > 1) {
+            pageIndicator.style.display = 'block';
+            pageIndicator.textContent = `Page ${this.currentPage + 1} of ${this.totalPages}`;
+        } else {
+            pageIndicator.style.display = 'none';
         }
     }
     

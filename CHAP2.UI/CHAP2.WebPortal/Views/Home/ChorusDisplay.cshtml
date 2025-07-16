@@ -28,15 +28,8 @@
         </div>
     </div>
 
-    <!-- Navigation -->
-    <div class="navigation-container">
-        <button class="nav-btn prev-btn" id="prevBtn" title="Previous Chorus">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-        <button class="nav-btn next-btn" id="nextBtn" title="Next Chorus">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-    </div>
+    <!-- Page Indicator -->
+    <div class="page-indicator" id="pageIndicator"></div>
 
     <!-- Main Content -->
     <div class="chorus-container">
@@ -45,23 +38,34 @@
             <div class="chorus-key" id="chorusKey">@Model.Key</div>
         </div>
         
-        <div class="chorus-content">
-            <div class="chorus-text" id="chorusText">
-                @{
-                    var lines = Model.ChorusText.Split('\n');
-                    foreach (var line in lines)
-                    {
-                        if (!string.IsNullOrWhiteSpace(line))
+        <div class="chorus-content-wrapper">
+            <!-- Navigation -->
+            <button class="nav-btn prev-btn" id="prevBtn" title="Previous Chorus">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="chorus-content">
+                <div class="chorus-text" id="chorusText">
+                    @{
+                        var lines = Model.ChorusText.Split('\n');
+                        foreach (var line in lines)
                         {
-                            <div class="text-line">@line</div>
-                        }
-                        else
-                        {
-                            <div class="text-line empty-line"></div>
+                            if (!string.IsNullOrWhiteSpace(line))
+                            {
+                                <div class="text-line">@line</div>
+                            }
+                            else
+                            {
+                                <div class="text-line empty-line"></div>
+                            }
                         }
                     }
-                }
+                </div>
             </div>
+            
+            <button class="nav-btn next-btn" id="nextBtn" title="Next Chorus">
+                <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
     </div>
 
@@ -91,6 +95,11 @@
             name: '@Html.Raw(Json.Serialize(Model.Name))',
             key: '@Model.Key',
             text: '@Html.Raw(Json.Serialize(Model.ChorusText))'
+        };
+        
+        // Chorus display configuration
+        window.chorusDisplayConfig = {
+            maxDisplayLines: 8 // Configurable maximum lines per page
         };
     </script>
     <script src="~/js/chorus-display.js" asp-append-version="true"></script>

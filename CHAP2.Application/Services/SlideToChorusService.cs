@@ -44,16 +44,41 @@ public class SlideToChorusService : ISlideToChorusService
             var (cleanTitle, key) = ExtractKeyFromMultipleSources(chorusName, firstLine);
 
             string textWithoutTitle = chorusText;
-            // Only remove the first line if it's a duplicate of the title AND there are multiple lines
-            // This prevents removing the first line when it's actually part of the chorus content
-            if (lines.Length > 1 && string.Equals(lines[0].Trim(), cleanTitle.Trim(), StringComparison.OrdinalIgnoreCase))
+            
+            // If a key was detected, also remove it from the first line of the chorus text
+            if (key != MusicalKey.NotSet && lines.Length > 0)
             {
-                textWithoutTitle = string.Join("\n", lines.Skip(1)).Trim();
-                _logger.LogInformation("Removed duplicate title line from chorus text for: {ChorusName}", cleanTitle);
+                var firstLineWithoutKey = ExtractKeyFromText(lines[0], _keyPatterns).TextWithoutKey;
+                if (!string.IsNullOrWhiteSpace(firstLineWithoutKey) && firstLineWithoutKey.Trim() != lines[0].Trim())
+                {
+                    // Replace the first line with the version without the key
+                    var remainingLines = lines.Skip(1);
+                    textWithoutTitle = string.Join("\n", new[] { firstLineWithoutKey.Trim() }.Concat(remainingLines)).Trim();
+                    _logger.LogInformation("Removed key '{Key}' from first line of chorus text for: {ChorusName}", key, cleanTitle);
+                }
+                else
+                {
+                    // If the first line is just the key or becomes empty after key removal, skip it
+                    if (lines.Length > 1)
+                    {
+                        textWithoutTitle = string.Join("\n", lines.Skip(1)).Trim();
+                        _logger.LogInformation("Removed first line (contained only key) from chorus text for: {ChorusName}", cleanTitle);
+                    }
+                }
             }
             else
             {
-                _logger.LogInformation("Keeping all lines in chorus text for: {ChorusName} (first line doesn't match title or only one line)", cleanTitle);
+                // Only remove the first line if it's a duplicate of the title AND there are multiple lines
+                // This prevents removing the first line when it's actually part of the chorus content
+                if (lines.Length > 1 && string.Equals(lines[0].Trim(), cleanTitle.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    textWithoutTitle = string.Join("\n", lines.Skip(1)).Trim();
+                    _logger.LogInformation("Removed duplicate title line from chorus text for: {ChorusName}", cleanTitle);
+                }
+                else
+                {
+                    _logger.LogInformation("Keeping all lines in chorus text for: {ChorusName} (first line doesn't match title or only one line)", cleanTitle);
+                }
             }
 
             var chorus = Chorus.CreateFromSlide(

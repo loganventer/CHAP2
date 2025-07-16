@@ -422,8 +422,22 @@ async function showDetail(chorusId) {
 // Open chorus display in new window
 function openInNewWindow(chorusId) {
     const url = `/Home/ChorusDisplay/${chorusId}`;
-    const windowFeatures = 'scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no,maximized=yes';
-    window.open(url, '_blank', windowFeatures);
+    const windowFeatures = 'scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no,fullscreen=yes';
+    const newWindow = window.open(url, '_blank', windowFeatures);
+    
+    // Fallback for browsers that don't support fullscreen in window.open
+    if (newWindow) {
+        newWindow.addEventListener('load', function() {
+            try {
+                if (newWindow.screen && newWindow.screen.availWidth) {
+                    newWindow.moveTo(0, 0);
+                    newWindow.resizeTo(newWindow.screen.availWidth, newWindow.screen.availHeight);
+                }
+            } catch (e) {
+                console.log('Could not maximize window:', e);
+            }
+        });
+    }
 }
 
 // Copy chorus text to clipboard
