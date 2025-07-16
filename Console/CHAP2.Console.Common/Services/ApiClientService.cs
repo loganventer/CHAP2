@@ -160,6 +160,24 @@ public class ApiClientService : IApiClientService
                             idProperty.SetValue(chorus, Guid.Parse(dto.Id));
                         }
                         
+                        var keyProperty = chorusType.GetProperty("Key");
+                        if (keyProperty != null)
+                        {
+                            keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)dto.Key);
+                        }
+                        
+                        var typeProperty = chorusType.GetProperty("Type");
+                        if (typeProperty != null)
+                        {
+                            typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)dto.Type);
+                        }
+                        
+                        var tsProperty = chorusType.GetProperty("TimeSignature");
+                        if (tsProperty != null)
+                        {
+                            tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature);
+                        }
+                        
                         choruses.Add(chorus);
                     }
                     
@@ -209,14 +227,27 @@ public class ApiClientService : IApiClientService
                 if (chorusDto != null)
                 {
                     var chorus = Chorus.CreateFromSlide(chorusDto.Name, chorusDto.ChorusText);
-                    
                     var chorusType = typeof(Chorus);
                     var idProperty = chorusType.GetProperty("Id");
                     if (idProperty != null)
                     {
                         idProperty.SetValue(chorus, Guid.Parse(chorusDto.Id));
                     }
-                    
+                    var keyProperty = chorusType.GetProperty("Key");
+                    if (keyProperty != null)
+                    {
+                        keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)chorusDto.Key);
+                    }
+                    var typeProperty = chorusType.GetProperty("Type");
+                    if (typeProperty != null)
+                    {
+                        typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)chorusDto.Type);
+                    }
+                    var tsProperty = chorusType.GetProperty("TimeSignature");
+                    if (tsProperty != null)
+                    {
+                        tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)chorusDto.TimeSignature);
+                    }
                     return chorus;
                 }
             }
@@ -248,14 +279,27 @@ public class ApiClientService : IApiClientService
                 if (chorusDto != null)
                 {
                     var chorus = Chorus.CreateFromSlide(chorusDto.Name, chorusDto.ChorusText);
-                    
                     var chorusType = typeof(Chorus);
                     var idProperty = chorusType.GetProperty("Id");
                     if (idProperty != null)
                     {
                         idProperty.SetValue(chorus, Guid.Parse(chorusDto.Id));
                     }
-                    
+                    var keyProperty = chorusType.GetProperty("Key");
+                    if (keyProperty != null)
+                    {
+                        keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)chorusDto.Key);
+                    }
+                    var typeProperty = chorusType.GetProperty("Type");
+                    if (typeProperty != null)
+                    {
+                        typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)chorusDto.Type);
+                    }
+                    var tsProperty = chorusType.GetProperty("TimeSignature");
+                    if (tsProperty != null)
+                    {
+                        tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)chorusDto.TimeSignature);
+                    }
                     return chorus;
                 }
             }
