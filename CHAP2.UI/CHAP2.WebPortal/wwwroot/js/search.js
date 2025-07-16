@@ -212,6 +212,9 @@ function sortSearchResults(results, searchTerm) {
 
 // Display search results
 function displayResults(results, searchTerm) {
+    console.log('displayResults called with:', { results: results.length, searchTerm });
+    console.log('currentSearchTerm in displayResults:', currentSearchTerm);
+    
     const resultsTable = document.getElementById('resultsTable');
     const resultsBody = document.getElementById('resultsBody');
     const resultsHeader = document.getElementById('resultsHeader');
@@ -284,16 +287,25 @@ function getTimeSignatureDisplay(timeValue) {
 
 // Create result row
 function createResultRow(result, index) {
+    console.log('Creating row for result:', result);
+    console.log('Result name:', result.name);
+    console.log('Result keys:', Object.keys(result));
+    console.log('currentSearchTerm:', currentSearchTerm);
+    
     const row = document.createElement('tr');
     row.className = 'result-row';
     row.setAttribute('data-id', result.id);
     
     // Highlight search term in title
     const highlightedTitle = highlightSearchTerm(result.name, currentSearchTerm);
+    console.log('Highlighted title:', highlightedTitle);
+    console.log('Type of highlightedTitle:', typeof highlightedTitle);
+    console.log('highlightedTitle === undefined:', highlightedTitle === undefined);
+    console.log('highlightedTitle === null:', highlightedTitle === null);
     
-    row.innerHTML = `
+    const rowHtml = `
         <td class="result-number">${index}</td>
-        <td class="result-title">${highlightedTitle}</td>
+        <td class="result-title">${highlightedTitle || result.name || 'Unknown'}</td>
         <td class="result-key">${getKeyDisplay(result.key)}</td>
         <td class="result-type">${getTypeDisplay(result.type)}</td>
         <td class="result-time">${getTimeSignatureDisplay(result.timeSignature)}</td>
@@ -311,6 +323,9 @@ function createResultRow(result, index) {
         </td>
     `;
     
+    console.log('Row HTML:', rowHtml);
+    row.innerHTML = rowHtml;
+    
     // Add click handler for row
     row.addEventListener('click', function(e) {
         if (!e.target.closest('.action-btn')) {
@@ -323,10 +338,38 @@ function createResultRow(result, index) {
 
 // Highlight search term in text
 function highlightSearchTerm(text, searchTerm) {
-    if (!searchTerm) return utils.escapeHtml(text);
+    console.log('highlightSearchTerm called with:', { text, searchTerm });
     
-    const regex = new RegExp(`(${utils.escapeHtml(searchTerm)})`, 'gi');
-    return utils.escapeHtml(text).replace(regex, '<mark>$1</mark>');
+    // Simple test first
+    if (!text) {
+        console.log('text is falsy, returning empty string');
+        return '';
+    }
+    
+    // Basic HTML escape
+    const escapedText = text.replace(/&/g, '&amp;')
+                           .replace(/</g, '&lt;')
+                           .replace(/>/g, '&gt;')
+                           .replace(/"/g, '&quot;')
+                           .replace(/'/g, '&#39;');
+    console.log('escapedText:', escapedText);
+    
+    if (!searchTerm) {
+        console.log('searchTerm is falsy, returning escaped text');
+        return escapedText;
+    }
+    
+    // Escape regex special characters in the search term
+    const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    console.log('escapedSearchTerm:', escapedSearchTerm);
+    
+    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+    console.log('regex:', regex);
+    
+    const result = escapedText.replace(regex, '<mark>$1</mark>');
+    console.log('final result:', result);
+    
+    return result;
 }
 
 // Show chorus detail
