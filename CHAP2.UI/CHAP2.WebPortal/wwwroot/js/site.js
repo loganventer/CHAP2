@@ -1,8 +1,4 @@
 // Global variables
-let searchTimeout;
-let currentSearchTerm = '';
-let searchDelay = 300; // milliseconds - match console app
-let minSearchLength = 2; // minimum characters - match console app
 
 // Utility functions
 const utils = {
@@ -154,6 +150,9 @@ const utils = {
         return variations[key] || [key];
     }
 };
+
+// Make utils globally available
+window.utils = utils;
 
 // Event handlers
 document.addEventListener('DOMContentLoaded', function() {

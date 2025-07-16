@@ -15,10 +15,9 @@
         @RenderBody()
     </div>
 
-    <script src="~/js/utils.js" asp-append-version="true"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="~/js/search.js" asp-append-version="true"></script>
-    <script src="~/js/detail.js" asp-append-version="true"></script>
+    <script src="~/js/site.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
+    <script src="~/js/search.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
+    <script src="~/js/detail.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html> 

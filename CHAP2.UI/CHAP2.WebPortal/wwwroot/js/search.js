@@ -4,21 +4,26 @@ let isSearching = false;
 let isConnected = false;
 let currentSearchTerm = '';
 let searchTimeout = null;
+let searchDelay = 300; // milliseconds - match console app
+let minSearchLength = 2; // minimum characters - match console app
 
 // Initialize search functionality
 function initializeSearch() {
+    console.log('Initializing search functionality...');
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearBtn');
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
     
     if (searchInput) {
+        console.log('Search input found, setting up event listeners...');
         // Debounced search function
         const debouncedSearch = debounce(performSearch, searchDelay);
         
         searchInput.addEventListener('input', function() {
             const value = this.value.trim();
             currentSearchTerm = value;
+            console.log('Search input event fired, value:', value);
             
             // Show/hide clear button
             if (value.length > 0) {
@@ -30,11 +35,13 @@ function initializeSearch() {
             
             // Perform search automatically on every keystroke
             if (value.length >= minSearchLength) {
+                console.log('Triggering search for:', value);
                 debouncedSearch(value);
             } else if (value.length === 0) {
                 clearResults();
             } else if (value.length === 1) {
                 // Special handling for single character - treat as key search
+                console.log('Triggering single character search for:', value);
                 debouncedSearch(value);
             }
         });
@@ -67,6 +74,8 @@ function initializeSearch() {
                 }
             }
         });
+    } else {
+        console.error('Search input not found!');
     }
     
     // Update status indicator
@@ -460,6 +469,14 @@ function convertToCSV(data) {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize search functionality
+    initializeSearch();
+    
+    // Test connectivity
+    testConnectivity().then(connected => {
+        console.log('Connectivity test result:', connected);
+    });
+    
     // Modal close button
     const modalClose = document.getElementById('modalClose');
     if (modalClose) {
