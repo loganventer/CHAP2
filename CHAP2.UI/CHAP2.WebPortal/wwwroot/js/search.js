@@ -81,13 +81,11 @@ function initializeSearch() {
     // Update status indicator
     function updateStatus(connected) {
         isConnected = connected;
-        if (statusIndicator && statusText) {
+        if (statusIndicator) {
             if (connected) {
                 statusIndicator.className = 'fas fa-circle status-indicator connected';
-                statusText.textContent = 'Connected';
             } else {
                 statusIndicator.className = 'fas fa-circle status-indicator disconnected';
-                statusText.textContent = 'Disconnected';
             }
         }
     }
