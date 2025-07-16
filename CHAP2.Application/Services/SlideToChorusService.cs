@@ -44,9 +44,16 @@ public class SlideToChorusService : ISlideToChorusService
             var (cleanTitle, key) = ExtractKeyFromMultipleSources(chorusName, firstLine);
 
             string textWithoutTitle = chorusText;
-            if (lines.Length > 0 && string.Equals(lines[0].Trim(), firstLine.Trim(), StringComparison.OrdinalIgnoreCase))
+            // Only remove the first line if it's a duplicate of the title AND there are multiple lines
+            // This prevents removing the first line when it's actually part of the chorus content
+            if (lines.Length > 1 && string.Equals(lines[0].Trim(), cleanTitle.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 textWithoutTitle = string.Join("\n", lines.Skip(1)).Trim();
+                _logger.LogInformation("Removed duplicate title line from chorus text for: {ChorusName}", cleanTitle);
+            }
+            else
+            {
+                _logger.LogInformation("Keeping all lines in chorus text for: {ChorusName} (first line doesn't match title or only one line)", cleanTitle);
             }
 
             var chorus = Chorus.CreateFromSlide(

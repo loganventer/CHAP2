@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using CHAP2.Console.Common;
 using CHAP2.Console.Bulk.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,10 @@ class Program
 
         try
         {
-            var path = args.Length > 0 ? args[0] : "";
+            var configuration = host.Services.GetRequiredService<IConfiguration>();
+            var defaultFolderPath = configuration["DefaultFolderPath"];
+            
+            var path = args.Length > 0 ? args[0] : defaultFolderPath ?? "";
             if (string.IsNullOrWhiteSpace(path))
             {
                 System.Console.WriteLine("CHAP2 Bulk Upload Console");
@@ -32,6 +36,11 @@ class Program
                 System.Console.WriteLine("  dotnet run ./slides");
                 System.Console.WriteLine("  dotnet run ../presentations");
                 System.Console.WriteLine("  dotnet run C:\\MySlides");
+                System.Console.WriteLine();
+                System.Console.WriteLine("If no folder path is provided, the DefaultFolderPath from");
+                System.Console.WriteLine("appsettings.json will be used.");
+                System.Console.WriteLine();
+                System.Console.WriteLine("Current DefaultFolderPath: " + (defaultFolderPath ?? "Not configured"));
                 System.Console.WriteLine();
                 System.Console.WriteLine("The application will recursively scan the specified folder");
                 System.Console.WriteLine("for .ppsx and .pptx files and upload them to the CHAP2API.");
