@@ -1,0 +1,128 @@
+@using CHAP2.WebPortal.Controllers
+@model ChorusCreateViewModel
+@{
+    ViewData["Title"] = "Create New Chorus";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create New Chorus - CHAP2</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/form.css" asp-append-version="true" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="form-page">
+    <!-- Animated Background -->
+    <div class="animated-background">
+        <div class="floating-notes">
+            <div class="note note-1">♪</div>
+            <div class="note note-2">♫</div>
+            <div class="note note-3">♬</div>
+            <div class="note note-4">♩</div>
+            <div class="note note-5">♭</div>
+            <div class="note note-6">♯</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="form-container">
+        <div class="form-header">
+            <h1><i class="fas fa-plus-circle"></i> Create New Chorus</h1>
+            <p>Add a new chorus to your collection</p>
+        </div>
+
+        <form asp-action="Create" method="post" class="chorus-form">
+            <div class="form-section">
+                <h2><i class="fas fa-info-circle"></i> Basic Information</h2>
+                
+                <div class="form-group">
+                    <label asp-for="Name" class="form-label">
+                        <i class="fas fa-music"></i> Chorus Name *
+                    </label>
+                    <input asp-for="Name" class="form-input" placeholder="Enter chorus name..." />
+                    <span asp-validation-for="Name" class="validation-error"></span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label asp-for="Key" class="form-label">
+                            <i class="fas fa-key"></i> Musical Key *
+                        </label>
+                        <select asp-for="Key" class="form-select">
+                            <option value="">Select a key...</option>
+                            @foreach (var key in ViewBag.MusicalKeys)
+                            {
+                                <option value="@key">@key</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Key" class="validation-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Type" class="form-label">
+                            <i class="fas fa-layer-group"></i> Chorus Type *
+                        </label>
+                        <select asp-for="Type" class="form-select">
+                            <option value="">Select a type...</option>
+                            @foreach (var type in ViewBag.ChorusTypes)
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Type" class="validation-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="TimeSignature" class="form-label">
+                            <i class="fas fa-clock"></i> Time Signature *
+                        </label>
+                        <select asp-for="TimeSignature" class="form-select">
+                            <option value="">Select time signature...</option>
+                            @foreach (var ts in ViewBag.TimeSignatures)
+                            {
+                                <option value="@ts">@ts</option>
+                            }
+                        </select>
+                        <span asp-validation-for="TimeSignature" class="validation-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2><i class="fas fa-align-left"></i> Lyrics</h2>
+                
+                <div class="form-group">
+                    <label asp-for="ChorusText" class="form-label">
+                        <i class="fas fa-music"></i> Chorus Text *
+                    </label>
+                    <textarea asp-for="ChorusText" class="form-textarea" rows="12" 
+                              placeholder="Enter the chorus lyrics here...&#10;&#10;Example:&#10;Amazing grace, how sweet the sound&#10;That saved a wretch like me&#10;I once was lost, but now I'm found&#10;Was blind, but now I see"></textarea>
+                    <span asp-validation-for="ChorusText" class="validation-error"></span>
+                    <div class="form-help">
+                        <i class="fas fa-info-circle"></i>
+                        Enter each line on a new line. Empty lines will be preserved for spacing.
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i> Cancel
+                </button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Create Chorus
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="~/js/form.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html> 

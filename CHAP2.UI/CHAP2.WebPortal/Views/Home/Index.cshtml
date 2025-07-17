@@ -9,6 +9,11 @@
             <h1 class="app-title">CHAP2 Web Portal</h1>
             <p class="app-subtitle">Musical Chorus Search</p>
         </div>
+        <div class="header-actions">
+            <a href="@Url.Action("Create")" class="btn-primary">
+                <i class="fas fa-plus"></i> Create New
+            </a>
+        </div>
         <div class="search-status" id="searchStatus">
             <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
         </div>
@@ -108,6 +113,31 @@
         </div>
         <div class="modal-content" id="modalContent">
             <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="delete-modal-overlay" id="deleteModal">
+    <div class="delete-modal">
+        <div class="delete-modal-header">
+            <h2>
+                <i class="fas fa-exclamation-triangle"></i>
+                Confirm Delete
+            </h2>
+        </div>
+        <div class="delete-modal-content">
+            <p>Are you sure you want to delete this chorus?</p>
+            <div class="chorus-name" id="deleteChorusName"></div>
+            <p><strong>This action cannot be undone.</strong></p>
+            <div class="delete-modal-actions">
+                <button class="btn-secondary" onclick="hideDeleteModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i> Delete Chorus
+                </button>
+            </div>
         </div>
     </div>
 </div> 

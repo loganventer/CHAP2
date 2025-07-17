@@ -69,6 +69,12 @@
     </div>
 
     <div class="detail-actions">
+        <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn-primary">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <button class="btn-danger" onclick="showDeleteConfirmation('@Model.Id', '@Model.Name')">
+            <i class="fas fa-trash"></i> Delete
+        </button>
         <button class="btn-primary" onclick="openInNewWindow('@Model.Id')">
             <i class="fas fa-external-link-alt"></i> Open in New Window
         </button>

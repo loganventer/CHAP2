@@ -320,6 +320,9 @@ function createResultRow(result, index) {
             <button class="action-btn" onclick="copyChorusText('${result.id}')" data-tooltip="Copy Lyrics">
                 <i class="fas fa-copy"></i>
             </button>
+            <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${result.name.replace(/'/g, "\\'")}')" data-tooltip="Delete Chorus">
+                <i class="fas fa-trash"></i>
+            </button>
         </td>
     `;
     
@@ -565,6 +568,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize search functionality
     initializeSearch();
     
+    // Initialize delete modal functionality
+    initializeDeleteModal();
+    
     // Test connectivity
     testConnectivity().then(connected => {
         console.log('Connectivity test result:', connected);
@@ -637,4 +643,153 @@ window.openInNewWindow = openInNewWindow;
 window.copyChorusText = copyChorusText;
 window.closeModal = closeModal;
 window.exportResults = exportResults;
-window.testConnectivity = testConnectivity; 
+window.testConnectivity = testConnectivity;
+
+// Delete Modal Functions
+let currentChorusId = null;
+let currentChorusName = null;
+
+// Show delete confirmation modal
+function showDeleteConfirmation(chorusId, chorusName) {
+    currentChorusId = chorusId;
+    currentChorusName = chorusName;
+    
+    // Update the modal content
+    document.getElementById('deleteChorusName').textContent = chorusName;
+    
+    // Show the modal
+    const modal = document.getElementById('deleteModal');
+    modal.classList.add('show');
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    // Focus on the cancel button for accessibility
+    setTimeout(() => {
+        const cancelButton = modal.querySelector('.btn-secondary');
+        if (cancelButton) {
+            cancelButton.focus();
+        }
+    }, 100);
+}
+
+// Hide delete confirmation modal
+function hideDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.classList.remove('show');
+    
+    // Restore body scroll
+    document.body.style.overflow = '';
+    
+    // Clear current values
+    currentChorusId = null;
+    currentChorusName = null;
+}
+
+// Confirm delete action
+async function confirmDelete() {
+    if (!currentChorusId) {
+        console.error('No chorus ID set for deletion');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        const deleteButton = document.querySelector('.delete-modal-actions .btn-danger');
+        const originalText = deleteButton.innerHTML;
+        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        deleteButton.disabled = true;
+        
+        // Make API call
+        const response = await fetch(`/Home/Delete/${currentChorusId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show success message
+            utils.showNotification('Chorus deleted successfully', 'success');
+            
+            // Hide modal
+            hideDeleteModal();
+            
+            // Remove the row from the table
+            const row = document.querySelector(`tr[data-id="${currentChorusId}"]`);
+            if (row) {
+                row.remove();
+                
+                // Update result count
+                const resultsCount = document.getElementById('resultsCount');
+                if (resultsCount) {
+                    const currentCount = parseInt(resultsCount.textContent.match(/\d+/)[0]);
+                    resultsCount.textContent = resultsCount.textContent.replace(/\d+/, currentCount - 1);
+                }
+                
+                // Remove from searchResults array
+                searchResults = searchResults.filter(r => r.id !== currentChorusId);
+            }
+        } else {
+            // Show error message
+            utils.showNotification(result.message || 'Failed to delete chorus', 'error');
+            
+            // Reset button
+            deleteButton.innerHTML = originalText;
+            deleteButton.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error deleting chorus:', error);
+        utils.showNotification('An error occurred while deleting the chorus', 'error');
+        
+        // Reset button
+        const deleteButton = document.querySelector('.delete-modal-actions .btn-danger');
+        deleteButton.innerHTML = '<i class="fas fa-trash"></i> Delete Chorus';
+        deleteButton.disabled = false;
+    }
+}
+
+// Get anti-forgery token
+function getAntiForgeryToken() {
+    const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+    return tokenElement ? tokenElement.value : '';
+}
+
+// Initialize delete modal functionality
+function initializeDeleteModal() {
+    // Close modal when clicking outside
+    const modal = document.getElementById('deleteModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                hideDeleteModal();
+            }
+        });
+    }
+    
+    // Prevent modal from closing when clicking inside the modal
+    const modalContent = document.querySelector('.delete-modal');
+    if (modalContent) {
+        modalContent.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('deleteModal');
+            if (modal && modal.classList.contains('show')) {
+                hideDeleteModal();
+            }
+        }
+    });
+}
+
+// Add global delete functions
+window.showDeleteConfirmation = showDeleteConfirmation;
+window.hideDeleteModal = hideDeleteModal;
+window.confirmDelete = confirmDelete; 

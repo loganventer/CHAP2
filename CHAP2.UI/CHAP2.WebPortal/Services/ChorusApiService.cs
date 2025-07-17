@@ -319,6 +319,74 @@ public class ChorusApiService : IChorusApiService
             return null;
         }
     }
+
+    public async Task<bool> CreateChorusAsync(Chorus chorus, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var dto = new ChorusDto
+            {
+                Id = chorus.Id.ToString(),
+                Name = chorus.Name,
+                ChorusText = chorus.ChorusText,
+                Key = (int)chorus.Key,
+                Type = (int)chorus.Type,
+                TimeSignature = (int)chorus.TimeSignature
+            };
+
+            var json = JsonSerializer.Serialize(dto, _jsonOptions);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PostAsync("/api/choruses", content, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create chorus");
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateChorusAsync(Guid id, string name, string chorusText, CHAP2.Domain.Enums.MusicalKey key, CHAP2.Domain.Enums.ChorusType type, CHAP2.Domain.Enums.TimeSignature timeSignature, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var dto = new ChorusDto
+            {
+                Id = id.ToString(),
+                Name = name,
+                ChorusText = chorusText,
+                Key = (int)key,
+                Type = (int)type,
+                TimeSignature = (int)timeSignature
+            };
+
+            var json = JsonSerializer.Serialize(dto, _jsonOptions);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PutAsync($"/api/choruses/{id}", content, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update chorus with ID: {Id}", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteChorusAsync(string id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"/api/choruses/{id}", cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete chorus with ID: {Id}", id);
+            return false;
+        }
+    }
 }
 
 // DTOs for API communication
