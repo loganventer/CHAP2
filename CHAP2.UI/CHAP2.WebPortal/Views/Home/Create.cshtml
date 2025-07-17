@@ -37,6 +37,7 @@
         </div>
 
         <form asp-action="Create" method="post" class="chorus-form">
+            @Html.ValidationSummary(true, "", new { @class = "validation-summary-errors" })
             <div class="form-section">
                 <h2><i class="fas fa-info-circle"></i> Basic Information</h2>
                 
@@ -44,7 +45,8 @@
                     <label asp-for="Name" class="form-label">
                         <i class="fas fa-music"></i> Chorus Name *
                     </label>
-                    <input asp-for="Name" class="form-input" placeholder="Enter chorus name..." />
+                    <input asp-for="Name" name="Name" class="form-input" placeholder="Enter chorus name..." 
+                           required minlength="2" maxlength="200" />
                     <span asp-validation-for="Name" class="validation-error"></span>
                 </div>
 
@@ -53,7 +55,7 @@
                         <label asp-for="Key" class="form-label">
                             <i class="fas fa-key"></i> Musical Key *
                         </label>
-                        <select asp-for="Key" class="form-select">
+                        <select asp-for="Key" name="Key" class="form-select" required>
                             <option value="">Select a key...</option>
                             @foreach (var key in ViewBag.MusicalKeys)
                             {
@@ -67,7 +69,7 @@
                         <label asp-for="Type" class="form-label">
                             <i class="fas fa-layer-group"></i> Chorus Type *
                         </label>
-                        <select asp-for="Type" class="form-select">
+                        <select asp-for="Type" name="Type" class="form-select" required>
                             <option value="">Select a type...</option>
                             @foreach (var type in ViewBag.ChorusTypes)
                             {
@@ -81,7 +83,7 @@
                         <label asp-for="TimeSignature" class="form-label">
                             <i class="fas fa-clock"></i> Time Signature *
                         </label>
-                        <select asp-for="TimeSignature" class="form-select">
+                        <select asp-for="TimeSignature" name="TimeSignature" class="form-select" required>
                             <option value="">Select time signature...</option>
                             @foreach (var ts in ViewBag.TimeSignatures)
                             {
@@ -100,8 +102,9 @@
                     <label asp-for="ChorusText" class="form-label">
                         <i class="fas fa-music"></i> Chorus Text *
                     </label>
-                    <textarea asp-for="ChorusText" class="form-textarea" rows="12" 
-                              placeholder="Enter the chorus lyrics here...&#10;&#10;Example:&#10;Amazing grace, how sweet the sound&#10;That saved a wretch like me&#10;I once was lost, but now I'm found&#10;Was blind, but now I see"></textarea>
+                    <textarea asp-for="ChorusText" name="ChorusText" class="form-textarea" rows="12" 
+                              placeholder="Enter the chorus lyrics here...&#10;&#10;Example:&#10;Amazing grace, how sweet the sound&#10;That saved a wretch like me&#10;I once was lost, but now I'm found&#10;Was blind, but now I see"
+                              required minlength="10"></textarea>
                     <span asp-validation-for="ChorusText" class="validation-error"></span>
                     <div class="form-help">
                         <i class="fas fa-info-circle"></i>
@@ -111,8 +114,8 @@
             </div>
 
             <div class="form-actions">
-                <button type="button" class="btn-secondary" onclick="history.back()">
-                    <i class="fas fa-arrow-left"></i> Cancel
+                <button type="button" class="btn-secondary" onclick="closeWindow()">
+                    <i class="fas fa-times"></i> Close Window
                 </button>
                 <button type="submit" class="btn-primary">
                     <i class="fas fa-save"></i> Create Chorus
@@ -122,7 +125,5 @@
     </div>
 
     <script src="~/js/form.js" asp-append-version="true"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 </body>
 </html> 

@@ -1,6 +1,6 @@
 @model CHAP2.Domain.Entities.Chorus
 
-<div class="detail-modal-content">
+<div class="detail-modal-glass">
     <div class="detail-header">
         <div class="chorus-info">
             <h2 class="chorus-title">@Model.Name</h2>
@@ -69,16 +69,16 @@
     </div>
 
     <div class="detail-actions">
-        <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn-primary">
+        <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-primary" target="_blank" onclick="openEditWindow(event, '@Model.Id')">
             <i class="fas fa-edit"></i> Edit
         </a>
-        <button class="btn-danger" onclick="showDeleteConfirmation('@Model.Id', '@Model.Name')">
+        <button class="btn btn-danger" onclick="showDeleteConfirmation('@Model.Id', '@Model.Name')">
             <i class="fas fa-trash"></i> Delete
         </button>
-        <button class="btn-primary" onclick="openInNewWindow('@Model.Id')">
+        <button class="btn btn-secondary" onclick="openInNewWindow('@Model.Id')">
             <i class="fas fa-external-link-alt"></i> Open in New Window
         </button>
-        <button class="btn-secondary" onclick="printChorus()">
+        <button class="btn btn-secondary" onclick="printChorus()">
             <i class="fas fa-print"></i> Print
         </button>
     </div>

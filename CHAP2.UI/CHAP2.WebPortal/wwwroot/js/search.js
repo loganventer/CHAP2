@@ -297,11 +297,18 @@ function createResultRow(result, index) {
     row.setAttribute('data-id', result.id);
     
     // Highlight search term in title
-    const highlightedTitle = highlightSearchTerm(result.name, currentSearchTerm);
-    console.log('Highlighted title:', highlightedTitle);
-    console.log('Type of highlightedTitle:', typeof highlightedTitle);
-    console.log('highlightedTitle === undefined:', highlightedTitle === undefined);
-    console.log('highlightedTitle === null:', highlightedTitle === null);
+    let highlightedTitle;
+    console.log('About to call highlightSearchTerm with:', { name: result.name, currentSearchTerm });
+    try {
+        highlightedTitle = highlightSearchTerm(result.name, currentSearchTerm);
+        console.log('Highlighted title:', highlightedTitle);
+        console.log('Type of highlightedTitle:', typeof highlightedTitle);
+        console.log('highlightedTitle === undefined:', highlightedTitle === undefined);
+        console.log('highlightedTitle === null:', highlightedTitle === null);
+    } catch (error) {
+        console.error('Error in highlightSearchTerm:', error);
+        highlightedTitle = result.name || 'Unknown';
+    }
     
     const rowHtml = `
         <td class="result-number">${index}</td>
@@ -346,36 +353,41 @@ function createResultRow(result, index) {
 function highlightSearchTerm(text, searchTerm) {
     console.log('highlightSearchTerm called with:', { text, searchTerm });
     
-    // Simple test first
-    if (!text) {
-        console.log('text is falsy, returning empty string');
-        return '';
+    try {
+        // Simple test first
+        if (!text) {
+            console.log('text is falsy, returning empty string');
+            return '';
+        }
+        
+        // Basic HTML escape
+        const escapedText = text.replace(/&/g, '&amp;')
+                               .replace(/</g, '&lt;')
+                               .replace(/>/g, '&gt;')
+                               .replace(/"/g, '&quot;')
+                               .replace(/'/g, '&#39;');
+        console.log('escapedText:', escapedText);
+        
+        if (!searchTerm) {
+            console.log('searchTerm is falsy, returning escaped text');
+            return escapedText;
+        }
+        
+        // Escape regex special characters in the search term
+        const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        console.log('escapedSearchTerm:', escapedSearchTerm);
+        
+        const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+        console.log('regex:', regex);
+        
+        const result = escapedText.replace(regex, '<mark>$1</mark>');
+        console.log('final result:', result);
+        
+        return result;
+    } catch (error) {
+        console.error('Error in highlightSearchTerm function:', error);
+        return text || '';
     }
-    
-    // Basic HTML escape
-    const escapedText = text.replace(/&/g, '&amp;')
-                           .replace(/</g, '&lt;')
-                           .replace(/>/g, '&gt;')
-                           .replace(/"/g, '&quot;')
-                           .replace(/'/g, '&#39;');
-    console.log('escapedText:', escapedText);
-    
-    if (!searchTerm) {
-        console.log('searchTerm is falsy, returning escaped text');
-        return escapedText;
-    }
-    
-    // Escape regex special characters in the search term
-    const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    console.log('escapedSearchTerm:', escapedSearchTerm);
-    
-    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-    console.log('regex:', regex);
-    
-    const result = escapedText.replace(regex, '<mark>$1</mark>');
-    console.log('final result:', result);
-    
-    return result;
 }
 
 // Show chorus detail
@@ -718,20 +730,13 @@ async function confirmDelete() {
             // Hide modal
             hideDeleteModal();
             
-            // Remove the row from the table
-            const row = document.querySelector(`tr[data-id="${currentChorusId}"]`);
-            if (row) {
-                row.remove();
-                
-                // Update result count
-                const resultsCount = document.getElementById('resultsCount');
-                if (resultsCount) {
-                    const currentCount = parseInt(resultsCount.textContent.match(/\d+/)[0]);
-                    resultsCount.textContent = resultsCount.textContent.replace(/\d+/, currentCount - 1);
-                }
-                
-                // Remove from searchResults array
-                searchResults = searchResults.filter(r => r.id !== currentChorusId);
+            // Refresh the search to get updated results
+            if (currentSearchTerm && currentSearchTerm.length >= minSearchLength) {
+                console.log('Refreshing search after deletion with term:', currentSearchTerm);
+                performSearch(currentSearchTerm);
+            } else {
+                // If no current search term, just clear results
+                clearResults();
             }
         } else {
             // Show error message
@@ -792,4 +797,24 @@ function initializeDeleteModal() {
 // Add global delete functions
 window.showDeleteConfirmation = showDeleteConfirmation;
 window.hideDeleteModal = hideDeleteModal;
-window.confirmDelete = confirmDelete; 
+window.confirmDelete = confirmDelete;
+
+// Open Create window in new window
+function openCreateWindow(event) {
+    event.preventDefault();
+    const url = '/Home/Create';
+    const windowFeatures = 'width=1200,height=800,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no';
+    window.open(url, '_blank', windowFeatures);
+}
+
+// Open Edit window in new window
+function openEditWindow(event, chorusId) {
+    event.preventDefault();
+    const url = `/Home/Edit/${chorusId}`;
+    const windowFeatures = 'width=1200,height=800,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no';
+    window.open(url, '_blank', windowFeatures);
+}
+
+// Add global window functions
+window.openCreateWindow = openCreateWindow;
+window.openEditWindow = openEditWindow; 

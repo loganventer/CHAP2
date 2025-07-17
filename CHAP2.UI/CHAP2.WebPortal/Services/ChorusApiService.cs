@@ -40,50 +40,93 @@ public class ChorusApiService : IChorusApiService
     {
         try
         {
+            _logger.LogInformation("Searching choruses with term: {SearchTerm}, mode: {SearchMode}, in: {SearchIn}", searchTerm, searchMode, searchIn);
+            
             var url = $"/api/choruses/search?q={Uri.EscapeDataString(searchTerm)}&searchIn={searchIn}&searchMode={searchMode}";
+            _logger.LogInformation("Search URL: {Url}", url);
+            
             var response = await _httpClient.GetAsync(url, cancellationToken);
+            _logger.LogInformation("Search API response status: {StatusCode}", response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogInformation("Search API response content: {Content}", content);
+                
                 var searchResponse = JsonSerializer.Deserialize<SearchResponseDto>(content, _jsonOptions);
                 
                 if (searchResponse?.Results != null)
                 {
+                    _logger.LogInformation("Found {Count} search results", searchResponse.Results.Count);
+                    
                     var choruses = new List<Chorus>();
                     foreach (var dto in searchResponse.Results)
                     {
-                        var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                        _logger.LogInformation("Processing search result - Name: {Name}, Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
+                            dto.Name, dto.Key, dto.Type, dto.TimeSignature);
                         
-                        var chorusType = typeof(Chorus);
-                        var idProperty = chorusType.GetProperty("Id");
-                        if (idProperty != null)
+                        try
                         {
-                            idProperty.SetValue(chorus, Guid.Parse(dto.Id));
+                            // Convert enum values directly without changing NotSet
+                            var key = (CHAP2.Domain.Enums.MusicalKey)dto.Key;
+                            var type = (CHAP2.Domain.Enums.ChorusType)dto.Type;
+                            var timeSignature = (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature;
+                            
+                            // Use CreateFromSlide for NotSet values, Create for set values
+                            Chorus chorus;
+                            if (key == CHAP2.Domain.Enums.MusicalKey.NotSet || 
+                                type == CHAP2.Domain.Enums.ChorusType.NotSet || 
+                                timeSignature == CHAP2.Domain.Enums.TimeSignature.NotSet)
+                            {
+                                chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                                
+                                // Set the enum values via reflection if they're not NotSet
+                                var chorusType = typeof(Chorus);
+                                if (key != CHAP2.Domain.Enums.MusicalKey.NotSet)
+                                {
+                                    var keyProperty = chorusType.GetProperty("Key");
+                                    keyProperty?.SetValue(chorus, key);
+                                }
+                                if (type != CHAP2.Domain.Enums.ChorusType.NotSet)
+                                {
+                                    var typeProperty = chorusType.GetProperty("Type");
+                                    typeProperty?.SetValue(chorus, type);
+                                }
+                                if (timeSignature != CHAP2.Domain.Enums.TimeSignature.NotSet)
+                                {
+                                    var timeSignatureProperty = chorusType.GetProperty("TimeSignature");
+                                    timeSignatureProperty?.SetValue(chorus, timeSignature);
+                                }
+                            }
+                            else
+                            {
+                                chorus = Chorus.Create(dto.Name, dto.ChorusText, key, type, timeSignature);
+                            }
+                            
+                            // Set the ID using reflection since it's private set
+                            var chorusTypeForId = typeof(Chorus);
+                            var idProperty = chorusTypeForId.GetProperty("Id");
+                            if (idProperty != null)
+                            {
+                                idProperty.SetValue(chorus, Guid.Parse(dto.Id));
+                            }
+                            
+                            _logger.LogInformation("Successfully created chorus from search result: {Name}", chorus.Name);
+                            choruses.Add(chorus);
                         }
-                        
-                        var keyProperty = chorusType.GetProperty("Key");
-                        if (keyProperty != null)
+                        catch (Exception ex)
                         {
-                            keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)dto.Key);
+                            _logger.LogError(ex, "Error creating chorus from search result - Name: {Name}, Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
+                                dto.Name, dto.Key, dto.Type, dto.TimeSignature);
                         }
-                        
-                        var typeProperty = chorusType.GetProperty("Type");
-                        if (typeProperty != null)
-                        {
-                            typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)dto.Type);
-                        }
-                        
-                        var tsProperty = chorusType.GetProperty("TimeSignature");
-                        if (tsProperty != null)
-                        {
-                            tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature);
-                        }
-                        
-                        choruses.Add(chorus);
                     }
                     
+                    _logger.LogInformation("Returning {Count} choruses from search", choruses.Count);
                     return choruses;
+                }
+                else
+                {
+                    _logger.LogWarning("Search response or results is null");
                 }
             }
             else
@@ -105,44 +148,83 @@ public class ChorusApiService : IChorusApiService
     {
         try
         {
+            _logger.LogInformation("Getting chorus by ID: {Id}", id);
+            
             var response = await _httpClient.GetAsync($"/api/choruses/{id}", cancellationToken);
+            _logger.LogInformation("API response status: {StatusCode}", response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogInformation("API response content: {Content}", content);
+                
                 var dto = JsonSerializer.Deserialize<ChorusDto>(content, _jsonOptions);
                 
                 if (dto != null)
                 {
-                    var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                    _logger.LogInformation("Creating chorus from DTO - Name: {Name}, Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
+                        dto.Name, dto.Key, dto.Type, dto.TimeSignature);
                     
-                    var chorusType = typeof(Chorus);
-                    var idProperty = chorusType.GetProperty("Id");
-                    if (idProperty != null)
+                    try
                     {
-                        idProperty.SetValue(chorus, Guid.Parse(dto.Id));
+                        // Convert enum values directly
+                        var key = (CHAP2.Domain.Enums.MusicalKey)dto.Key;
+                        var type = (CHAP2.Domain.Enums.ChorusType)dto.Type;
+                        var timeSignature = (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature;
+                        
+                        // Use CreateFromSlide for NotSet values, Create for set values
+                        Chorus chorus;
+                        if (key == CHAP2.Domain.Enums.MusicalKey.NotSet || 
+                            type == CHAP2.Domain.Enums.ChorusType.NotSet || 
+                            timeSignature == CHAP2.Domain.Enums.TimeSignature.NotSet)
+                        {
+                            chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                            
+                            // Set the enum values via reflection if they're not NotSet
+                            var chorusType = typeof(Chorus);
+                            if (key != CHAP2.Domain.Enums.MusicalKey.NotSet)
+                            {
+                                var keyProperty = chorusType.GetProperty("Key");
+                                keyProperty?.SetValue(chorus, key);
+                            }
+                            if (type != CHAP2.Domain.Enums.ChorusType.NotSet)
+                            {
+                                var typeProperty = chorusType.GetProperty("Type");
+                                typeProperty?.SetValue(chorus, type);
+                            }
+                            if (timeSignature != CHAP2.Domain.Enums.TimeSignature.NotSet)
+                            {
+                                var timeSignatureProperty = chorusType.GetProperty("TimeSignature");
+                                timeSignatureProperty?.SetValue(chorus, timeSignature);
+                            }
+                        }
+                        else
+                        {
+                            chorus = Chorus.Create(dto.Name, dto.ChorusText, key, type, timeSignature);
+                        }
+                        
+                        // Set the ID using reflection since it's private set
+                        var chorusTypeForId = typeof(Chorus);
+                        var idProperty = chorusTypeForId.GetProperty("Id");
+                        if (idProperty != null)
+                        {
+                            idProperty.SetValue(chorus, Guid.Parse(dto.Id));
+                        }
+                        
+                        _logger.LogInformation("Chorus loaded successfully: {Name}", chorus.Name);
+                        return chorus;
                     }
-                    
-                    var keyProperty = chorusType.GetProperty("Key");
-                    if (keyProperty != null)
+                    catch (Exception ex)
                     {
-                        keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)dto.Key);
+                        _logger.LogError(ex, "Error creating chorus from DTO");
+                        return null;
                     }
-                    
-                    var typeProperty = chorusType.GetProperty("Type");
-                    if (typeProperty != null)
-                    {
-                        typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)dto.Type);
-                    }
-                    
-                    var tsProperty = chorusType.GetProperty("TimeSignature");
-                    if (tsProperty != null)
-                    {
-                        tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature);
-                    }
-                    
-                    return chorus;
                 }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("API error response: {Error}", errorContent);
             }
 
             return null;
@@ -167,31 +249,21 @@ public class ChorusApiService : IChorusApiService
                 
                 if (dto != null)
                 {
-                    var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                    // Create chorus with all properties using the Create method
+                    var chorus = Chorus.Create(
+                        dto.Name, 
+                        dto.ChorusText, 
+                        (CHAP2.Domain.Enums.MusicalKey)dto.Key, 
+                        (CHAP2.Domain.Enums.ChorusType)dto.Type, 
+                        (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature
+                    );
                     
+                    // Set the ID using reflection since it's private set
                     var chorusType = typeof(Chorus);
                     var idProperty = chorusType.GetProperty("Id");
                     if (idProperty != null)
                     {
                         idProperty.SetValue(chorus, Guid.Parse(dto.Id));
-                    }
-                    
-                    var keyProperty = chorusType.GetProperty("Key");
-                    if (keyProperty != null)
-                    {
-                        keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)dto.Key);
-                    }
-                    
-                    var typeProperty = chorusType.GetProperty("Type");
-                    if (typeProperty != null)
-                    {
-                        typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)dto.Type);
-                    }
-                    
-                    var tsProperty = chorusType.GetProperty("TimeSignature");
-                    if (tsProperty != null)
-                    {
-                        tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature);
                     }
                     
                     return chorus;
@@ -223,31 +295,21 @@ public class ChorusApiService : IChorusApiService
                     var choruses = new List<Chorus>();
                     foreach (var dto in dtos)
                     {
-                        var chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                        // Create chorus with all properties using the Create method
+                        var chorus = Chorus.Create(
+                            dto.Name, 
+                            dto.ChorusText, 
+                            (CHAP2.Domain.Enums.MusicalKey)dto.Key, 
+                            (CHAP2.Domain.Enums.ChorusType)dto.Type, 
+                            (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature
+                        );
                         
+                        // Set the ID using reflection since it's private set
                         var chorusType = typeof(Chorus);
                         var idProperty = chorusType.GetProperty("Id");
                         if (idProperty != null)
                         {
                             idProperty.SetValue(chorus, Guid.Parse(dto.Id));
-                        }
-                        
-                        var keyProperty = chorusType.GetProperty("Key");
-                        if (keyProperty != null)
-                        {
-                            keyProperty.SetValue(chorus, (CHAP2.Domain.Enums.MusicalKey)dto.Key);
-                        }
-                        
-                        var typeProperty = chorusType.GetProperty("Type");
-                        if (typeProperty != null)
-                        {
-                            typeProperty.SetValue(chorus, (CHAP2.Domain.Enums.ChorusType)dto.Type);
-                        }
-                        
-                        var tsProperty = chorusType.GetProperty("TimeSignature");
-                        if (tsProperty != null)
-                        {
-                            tsProperty.SetValue(chorus, (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature);
                         }
                         
                         choruses.Add(chorus);
@@ -324,6 +386,11 @@ public class ChorusApiService : IChorusApiService
     {
         try
         {
+            _logger.LogInformation("=== CREATE CHORUS API CALL START ===");
+            _logger.LogInformation("Creating chorus via API: {Name} (ID: {Id})", chorus.Name, chorus.Id);
+            _logger.LogInformation("Chorus details - Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
+                chorus.Key, chorus.Type, chorus.TimeSignature);
+            
             var dto = new ChorusDto
             {
                 Id = chorus.Id.ToString(),
@@ -334,10 +401,34 @@ public class ChorusApiService : IChorusApiService
                 TimeSignature = (int)chorus.TimeSignature
             };
 
+            _logger.LogInformation("DTO created - ID: {DtoId}, Name: {DtoName}, Key: {DtoKey}, Type: {DtoType}, TimeSignature: {DtoTimeSignature}", 
+                dto.Id, dto.Name, dto.Key, dto.Type, dto.TimeSignature);
+
             var json = JsonSerializer.Serialize(dto, _jsonOptions);
-            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            _logger.LogInformation("JSON serialized: {Json}", json);
             
-            var response = await _httpClient.PostAsync("/api/choruses", content, cancellationToken);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            _logger.LogInformation("Content created with Content-Type: {ContentType}", content.Headers.ContentType);
+            
+            var url = "/api/choruses";
+            _logger.LogInformation("Making POST request to: {Url}", url);
+            
+            var response = await _httpClient.PostAsync(url, content, cancellationToken);
+            _logger.LogInformation("API response status: {StatusCode}", response.StatusCode);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("API error response: {Error}", errorContent);
+                var headers = string.Join(", ", response.Headers.Select(h => $"{h.Key}: {string.Join(", ", h.Value)}"));
+                _logger.LogError("Response headers: {Headers}", headers);
+            }
+            else
+            {
+                _logger.LogInformation("Chorus created successfully via API");
+            }
+            
+            _logger.LogInformation("=== CREATE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -351,6 +442,10 @@ public class ChorusApiService : IChorusApiService
     {
         try
         {
+            _logger.LogInformation("=== UPDATE CHORUS API CALL START ===");
+            _logger.LogInformation("Updating chorus via API - ID: {Id}, Name: {Name}", id, name);
+            _logger.LogInformation("Update parameters - Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", key, type, timeSignature);
+            
             var dto = new ChorusDto
             {
                 Id = id.ToString(),
@@ -361,10 +456,34 @@ public class ChorusApiService : IChorusApiService
                 TimeSignature = (int)timeSignature
             };
 
+            _logger.LogInformation("DTO created - ID: {DtoId}, Name: {DtoName}, Key: {DtoKey}, Type: {DtoType}, TimeSignature: {DtoTimeSignature}", 
+                dto.Id, dto.Name, dto.Key, dto.Type, dto.TimeSignature);
+
             var json = JsonSerializer.Serialize(dto, _jsonOptions);
-            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            _logger.LogInformation("JSON serialized: {Json}", json);
             
-            var response = await _httpClient.PutAsync($"/api/choruses/{id}", content, cancellationToken);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            _logger.LogInformation("Content created with Content-Type: {ContentType}", content.Headers.ContentType);
+            
+            var url = $"/api/choruses/{id}";
+            _logger.LogInformation("Making PUT request to: {Url}", url);
+            
+            var response = await _httpClient.PutAsync(url, content, cancellationToken);
+            _logger.LogInformation("API response status: {StatusCode}", response.StatusCode);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("API error response: {Error}", errorContent);
+                var headers = string.Join(", ", response.Headers.Select(h => $"{h.Key}: {string.Join(", ", h.Value)}"));
+                _logger.LogError("Response headers: {Headers}", headers);
+            }
+            else
+            {
+                _logger.LogInformation("Chorus updated successfully via API");
+            }
+            
+            _logger.LogInformation("=== UPDATE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)

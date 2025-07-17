@@ -1,6 +1,8 @@
-// Form JavaScript for CHAP2 Web Portal
+// Modern Form JavaScript for CHAP2 Web Portal
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Form page loaded');
+    
     // Initialize form functionality
     initializeForm();
     
@@ -12,14 +14,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add auto-save functionality
     setupAutoSave();
+    
+    // Add form enhancement
+    autoResizeTextarea();
+    setupSmartPlaceholder();
+    
+    console.log('Form initialization complete');
 });
 
 function initializeForm() {
+    console.log('Initializing form...');
+    
     // Add focus effects to form inputs
     const inputs = document.querySelectorAll('.form-input, .form-select, .form-textarea');
+    console.log('Found inputs:', inputs.length);
+    
     inputs.forEach(input => {
         input.addEventListener('focus', function() {
             this.parentElement.classList.add('focused');
+            console.log('Input focused:', this.name);
         });
         
         input.addEventListener('blur', function() {
@@ -27,7 +40,7 @@ function initializeForm() {
         });
     });
     
-    // Add real-time validation feedback
+    // Add real-time validation feedback using HTML5 validation
     inputs.forEach(input => {
         input.addEventListener('input', function() {
             validateField(this);
@@ -37,17 +50,75 @@ function initializeForm() {
             validateField(this);
         });
     });
+    
+    console.log('Form initialization complete');
 }
 
 function setupFormSubmission() {
     const forms = document.querySelectorAll('.chorus-form');
-    forms.forEach(form => {
+    console.log('Found forms:', forms.length);
+    
+    forms.forEach((form, index) => {
+        console.log(`Setting up form ${index + 1}:`, form);
+        console.log('Form action:', form.action);
+        console.log('Form method:', form.method);
+        console.log('Form enctype:', form.enctype);
+        
         form.addEventListener('submit', function(e) {
+            console.log('=== FORM SUBMISSION START ===');
+            console.log('Form submission event triggered');
+            console.log('Form action:', form.action);
+            console.log('Form method:', form.method);
+            console.log('Form enctype:', form.enctype);
+            console.log('Event type:', e.type);
+            
+            // Log form data
+            const formData = new FormData(form);
+            console.log('Form data entries:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}: ${value}`);
+            }
+            
+            // Log form elements
+            console.log('Form elements:');
+            const elements = form.elements;
+            for (let i = 0; i < elements.length; i++) {
+                const element = elements[i];
+                if (element.name) {
+                    console.log(`  ${element.name}: ${element.value} (type: ${element.type})`);
+                }
+            }
+            
+            // Use HTML5 validation first
+            console.log('Checking HTML5 validity...');
+            if (!form.checkValidity()) {
+                console.log('HTML5 validation failed');
+                e.preventDefault();
+                form.reportValidity();
+                showNotification('Please fix the errors before submitting', 'error');
+                return;
+            }
+            console.log('HTML5 validation passed');
+            
+            // Additional custom validation
+            console.log('Running custom validation...');
+            if (!validateForm()) {
+                console.log('Custom validation failed');
+                e.preventDefault();
+                showNotification('Please fix the errors before submitting', 'error');
+                return;
+            }
+            console.log('Custom validation passed');
+            
             // Add loading state
+            console.log('Adding loading state...');
             document.body.classList.add('loading');
             
             // Show loading message
             showNotification('Saving chorus...', 'info');
+            
+            console.log('Form submission proceeding...');
+            console.log('=== FORM SUBMISSION END ===');
             
             // Remove loading state after a delay (in case of errors)
             setTimeout(() => {
@@ -160,7 +231,16 @@ function validateField(field) {
         errorElement.textContent = '';
     }
     
-    // Validation rules
+    // Use HTML5 validation first
+    if (!field.checkValidity()) {
+        field.classList.add('input-validation-error');
+        if (errorElement) {
+            errorElement.textContent = field.validationMessage;
+        }
+        return false;
+    }
+    
+    // Additional custom validation
     let isValid = true;
     let errorMessage = '';
     
@@ -290,9 +370,6 @@ function autoResizeTextarea() {
     }
 }
 
-// Initialize auto-resize
-document.addEventListener('DOMContentLoaded', autoResizeTextarea);
-
 // Form enhancement: Smart placeholder
 function setupSmartPlaceholder() {
     const textarea = document.querySelector('.form-textarea');
@@ -321,5 +398,97 @@ function setupSmartPlaceholder() {
     }
 }
 
-// Initialize smart placeholder
-document.addEventListener('DOMContentLoaded', setupSmartPlaceholder); 
+// Save Confirmation Modal Functions
+function showSaveConfirmation() {
+    console.log('Showing save confirmation modal');
+    
+    // Validate form first
+    const form = document.querySelector('.chorus-form');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        showNotification('Please fix the errors before saving', 'error');
+        return;
+    }
+    
+    // Get the chorus name for confirmation
+    const chorusNameInput = document.querySelector('input[name="Name"]');
+    const chorusName = chorusNameInput ? chorusNameInput.value.trim() : 'Unknown Chorus';
+    
+    // Update the confirmation modal with the chorus name
+    const confirmChorusName = document.getElementById('confirmChorusName');
+    if (confirmChorusName) {
+        confirmChorusName.textContent = chorusName;
+    }
+    
+    // Show the modal
+    const modal = document.getElementById('saveConfirmationModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+        
+        // Focus the first button for accessibility
+        const firstButton = modal.querySelector('button');
+        if (firstButton) {
+            firstButton.focus();
+        }
+    }
+}
+
+function hideSaveConfirmation() {
+    console.log('Hiding save confirmation modal');
+    
+    const modal = document.getElementById('saveConfirmationModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+function confirmSave() {
+    console.log('User confirmed save, submitting form');
+    
+    // Hide the modal
+    hideSaveConfirmation();
+    
+    // Submit the form
+    const form = document.querySelector('.chorus-form');
+    if (form) {
+        // Add loading state
+        document.body.classList.add('loading');
+        
+        // Show loading message
+        showNotification('Saving changes...', 'info');
+        
+        // Submit the form
+        form.submit();
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('saveConfirmationModal');
+    if (modal && e.target === modal) {
+        hideSaveConfirmation();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideSaveConfirmation();
+    }
+});
+
+// Close window function
+function closeWindow() {
+    // If this window was opened from another window, refresh the parent
+    if (window.opener && !window.opener.closed) {
+        window.opener.location.reload();
+    }
+    window.close();
+}
+
+// Add global function
+window.closeWindow = closeWindow; 
