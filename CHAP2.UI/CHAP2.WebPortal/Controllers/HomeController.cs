@@ -270,7 +270,7 @@ public class HomeController : Controller
             ViewBag.ChorusTypes = Enum.GetValues<ChorusType>();
             ViewBag.TimeSignatures = Enum.GetValues<TimeSignature>();
             
-            _logger.LogInformation("ViewBag populated with enums (including NotSet)");
+            _logger.LogInformation("ViewBag populated with enums (including NotSet for imported choruses)");
             
             _logger.LogInformation("=== EDIT GET ACTION END - RETURNING VIEW ===");
             return View(model);
