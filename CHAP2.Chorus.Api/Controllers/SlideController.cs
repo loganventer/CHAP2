@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using CHAP2.Application.Interfaces;
-using CHAP2.Chorus.Api.Configuration;
+using CHAP2.Shared.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace CHAP2.Chorus.Api.Controllers;

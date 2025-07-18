@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CHAP2.Domain\CHAP2.Domain.csproj" />
+    <ProjectReference Include="..\CHAP2.Shared\CHAP2.Shared.csproj" />
   </ItemGroup>
 
 </Project> 

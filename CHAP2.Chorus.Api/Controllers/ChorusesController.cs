@@ -3,6 +3,7 @@ using CHAP2.Domain.Enums;
 using CHAP2.Domain.Exceptions;
 using CHAP2.Application.Interfaces;
 using CHAP2.Chorus.Api.Configuration;
+using CHAP2.Shared.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace CHAP2.Chorus.Api.Controllers;
@@ -120,9 +121,9 @@ public class ChorusesController : ChapControllerAbstractBase
 
             var results = await _chorusQueryService.SearchChorusesAsync(q, searchMode, searchScope, cancellationToken);
 
-            if (results.Count > _searchSettings.MaxSearchResults)
+            if (results.Count > _searchSettings.MaxResults)
             {
-                results = results.Take(_searchSettings.MaxSearchResults).ToList();
+                results = results.Take(_searchSettings.MaxResults).ToList();
             }
 
             return Ok(new
@@ -131,7 +132,7 @@ public class ChorusesController : ChapControllerAbstractBase
                 searchMode = searchMode.ToString(),
                 searchIn = searchIn,
                 count = results.Count,
-                maxResults = _searchSettings.MaxSearchResults,
+                maxResults = _searchSettings.MaxResults,
                 results = results
             });
         }

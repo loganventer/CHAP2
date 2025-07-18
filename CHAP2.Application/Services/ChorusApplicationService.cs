@@ -1,175 +1,116 @@
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.Enums;
-using CHAP2.Domain.Exceptions;
+using CHAP2.Shared.ViewModels;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Application.Services;
 
-public class ChorusApplicationService
+public class ChorusApplicationService : IChorusApplicationService
 {
-    private readonly IChorusRepository _chorusRepository;
-    private readonly ISearchService _searchService;
+    private readonly IChorusCommandService _chorusCommandService;
+    private readonly IChorusQueryService _chorusQueryService;
     private readonly ILogger<ChorusApplicationService> _logger;
-    private readonly IDomainEventDispatcher _eventDispatcher;
 
     public ChorusApplicationService(
-        IChorusRepository chorusRepository,
-        ISearchService searchService,
-        ILogger<ChorusApplicationService> logger,
-        IDomainEventDispatcher eventDispatcher)
+        IChorusCommandService chorusCommandService,
+        IChorusQueryService chorusQueryService,
+        ILogger<ChorusApplicationService> logger)
     {
-        _chorusRepository = chorusRepository;
-        _searchService = searchService;
+        _chorusCommandService = chorusCommandService;
+        _chorusQueryService = chorusQueryService;
         _logger = logger;
-        _eventDispatcher = eventDispatcher;
     }
 
-    public async Task<Chorus> CreateChorusAsync(
-        string name, 
-        string chorusText, 
-        MusicalKey key, 
-        ChorusType type, 
-        TimeSignature timeSignature,
-        CancellationToken cancellationToken = default)
+    public async Task<bool> CreateChorusAsync(ChorusCreateViewModel model)
     {
-        _logger.LogInformation("Creating chorus with name: {Name}", name);
-
-        // Check if chorus already exists
-        if (await _chorusRepository.ExistsAsync(name, cancellationToken))
+        try
         {
-            throw new ChorusAlreadyExistsException(name);
-        }
-
-        // Create domain entity
-        var chorus = Chorus.Create(name, chorusText, key, type, timeSignature);
-
-        // Persist to repository
-        var createdChorus = await _chorusRepository.AddAsync(chorus, cancellationToken);
-
-        // Dispatch domain events
-        foreach (var domainEvent in chorus.DomainEvents)
-        {
-            await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
-        }
-        chorus.DomainEvents.Clear();
-
-        // Invalidate search cache
-        _searchService.InvalidateCache();
-
-        _logger.LogInformation("Successfully created chorus with ID: {Id}", createdChorus.Id);
-        return createdChorus;
-    }
-
-    public async Task<Chorus> UpdateChorusAsync(
-        Guid id,
-        string name,
-        string chorusText,
-        MusicalKey key,
-        ChorusType type,
-        TimeSignature timeSignature,
-        CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Updating chorus with ID: {Id}", id);
-
-        // Get existing chorus
-        var existingChorus = await _chorusRepository.GetByIdAsync(id, cancellationToken);
-        if (existingChorus == null)
-        {
-            throw new ChorusNotFoundException(id);
-        }
-
-        // Check for name conflicts (excluding current chorus)
-        var allChoruses = await _chorusRepository.GetAllAsync(cancellationToken);
-        var nameConflict = allChoruses.Any(c => 
-            c.Id != id && 
-            string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+            _logger.LogInformation("Creating chorus with name: {Name}", model.Name);
             
-        if (nameConflict)
-        {
-            throw new ChorusAlreadyExistsException(name);
+            var chorus = await _chorusCommandService.CreateChorusAsync(
+                model.Name,
+                model.ChorusText,
+                model.Key,
+                model.Type,
+                model.TimeSignature
+            );
+
+            _logger.LogInformation("Chorus created successfully with ID: {Id}", chorus.Id);
+            return true;
         }
-
-        // Update domain entity
-        existingChorus.Update(name, chorusText, key, type, timeSignature);
-
-        // Persist changes
-        var updatedChorus = await _chorusRepository.UpdateAsync(existingChorus, cancellationToken);
-
-        // Invalidate search cache
-        _searchService.InvalidateCache();
-
-        _logger.LogInformation("Successfully updated chorus with ID: {Id}", updatedChorus.Id);
-        return updatedChorus;
-    }
-
-    public async Task<Chorus> GetChorusByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        _logger.LogDebug("Getting chorus by ID: {Id}", id);
-
-        var chorus = await _chorusRepository.GetByIdAsync(id, cancellationToken);
-        if (chorus == null)
+        catch (Exception ex)
         {
-            throw new ChorusNotFoundException(id);
+            _logger.LogError(ex, "Error creating chorus");
+            return false;
         }
-
-        return chorus;
     }
 
-    public async Task<Chorus> GetChorusByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateChorusAsync(ChorusEditViewModel model)
     {
-        _logger.LogDebug("Getting chorus by name: {Name}", name);
-
-        var chorus = await _chorusRepository.GetByNameAsync(name, cancellationToken);
-        if (chorus == null)
+        try
         {
-            throw new ChorusNotFoundException(name);
+            _logger.LogInformation("Updating chorus with ID: {Id}", model.Id);
+            
+            var chorus = await _chorusCommandService.UpdateChorusAsync(
+                model.Id,
+                model.Name,
+                model.ChorusText,
+                model.Key,
+                model.Type,
+                model.TimeSignature
+            );
+
+            _logger.LogInformation("Chorus updated successfully with ID: {Id}", chorus.Id);
+            return true;
         }
-
-        return chorus;
-    }
-
-    public async Task<IReadOnlyList<Chorus>> GetAllChorusesAsync(CancellationToken cancellationToken = default)
-    {
-        _logger.LogDebug("Getting all choruses");
-
-        return await _chorusRepository.GetAllAsync(cancellationToken);
-    }
-
-    public async Task DeleteChorusAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Deleting chorus with ID: {Id}", id);
-
-        var existingChorus = await _chorusRepository.GetByIdAsync(id, cancellationToken);
-        if (existingChorus == null)
+        catch (Exception ex)
         {
-            throw new ChorusNotFoundException(id);
+            _logger.LogError(ex, "Error updating chorus with ID: {Id}", model.Id);
+            return false;
         }
-
-        await _chorusRepository.DeleteAsync(id, cancellationToken);
-
-        // Invalidate search cache
-        _searchService.InvalidateCache();
-
-        _logger.LogInformation("Successfully deleted chorus with ID: {Id}", id);
     }
 
-    public async Task<IReadOnlyList<Chorus>> SearchChorusesAsync(
-        string searchTerm,
-        SearchMode searchMode = SearchMode.Contains,
-        SearchScope searchScope = SearchScope.All,
-        CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteChorusAsync(string id)
     {
-        _logger.LogInformation("Searching choruses with term: {SearchTerm}, mode: {SearchMode}, scope: {SearchScope}", 
-            searchTerm, searchMode, searchScope);
-
-        return searchScope switch
+        try
         {
-            SearchScope.Name => await _searchService.SearchByNameAsync(searchTerm, searchMode, cancellationToken),
-            SearchScope.Text => await _searchService.SearchByTextAsync(searchTerm, searchMode, cancellationToken),
-            SearchScope.Key => await _searchService.SearchByKeyAsync(searchTerm, searchMode, cancellationToken),
-            SearchScope.All => await _searchService.SearchAllAsync(searchTerm, searchMode, cancellationToken),
-            _ => throw new ArgumentException($"Invalid search scope: {searchScope}")
-        };
+            _logger.LogInformation("Deleting chorus with ID: {Id}", id);
+            await _chorusCommandService.DeleteChorusAsync(Guid.Parse(id));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting chorus with ID: {Id}", id);
+            return false;
+        }
+    }
+
+    public async Task<Chorus?> GetChorusByIdAsync(string id)
+    {
+        try
+        {
+            return await _chorusQueryService.GetChorusByIdAsync(Guid.Parse(id));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting chorus by ID: {Id}", id);
+            return null;
+        }
+    }
+
+    public async Task<IEnumerable<Chorus>> SearchChorusesAsync(string query, string searchMode, string searchIn)
+    {
+        try
+        {
+            var searchModeEnum = Enum.Parse<SearchMode>(searchMode);
+            var searchScopeEnum = Enum.Parse<SearchScope>(searchIn);
+            return await _chorusQueryService.SearchChorusesAsync(query, searchModeEnum, searchScopeEnum);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching choruses with query: {Query}", query);
+            return Enumerable.Empty<Chorus>();
+        }
     }
 } 

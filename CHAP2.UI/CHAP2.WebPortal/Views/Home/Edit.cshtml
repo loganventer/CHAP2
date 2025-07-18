@@ -62,7 +62,7 @@
                             <option value="">Select a key...</option>
                             @foreach (var key in ViewBag.MusicalKeys)
                             {
-                                <option value="@key" @(Model.Key == key ? "selected" : "")>@key</option>
+                                <option value="@key" selected="@(Model.Key == key)">@key</option>
                             }
                         </select>
                         <span asp-validation-for="Key" class="validation-error"></span>
@@ -76,7 +76,7 @@
                             <option value="">Select a type...</option>
                             @foreach (var type in ViewBag.ChorusTypes)
                             {
-                                <option value="@type" @(Model.Type == type ? "selected" : "")>@type</option>
+                                <option value="@type" selected="@(Model.Type == type)">@type</option>
                             }
                         </select>
                         <span asp-validation-for="Type" class="validation-error"></span>
@@ -90,7 +90,7 @@
                             <option value="">Select time signature...</option>
                             @foreach (var ts in ViewBag.TimeSignatures)
                             {
-                                <option value="@ts" @(Model.TimeSignature == ts ? "selected" : "")>@ts</option>
+                                <option value="@ts" selected="@(Model.TimeSignature == ts)">@ts</option>
                             }
                         </select>
                         <span asp-validation-for="TimeSignature" class="validation-error"></span>

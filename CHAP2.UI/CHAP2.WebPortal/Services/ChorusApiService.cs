@@ -1,5 +1,6 @@
 using CHAP2.WebPortal.Interfaces;
 using CHAP2.Domain.Entities;
+using CHAP2.Shared.DTOs;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
@@ -53,7 +54,7 @@ public class ChorusApiService : IChorusApiService
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("Search API response content: {Content}", content);
                 
-                var searchResponse = JsonSerializer.Deserialize<SearchResponseDto>(content, _jsonOptions);
+                var searchResponse = JsonSerializer.Deserialize<ApiSearchResponseDto>(content, _jsonOptions);
                 
                 if (searchResponse?.Results != null)
                 {
@@ -158,7 +159,7 @@ public class ChorusApiService : IChorusApiService
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("API response content: {Content}", content);
                 
-                var dto = JsonSerializer.Deserialize<ChorusDto>(content, _jsonOptions);
+                var dto = JsonSerializer.Deserialize<ApiChorusDto>(content, _jsonOptions);
                 
                 if (dto != null)
                 {
@@ -245,22 +246,49 @@ public class ChorusApiService : IChorusApiService
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                var dto = JsonSerializer.Deserialize<ChorusDto>(content, _jsonOptions);
+                var dto = JsonSerializer.Deserialize<ApiChorusDto>(content, _jsonOptions);
                 
                 if (dto != null)
                 {
-                    // Create chorus with all properties using the Create method
-                    var chorus = Chorus.Create(
-                        dto.Name, 
-                        dto.ChorusText, 
-                        (CHAP2.Domain.Enums.MusicalKey)dto.Key, 
-                        (CHAP2.Domain.Enums.ChorusType)dto.Type, 
-                        (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature
-                    );
+                    // Convert enum values directly
+                    var key = (CHAP2.Domain.Enums.MusicalKey)dto.Key;
+                    var type = (CHAP2.Domain.Enums.ChorusType)dto.Type;
+                    var timeSignature = (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature;
+                    
+                    // Use CreateFromSlide for NotSet values, Create for set values
+                    Chorus chorus;
+                    if (key == CHAP2.Domain.Enums.MusicalKey.NotSet || 
+                        type == CHAP2.Domain.Enums.ChorusType.NotSet || 
+                        timeSignature == CHAP2.Domain.Enums.TimeSignature.NotSet)
+                    {
+                        chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                        
+                        // Set the enum values via reflection if they're not NotSet
+                        var chorusType = typeof(Chorus);
+                        if (key != CHAP2.Domain.Enums.MusicalKey.NotSet)
+                        {
+                            var keyProperty = chorusType.GetProperty("Key");
+                            keyProperty?.SetValue(chorus, key);
+                        }
+                        if (type != CHAP2.Domain.Enums.ChorusType.NotSet)
+                        {
+                            var typeProperty = chorusType.GetProperty("Type");
+                            typeProperty?.SetValue(chorus, type);
+                        }
+                        if (timeSignature != CHAP2.Domain.Enums.TimeSignature.NotSet)
+                        {
+                            var timeSignatureProperty = chorusType.GetProperty("TimeSignature");
+                            timeSignatureProperty?.SetValue(chorus, timeSignature);
+                        }
+                    }
+                    else
+                    {
+                        chorus = Chorus.Create(dto.Name, dto.ChorusText, key, type, timeSignature);
+                    }
                     
                     // Set the ID using reflection since it's private set
-                    var chorusType = typeof(Chorus);
-                    var idProperty = chorusType.GetProperty("Id");
+                    var chorusTypeForId = typeof(Chorus);
+                    var idProperty = chorusTypeForId.GetProperty("Id");
                     if (idProperty != null)
                     {
                         idProperty.SetValue(chorus, Guid.Parse(dto.Id));
@@ -288,25 +316,52 @@ public class ChorusApiService : IChorusApiService
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                var dtos = JsonSerializer.Deserialize<List<ChorusDto>>(content, _jsonOptions);
+                var dtos = JsonSerializer.Deserialize<List<ApiChorusDto>>(content, _jsonOptions);
                 
                 if (dtos != null)
                 {
                     var choruses = new List<Chorus>();
                     foreach (var dto in dtos)
                     {
-                        // Create chorus with all properties using the Create method
-                        var chorus = Chorus.Create(
-                            dto.Name, 
-                            dto.ChorusText, 
-                            (CHAP2.Domain.Enums.MusicalKey)dto.Key, 
-                            (CHAP2.Domain.Enums.ChorusType)dto.Type, 
-                            (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature
-                        );
+                        // Convert enum values directly
+                        var key = (CHAP2.Domain.Enums.MusicalKey)dto.Key;
+                        var type = (CHAP2.Domain.Enums.ChorusType)dto.Type;
+                        var timeSignature = (CHAP2.Domain.Enums.TimeSignature)dto.TimeSignature;
+                        
+                        // Use CreateFromSlide for NotSet values, Create for set values
+                        Chorus chorus;
+                        if (key == CHAP2.Domain.Enums.MusicalKey.NotSet || 
+                            type == CHAP2.Domain.Enums.ChorusType.NotSet || 
+                            timeSignature == CHAP2.Domain.Enums.TimeSignature.NotSet)
+                        {
+                            chorus = Chorus.CreateFromSlide(dto.Name, dto.ChorusText);
+                            
+                            // Set the enum values via reflection if they're not NotSet
+                            var chorusType = typeof(Chorus);
+                            if (key != CHAP2.Domain.Enums.MusicalKey.NotSet)
+                            {
+                                var keyProperty = chorusType.GetProperty("Key");
+                                keyProperty?.SetValue(chorus, key);
+                            }
+                            if (type != CHAP2.Domain.Enums.ChorusType.NotSet)
+                            {
+                                var typeProperty = chorusType.GetProperty("Type");
+                                typeProperty?.SetValue(chorus, type);
+                            }
+                            if (timeSignature != CHAP2.Domain.Enums.TimeSignature.NotSet)
+                            {
+                                var timeSignatureProperty = chorusType.GetProperty("TimeSignature");
+                                timeSignatureProperty?.SetValue(chorus, timeSignature);
+                            }
+                        }
+                        else
+                        {
+                            chorus = Chorus.Create(dto.Name, dto.ChorusText, key, type, timeSignature);
+                        }
                         
                         // Set the ID using reflection since it's private set
-                        var chorusType = typeof(Chorus);
-                        var idProperty = chorusType.GetProperty("Id");
+                        var chorusTypeForId = typeof(Chorus);
+                        var idProperty = chorusTypeForId.GetProperty("Id");
                         if (idProperty != null)
                         {
                             idProperty.SetValue(chorus, Guid.Parse(dto.Id));
@@ -351,7 +406,7 @@ public class ChorusApiService : IChorusApiService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                var slideResponse = JsonSerializer.Deserialize<SlideConversionResponseDto>(responseContent, _jsonOptions);
+                var slideResponse = JsonSerializer.Deserialize<ApiSlideConversionResponseDto>(responseContent, _jsonOptions);
                 
                 if (slideResponse?.Chorus != null)
                 {
@@ -391,7 +446,7 @@ public class ChorusApiService : IChorusApiService
             _logger.LogInformation("Chorus details - Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
                 chorus.Key, chorus.Type, chorus.TimeSignature);
             
-            var dto = new ChorusDto
+            var dto = new ApiChorusDto
             {
                 Id = chorus.Id.ToString(),
                 Name = chorus.Name,
@@ -446,7 +501,7 @@ public class ChorusApiService : IChorusApiService
             _logger.LogInformation("Updating chorus via API - ID: {Id}, Name: {Name}", id, name);
             _logger.LogInformation("Update parameters - Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", key, type, timeSignature);
             
-            var dto = new ChorusDto
+            var dto = new ApiChorusDto
             {
                 Id = id.ToString(),
                 Name = name,
@@ -506,33 +561,4 @@ public class ChorusApiService : IChorusApiService
             return false;
         }
     }
-}
-
-// DTOs for API communication
-public class SearchResponseDto
-{
-    public string Query { get; set; } = string.Empty;
-    public string SearchMode { get; set; } = string.Empty;
-    public string SearchIn { get; set; } = string.Empty;
-    public int Count { get; set; }
-    public int MaxResults { get; set; }
-    public List<ChorusDto> Results { get; set; } = new();
-}
-
-public class ChorusDto
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string ChorusText { get; set; } = string.Empty;
-    public int Key { get; set; }
-    public int Type { get; set; }
-    public int TimeSignature { get; set; }
-}
-
-public class SlideConversionResponseDto
-{
-    public string Message { get; set; } = string.Empty;
-    public ChorusDto Chorus { get; set; } = new();
-    public string OriginalFilename { get; set; } = string.Empty;
-    public string Action { get; set; } = string.Empty;
 } 

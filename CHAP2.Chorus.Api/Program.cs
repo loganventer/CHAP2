@@ -4,6 +4,7 @@ using CHAP2.Application.Services;
 using CHAP2.Infrastructure.Repositories;
 using CHAP2.Chorus.Api.Interfaces;
 using CHAP2.Chorus.Api.Services;
+using CHAP2.Shared.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 

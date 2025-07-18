@@ -1,19 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using CHAP2.WebPortal.Interfaces;
+using CHAP2.Shared.ViewModels;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.Enums;
-using System.ComponentModel.DataAnnotations;
+using CHAP2.Application.Interfaces;
 
 namespace CHAP2.WebPortal.Controllers;
 
 public class HomeController : Controller
 {
     private readonly IChorusApiService _chorusApiService;
+    private readonly IChorusApplicationService _chorusApplicationService;
     private readonly ILogger<HomeController> _logger;
 
-    public HomeController(IChorusApiService chorusApiService, ILogger<HomeController> logger)
+    public HomeController(
+        IChorusApiService chorusApiService, 
+        IChorusApplicationService chorusApplicationService,
+        ILogger<HomeController> logger)
     {
         _chorusApiService = chorusApiService;
+        _chorusApplicationService = chorusApplicationService;
         _logger = logger;
     }
 
@@ -132,41 +138,8 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> Create(ChorusCreateViewModel model)
     {
-        _logger.LogInformation("=== CREATE POST ACTION START ===");
-        _logger.LogInformation("Create chorus POST received");
-        _logger.LogInformation("Model is null: {IsNull}", model == null);
-        
-        if (model != null)
-        {
-            _logger.LogInformation("Model details:");
-            _logger.LogInformation("- Name: '{Name}'", model.Name ?? "NULL");
-            _logger.LogInformation("- ChorusText: '{ChorusText}'", model.ChorusText ?? "NULL");
-            _logger.LogInformation("- Key: {Key}", model.Key);
-            _logger.LogInformation("- Type: {Type}", model.Type);
-            _logger.LogInformation("- TimeSignature: {TimeSignature}", model.TimeSignature);
-        }
-        
-        // Log form data from Request.Form
-        _logger.LogInformation("Form data from Request.Form:");
-        if (Request.Form.Keys.Count == 0)
-        {
-            _logger.LogWarning("NO FORM DATA RECEIVED - Request.Form is empty!");
-        }
-        else
-        {
-            foreach (var key in Request.Form.Keys)
-            {
-                _logger.LogInformation("- {Key}: '{Value}'", key, Request.Form[key]);
-            }
-        }
-        
-        // Also log the raw request content
-        _logger.LogInformation("Request Content-Type: {ContentType}", Request.ContentType);
-        _logger.LogInformation("Request Method: {Method}", Request.Method);
-        
         if (!ModelState.IsValid)
         {
-            _logger.LogWarning("Model state is invalid for chorus creation");
             ViewBag.MusicalKeys = Enum.GetValues<MusicalKey>().Where(k => k != MusicalKey.NotSet);
             ViewBag.ChorusTypes = Enum.GetValues<ChorusType>().Where(t => t != ChorusType.NotSet);
             ViewBag.TimeSignatures = Enum.GetValues<TimeSignature>().Where(t => t != TimeSignature.NotSet);
@@ -175,27 +148,17 @@ public class HomeController : Controller
 
         try
         {
-            _logger.LogInformation("Creating chorus with name: {Name}", model.Name);
+            // Create a Chorus entity from the ViewModel
+            var chorus = Chorus.Create(model.Name, model.ChorusText, model.Key, model.Type, model.TimeSignature);
             
-            var chorus = Chorus.Create(
-                model.Name,
-                model.ChorusText,
-                model.Key,
-                model.Type,
-                model.TimeSignature
-            );
-
-            _logger.LogInformation("Chorus created successfully with ID: {Id}", chorus.Id);
-            
+            // Call the API service directly
             var result = await _chorusApiService.CreateChorusAsync(chorus);
             if (result)
             {
-                _logger.LogInformation("Chorus saved successfully, redirecting to close window page");
                 return RedirectToAction(nameof(CloseWindow), new { message = "Chorus created successfully!" });
             }
             else
             {
-                _logger.LogWarning("Failed to save chorus to API");
                 ModelState.AddModelError("", "Failed to create chorus. Please try again.");
                 ViewBag.MusicalKeys = Enum.GetValues<MusicalKey>().Where(k => k != MusicalKey.NotSet);
                 ViewBag.ChorusTypes = Enum.GetValues<ChorusType>().Where(t => t != ChorusType.NotSet);
@@ -285,17 +248,8 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> Edit(ChorusEditViewModel model)
     {
-        _logger.LogInformation("=== EDIT POST ACTION START ===");
-        _logger.LogInformation("Edit POST received with model ID: {ModelId}", model.Id);
-        _logger.LogInformation("Model details - Name: {Name}, Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
-            model.Name, model.Key, model.Type, model.TimeSignature);
-        
         if (!ModelState.IsValid)
         {
-            _logger.LogWarning("Model state is invalid for chorus edit");
-            var modelStateErrors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-            _logger.LogWarning("ModelState errors: {ModelStateErrors}", modelStateErrors);
-            
             ViewBag.MusicalKeys = Enum.GetValues<MusicalKey>();
             ViewBag.ChorusTypes = Enum.GetValues<ChorusType>();
             ViewBag.TimeSignatures = Enum.GetValues<TimeSignature>();
@@ -304,22 +258,14 @@ public class HomeController : Controller
 
         try
         {
-            _logger.LogInformation("Model state is valid, calling _chorusApiService.UpdateChorusAsync");
-            _logger.LogInformation("Update parameters - ID: {Id}, Name: {Name}, Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
-                model.Id, model.Name, model.Key, model.Type, model.TimeSignature);
-            
+            // Call the API service directly
             var result = await _chorusApiService.UpdateChorusAsync(model.Id, model.Name, model.ChorusText, model.Key, model.Type, model.TimeSignature);
-            
-            _logger.LogInformation("UpdateChorusAsync returned: {Result}", result);
-            
             if (result)
             {
-                _logger.LogInformation("Chorus updated successfully, redirecting to close window");
                 return RedirectToAction(nameof(CloseWindow), new { message = "Chorus updated successfully!" });
             }
             else
             {
-                _logger.LogWarning("Failed to update chorus in API");
                 ModelState.AddModelError("", "Failed to update chorus. Please try again.");
                 ViewBag.MusicalKeys = Enum.GetValues<MusicalKey>();
                 ViewBag.ChorusTypes = Enum.GetValues<ChorusType>();
@@ -381,44 +327,4 @@ public class HomeController : Controller
         ViewBag.Message = message;
         return View();
     }
-}
-
-public class ChorusCreateViewModel
-{
-    [Required(ErrorMessage = "Name is required")]
-    [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters")]
-    public string Name { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Chorus text is required")]
-    public string ChorusText { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Musical key is required")]
-    public MusicalKey Key { get; set; }
-
-    [Required(ErrorMessage = "Chorus type is required")]
-    public ChorusType Type { get; set; }
-
-    [Required(ErrorMessage = "Time signature is required")]
-    public TimeSignature TimeSignature { get; set; }
-}
-
-public class ChorusEditViewModel
-{
-    public Guid Id { get; set; }
-
-    [Required(ErrorMessage = "Name is required")]
-    [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters")]
-    public string Name { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Chorus text is required")]
-    public string ChorusText { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Musical key is required")]
-    public MusicalKey Key { get; set; }
-
-    [Required(ErrorMessage = "Chorus type is required")]
-    public ChorusType Type { get; set; }
-
-    [Required(ErrorMessage = "Time signature is required")]
-    public TimeSignature TimeSignature { get; set; }
 } 
