@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # CHAP2 API Service
+  chap2-api:
+    build:
+      context: .
+      dockerfile: CHAP2.Chorus.Api/Dockerfile
+    container_name: chap2-api
+    ports:
+      - "0.0.0.0:5000:80"
+      - "0.0.0.0:7000:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+    volumes:
+      - ./data/chorus:/app/data/chorus
+    networks:
+      - chap2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/health/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # CHAP2 Web Portal Service
+  chap2-web:
+    build:
+      context: .
+      dockerfile: CHAP2.UI/CHAP2.WebPortal/Dockerfile
+    container_name: chap2-web
+    ports:
+      - "0.0.0.0:5001:80"
+      - "0.0.0.0:7001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ApiBaseUrl=http://chap2-api
+    depends_on:
+      - chap2-api
+    networks:
+      - chap2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  chap2-network:
+    driver: bridge
+
+volumes:
+  chorus-data:
+    driver: local 

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: chap2-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - chap2-api
+      - chap2-web
+    networks:
+      - chap2-network
+    restart: unless-stopped
+
+  # CHAP2 API Service
+  chap2-api:
+    build:
+      context: .
+      dockerfile: CHAP2.Chorus.Api/Dockerfile
+    container_name: chap2-api
+    expose:
+      - "80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+    volumes:
+      - ./data/chorus:/app/data/chorus
+    networks:
+      - chap2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/health/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # CHAP2 Web Portal Service
+  chap2-web:
+    build:
+      context: .
+      dockerfile: CHAP2.UI/CHAP2.WebPortal/Dockerfile
+    container_name: chap2-web
+    expose:
+      - "80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ApiBaseUrl=http://chap2-api
+    depends_on:
+      - chap2-api
+    networks:
+      - chap2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  chap2-network:
+    driver: bridge
+
+volumes:
+  chorus-data:
+    driver: local 
