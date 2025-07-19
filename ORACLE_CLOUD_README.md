@@ -1,462 +1,192 @@
-# ☁️ CHAP2 Oracle Cloud Free Tier Deployment Guide
+# CHAP2 Oracle Cloud Automated Deployment
 
-This guide provides step-by-step instructions for deploying the CHAP2 Musical Chorus Management System on Oracle Cloud Free Tier using Docker.
+This repository includes automated deployment scripts for Oracle Cloud that will install Docker, clone the repository, and deploy CHAP2 automatically.
 
-## 🎯 **Oracle Cloud Free Tier Benefits**
+## 🚀 **Two Setup Options Available:**
 
-### **Always Free Resources:**
-- **2 AMD-based Compute VMs** (1/8 OCPU, 1 GB memory each)
-- **4 ARM-based Compute VMs** (1/24 OCPU, 6 GB memory each)
-- **200 GB total storage**
-- **10 TB data transfer**
-- **Always Free** (no expiration)
+### **Option 1: Cloud-Init (Recommended for New Instances)**
+Use `oracle-cloud-init.yml` during instance creation for fully automated setup.
 
-### **Recommended Configuration:**
-- **VM.Standard.A1.Flex** (ARM-based)
-- **1 OCPU, 6 GB memory**
-- **Oracle Linux 9**
-- **Public IP address**
+### **Option 2: Standalone Script (For Existing Instances)**
+Use `oracle-cloud-init.sh` to set up existing instances manually.
 
 ---
 
-## 🚀 **Quick Start Deployment**
+## 📋 **Quick Start - Cloud-Init (New Instances)**
 
-### **Step 1: Create Oracle Cloud Account**
+### 1. Create Oracle Cloud Instance
 
-1. **Sign up** at [Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/)
-2. **Verify your email** and complete registration
-3. **Add payment method** (required, but won't be charged for free tier)
-4. **Choose your home region** (closest to your location)
+1. **Navigate to Oracle Cloud Console → Compute → Instances**
+2. **Click "Create Instance"**
+3. **Configure:**
+   - Name: `chap2-server`
+   - Image: Oracle Linux 9
+   - Shape: VM.Standard.A1.Flex (1 OCPU, 6 GB memory)
+   - Network: Your VCN with public subnet
+   - Public IP: Yes
 
-### **Step 2: Create Oracle Linux VM**
+### 2. Add Cloud-Init Configuration
 
-Follow the setup guide in `oracle-cloud-setup.md` or use the Oracle Cloud Console:
+1. **In the "Advanced Options" section, expand "Cloud-Init"**
+2. **Copy the entire contents of `oracle-cloud-init.yml` into the configuration field**
+3. **Click "Create"**
 
-1. **Create Virtual Cloud Network (VCN)**
-2. **Create Subnet**
-3. **Create Compute Instance**
-4. **Configure Security List**
+### 3. Wait for Setup (5-10 minutes)
 
-### **Step 3: Connect to Your Instance**
+The cloud-init script will automatically:
+- ✅ Install Docker and Docker Compose
+- ✅ Configure firewall rules
+- ✅ Clone the CHAP2 repository
+- ✅ Set up auto-startup service
+- ✅ Deploy the application
+- ✅ Configure monitoring and log rotation
+
+---
+
+## 🔧 **Quick Start - Standalone Script (Existing Instances)**
+
+### 1. SSH into Your Instance
 
 ```bash
-# SSH to your instance
-ssh opc@your-instance-public-ip
-
-# Update system
-sudo dnf update -y
-sudo dnf upgrade -y
-```
-
-### **Step 4: Install Docker**
-
-```bash
-# Download and run the setup script
-wget https://raw.githubusercontent.com/your-repo/CHAP2/main/oracle-linux-setup.sh
-chmod +x oracle-linux-setup.sh
-./oracle-linux-setup.sh
-
-# Log out and back in for group changes
-exit
 ssh opc@your-instance-public-ip
 ```
 
-### **Step 5: Deploy CHAP2**
+### 2. Download and Run Setup Script
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-repo/CHAP2.git
-cd CHAP2
+# Download the setup script
+curl -O https://raw.githubusercontent.com/loganventer/CHAP2/main/oracle-cloud-init.sh
 
-# Make deployment script executable
-chmod +x deploy-oracle-cloud.sh
+# Make it executable
+chmod +x oracle-cloud-init.sh
 
-# Deploy the application
-./deploy-oracle-cloud.sh deploy
+# Run the setup
+./oracle-cloud-init.sh
 ```
 
-### **Step 6: Access Your Application**
+### 3. Wait for Setup (5-10 minutes)
 
-After deployment, you can access:
+The script will perform the same automated setup as cloud-init.
+
+---
+
+## 📊 **Monitoring Setup Progress**
+
+SSH into your instance and run:
+```bash
+# Check cloud-init logs (if using cloud-init)
+tail -f /var/log/chap2-cloud-init.log
+
+# Check if setup is complete
+ls -la /home/opc/chap2-setup-complete.txt
+
+# Run welcome script to see status
+/home/opc/welcome-chap2.sh
+```
+
+## 🌐 **Access Your Application**
+
+Once setup is complete, your CHAP2 application will be available at:
 - **Web Portal**: `http://your-instance-public-ip:5001`
 - **API**: `http://your-instance-public-ip:5000`
 - **API Health**: `http://your-instance-public-ip:5000/api/health/ping`
 
----
+## 🔧 **Management Commands**
 
-## 📋 **Available Commands**
-
-### **Deployment Script**
+### View Application Status
 ```bash
-./deploy-oracle-cloud.sh deploy    # Build and start services
-./deploy-oracle-cloud.sh stop      # Stop all services
-./deploy-oracle-cloud.sh logs      # Show container logs
-./deploy-oracle-cloud.sh status    # Show service status
-./deploy-oracle-cloud.sh help      # Show help
+# Check if services are running
+docker-compose -f /home/opc/CHAP2/docker-compose.oracle-cloud.yml ps
+
+# Check application health
+curl http://localhost:5000/api/health/ping
 ```
 
-### **Docker Compose Commands**
+### View Logs
 ```bash
-# Build and start
-docker-compose -f docker-compose.oracle-cloud.yml up --build -d
+# View container logs
+docker-compose -f /home/opc/CHAP2/docker-compose.oracle-cloud.yml logs
 
-# View logs
-docker-compose -f docker-compose.oracle-cloud.yml logs -f
+# View startup script logs
+tail -f /var/log/chap2-startup.log
 
-# Stop services
-docker-compose -f docker-compose.oracle-cloud.yml down
-
-# Restart services
-docker-compose -f docker-compose.oracle-cloud.yml restart
+# View cloud-init logs
+tail -f /var/log/chap2-cloud-init.log
 ```
 
----
-
-## 🏗️ **Architecture**
-
-### **Services**
-- **chap2-api-oracle**: CHAP2.Chorus.Api service
-  - Port: 5000 (HTTP), 7000 (HTTPS)
-  - Health check: `/api/health/ping`
-  - Data volume: `./data/chorus`
-  - Resource limits: 512MB memory, 0.5 CPU
-
-- **chap2-web-oracle**: CHAP2.WebPortal service
-  - Port: 5001 (HTTP), 7001 (HTTPS)
-  - Depends on: chap2-api-oracle
-  - Environment: `ApiBaseUrl=http://chap2-api`
-  - Resource limits: 512MB memory, 0.5 CPU
-
-### **Network**
-- **chap2-network**: Bridge network for inter-service communication
-
-### **Volumes**
-- **chorus-data**: Persistent storage for chorus files
-
----
-
-## 🔧 **Configuration**
-
-### **Environment Variables**
-
-#### **API Service**
-```yaml
-ASPNETCORE_ENVIRONMENT: Production
-ASPNETCORE_URLS: http://+:80;https://+:443
-```
-
-#### **Web Portal Service**
-```yaml
-ASPNETCORE_ENVIRONMENT: Production
-ASPNETCORE_URLS: http://+:80;https://+:443
-ApiBaseUrl: http://chap2-api
-```
-
-### **Resource Limits**
-- **Memory**: 512MB per container (fits within free tier limits)
-- **CPU**: 0.5 CPU cores per container
-- **Storage**: Uses local storage (included in free tier)
-
-### **Port Mapping**
-- API: `5000:80` (HTTP), `7000:443` (HTTPS)
-- Web Portal: `5001:80` (HTTP), `7001:443` (HTTPS)
-
----
-
-## 🧪 **Testing the Deployment**
-
-### **1. Health Check**
+### Restart Application
 ```bash
-curl http://your-instance-public-ip:5000/api/health/ping
+# Restart all services
+/home/opc/CHAP2/deploy-oracle-cloud.sh deploy
+
+# Stop all services
+/home/opc/CHAP2/deploy-oracle-cloud.sh stop
 ```
 
-### **2. API Endpoints**
-```bash
-# Get all choruses
-curl http://your-instance-public-ip:5000/api/choruses
+## 🔒 **Security Configuration**
 
-# Search choruses
-curl "http://your-instance-public-ip:5000/api/choruses/search?q=grace"
+Before creating your instance, make sure to configure the security list to allow:
+- **SSH (Port 22)**: For remote access
+- **HTTP (Port 80)**: For web traffic
+- **HTTPS (Port 443)**: For secure web traffic
+- **CHAP2 API (Port 5000)**: For API access
+- **CHAP2 Web Portal (Port 5001)**: For web portal access
 
-# Create a new chorus
-curl -X POST http://your-instance-public-ip:5000/api/choruses \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test Chorus","chorusText":"Test lyrics","key":1,"type":1,"timeSignature":1}'
-```
-
-### **3. Web Portal**
-- Open `http://your-instance-public-ip:5001` in your browser
-- Test search functionality
-- Test chorus creation and editing
-
----
-
-## 🔍 **Troubleshooting**
-
-### **Common Issues**
-
-#### **1. Build Failures**
-```bash
-# Check available memory
-free -h
-
-# Check disk space
-df -h
+## 📁 **Files Included**
 
-# Clean Docker cache
-docker system prune -a
-
-# Rebuild without cache
-docker-compose -f docker-compose.oracle-cloud.yml build --no-cache
-```
-
-#### **2. Out of Memory**
-```bash
-# Check memory usage
-docker stats
+- `oracle-cloud-init.yml` - Cloud-init configuration for automated setup
+- `oracle-cloud-init.sh` - Standalone setup script (alternative to cloud-init)
+- `oracle-cloud-startup.sh` - Auto-startup script for system reboots
+- `deploy-oracle-cloud.sh` - Deployment script for manual deployments
+- `oracle-cloud-setup.md` - Detailed setup documentation
 
-# Check system memory
-free -h
+## 🎯 **When to Use Each Option**
 
-# Restart Docker
-sudo systemctl restart docker
-```
-
-#### **3. Network Issues**
-```bash
-# Check network connectivity
-ping google.com
+### **Use Cloud-Init (`oracle-cloud-init.yml`) When:**
+- ✅ Creating a new instance
+- ✅ Want fully automated setup
+- ✅ Have access to Oracle Cloud Console
+- ✅ Want zero manual steps
 
-# Check if ports are open
-netstat -tulpn | grep :5000
-netstat -tulpn | grep :5001
+### **Use Standalone Script (`oracle-cloud-init.sh`) When:**
+- ✅ Working with existing instances
+- ✅ Cloud-init failed or wasn't used
+- ✅ Need to troubleshoot or re-setup
+- ✅ Want to test the setup process
+- ✅ Don't have cloud-init access
 
-# Check firewall
-sudo firewall-cmd --list-all
-```
+## 🔧 **Troubleshooting**
 
-#### **4. Security List Issues**
-```bash
-# Verify security list rules in Oracle Cloud Console
-# Ensure ports 22, 80, 443, 5000, 5001 are open
-```
+### Application Not Starting
+1. Check if Docker is running: `systemctl status docker`
+2. Check container logs: `docker-compose -f /home/opc/CHAP2/docker-compose.oracle-cloud.yml logs`
+3. Check startup script logs: `tail -f /var/log/chap2-startup.log`
 
-### **Debug Commands**
+### Port Access Issues
+1. Verify firewall rules: `firewall-cmd --list-all`
+2. Check if ports are open: `netstat -tlnp | grep :5000`
 
-#### **View Container Logs**
-```bash
-# All services
-docker-compose -f docker-compose.oracle-cloud.yml logs -f
+### Auto-Startup Issues
+1. Check service status: `systemctl status chap2-startup.service`
+2. View service logs: `journalctl -u chap2-startup.service`
 
-# Specific service
-docker-compose -f docker-compose.oracle-cloud.yml logs -f chap2-api-oracle
-docker-compose -f docker-compose.oracle-cloud.yml logs -f chap2-web-oracle
-```
+### Script Execution Issues
+1. Check script permissions: `ls -la oracle-cloud-init.sh`
+2. Run with verbose output: `bash -x oracle-cloud-init.sh`
+3. Check system resources: `free -h && df -h`
 
-#### **Access Container Shell**
-```bash
-# API container
-docker exec -it chap2-api-oracle /bin/bash
+## 📞 **Manual Setup (Alternative)**
 
-# Web Portal container
-docker exec -it chap2-web-oracle /bin/bash
-```
+If you prefer manual setup or need to troubleshoot, see `oracle-cloud-setup.md` for detailed manual setup instructions.
 
-#### **Check Container Resources**
-```bash
-# Resource usage
-docker stats
+## 🌐 **Repository**
 
-# Container details
-docker inspect chap2-api-oracle
-docker inspect chap2-web-oracle
-```
+The CHAP2 application is available at: https://github.com/loganventer/CHAP2
 
----
+## 🆘 **Support**
 
-## 🔒 **Security Considerations**
-
-### **Production Deployment**
-1. **Use HTTPS** in production
-2. **Configure firewall** rules
-3. **Regular updates** for Oracle Linux
-4. **Backup data** regularly
-5. **Monitor resource usage**
-
-### **Security Best Practices**
-```bash
-# Update Oracle Linux
-sudo dnf update -y
-
-# Configure firewall
-sudo firewall-cmd --permanent --add-port=22/tcp
-sudo firewall-cmd --permanent --add-port=5000/tcp
-sudo firewall-cmd --permanent --add-port=5001/tcp
-sudo firewall-cmd --reload
-
-# Change default password
-passwd
-```
-
----
-
-## 📊 **Monitoring**
-
-### **System Monitoring**
-```bash
-# Check CPU usage
-htop
-
-# Check memory usage
-free -h
-
-# Check disk usage
-df -h
-
-# Check network usage
-iftop
-```
-
-### **Application Monitoring**
-```bash
-# Check container status
-docker-compose -f docker-compose.oracle-cloud.yml ps
-
-# Check application logs
-docker-compose -f docker-compose.oracle-cloud.yml logs -f
-
-# Monitor resource usage
-docker stats
-```
-
----
-
-## 🔄 **Updates and Maintenance**
-
-### **Updating the Application**
-```bash
-# Pull latest changes
-git pull
-
-# Rebuild and restart
-./deploy-oracle-cloud.sh deploy
-```
-
-### **Backup and Restore**
-```bash
-# Backup chorus data
-tar -czf chorus-backup-$(date +%Y%m%d).tar.gz ./data/chorus/
-
-# Restore chorus data
-tar -xzf chorus-backup-20240101.tar.gz
-```
-
-### **System Maintenance**
-```bash
-# Update system packages
-sudo dnf update -y
-
-# Clean Docker
-docker system prune -a
-
-# Check disk space
-df -h
-```
-
----
-
-## 🌐 **Domain and SSL**
-
-### **Custom Domain (Optional)**
-1. **Purchase a domain** (e.g., from Namecheap, GoDaddy)
-2. **Point DNS** to your Oracle Cloud instance IP
-3. **Configure reverse proxy** with Nginx
-4. **Add SSL certificate** with Let's Encrypt
-
-### **SSL Setup Example**
-```bash
-# Install Nginx
-sudo dnf install -y nginx
-
-# Configure Nginx as reverse proxy
-sudo nano /etc/nginx/conf.d/chap2.conf
-
-# Install Certbot
-sudo dnf install -y certbot python3-certbot-nginx
-
-# Get SSL certificate
-sudo certbot --nginx -d your-domain.com
-```
-
----
-
-## 📱 **Mobile Access**
-
-### **Public Access**
-- **Anywhere access**: Your application is publicly accessible
-- **Mobile friendly**: Responsive web design works on all devices
-- **No VPN required**: Direct access via public IP
-
-### **Performance**
-- **Low latency**: Oracle Cloud's global network
-- **High availability**: 99.95% uptime SLA
-- **Scalable**: Can upgrade resources as needed
-
----
-
-## 💰 **Cost Optimization**
-
-### **Free Tier Limits**
-- **4 ARM-based VMs** (1/24 OCPU, 6 GB memory each)
-- **200 GB total storage**
-- **10 TB data transfer**
-
-### **Resource Usage**
-- **CHAP2 API**: ~256MB memory, 0.25 CPU
-- **CHAP2 Web**: ~256MB memory, 0.25 CPU
-- **Total**: ~512MB memory, 0.5 CPU (well within limits)
-
-### **Cost Monitoring**
-- **Oracle Cloud Console**: Monitor resource usage
-- **Billing alerts**: Set up spending limits
-- **Resource optimization**: Use only what you need
-
----
-
-## 🎯 **Benefits of Oracle Cloud**
-
-### **Free Tier Advantages**
-✅ **Always Free** - No expiration  
-✅ **High Performance** - Oracle's enterprise infrastructure  
-✅ **Global Network** - Low latency worldwide  
-✅ **Security** - Enterprise-grade security  
-✅ **Reliability** - 99.95% uptime SLA  
-✅ **Scalability** - Easy to upgrade resources  
-✅ **Support** - Oracle's enterprise support  
-
-### **Technical Benefits**
-✅ **ARM64 Support** - Native ARM64 containers  
-✅ **Docker Native** - Full Docker support  
-✅ **Network Performance** - High bandwidth  
-✅ **Storage Performance** - Fast SSD storage  
-✅ **Security Groups** - Fine-grained network control  
-
----
-
-## 🤝 **Support and Community**
-
-### **Oracle Cloud Support**
-- **Free Tier Support**: Community forums
-- **Paid Support**: Oracle support plans
-- **Documentation**: Comprehensive guides
-
-### **CHAP2 Community**
-- **GitHub Issues**: Report bugs and request features
-- **Discussions**: Community support
-- **Documentation**: Comprehensive guides
-
----
-
-## 📄 **License**
-
-This Oracle Cloud deployment is part of the CHAP2 system. 
+For issues or questions:
+1. Check the logs mentioned above
+2. Review the troubleshooting section
+3. Check the detailed setup documentation in `oracle-cloud-setup.md`
+4. Try both setup methods if one fails 

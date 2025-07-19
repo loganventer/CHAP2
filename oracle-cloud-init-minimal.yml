@@ -1,0 +1,22 @@
+#cloud-config
+
+# CHAP2 Oracle Cloud Cloud-Init Configuration
+# Minimal version - just downloads and runs the setup script
+
+# Update system and install basic packages
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - curl
+  - wget
+
+# Download and run the setup script
+runcmd:
+  - curl -o /home/opc/oracle-cloud-init.sh https://raw.githubusercontent.com/loganventer/CHAP2/main/oracle-cloud-init.sh
+  - chmod +x /home/opc/oracle-cloud-init.sh
+  - /home/opc/oracle-cloud-init.sh
+
+# Final message
+final_message: "CHAP2 Oracle Cloud setup completed successfully!" 

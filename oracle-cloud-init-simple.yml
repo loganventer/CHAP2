@@ -1,0 +1,192 @@
+#cloud-config
+
+# CHAP2 Oracle Cloud Cloud-Init Configuration
+# Simple and reliable version for Oracle Cloud
+
+# Update system and install packages
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - curl
+  - wget
+  - python3-pip
+  - firewalld
+
+# Write the setup script
+write_files:
+  - path: /home/opc/setup-chap2.sh
+    owner: opc:opc
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      
+      # CHAP2 Oracle Cloud Setup Script
+      set -e
+      
+      echo "Starting CHAP2 setup..."
+      
+      # Install Docker
+      echo "Installing Docker..."
+      dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || true
+      dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      
+      # Start and enable Docker
+      systemctl start docker
+      systemctl enable docker
+      usermod -aG docker opc
+      
+      # Install Docker Compose
+      echo "Installing Docker Compose..."
+      pip3 install docker-compose
+      
+      # Configure firewall
+      echo "Configuring firewall..."
+      systemctl start firewalld
+      systemctl enable firewalld
+      firewall-cmd --permanent --add-service=ssh
+      firewall-cmd --permanent --add-port=80/tcp
+      firewall-cmd --permanent --add-port=443/tcp
+      firewall-cmd --permanent --add-port=5000/tcp
+      firewall-cmd --permanent --add-port=5001/tcp
+      firewall-cmd --reload
+      
+      # Clone repository
+      echo "Cloning CHAP2 repository..."
+      cd /home/opc
+      rm -rf CHAP2 || true
+      git clone https://github.com/loganventer/CHAP2.git
+      chown -R opc:opc CHAP2
+      
+      # Setup startup script
+      echo "Setting up startup script..."
+      if [ -f "CHAP2/oracle-cloud-startup.sh" ]; then
+          cp CHAP2/oracle-cloud-startup.sh /home/opc/
+          chmod +x /home/opc/oracle-cloud-startup.sh
+          chown opc:opc /home/opc/oracle-cloud-startup.sh
+      fi
+      
+      # Setup systemd service
+      echo "Setting up systemd service..."
+      cat > /etc/systemd/system/chap2-startup.service << 'EOF'
+      [Unit]
+      Description=CHAP2 Auto Startup Service
+      After=network.target docker.service
+      Wants=docker.service
+      
+      [Service]
+      Type=simple
+      User=opc
+      Group=opc
+      WorkingDirectory=/home/opc
+      ExecStart=/home/opc/oracle-cloud-startup.sh
+      Restart=always
+      RestartSec=30
+      StandardOutput=journal
+      StandardError=journal
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      
+      systemctl daemon-reload
+      systemctl enable chap2-startup.service
+      
+      # Setup log rotation
+      echo "Setting up log rotation..."
+      cat > /etc/logrotate.d/chap2 << 'EOF'
+      /var/log/chap2-startup.log {
+          daily
+          missingok
+          rotate 7
+          compress
+          delaycompress
+          notifempty
+          create 644 opc opc
+      }
+      
+      /var/log/chap2-cloud-init.log {
+          daily
+          missingok
+          rotate 7
+          compress
+          delaycompress
+          notifempty
+          create 644 opc opc
+      }
+      EOF
+      
+      # Setup monitoring
+      echo "Setting up monitoring..."
+      cat > /home/opc/monitor-chap2.sh << 'EOF'
+      #!/bin/bash
+      LOG_FILE="/var/log/chap2-monitor.log"
+      echo "$(date): Checking CHAP2 services..." >> "$LOG_FILE"
+      
+      if ! docker info &> /dev/null; then
+          echo "$(date): ERROR - Docker is not running" >> "$LOG_FILE"
+          systemctl restart docker
+      fi
+      
+      if ! curl -f http://localhost:5000/api/health/ping &> /dev/null; then
+          echo "$(date): WARNING - API service is not responding" >> "$LOG_FILE"
+      fi
+      
+      DISK_USAGE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+      if [ "$DISK_USAGE" -gt 80 ]; then
+          echo "$(date): WARNING - Disk usage is high: ${DISK_USAGE}%" >> "$LOG_FILE"
+          docker system prune -f
+      fi
+      EOF
+      
+      chmod +x /home/opc/monitor-chap2.sh
+      chown opc:opc /home/opc/monitor-chap2.sh
+      (crontab -u opc -l 2>/dev/null; echo "*/5 * * * * /home/opc/monitor-chap2.sh") | crontab -u opc -
+      
+      # Deploy application
+      echo "Deploying CHAP2 application..."
+      cd /home/opc/CHAP2
+      chmod +x deploy-oracle-cloud.sh
+      ./deploy-oracle-cloud.sh deploy
+      
+      # Create completion marker
+      echo "$(date): CHAP2 setup completed successfully" > /home/opc/chap2-setup-complete.txt
+      
+      # Create welcome script
+      cat > /home/opc/welcome-chap2.sh << 'EOF'
+      #!/bin/bash
+      echo ""
+      echo "🎉 CHAP2 Oracle Cloud Setup Complete!"
+      echo "======================================"
+      echo ""
+      echo "📱 Your CHAP2 application is now running!"
+      echo ""
+      echo "🌐 Public URLs:"
+      echo "  Web Portal: http://$(curl -s ifconfig.me):5001"
+      echo "  API: http://$(curl -s ifconfig.me):5000"
+      echo "  API Health: http://$(curl -s ifconfig.me):5000/api/health/ping"
+      echo ""
+      echo "🔧 Management Commands:"
+      echo "  View logs: docker-compose -f /home/opc/CHAP2/docker-compose.oracle-cloud.yml logs"
+      echo "  Restart: /home/opc/CHAP2/deploy-oracle-cloud.sh deploy"
+      echo "  Stop: /home/opc/CHAP2/deploy-oracle-cloud.sh stop"
+      echo "  Status: /home/opc/CHAP2/deploy-oracle-cloud.sh status"
+      echo ""
+      echo "🚀 The application will automatically restart on system reboot."
+      echo ""
+      EOF
+      
+      chmod +x /home/opc/welcome-chap2.sh
+      chown opc:opc /home/opc/welcome-chap2.sh
+      
+      echo "CHAP2 setup completed successfully!"
+      echo "Access your application at: http://$(curl -s ifconfig.me):5001"
+
+# Run the setup script
+runcmd:
+  - /home/opc/setup-chap2.sh
+
+# Final message
+final_message: "CHAP2 Oracle Cloud setup completed successfully!" 
