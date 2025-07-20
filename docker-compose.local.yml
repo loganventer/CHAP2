@@ -6,13 +6,12 @@ services:
     build:
       context: .
       dockerfile: CHAP2.Chorus.Api/Dockerfile
-    container_name: chap2-api
+    container_name: chap2-api-local
     ports:
-      - "5000:80"    # Host port 5000 → Container port 80 (HTTP)
-      - "7000:443"   # Host port 7000 → Container port 443 (HTTPS)
+      - "5000:80"    # Host port 5000 → Container port 80 (HTTP only)
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
     volumes:
       - ./data/chorus:/app/data/chorus
     networks:
@@ -30,13 +29,12 @@ services:
     build:
       context: .
       dockerfile: CHAP2.UI/CHAP2.WebPortal/Dockerfile
-    container_name: chap2-web
+    container_name: chap2-web-local
     ports:
-      - "5001:80"    # Host port 5001 → Container port 80 (HTTP)
-      - "7001:443"   # Host port 7001 → Container port 443 (HTTPS)
+      - "5001:80"    # Host port 5001 → Container port 80 (HTTP only)
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
       - ApiBaseUrl=http://chap2-api
     depends_on:
       - chap2-api
