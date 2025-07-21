@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   # CHAP2 API Service (Optimized for Oracle Cloud)
   chap2-api:
     build:
-      context: .
+      context: ../..
       dockerfile: CHAP2.Chorus.Api/Dockerfile
     container_name: chap2-api-oracle
     ports:
@@ -36,7 +34,7 @@ services:
   # CHAP2 Web Portal Service (Optimized for Oracle Cloud)
   chap2-web:
     build:
-      context: .
+      context: ../..
       dockerfile: CHAP2.UI/CHAP2.WebPortal/Dockerfile
     container_name: chap2-web-oracle
     ports:
