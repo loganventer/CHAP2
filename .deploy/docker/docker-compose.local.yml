@@ -13,7 +13,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
     volumes:
-      - ./data/chorus:/app/data/chorus
+      - chorus-data:/app/data/chorus
     networks:
       - chap2-network
     restart: unless-stopped
