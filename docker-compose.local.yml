@@ -8,7 +8,7 @@ services:
       dockerfile: CHAP2.Chorus.Api/Dockerfile
     container_name: chap2-api-local
     ports:
-      - "5000:80"    # Host port 5000 → Container port 80 (HTTP only)
+      - "8080:80"    # Host port 8080 → Container port 80 (HTTP only)
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
@@ -31,7 +31,7 @@ services:
       dockerfile: CHAP2.UI/CHAP2.WebPortal/Dockerfile
     container_name: chap2-web-local
     ports:
-      - "5001:80"    # Host port 5001 → Container port 80 (HTTP only)
+      - "8081:80"    # Host port 8081 → Container port 80 (HTTP only)
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80

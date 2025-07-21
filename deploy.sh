@@ -58,24 +58,36 @@ check_docker_daemon() {
     print_success "Docker daemon is running"
 }
 
-# Create data directory if it doesn't exist
-create_data_directory() {
-    print_status "Creating data directory..."
+# Create data directory and copy sample data if empty
+setup_data_directory() {
+    print_status "Setting up data directory..."
     mkdir -p ./data/chorus
-    print_success "Data directory created"
+    
+    # Check if data directory is empty
+    if [ ! "$(ls -A ./data/chorus)" ]; then
+        print_status "Data directory is empty, copying sample data..."
+        if [ -d "./CHAP2.Chorus.Api/data/chorus" ]; then
+            cp -r ./CHAP2.Chorus.Api/data/chorus/* ./data/chorus/
+            print_success "Sample data copied to data directory"
+        else
+            print_warning "Sample data directory not found, starting with empty database"
+        fi
+    else
+        print_success "Data directory already contains data"
+    fi
 }
 
 # Stop existing containers
 stop_containers() {
     print_status "Stopping existing containers..."
-    docker-compose down --remove-orphans
+    docker-compose -f docker-compose.local.yml down --remove-orphans
     print_success "Existing containers stopped"
 }
 
 # Build and start containers
 build_and_start() {
     print_status "Building and starting containers..."
-    docker-compose up --build -d
+    docker-compose -f docker-compose.local.yml up --build -d
     print_success "Containers built and started"
 }
 
@@ -86,7 +98,7 @@ wait_for_services() {
     # Wait for API
     print_status "Waiting for API service..."
     for i in {1..30}; do
-        if curl -f http://localhost:5000/api/health/ping &> /dev/null; then
+        if curl -f http://localhost:8080/api/health/ping &> /dev/null; then
             print_success "API service is ready"
             break
         fi
@@ -100,7 +112,7 @@ wait_for_services() {
     # Wait for Web Portal
     print_status "Waiting for Web Portal service..."
     for i in {1..30}; do
-        if curl -f http://localhost:5001 &> /dev/null; then
+        if curl -f http://localhost:8081 &> /dev/null; then
             print_success "Web Portal service is ready"
             break
         fi
@@ -117,12 +129,11 @@ show_status() {
     print_status "Service Status:"
     echo ""
     echo "API Service:"
-    echo "  - URL: http://localhost:5000"
-    echo "  - Health: http://localhost:5000/api/health/ping"
+    echo "  - URL: http://localhost:8080"
+    echo "  - Health: http://localhost:8080/api/health/ping"
     echo ""
     echo "Web Portal:"
-    echo "  - URL: http://localhost:5001"
-    echo "  - HTTPS: https://localhost:7001"
+    echo "  - URL: http://localhost:8081"
     echo ""
     echo "Data Directory: ./data/chorus"
     echo ""
@@ -131,7 +142,7 @@ show_status() {
 # Show logs
 show_logs() {
     print_status "Container logs:"
-    docker-compose logs --tail=20
+    docker-compose -f docker-compose.local.yml logs --tail=20
 }
 
 # Main deployment function
@@ -140,7 +151,7 @@ deploy() {
     
     check_docker
     check_docker_daemon
-    create_data_directory
+    setup_data_directory
     stop_containers
     build_and_start
     wait_for_services
@@ -149,8 +160,8 @@ deploy() {
     print_success "CHAP2 deployment completed successfully!"
     echo ""
     print_status "You can now access:"
-    echo "  - API: http://localhost:5000"
-    echo "  - Web Portal: http://localhost:5001"
+    echo "  - API: http://localhost:8080"
+    echo "  - Web Portal: http://localhost:8081"
     echo ""
     print_status "To view logs, run: ./deploy.sh logs"
     print_status "To stop services, run: ./deploy.sh stop"
@@ -159,14 +170,14 @@ deploy() {
 # Stop services
 stop_services() {
     print_status "Stopping CHAP2 services..."
-    docker-compose down
+    docker-compose -f docker-compose.local.yml down
     print_success "Services stopped"
 }
 
 # Show logs
 logs() {
     print_status "Showing container logs..."
-    docker-compose logs -f
+    docker-compose -f docker-compose.local.yml logs -f
 }
 
 # Show help
