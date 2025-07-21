@@ -99,7 +99,7 @@ log_message() {
 }
 
 # Check if services are running
-if ! docker-compose -f "$REPO_DIR/docker-compose.oracle-cloud.yml" ps | grep -q "Up"; then
+if ! docker-compose -f "$REPO_DIR/.deploy/docker/docker-compose.oracle-cloud.yml" ps | grep -q "Up"; then
     log_message "Services are not running, attempting restart"
     cd "$REPO_DIR"
     ./deploy-oracle-cloud.sh deploy

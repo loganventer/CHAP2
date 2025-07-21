@@ -13,7 +13,7 @@ echo "🚀 CHAP2 Docker Deployment Script"
 echo "=================================="
 
 # Configuration
-COMPOSE_FILE="docker/docker-compose.yml"
+COMPOSE_FILE=".deploy/docker/docker-compose.yml"
 API_PORT="5000"
 WEB_PORT="5001"
 API_URL="http://localhost:$API_PORT/api/health/ping"

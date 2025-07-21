@@ -4,7 +4,7 @@ services:
   # CHAP2 API Service
   chap2-api:
     build:
-      context: .
+      context: ../..
       dockerfile: CHAP2.Chorus.Api/Dockerfile
     container_name: chap2-api-local
     ports:

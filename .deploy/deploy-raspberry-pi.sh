@@ -13,7 +13,7 @@ echo "🚀 CHAP2 Raspberry Pi Deployment"
 echo "================================"
 
 # Configuration
-COMPOSE_FILE="docker/docker-compose.raspberry-pi.yml"
+COMPOSE_FILE=".deploy/docker/docker-compose.raspberry-pi.yml"
 API_PORT="5000"
 WEB_PORT="5001"
 API_URL="http://localhost:$API_PORT/api/health/ping"

@@ -135,7 +135,7 @@ update_repository() {
 check_services() {
     print_status "Checking service status..."
     
-    if ! docker-compose -f "$REPO_DIR/docker-compose.oracle-cloud.yml" ps | grep -q "Up"; then
+    if ! docker-compose -f "$REPO_DIR/.deploy/docker/docker-compose.oracle-cloud.yml" ps | grep -q "Up"; then
         print_warning "Services are not running"
         return 1
     fi

@@ -28,7 +28,7 @@ echo "  🐳 Container Mode:  Docker"
 echo ""
 
 # Configuration
-COMPOSE_FILE="docker/docker-compose.local.yml"
+COMPOSE_FILE=".deploy/docker/docker-compose.local.yml"
 API_PORT="8080"
 WEB_PORT="8081"
 API_URL="http://localhost:$API_PORT/api/health/ping"
