@@ -2,19 +2,80 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Search Integration: Initializing...');
     
-    // Initialize search UI
+    // Initialize regular search using the original search.js functionality
     const searchContainer = document.getElementById('searchContainer');
     if (searchContainer) {
-        const searchUI = new SearchUI('searchContainer', {
-            debounceDelay: 300,
-            minQueryLength: 2,
-            showLoadingIndicator: true,
-            showErrorMessages: true
-        });
+        // Use the original search functionality instead of SearchUI
+        searchContainer.innerHTML = `
+            <div class="search-container">
+                <div class="search-input-container">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               class="search-input" 
+                               id="searchInput"
+                               placeholder="Search choruses..."
+                               autocomplete="off">
+                        <div class="search-actions">
+                            <button class="clear-btn" id="clearBtn" style="display: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="search-info">
+                        <span class="search-delay-info">Search triggers after typing stops (300ms delay)</span>
+                        <span class="min-length-info">Minimum 2 characters</span>
+                    </div>
+                </div>
 
-        // Store reference for potential future use
-        window.searchUI = searchUI;
-        console.log('Search Integration: Regular search UI initialized');
+                <div class="search-results-container">
+                    <div class="results-header" style="display: none;">
+                        <div class="results-count"></div>
+                        <div class="results-controls">
+                            <button class="btn-secondary export-btn" style="display: none;">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="loading-container" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <p>Searching...</p>
+                    </div>
+
+                    <div class="error-container" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p class="error-message"></p>
+                    </div>
+
+                    <div class="results-table-container">
+                        <table class="results-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th class="col-number">#</th>
+                                    <th class="col-title">Title</th>
+                                    <th class="col-key">Key</th>
+                                    <th class="col-type">Type</th>
+                                    <th class="col-time">Time</th>
+                                    <th class="col-context">Context</th>
+                                    <th class="col-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="no-results" style="display: none;">
+                        <i class="fas fa-search"></i>
+                        <p>No results found</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Initialize the original search functionality
+        initializeSearch();
+        console.log('Search Integration: Regular search initialized with original functionality');
     }
 
     // Initialize AI search if container exists

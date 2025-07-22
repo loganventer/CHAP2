@@ -1154,7 +1154,7 @@
     transition: all 0.3s ease;
     overflow: hidden;
     min-width: 250px;
-    max-width: 400px;
+    width: 100%;
     border: 1px solid rgba(255, 255, 255, 0.2);
     z-index: 100;
     /* Remove backdrop-filter to fix text rendering */
