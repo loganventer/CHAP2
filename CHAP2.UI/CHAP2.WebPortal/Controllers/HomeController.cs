@@ -36,6 +36,11 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult CleanSearch()
+    {
+        return View();
+    }
+
     [HttpGet]
     public async Task<IActionResult> Search(string q, string searchMode = "Contains", string searchIn = "all")
     {

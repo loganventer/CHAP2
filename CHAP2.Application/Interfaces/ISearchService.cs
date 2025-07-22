@@ -5,16 +5,21 @@ namespace CHAP2.Application.Interfaces;
 
 public interface ISearchService
 {
-    Task<IReadOnlyList<Chorus>> SearchByNameAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Chorus>> SearchByTextAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Chorus>> SearchByKeyAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Chorus>> SearchAllAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default);
-    void InvalidateCache();
+    Task<SearchResult> SearchAsync(SearchRequest request, CancellationToken cancellationToken = default);
+    Task<SearchResult> SearchWithAiAsync(SearchRequest request, CancellationToken cancellationToken = default);
 }
 
-public enum SearchMode
-{
-    Exact,      // Exact match (case-insensitive)
-    Contains,    // Contains search (case-insensitive)
-    Regex        // Regular expression search
-} 
+public record SearchRequest(
+    string Query,
+    SearchMode Mode = SearchMode.Contains,
+    SearchScope Scope = SearchScope.All,
+    int MaxResults = 50,
+    bool UseAi = false
+);
+
+public record SearchResult(
+    IReadOnlyList<Chorus> Results,
+    int TotalCount,
+    string? Error = null,
+    Dictionary<string, object>? Metadata = null
+); 

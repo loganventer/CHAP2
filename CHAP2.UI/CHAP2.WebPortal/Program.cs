@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
 
 // Configure HttpClient for API communication using shared configuration
 builder.Services.AddCHAP2ApiClient(builder.Configuration);
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IChorusApiService, ChorusApiService>();
 builder.Services.AddScoped<IChorusApplicationService, ChorusApplicationService>();
 builder.Services.AddScoped<IChorusCommandService, ChorusCommandService>();
 builder.Services.AddScoped<IChorusQueryService, ChorusQueryService>();
+builder.Services.AddScoped<ISearchService, ChorusSearchService>();
 builder.Services.AddScoped<IChorusRepository>(provider =>
 {
     var logger = provider.GetRequiredService<ILogger<DiskChorusRepository>>();

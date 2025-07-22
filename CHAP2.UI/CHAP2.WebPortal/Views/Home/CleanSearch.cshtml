@@ -1,0 +1,375 @@
+@{
+    ViewData["Title"] = "Clean Search";
+}
+
+<div class="search-page">
+    <div class="search-header">
+        <div class="logo-section">
+            <i class="fas fa-music logo-icon"></i>
+            <h1 class="app-title">CHAP2 Clean Search</h1>
+            <p class="app-subtitle">Modular Search Architecture</p>
+        </div>
+        <div class="header-actions">
+            <a href="@Url.Action("Create")" class="btn-primary" target="_blank" onclick="openCreateWindow(event)">
+                <i class="fas fa-plus"></i> Create New
+            </a>
+        </div>
+    </div>
+
+    <div class="search-tabs">
+        <button class="tab-button active" data-tab="regular">
+            <i class="fas fa-search"></i> Regular Search
+        </button>
+        <button class="tab-button" data-tab="ai">
+            <i class="fas fa-robot"></i> AI Search
+        </button>
+    </div>
+
+    <!-- Regular Search -->
+    <div class="search-section active" id="regularSearch">
+        <div id="searchContainer"></div>
+    </div>
+
+    <!-- AI Search -->
+    <div class="search-section" id="aiSearch">
+        <div id="aiSearchContainer"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/search-service.js"></script>
+    <script src="~/js/search-ui.js"></script>
+    <script src="~/js/search-integration.js"></script>
+}
+
+<style>
+.search-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-icon {
+    font-size: 2em;
+}
+
+.app-title {
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 700;
+}
+
+.app-subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1em;
+}
+
+.search-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: #f8f9fa;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.tab-button:hover {
+    background: #e9ecef;
+}
+
+.tab-button.active {
+    background: #007bff;
+    color: white;
+}
+
+.search-section {
+    display: none;
+}
+
+.search-section.active {
+    display: block;
+}
+
+/* Search Container Styles */
+.search-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.search-input-container {
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 16px;
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.search-box:focus-within {
+    border-color: #007bff;
+    background: white;
+}
+
+.search-icon {
+    color: #6c757d;
+    margin-right: 12px;
+    font-size: 1.1em;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.1em;
+    outline: none;
+}
+
+.search-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.clear-btn {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.3s ease;
+}
+
+.clear-btn:hover {
+    color: #dc3545;
+}
+
+.search-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+/* Results Styles */
+.search-results-container {
+    padding: 20px;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.results-count {
+    font-weight: 600;
+    color: #495057;
+}
+
+.loading-container {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-container {
+    text-align: center;
+    padding: 40px;
+    color: #dc3545;
+}
+
+.error-container i {
+    font-size: 2em;
+    margin-bottom: 15px;
+}
+
+.no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.no-results i {
+    font-size: 3em;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+/* Table Styles */
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.results-table th {
+    background: #f8f9fa;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.results-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: top;
+}
+
+.result-row {
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.result-row:hover {
+    background-color: #f8f9fa;
+}
+
+.chorus-title {
+    font-weight: 600;
+    color: #007bff;
+}
+
+.context-text {
+    color: #6c757d;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.btn-action {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: color 0.3s ease;
+    margin-right: 4px;
+}
+
+.btn-action:hover {
+    color: #007bff;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+/* Responsive */
+@@media (max-width: 768px) {
+    .search-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .search-tabs {
+        flex-direction: column;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .results-table {
+        font-size: 0.9em;
+    }
+    
+    .col-context {
+        display: none;
+    }
+}
+</style>
+
+<script>
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const searchSections = document.querySelectorAll('.search-section');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.dataset.tab;
+            
+            // Update active tab button
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Update active section
+            searchSections.forEach(section => {
+                section.classList.remove('active');
+                if (section.id === targetTab + 'Search') {
+                    section.classList.add('active');
+                }
+            });
+        });
+    });
+});
+</script> 
