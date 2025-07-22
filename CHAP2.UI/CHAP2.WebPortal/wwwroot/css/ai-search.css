@@ -629,6 +629,88 @@
     border-left: 4px solid #dc3545;
 }
 
+/* Query Understanding Section */
+.query-understanding-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-radius: 12px;
+    border-left: 4px solid #ffc107;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.query-understanding-header {
+    margin-bottom: 1rem;
+}
+
+.query-understanding-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: #856404;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.query-understanding-header p {
+    margin: 0;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.query-understanding-content {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ffeaa7;
+    line-height: 1.6;
+    color: #856404;
+    font-size: 0.95rem;
+}
+
+/* AI Analysis Section */
+.ai-analysis-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ai-analysis-header {
+    margin-bottom: 1rem;
+}
+
+.ai-analysis-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ai-analysis-header p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.ai-analysis-content {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    line-height: 1.6;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.ai-analysis-content br {
+    margin-bottom: 0.5rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .ai-modal {
@@ -658,5 +740,15 @@
     
     .explanation-text {
         font-size: 0.85rem;
+    }
+    
+    .ai-analysis-section {
+        margin-top: 1rem;
+        padding: 1rem;
+    }
+    
+    .ai-analysis-content {
+        padding: 0.75rem;
+        font-size: 0.9rem;
     }
 } 

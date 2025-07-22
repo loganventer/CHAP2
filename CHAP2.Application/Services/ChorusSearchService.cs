@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using System.Text.Json;
 
 namespace CHAP2.Application.Services;
 
@@ -14,17 +15,21 @@ public class ChorusSearchService : ISearchService
     private readonly ILogger<ChorusSearchService> _logger;
     private readonly IMemoryCache _cache;
     private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
+    private readonly IAiSearchService _aiSearchService;
+
     private const string AllChorusesCacheKey = "AllChoruses";
     private const int CacheDurationMinutes = 15;
 
     public ChorusSearchService(
         IChorusRepository chorusRepository,
         ILogger<ChorusSearchService> logger,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        IAiSearchService aiSearchService)
     {
         _chorusRepository = chorusRepository;
         _logger = logger;
         _cache = cache;
+        _aiSearchService = aiSearchService;
     }
 
     public async Task<IReadOnlyList<Chorus>> SearchByNameAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default)
@@ -282,22 +287,38 @@ public class ChorusSearchService : ISearchService
 
             _logger.LogInformation("Performing AI search with query: {Query}", request.Query);
 
-            // For now, use the same search logic as regular search
-            // In the future, this could integrate with vector search or LLM
-            var result = await SearchAsync(request, cancellationToken);
+            // Step 1: Use AI to generate search terms and context
+            var aiSearchTerms = await _aiSearchService.GenerateSearchTermsAsync(request.Query, cancellationToken);
+            
+            // Step 2: Perform vector search with AI-generated terms
+            var vectorResults = await PerformVectorSearchWithAiTermsAsync(request.Query, aiSearchTerms, request.MaxResults, cancellationToken);
+            
+            // Step 3: Combine with traditional search for comprehensive results
+            var traditionalResults = await SearchAsync(request, cancellationToken);
+            
+            // Step 4: Merge and rank results
+            var combinedResults = MergeAndRankResults(vectorResults, traditionalResults.Results, request.Query);
+            
+            var limitedResults = combinedResults.Take(request.MaxResults).ToList();
 
-            return result with
-            {
-                Metadata = result.Metadata?.Concat(new Dictionary<string, object>
+            _logger.LogInformation("AI search completed. Found {TotalCount} results, returning {LimitedCount}", 
+                combinedResults.Count, limitedResults.Count);
+
+            return new SearchResult(
+                limitedResults,
+                combinedResults.Count,
+                Metadata: new Dictionary<string, object>
                 {
+                    ["query"] = request.Query,
                     ["aiSearch"] = true,
-                    ["searchType"] = "ai"
-                }).ToDictionary(x => x.Key, x => x.Value) ?? new Dictionary<string, object>
-                {
-                    ["aiSearch"] = true,
-                    ["searchType"] = "ai"
+                    ["searchType"] = "ai",
+                    ["aiSearchTerms"] = aiSearchTerms,
+                    ["vectorResultsCount"] = vectorResults.Count,
+                    ["traditionalResultsCount"] = traditionalResults.Results.Count,
+                    ["combinedResultsCount"] = combinedResults.Count,
+                    ["searchContext"] = await _aiSearchService.AnalyzeSearchContextAsync(request.Query, aiSearchTerms, cancellationToken)
                 }
-            };
+            );
         }
         catch (Exception ex)
         {
@@ -314,6 +335,93 @@ public class ChorusSearchService : ISearchService
                 }
             );
         }
+    }
+
+
+
+    private async Task<List<Chorus>> PerformVectorSearchWithAiTermsAsync(string originalQuery, List<string> searchTerms, int maxResults, CancellationToken cancellationToken)
+    {
+        var allResults = new List<Chorus>();
+        
+        // Use the original query for vector search (most relevant)
+        var vectorResults = await SearchAllAsync(originalQuery, SearchMode.Contains, cancellationToken);
+        allResults.AddRange(vectorResults);
+        
+        // Add results from AI-generated search terms
+        foreach (var term in searchTerms.Take(3)) // Limit to top 3 terms to avoid too many results
+        {
+            if (term != originalQuery) // Avoid duplicate searches
+            {
+                var termResults = await SearchAllAsync(term, SearchMode.Contains, cancellationToken);
+                allResults.AddRange(termResults);
+            }
+        }
+
+        // Remove duplicates and rank by relevance
+        var uniqueResults = allResults
+            .GroupBy(c => c.Id)
+            .Select(g => g.First())
+            .OrderByDescending(c => 
+            {
+                var content = $"{c.Name} {c.ChorusText}".ToLowerInvariant();
+                var score = 0;
+                
+                // Original query gets highest weight
+                if (content.Contains(originalQuery.ToLowerInvariant())) score += 10;
+                
+                // AI-generated terms get medium weight
+                foreach (var term in searchTerms)
+                {
+                    if (content.Contains(term.ToLowerInvariant())) score += 3;
+                }
+                
+                // Exact matches get bonus
+                if (c.Name.ToLowerInvariant().Contains(originalQuery.ToLowerInvariant())) score += 5;
+                
+                return score;
+            })
+            .Take(maxResults)
+            .ToList();
+
+        _logger.LogInformation("Vector search with AI terms found {Count} unique results", uniqueResults.Count);
+        return uniqueResults;
+    }
+
+    private List<Chorus> MergeAndRankResults(List<Chorus> vectorResults, IReadOnlyList<Chorus> traditionalResults, string query)
+    {
+        var allResults = new List<Chorus>();
+        
+        // Add vector results with higher weight
+        allResults.AddRange(vectorResults);
+        
+        // Add traditional results that aren't already included
+        var existingIds = vectorResults.Select(r => r.Id).ToHashSet();
+        allResults.AddRange(traditionalResults.Where(r => !existingIds.Contains(r.Id)));
+        
+        // Rank by relevance to original query
+        var queryLower = query.ToLowerInvariant();
+        return allResults
+            .OrderByDescending(c => 
+            {
+                var content = $"{c.Name} {c.ChorusText}".ToLowerInvariant();
+                var score = 0;
+                
+                // Exact match gets highest score
+                if (content.Contains(queryLower)) score += 10;
+                
+                // Word matches
+                var queryWords = queryLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var word in queryWords)
+                {
+                    if (content.Contains(word)) score += 2;
+                }
+                
+                // Vector results get bonus
+                if (vectorResults.Any(v => v.Id == c.Id)) score += 5;
+                
+                return score;
+            })
+            .ToList();
     }
 
     private static bool MatchesSearch(string text, string searchTerm, SearchMode searchMode)

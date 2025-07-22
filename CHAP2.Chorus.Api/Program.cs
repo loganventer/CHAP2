@@ -39,6 +39,7 @@ builder.Services.AddSingleton<IChorusRepository>(provider =>
     return new DiskChorusRepository(options.FolderPath, logger);
 });
 
+builder.Services.AddScoped<IAiSearchService, AiSearchService>();
 builder.Services.AddScoped<ISearchService, ChorusSearchService>();
 builder.Services.AddScoped<IChorusQueryService, ChorusQueryService>();
 builder.Services.AddScoped<IChorusCommandService, ChorusCommandService>();

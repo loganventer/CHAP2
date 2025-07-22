@@ -70,8 +70,8 @@ class AiSearch {
         this.clearResults();
         
         try {
-            // Use LLM to search and find relevant choruses
-            await this.performLlmSearch(query);
+            // Use intelligent search with LLM + vector database
+            await this.performIntelligentSearch(query);
             
         } catch (error) {
             console.error('Search error:', error);
@@ -81,120 +81,51 @@ class AiSearch {
         }
     }
     
-    async performLlmSearch(query) {
-        // Show progress in the results area
+    async performIntelligentSearch(query) {
+        // Step 1: Show initial progress
         this.resultsContainer.innerHTML = `
             <div class="ai-progress-container">
                 <div class="ai-progress-header">
-                    <h2><i class="fas fa-robot"></i> AI Search in Progress</h2>
-                    <p>Analyzing your query and searching through choruses...</p>
+                    <h2><i class="fas fa-robot"></i> Intelligent Search</h2>
+                    <p>Understanding your query and searching the vector database...</p>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill"></div>
                 </div>
-                <div id="streamingContent" class="streaming-content"></div>
             </div>
         `;
         
-        const streamingContent = document.getElementById('streamingContent');
-        let currentState = '';
-        let stateCount = 0;
-        
         try {
-            // Use LLM to search for choruses
-            const response = await fetch('/Home/LlmSearch', {
+            // Step 2: Use intelligent search with LLM + vector database
+            const searchResponse = await fetch('/Home/IntelligentSearch', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: query })
+                body: JSON.stringify({ query: query, maxResults: 10 })
             });
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            if (!searchResponse.ok) {
+                throw new Error(`HTTP ${searchResponse.status}: ${searchResponse.statusText}`);
             }
             
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
+            const result = await searchResponse.json();
             
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-                
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            
-                            if (data.type === 'choruses') {
-                                // Display the actual choruses found by LLM
-                                this.displayLlmResults(data.data, query);
-                            } else if (data.type === 'chunk') {
-                                // Show current state with animation and keep previous steps
-                                const newState = data.data;
-                                
-                                // Update state if it's new
-                                if (newState !== currentState) {
-                                    currentState = newState;
-                                    stateCount++;
-                                    
-                                    // Add new state to the list
-                                    const newStateElement = document.createElement('div');
-                                    newStateElement.className = 'ai-state current';
-                                    newStateElement.innerHTML = `
-                                        <span class="state-icon">${this.getStateIcon(stateCount)}</span>
-                                        <span class="state-text">${newState}</span>
-                                        <span class="state-animation">${this.getStateAnimation(stateCount)}</span>
-                                    `;
-                                    
-                                    // Remove 'current' class from all previous states
-                                    const allStates = streamingContent.querySelectorAll('.ai-state');
-                                    allStates.forEach(state => {
-                                        state.classList.remove('current');
-                                    });
-                                    
-                                    // Add the new state
-                                    streamingContent.appendChild(newStateElement);
-                                    streamingContent.scrollTop = streamingContent.scrollHeight;
-                                    
-                                    // Add a small delay for visual effect
-                                    await new Promise(resolve => setTimeout(resolve, 100));
-                                }
-                                
-                            } else if (data.type === 'done') {
-                                // Search complete
-                                console.log('LLM search completed');
-                                
-                                // Remove 'current' class from all states
-                                const allStates = streamingContent.querySelectorAll('.ai-state');
-                                allStates.forEach(state => {
-                                    state.classList.remove('current');
-                                });
-                                
-                                // Add completion message
-                                const completionElement = document.createElement('div');
-                                completionElement.className = 'ai-state completed';
-                                completionElement.innerHTML = `
-                                    <span class="state-icon">✅</span>
-                                    <span class="state-text">Search completed successfully!</span>
-                                `;
-                                streamingContent.appendChild(completionElement);
-                                streamingContent.scrollTop = streamingContent.scrollHeight;
-                            }
-                        } catch (e) {
-                            console.error('Error parsing streaming data:', e);
-                        }
-                    }
-                }
+            // Step 3: Display search results first
+            this.displaySearchResultsFirst(result.searchResults, query);
+            
+            // Step 4: Show query understanding
+            if (result.queryUnderstanding) {
+                this.displayQueryUnderstanding(result.queryUnderstanding);
+            }
+            
+            // Step 5: Show AI analysis if available
+            if (result.hasAiAnalysis && result.aiAnalysis) {
+                this.displayAiAnalysis(result.aiAnalysis);
             }
             
         } catch (error) {
-            console.error('Error performing LLM search:', error);
+            console.error('Error performing intelligent search:', error);
             this.resultsContainer.innerHTML = `
                 <div class="error-message">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -205,39 +136,23 @@ class AiSearch {
         }
     }
     
-    getStateIcon(stateNumber) {
-        const icons = ['🔍', '📊', '🤖', '💭', '📝', '✨'];
-        return icons[stateNumber % icons.length] || '⚡';
-    }
-    
-    getStateAnimation(stateNumber) {
-        // Return empty string to remove spinners
-        return '';
-    }
-    
-    displayLlmResults(choruses, query) {
-        if (!choruses || choruses.length === 0) {
+    displaySearchResultsFirst(results, query) {
+        if (!results || results.length === 0) {
             this.resultsContainer.innerHTML = `
                 <div class="no-results">
                     <i class="fas fa-search"></i>
                     <h3>No Results Found</h3>
-                    <p>The AI couldn't find any choruses matching your query: "${query}"</p>
+                    <p>No choruses found matching your query: "${query}"</p>
                 </div>
             `;
             return;
         }
         
-        // Create table structure for LLM results with explanations
+        // Create table structure like regular search
         const tableHtml = `
             <div class="results-header">
-                <h2>AI Search Results (${choruses.length})</h2>
-                <p>Found ${choruses.length} choruses using AI analysis</p>
-                <div class="explanation-controls">
-                    <button class="btn-secondary btn-sm" id="toggleAllExplanations">
-                        <i class="fas fa-chevron-down"></i> Show All Explanations
-                    </button>
-                    <span class="explanation-count">${choruses.length} explanations available</span>
-                </div>
+                <h2><i class="fas fa-search"></i> Search Results (${results.length})</h2>
+                <p>Found ${results.length} choruses matching your query</p>
             </div>
             <div class="results-table-container">
                 <table class="results-table">
@@ -253,7 +168,7 @@ class AiSearch {
                         </tr>
                     </thead>
                     <tbody>
-                        ${choruses.map((chorus, index) => this.createAiResultRow(chorus, index + 1)).join('')}
+                        ${results.map((chorus, index) => this.createRegularResultRow(chorus, index + 1)).join('')}
                     </tbody>
                 </table>
             </div>
@@ -264,6 +179,49 @@ class AiSearch {
         // Add click handlers for rows
         this.setupRowClickHandlers();
     }
+    
+    displayQueryUnderstanding(understanding) {
+        // Add query understanding above the search results
+        const understandingHtml = `
+            <div class="query-understanding-section">
+                <div class="query-understanding-header">
+                    <h3><i class="fas fa-lightbulb"></i> Query Understanding</h3>
+                    <p>How the AI interpreted your search</p>
+                </div>
+                <div class="query-understanding-content">
+                    <strong>Search terms generated:</strong> ${understanding}
+                </div>
+            </div>
+        `;
+        
+        // Insert before the search results
+        const resultsHeader = this.resultsContainer.querySelector('.results-header');
+        if (resultsHeader) {
+            resultsHeader.insertAdjacentHTML('beforebegin', understandingHtml);
+        }
+    }
+    
+    displayAiAnalysis(analysis) {
+        // Add AI analysis below the search results
+        const analysisHtml = `
+            <div class="ai-analysis-section">
+                <div class="ai-analysis-header">
+                    <h3><i class="fas fa-robot"></i> AI Analysis</h3>
+                    <p>Analysis of the search results</p>
+                </div>
+                <div class="ai-analysis-content">
+                    ${analysis.replace(/\n/g, '<br>')}
+                </div>
+            </div>
+        `;
+        
+        // Append to existing results
+        this.resultsContainer.insertAdjacentHTML('beforeend', analysisHtml);
+    }
+    
+
+    
+
     
     createRegularResultRow(chorus, index) {
         return `
@@ -296,191 +254,15 @@ class AiSearch {
         `;
     }
     
-    showAiExplanation(explanation) {
-        // Add AI explanation to the results
-        const explanationHtml = `
-            <div class="ai-explanation">
-                <h3><i class="fas fa-robot"></i> AI Search Analysis</h3>
-                <p>${explanation}</p>
-            </div>
-        `;
-        
-        // Insert at the top of results
-        const resultsHeader = this.resultsContainer.querySelector('.results-header');
-        if (resultsHeader) {
-            resultsHeader.insertAdjacentHTML('afterend', explanationHtml);
-        }
-    }
+
     
 
     
-    displaySearchResults(results) {
-        if (!results || results.length === 0) {
-            this.resultsContainer.innerHTML = `
-                <div class="no-results">
-                    <i class="fas fa-search"></i>
-                    <h3>No Results Found</h3>
-                    <p>Try a different search term or check your spelling.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // Create table structure like regular search
-        const tableHtml = `
-            <div class="results-header">
-                <h2>AI Search Results (${results.length})</h2>
-                <p>Found ${results.length} choruses matching your query using semantic search</p>
-                <div class="explanation-controls">
-                    <button class="btn-secondary btn-sm" id="toggleAllExplanations">
-                        <i class="fas fa-chevron-down"></i> Show All Explanations
-                    </button>
-                    <span class="explanation-count">${results.length} explanations available</span>
-                </div>
-            </div>
-            <div class="results-table-container">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th class="col-number">#</th>
-                            <th class="col-title">Title</th>
-                            <th class="col-key">Key</th>
-                            <th class="col-type">Type</th>
-                            <th class="col-time">Time</th>
-                            <th class="col-context">Context</th>
-                            <th class="col-actions">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${results.map((result, index) => this.createAiResultRow(result, index + 1)).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-        
-        this.resultsContainer.innerHTML = tableHtml;
-        
-        // Add click handlers for rows
-        this.setupRowClickHandlers();
-    }
+
     
-    createAiResultRow(chorus, index) {
-        // Generate explanation for why it matched
-        const explanation = this.generateMatchExplanation(chorus);
-        
-        // Create main result row
-        const mainRow = `
-            <tr class="result-row" data-id="${chorus.id}">
-                <td class="col-number">${index}</td>
-                <td class="col-title">
-                    <strong>${this.highlightSearchTerm(chorus.name, this.currentQuery)}</strong>
-                </td>
-                <td class="col-key">${this.getKeyDisplay(chorus.key)}</td>
-                <td class="col-type">${this.getTypeDisplay(chorus.type)}</td>
-                <td class="col-time">${this.getTimeSignatureDisplay(chorus.timeSignature)}</td>
-                <td class="col-context">${this.truncateText(chorus.chorusText, 100)}</td>
-                <td class="col-actions">
-                    <div class="action-buttons">
-                        <button onclick="viewChorus('${chorus.id}')" class="btn-icon" title="View">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button onclick="editChorus('${chorus.id}')" class="btn-icon" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="shareChorus('${chorus.id}')" class="btn-icon" title="Share">
-                            <i class="fas fa-share"></i>
-                        </button>
-                        <button onclick="deleteChorus('${chorus.id}')" class="btn-icon" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr class="explanation-row collapsed" data-explanation-for="${chorus.id}">
-                <td colspan="7" class="explanation-cell">
-                    <div class="explanation-content">
-                        <i class="fas fa-info-circle explanation-icon"></i>
-                        <div class="explanation-text">
-                            <strong>Why this matched:</strong> ${explanation}
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `;
-        
-        return mainRow;
-    }
+
     
-    generateMatchExplanation(chorus) {
-        let explanation = '';
-        
-        // Use AI explanation if available, otherwise generate one
-        if (chorus.aiExplanation) {
-            explanation = `<span class="match-high">AI Analysis</span><br><small class="match-reasons">${chorus.aiExplanation}</small>`;
-        } else {
-            // Fallback to generated explanation
-            explanation = `<span class="match-high">AI Selected</span>`;
-            
-            // Add specific reasons based on content
-            const reasons = [];
-            const query = this.currentQuery.toLowerCase();
-            const text = chorus.chorusText.toLowerCase();
-            const name = chorus.name.toLowerCase();
-            
-            // Check for semantic keyword matches
-            const keywordGroups = {
-                'god': ['god', 'lord', 'jesus', 'christ', 'savior', 'redeemer', 'almighty', 'heavenly', 'divine'],
-                'praise': ['praise', 'worship', 'glory', 'hallelujah', 'amen', 'blessed', 'holy'],
-                'love': ['love', 'loving', 'beloved', 'heart', 'care', 'kindness', 'mercy'],
-                'grace': ['grace', 'amazing', 'wonderful', 'marvelous', 'blessing', 'gift'],
-                'faith': ['faith', 'trust', 'believe', 'hope', 'faithful', 'trusting'],
-                'music': ['sing', 'song', 'chorus', 'melody', 'music', 'voice', 'singing'],
-                'prayer': ['pray', 'prayer', 'praying', 'supplication', 'intercession'],
-                'greatness': ['great', 'greatness', 'mighty', 'powerful', 'strong', 'magnificent', 'awesome']
-            };
-            
-            // Check query keywords against content
-            for (const [category, keywords] of Object.entries(keywordGroups)) {
-                const queryHasCategory = keywords.some(keyword => query.includes(keyword));
-                const contentHasCategory = keywords.some(keyword => 
-                    text.includes(keyword) || name.includes(keyword)
-                );
-                
-                if (queryHasCategory && contentHasCategory) {
-                    reasons.push(`matches ${category} theme`);
-                }
-            }
-            
-            // Check for direct word matches
-            const queryWords = query.split(/\s+/);
-            const contentWords = [...text.split(/\s+/), ...name.split(/\s+/)];
-            
-            const directMatches = queryWords.filter(queryWord => 
-                contentWords.some(contentWord => 
-                    contentWord.includes(queryWord) || queryWord.includes(contentWord)
-                )
-            );
-            
-            if (directMatches.length > 0) {
-                reasons.push(`contains words: "${directMatches.slice(0, 3).join(', ')}"`);
-            }
-            
-            // Add language detection for Afrikaans/English
-            const afrikaansWords = ['vir', 'my', 'oor', 'se', 'grootheid', 'koortjies', 'vind'];
-            const hasAfrikaans = afrikaansWords.some(word => query.includes(word));
-            if (hasAfrikaans) {
-                reasons.push('Afrikaans query detected');
-            }
-            
-            if (reasons.length > 0) {
-                explanation += `<br><small class="match-reasons">${reasons.join(', ')}</small>`;
-            } else {
-                explanation += `<br><small class="match-reasons">AI determined relevance based on content analysis</small>`;
-            }
-        }
-        
-        return explanation;
-    }
+
     
     highlightSearchTerm(text, searchTerm) {
         if (!searchTerm || !text) return text;
@@ -502,74 +284,6 @@ class AiSearch {
                 }
             });
         });
-        
-        // Add click handlers for individual explanation toggles
-        const explanationToggles = document.querySelectorAll('#aiSearchResults .explanation-toggle');
-        explanationToggles.forEach(toggle => {
-            toggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const targetId = toggle.getAttribute('data-target');
-                this.toggleExplanation(targetId);
-            });
-        });
-        
-        // Add click handler for main toggle all button
-        const toggleAllBtn = document.getElementById('toggleAllExplanations');
-        if (toggleAllBtn) {
-            toggleAllBtn.addEventListener('click', () => {
-                this.toggleAllExplanations();
-            });
-        }
-    }
-    
-    toggleExplanation(chorusId) {
-        const explanationRow = document.querySelector(`[data-explanation-for="${chorusId}"]`);
-        const toggleBtn = document.querySelector(`[data-target="${chorusId}"]`);
-        
-        if (explanationRow && toggleBtn) {
-            const isCollapsed = explanationRow.classList.contains('collapsed');
-            
-            if (isCollapsed) {
-                explanationRow.classList.remove('collapsed');
-                toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-                toggleBtn.setAttribute('data-tooltip', 'Hide Explanation');
-            } else {
-                explanationRow.classList.add('collapsed');
-                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                toggleBtn.setAttribute('data-tooltip', 'Show Explanation');
-            }
-        }
-    }
-    
-    toggleAllExplanations() {
-        const explanationRows = document.querySelectorAll('#aiSearchResults .explanation-row');
-        const toggleBtns = document.querySelectorAll('#aiSearchResults .explanation-toggle');
-        const toggleAllBtn = document.getElementById('toggleAllExplanations');
-        
-        if (explanationRows.length === 0) return;
-        
-        // Check if all are collapsed
-        const allCollapsed = Array.from(explanationRows).every(row => 
-            row.classList.contains('collapsed')
-        );
-        
-        if (allCollapsed) {
-            // Expand all
-            explanationRows.forEach(row => row.classList.remove('collapsed'));
-            toggleBtns.forEach(btn => {
-                btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-                btn.setAttribute('data-tooltip', 'Hide Explanation');
-            });
-            toggleAllBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Hide All Explanations';
-        } else {
-            // Collapse all
-            explanationRows.forEach(row => row.classList.add('collapsed'));
-            toggleBtns.forEach(btn => {
-                btn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                btn.setAttribute('data-tooltip', 'Show Explanation');
-            });
-            toggleAllBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Show All Explanations';
-        }
     }
     
 

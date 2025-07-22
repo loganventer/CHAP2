@@ -1,22 +1,17 @@
-using CHAP2.WebPortal.Configuration;
-using CHAP2.WebPortal.DTOs;
+using CHAP2.Console.Vectorize.Configuration;
 using Microsoft.Extensions.Logging;
-using Qdrant.Client;
-using Qdrant.Client.Grpc;
-using System.Security.Cryptography;
 using System.Text;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
-namespace CHAP2.WebPortal.Services;
+namespace CHAP2.Console.Vectorize.Services;
 
-public class VectorSearchService : IVectorSearchService
+public class RagOptimizedVectorizationService : IVectorizationService
 {
-    private readonly QdrantSettings _settings;
-    private readonly ILogger<VectorSearchService> _logger;
-    private QdrantClient? _client;
+    private readonly ILogger<RagOptimizedVectorizationService> _logger;
     private const int VECTOR_DIMENSION = 1536;
     
-    // Enhanced vocabulary with RAG-optimized features (same as console app)
+    // Enhanced vocabulary with RAG-optimized features
     private static readonly Dictionary<string, int[]> WordPositions = new()
     {
         // Core religious terms (highest priority for RAG)
@@ -244,241 +239,165 @@ public class VectorSearchService : IVectorSearchService
         ["hemels"] = new[] { 922, 923, 924 }
     };
 
-    public VectorSearchService(QdrantSettings settings, ILogger<VectorSearchService> logger)
+    public RagOptimizedVectorizationService(ILogger<RagOptimizedVectorizationService> logger)
     {
-        _settings = settings;
         _logger = logger;
-    }
-
-    public async Task<List<ChorusSearchResult>> SearchSimilarAsync(string query, int maxResults = 5)
-    {
-        try
-        {
-            await InitializeClientAsync();
-            
-            // Generate embedding for the query using the same method as console app
-            var queryEmbedding = await GenerateRagOptimizedEmbeddingAsync(query);
-            
-            // Search in Qdrant with higher limit to get more candidates
-            var searchResults = await _client!.SearchAsync(
-                collectionName: _settings.CollectionName,
-                vector: queryEmbedding.ToArray(),
-                limit: (ulong)(maxResults * 3) // Get more candidates for filtering
-            );
-
-            var results = new List<ChorusSearchResult>();
-            var queryLower = query.ToLowerInvariant();
-            
-            // Define semantic keywords for better matching
-            var semanticKeywords = new List<string> { "god", "lord", "jesus", "christ", "praise", "worship", "love", "grace", "faith", "prayer", "great", "mighty", "powerful" };
-            
-            foreach (var result in searchResults)
-            {
-                var payloadDict = result.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                var name = GetPayloadValue(payloadDict, "name") ?? "";
-                var chorusText = GetPayloadValue(payloadDict, "chorusText") ?? "";
-                var contentLower = $"{name} {chorusText}".ToLowerInvariant();
-                
-                // Calculate semantic similarity score
-                var semanticScore = CalculateSemanticSimilarity(queryLower, contentLower, semanticKeywords);
-                
-                // Combine vector score with semantic score
-                var combinedScore = (result.Score * 0.3f) + (semanticScore * 0.7f);
-                
-                var chorusResult = new ChorusSearchResult
-                {
-                    Id = result.Id.Uuid,
-                    Score = combinedScore,
-                    Name = name,
-                    ChorusText = chorusText,
-                    Key = ParseIntSafely(GetPayloadValue(payloadDict, "key")),
-                    Type = ParseIntSafely(GetPayloadValue(payloadDict, "type")),
-                    TimeSignature = ParseIntSafely(GetPayloadValue(payloadDict, "timeSignature")),
-                    CreatedAt = ParseDateTimeSafely(GetPayloadValue(payloadDict, "createdAt"))
-                };
-                
-                results.Add(chorusResult);
-            }
-            
-            // Sort by combined score and take top results
-            results = results.OrderByDescending(r => r.Score).Take(maxResults).ToList();
-
-            _logger.LogInformation("Found {Count} similar results for query: {Query}", results.Count, query);
-            
-            // Debug logging to see what we're actually getting
-            foreach (var result in results)
-            {
-                _logger.LogDebug("Search result: ID={Id}, Name={Name}, Score={Score}", result.Id, result.Name, result.Score);
-            }
-            
-            return results;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error searching for similar choruses");
-            throw;
-        }
-    }
-    
-    private float CalculateSemanticSimilarity(string query, string content, List<string> keywords)
-    {
-        var score = 0.0f;
-        
-        // Check for keyword matches
-        foreach (var keyword in keywords)
-        {
-            if (content.Contains(keyword))
-            {
-                score += 0.1f;
-            }
-        }
-        
-        // Check for exact phrase matches
-        if (content.Contains(query))
-        {
-            score += 0.5f;
-        }
-        
-        // Check for word overlap
-        var queryWords = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var contentWords = content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var overlap = queryWords.Count(qw => contentWords.Any(cw => cw.Contains(qw) || qw.Contains(cw)));
-        score += (float)overlap / queryWords.Length * 0.3f;
-        
-        return Math.Min(score, 1.0f);
     }
 
     public async Task<List<float>> GenerateEmbeddingAsync(string text)
     {
-        return await GenerateRagOptimizedEmbeddingAsync(text);
-    }
-
-    private async Task<List<float>> GenerateRagOptimizedEmbeddingAsync(string text)
-    {
         try
         {
-            // Use the same RAG-optimized embedding generation as the console app
-            var normalizedText = text.ToLowerInvariant().Trim();
-            
-            // Initialize embedding vector
-            var embedding = new float[VECTOR_DIMENSION];
-            
-            // Extract words from text
-            var words = Regex.Split(normalizedText, @"\W+").Where(w => w.Length > 0).ToList();
-            
-            // RAG-optimized word-based features with enhanced semantic weighting
-            foreach (var word in words)
-            {
-                if (WordPositions.ContainsKey(word))
-                {
-                    var positions = WordPositions[word];
-                    var semanticWeight = GetSemanticWeight(word);
-                    
-                    foreach (var position in positions)
-                    {
-                        if (position < VECTOR_DIMENSION)
-                        {
-                            embedding[position] += semanticWeight;
-                        }
-                    }
-                }
-            }
-            
-            // Enhanced frequency-based features for RAG
-            var wordFreq = words.GroupBy(w => w).ToDictionary(g => g.Key, g => g.Count());
-            foreach (var word in wordFreq.Take(30)) // Increased to top 30 for better RAG
-            {
-                var hash = Math.Abs(ComputeWordHash(word.Key));
-                var positions = new int[5]; // Increased positions for better coverage
-                for (int i = 0; i < 5; i++)
-                {
-                    positions[i] = (hash + i * 100) % VECTOR_DIMENSION;
-                }
-                foreach (var position in positions)
-                {
-                    if (position >= 0 && position < VECTOR_DIMENSION)
-                    {
-                        embedding[position] += (float)word.Value / words.Count * GetSemanticWeight(word.Key);
-                    }
-                }
-            }
-            
-            // RAG-optimized text length features
-            var lengthFeature = Math.Min(text.Length / 300.0f, 1.0f); // Adjusted for typical chorus length
-            var lengthPositions = new int[8]; // More positions for length
-            for (int i = 0; i < 8; i++)
-            {
-                lengthPositions[i] = Math.Abs((text.Length + i * 50) % VECTOR_DIMENSION);
-            }
-            foreach (var position in lengthPositions)
-            {
-                if (position >= 0 && position < VECTOR_DIMENSION)
-                {
-                    embedding[position] += lengthFeature;
-                }
-            }
-            
-            // Enhanced language detection for RAG
-            var afrikaansWords = words.Count(w => IsAfrikaansWord(w));
-            var englishWords = words.Count(w => IsEnglishWord(w));
-            var languageRatio = afrikaansWords > 0 ? (float)afrikaansWords / (afrikaansWords + englishWords) : 0.5f;
-            
-            var languagePositions = new int[10]; // More positions for language
-            for (int i = 0; i < 10; i++)
-            {
-                languagePositions[i] = Math.Abs((1200 + i * 30) % VECTOR_DIMENSION);
-            }
-            foreach (var position in languagePositions)
-            {
-                if (position >= 0 && position < VECTOR_DIMENSION)
-                {
-                    embedding[position] += languageRatio;
-                }
-            }
-            
-            // RAG-specific features: question words and context indicators
-            var questionWords = new[] { "what", "when", "where", "who", "why", "how", "wat", "wanneer", "waar", "wie", "waarom", "hoe" };
-            var contextWords = new[] { "chorus", "song", "hymn", "refrein", "lied", "psalm", "praise", "worship", "prys", "aanbidding" };
-            
-            var questionScore = words.Count(w => questionWords.Contains(w)) / (float)Math.Max(words.Count, 1);
-            var contextScore = words.Count(w => contextWords.Contains(w)) / (float)Math.Max(words.Count, 1);
-            
-            // Add question and context features
-            for (int i = 0; i < 5; i++)
-            {
-                var questionPos = Math.Abs((1400 + i * 20) % VECTOR_DIMENSION);
-                var contextPos = Math.Abs((1450 + i * 20) % VECTOR_DIMENSION);
-                
-                if (questionPos < VECTOR_DIMENSION) embedding[questionPos] += questionScore;
-                if (contextPos < VECTOR_DIMENSION) embedding[contextPos] += contextScore;
-            }
-            
-            // Add some uniqueness based on text hash (reduced for better RAG consistency)
-            var textHash = ComputeTextHash(normalizedText);
-            var random = new Random(textHash);
-            
-            for (int i = 0; i < VECTOR_DIMENSION; i++)
-            {
-                embedding[i] += (float)(random.NextDouble() * 0.02 - 0.01); // Reduced randomness
-            }
-            
-            // Normalize the vector to unit length
-            var magnitude = (float)Math.Sqrt(embedding.Sum(x => x * x));
-            if (magnitude > 0)
-            {
-                for (int i = 0; i < embedding.Length; i++)
-                {
-                    embedding[i] /= magnitude;
-                }
-            }
-            
-            return embedding.ToList();
+            var embeddings = await GenerateEmbeddingsAsync(new List<string> { text });
+            return embeddings.FirstOrDefault() ?? new List<float>();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating RAG-optimized embedding for text");
+            _logger.LogError(ex, "Error generating embedding for text");
             throw;
         }
+    }
+
+    public async Task<List<List<float>>> GenerateEmbeddingsAsync(List<string> texts)
+    {
+        var embeddings = new List<List<float>>();
+        
+        try
+        {
+            foreach (var text in texts)
+            {
+                var embedding = GenerateRagOptimizedEmbedding(text);
+                embeddings.Add(embedding);
+            }
+            
+            _logger.LogDebug("Generated {Count} RAG-optimized embeddings", embeddings.Count);
+            return embeddings;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating embeddings for {Count} texts", texts.Count);
+            throw;
+        }
+    }
+
+    private List<float> GenerateRagOptimizedEmbedding(string text)
+    {
+        // Normalize text for RAG
+        var normalizedText = text.ToLowerInvariant().Trim();
+        
+        // Initialize embedding vector
+        var embedding = new float[VECTOR_DIMENSION];
+        
+        // Extract words from text
+        var words = Regex.Split(normalizedText, @"\W+").Where(w => w.Length > 0).ToList();
+        
+        // RAG-optimized word-based features with enhanced semantic weighting
+        foreach (var word in words)
+        {
+            if (WordPositions.ContainsKey(word))
+            {
+                var positions = WordPositions[word];
+                var semanticWeight = GetSemanticWeight(word);
+                
+                foreach (var position in positions)
+                {
+                    if (position < VECTOR_DIMENSION)
+                    {
+                        embedding[position] += semanticWeight;
+                    }
+                }
+            }
+        }
+        
+        // Enhanced frequency-based features for RAG
+        var wordFreq = words.GroupBy(w => w).ToDictionary(g => g.Key, g => g.Count());
+        foreach (var word in wordFreq.Take(30)) // Increased to top 30 for better RAG
+        {
+            var hash = Math.Abs(ComputeWordHash(word.Key));
+            var positions = new int[5]; // Increased positions for better coverage
+            for (int i = 0; i < 5; i++)
+            {
+                positions[i] = (hash + i * 100) % VECTOR_DIMENSION;
+            }
+            foreach (var position in positions)
+            {
+                if (position >= 0 && position < VECTOR_DIMENSION)
+                {
+                    embedding[position] += (float)word.Value / words.Count * GetSemanticWeight(word.Key);
+                }
+            }
+        }
+        
+        // RAG-optimized text length features
+        var lengthFeature = Math.Min(text.Length / 300.0f, 1.0f); // Adjusted for typical chorus length
+        var lengthPositions = new int[8]; // More positions for length
+        for (int i = 0; i < 8; i++)
+        {
+            lengthPositions[i] = Math.Abs((text.Length + i * 50) % VECTOR_DIMENSION);
+        }
+        foreach (var position in lengthPositions)
+        {
+            if (position >= 0 && position < VECTOR_DIMENSION)
+            {
+                embedding[position] += lengthFeature;
+            }
+        }
+        
+        // Enhanced language detection for RAG
+        var afrikaansWords = words.Count(w => IsAfrikaansWord(w));
+        var englishWords = words.Count(w => IsEnglishWord(w));
+        var languageRatio = afrikaansWords > 0 ? (float)afrikaansWords / (afrikaansWords + englishWords) : 0.5f;
+        
+        var languagePositions = new int[10]; // More positions for language
+        for (int i = 0; i < 10; i++)
+        {
+            languagePositions[i] = Math.Abs((1200 + i * 30) % VECTOR_DIMENSION);
+        }
+        foreach (var position in languagePositions)
+        {
+            if (position >= 0 && position < VECTOR_DIMENSION)
+            {
+                embedding[position] += languageRatio;
+            }
+        }
+        
+        // RAG-specific features: question words and context indicators
+        var questionWords = new[] { "what", "when", "where", "who", "why", "how", "wat", "wanneer", "waar", "wie", "waarom", "hoe" };
+        var contextWords = new[] { "chorus", "song", "hymn", "refrein", "lied", "psalm", "praise", "worship", "prys", "aanbidding" };
+        
+        var questionScore = words.Count(w => questionWords.Contains(w)) / (float)Math.Max(words.Count, 1);
+        var contextScore = words.Count(w => contextWords.Contains(w)) / (float)Math.Max(words.Count, 1);
+        
+        // Add question and context features
+        for (int i = 0; i < 5; i++)
+        {
+            var questionPos = Math.Abs((1400 + i * 20) % VECTOR_DIMENSION);
+            var contextPos = Math.Abs((1450 + i * 20) % VECTOR_DIMENSION);
+            
+            if (questionPos < VECTOR_DIMENSION) embedding[questionPos] += questionScore;
+            if (contextPos < VECTOR_DIMENSION) embedding[contextPos] += contextScore;
+        }
+        
+        // Add some uniqueness based on text hash (reduced for better RAG consistency)
+        var textHash = ComputeTextHash(normalizedText);
+        var random = new Random(textHash);
+        
+        for (int i = 0; i < VECTOR_DIMENSION; i++)
+        {
+            embedding[i] += (float)(random.NextDouble() * 0.02 - 0.01); // Reduced randomness
+        }
+        
+        // Normalize the vector to unit length
+        var magnitude = (float)Math.Sqrt(embedding.Sum(x => x * x));
+        if (magnitude > 0)
+        {
+            for (int i = 0; i < embedding.Length; i++)
+            {
+                embedding[i] /= magnitude;
+            }
+        }
+        
+        return embedding.ToList();
     }
 
     private float GetSemanticWeight(string word)
@@ -516,72 +435,5 @@ public class VectorSearchService : IVectorSearchService
         using var sha256 = SHA256.Create();
         var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(word));
         return BitConverter.ToInt32(hashBytes, 0);
-    }
-
-    public async Task<List<ChorusSearchResult>> GetAllChorusesAsync()
-    {
-        try
-        {
-            await InitializeClientAsync();
-            
-            // Get all points from the collection
-            var scrollResponse = await _client!.ScrollAsync(
-                collectionName: _settings.CollectionName,
-                limit: 1000 // Get all choruses (assuming less than 1000)
-            );
-
-            var results = new List<ChorusSearchResult>();
-            
-            foreach (var point in scrollResponse.Result)
-            {
-                var payloadDict = point.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                
-                var chorusResult = new ChorusSearchResult
-                {
-                    Id = point.Id.Uuid,
-                    Score = 1.0f, // Default score for all choruses
-                    Name = GetPayloadValue(payloadDict, "name") ?? "",
-                    ChorusText = GetPayloadValue(payloadDict, "chorusText") ?? "",
-                    Key = ParseIntSafely(GetPayloadValue(payloadDict, "key")),
-                    Type = ParseIntSafely(GetPayloadValue(payloadDict, "type")),
-                    TimeSignature = ParseIntSafely(GetPayloadValue(payloadDict, "timeSignature")),
-                    CreatedAt = ParseDateTimeSafely(GetPayloadValue(payloadDict, "createdAt"))
-                };
-                
-                results.Add(chorusResult);
-            }
-
-            _logger.LogInformation("Retrieved {Count} choruses from vector database", results.Count);
-            return results;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving all choruses from vector database");
-            throw;
-        }
-    }
-
-    private async Task InitializeClientAsync()
-    {
-        if (_client == null)
-        {
-            _client = new QdrantClient(_settings.Host, _settings.Port + 1); // Use gRPC port
-            _logger.LogDebug("Initialized Qdrant client for collection: {CollectionName}", _settings.CollectionName);
-        }
-    }
-
-    private static string? GetPayloadValue(Dictionary<string, Value> payload, string key)
-    {
-        return payload.TryGetValue(key, out var value) ? value.StringValue : null;
-    }
-
-    private static int ParseIntSafely(string? value)
-    {
-        return int.TryParse(value, out var result) ? result : 0;
-    }
-
-    private static DateTime ParseDateTimeSafely(string? value)
-    {
-        return DateTime.TryParse(value, out var result) ? result : DateTime.MinValue;
     }
 } 

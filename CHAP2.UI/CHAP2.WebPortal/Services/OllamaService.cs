@@ -42,11 +42,13 @@ public class OllamaService : IOllamaService
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
+            _logger.LogDebug("Sending request to Ollama: {Request}", json);
             var response = await _httpClient.PostAsync("api/generate", content);
             
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
+                _logger.LogDebug("Raw Ollama response: {Response}", responseContent);
                 var ollamaResponse = JsonSerializer.Deserialize<OllamaResponse>(responseContent);
                 
                 _logger.LogDebug("Generated response from Ollama for prompt: {Prompt}", prompt);
@@ -128,6 +130,4 @@ public class OllamaService : IOllamaService
             }
         }
     }
-
-
 } 

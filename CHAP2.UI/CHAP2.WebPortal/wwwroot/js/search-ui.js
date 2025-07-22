@@ -192,6 +192,16 @@ class SearchUI {
         // Show export button if there are results
         this.elements.exportBtn.style.display = results.length > 0 ? 'block' : 'none';
 
+        // Display AI context if available
+        if (metadata && metadata.searchContext) {
+            this.showAiContext(metadata.searchContext);
+        }
+
+        // Display AI search terms if available
+        if (metadata && metadata.aiSearchTerms) {
+            this.showAiSearchTerms(metadata.aiSearchTerms);
+        }
+
         // Build table rows
         const tableRows = results.map((chorus, index) => this.createResultRow(chorus, index + 1));
         
@@ -335,6 +345,52 @@ class SearchUI {
             20: '5/16', 21: '6/16', 22: '7/16', 23: '8/16', 24: '9/16', 25: '12/16'
         };
         return times[timeValue] || 'Unknown';
+    }
+
+    showAiContext(context) {
+        // Create AI context element if it doesn't exist
+        let contextElement = this.container.querySelector('.ai-context');
+        if (!contextElement) {
+            contextElement = document.createElement('div');
+            contextElement.className = 'ai-context';
+            contextElement.style.cssText = `
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                padding: 8px 12px;
+                margin: 8px 0;
+                font-size: 0.9em;
+                color: #6c757d;
+            `;
+            this.elements.resultsHeader.appendChild(contextElement);
+        }
+        
+        contextElement.textContent = `AI Analysis: ${context}`;
+        contextElement.style.display = 'block';
+    }
+
+    showAiSearchTerms(terms) {
+        // Create AI search terms element if it doesn't exist
+        let termsElement = this.container.querySelector('.ai-search-terms');
+        if (!termsElement) {
+            termsElement = document.createElement('div');
+            termsElement.className = 'ai-search-terms';
+            termsElement.style.cssText = `
+                background: #e3f2fd;
+                border: 1px solid #bbdefb;
+                border-radius: 4px;
+                padding: 8px 12px;
+                margin: 8px 0;
+                font-size: 0.9em;
+                color: #1976d2;
+            `;
+            this.elements.resultsHeader.appendChild(termsElement);
+        }
+        
+        if (Array.isArray(terms)) {
+            termsElement.innerHTML = `<strong>AI Search Terms:</strong> ${terms.join(', ')}`;
+            termsElement.style.display = 'block';
+        }
     }
 }
 

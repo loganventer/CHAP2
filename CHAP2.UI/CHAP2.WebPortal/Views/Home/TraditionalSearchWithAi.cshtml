@@ -1,0 +1,189 @@
+@{
+    ViewData["Title"] = "Traditional Search with AI Analysis";
+}
+
+<div class="container mt-4">
+    <h2>Search Choruses with AI Analysis</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Search</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="searchQuery">Search Query:</label>
+                        <input type="text" class="form-control" id="searchQuery" placeholder="Enter your search query...">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="maxResults">Max Results:</label>
+                        <select class="form-control" id="maxResults">
+                            <option value="5">5 results</option>
+                            <option value="10" selected>10 results</option>
+                            <option value="15">15 results</option>
+                            <option value="20">20 results</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary mt-3" onclick="performSearch()">Search with AI Analysis</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Status</h5>
+                </div>
+                <div class="card-body">
+                    <div id="status" class="alert alert-info" style="display: none;">
+                        Searching...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div id="searchResults" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Search Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="resultsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div id="aiAnalysis" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>AI Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="analysisContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function performSearch() {
+    const query = document.getElementById('searchQuery').value.trim();
+    const maxResults = parseInt(document.getElementById('maxResults').value);
+    
+    if (!query) {
+        alert('Please enter a search query');
+        return;
+    }
+    
+    // Show status
+    const status = document.getElementById('status');
+    status.style.display = 'block';
+    status.className = 'alert alert-info';
+    status.textContent = 'Searching...';
+    
+    // Hide previous results
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('aiAnalysis').style.display = 'none';
+    
+    try {
+        const response = await fetch('/Home/TraditionalSearchWithAi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query,
+                maxResults: maxResults
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Update status
+        status.className = 'alert alert-success';
+        status.textContent = `Found ${result.searchResults.length} results`;
+        
+        // Display search results
+        displaySearchResults(result.searchResults);
+        
+        // Display AI analysis if available
+        if (result.hasAiAnalysis && result.aiAnalysis) {
+            displayAiAnalysis(result.aiAnalysis);
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        status.className = 'alert alert-danger';
+        status.textContent = 'Error performing search: ' + error.message;
+    }
+}
+
+function displaySearchResults(results) {
+    const resultsDiv = document.getElementById('resultsList');
+    const resultsContainer = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+        resultsDiv.innerHTML = '<p class="text-muted">No results found.</p>';
+    } else {
+        let html = '<div class="list-group">';
+        
+        results.forEach((chorus, index) => {
+            html += `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${index + 1}. ${chorus.name}</h6>
+                        <small>ID: ${chorus.id}</small>
+                    </div>
+                    <p class="mb-1">${chorus.chorusText.substring(0, 200)}${chorus.chorusText.length > 200 ? '...' : ''}</p>
+                    <small class="text-muted">
+                        Key: ${chorus.key}, Type: ${chorus.type}, Time Signature: ${chorus.timeSignature} | 
+                        Created: ${new Date(chorus.createdAt).toLocaleDateString()}
+                    </small>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        resultsDiv.innerHTML = html;
+    }
+    
+    resultsContainer.style.display = 'block';
+}
+
+function displayAiAnalysis(analysis) {
+    const analysisDiv = document.getElementById('analysisContent');
+    const analysisContainer = document.getElementById('aiAnalysis');
+    
+    analysisDiv.innerHTML = `
+        <div class="alert alert-info">
+            <strong>AI Analysis:</strong>
+        </div>
+        <div class="analysis-text">
+            ${analysis.replace(/\n/g, '<br>')}
+        </div>
+    `;
+    
+    analysisContainer.style.display = 'block';
+}
+</script>
+
+<style>
+.analysis-text {
+    line-height: 1.6;
+    white-space: pre-line;
+}
+</style> 

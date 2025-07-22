@@ -29,7 +29,11 @@ builder.Services.AddScoped<IChorusApiService, ChorusApiService>();
 builder.Services.AddScoped<IChorusApplicationService, ChorusApplicationService>();
 builder.Services.AddScoped<IChorusCommandService, ChorusCommandService>();
 builder.Services.AddScoped<IChorusQueryService, ChorusQueryService>();
-builder.Services.AddScoped<ISearchService, ChorusSearchService>();
+            builder.Services.AddScoped<ISearchService, ChorusSearchService>();
+builder.Services.AddScoped<IAiSearchService, AiSearchService>();
+builder.Services.AddScoped<IOllamaRagService, OllamaRagService>();
+builder.Services.AddScoped<ITraditionalSearchWithAiService, TraditionalSearchWithAiService>();
+builder.Services.AddScoped<IIntelligentSearchService, IntelligentSearchService>();
 builder.Services.AddScoped<IChorusRepository>(provider =>
 {
     var logger = provider.GetRequiredService<ILogger<DiskChorusRepository>>();

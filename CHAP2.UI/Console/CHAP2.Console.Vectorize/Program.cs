@@ -22,17 +22,17 @@ class Program
             // Get data path from command line args or use default
             var dataPath = args.Length > 0 ? args[0] : "../../../CHAP2.Chorus.Api/data/chorus";
             
-            logger.LogInformation("Starting chorus vectorization process");
+            logger.LogInformation("Starting RAG-optimized chorus vectorization process");
             logger.LogInformation("Data path: {DataPath}", dataPath);
             
             await orchestrator.VectorizeChorusDataAsync(dataPath);
             
-            logger.LogInformation("Vectorization process completed successfully");
+            logger.LogInformation("RAG-optimized vectorization process completed successfully");
         }
         catch (Exception ex)
         {
             var logger = host.Services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Error during vectorization process");
+            logger.LogError(ex, "Error during RAG-optimized vectorization process");
             Environment.Exit(1);
         }
     }
@@ -53,14 +53,18 @@ class Program
                     context.Configuration.GetSection("Qdrant"));
                 services.Configure<VectorizationSettings>(
                     context.Configuration.GetSection("Vectorization"));
+                services.Configure<OpenAISettings>(
+                    context.Configuration.GetSection("OpenAI"));
 
                 // Register settings as singleton
                 services.AddSingleton(sp => sp.GetRequiredService<IOptions<QdrantSettings>>().Value);
                 services.AddSingleton(sp => sp.GetRequiredService<IOptions<VectorizationSettings>>().Value);
+                services.AddSingleton(sp => sp.GetRequiredService<IOptions<OpenAISettings>>().Value);
 
-                // Services
+                // Services - Use RAG-optimized vectorization service
+                services.AddHttpClient();
                 services.AddScoped<IChorusDataService, ChorusDataService>();
-                services.AddScoped<IVectorizationService, FreeVectorizationService>();
+                services.AddScoped<IVectorizationService, RagOptimizedVectorizationService>();
                 services.AddScoped<IQdrantService, QdrantService>();
                 services.AddScoped<IVectorizationOrchestrator, VectorizationOrchestrator>();
             })
