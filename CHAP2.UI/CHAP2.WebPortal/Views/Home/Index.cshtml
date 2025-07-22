@@ -20,66 +20,109 @@
     </div>
 
     <div class="search-input-container">
-        <div class="search-box">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" 
-                   id="searchInput" 
-                   class="search-input" 
-                   placeholder="Search choruses by name, text, or musical key..."
-                   autocomplete="off">
-            <div class="search-actions">
-                <button class="clear-btn" id="clearBtn" style="display: none;">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="search-tabs">
+            <button class="tab-button active" data-tab="regular">
+                <i class="fas fa-search"></i> Regular Search
+            </button>
+            <button class="tab-button" data-tab="ai">
+                <i class="fas fa-robot"></i> AI Search
+            </button>
+        </div>
+        
+        <!-- Regular Search -->
+        <div class="search-section" id="regularSearch">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" 
+                       id="searchInput" 
+                       class="search-input" 
+                       placeholder="Search choruses by name, text, or musical key..."
+                       autocomplete="off">
+                <div class="search-actions">
+                    <button class="clear-btn" id="clearBtn" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="search-info">
+                <span class="search-delay-info">Search triggers after typing stops (300ms delay)</span>
+                <span class="min-length-info">Minimum 2 characters</span>
             </div>
         </div>
-        <div class="search-info">
-            <span class="search-delay-info">Search triggers after typing stops (300ms delay)</span>
-            <span class="min-length-info">Minimum 2 characters</span>
+        
+        <!-- AI Search -->
+        <div class="search-section" id="aiSearch" style="display: none;">
+            <div class="search-box">
+                <i class="fas fa-robot search-icon"></i>
+                <input type="text" 
+                       id="aiSearchInput" 
+                       class="search-input" 
+                       placeholder="Ask about choruses using natural language..."
+                       autocomplete="off">
+                <div class="search-actions">
+                    <button class="search-btn" id="aiSearchButton">
+                        <i class="fas fa-robot"></i> AI Search
+                    </button>
+                    <button class="clear-btn" id="aiClearButton" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="search-info">
+                <span class="ai-search-info">Powered by AI - ask questions like "What choruses mention Jesus?"</span>
+            </div>
         </div>
     </div>
 
     <div class="results-container">
-        <div class="results-header" id="resultsHeader" style="display: none;">
-            <div class="results-count" id="resultsCount"></div>
-            <div class="results-controls">
-                <button class="btn-secondary" id="exportBtn" style="display: none;">
-                    <i class="fas fa-download"></i> Export
-                </button>
+        <!-- Regular Search Results -->
+        <div class="results-section" id="regularResults">
+            <div class="results-header" id="resultsHeader" style="display: none;">
+                <div class="results-count" id="resultsCount"></div>
+                <div class="results-controls">
+                    <button class="btn-secondary" id="exportBtn" style="display: none;">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <div class="results-table-container">
+                <table class="results-table" id="resultsTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th class="col-number">#</th>
+                            <th class="col-title">Title</th>
+                            <th class="col-key">Key</th>
+                            <th class="col-type">Type</th>
+                            <th class="col-time">Time</th>
+                            <th class="col-context">Context</th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-results" id="noResults" style="display: none;">
+                <div class="no-results-content">
+                    <i class="fas fa-search no-results-icon"></i>
+                    <h3>No Results Found</h3>
+                    <p>Try a different search term or check your spelling.</p>
+                </div>
+            </div>
+
+            <div class="loading" id="loading" style="display: none;">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Searching...</p>
             </div>
         </div>
-
-        <div class="results-table-container">
-            <table class="results-table" id="resultsTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th class="col-number">#</th>
-                        <th class="col-title">Title</th>
-                        <th class="col-key">Key</th>
-                        <th class="col-type">Type</th>
-                        <th class="col-time">Time</th>
-                        <th class="col-context">Context</th>
-                        <th class="col-actions">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="resultsBody">
-                </tbody>
-            </table>
-        </div>
-
-        <div class="no-results" id="noResults" style="display: none;">
-            <div class="no-results-content">
-                <i class="fas fa-search no-results-icon"></i>
-                <h3>No Results Found</h3>
-                <p>Try a different search term or check your spelling.</p>
-            </div>
-        </div>
-
-        <div class="loading" id="loading" style="display: none;">
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i>
-            </div>
-            <p>Searching...</p>
+        
+        <!-- AI Search Results -->
+        <div class="results-section" id="aiResults" style="display: none;">
+            <div id="aiSearchResults"></div>
         </div>
     </div>
 
@@ -140,4 +183,67 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+<!-- AI Modal -->
+<div class="ai-modal-overlay" id="aiModal" style="display: none;">
+    <div class="ai-modal">
+        <div class="ai-modal-header">
+            <h2>
+                <i class="fas fa-robot"></i>
+                AI Assistant
+            </h2>
+            <button class="ai-modal-close" id="aiModalClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="ai-modal-content" id="aiModalContent">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/chorus-display.js"></script>
+    <script src="~/js/ai-search.js"></script>
+    <script>
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const searchSections = document.querySelectorAll('.search-section');
+            const resultSections = document.querySelectorAll('.results-section');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tab = button.getAttribute('data-tab');
+                    
+                    // Update active tab button
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // Show/hide search sections
+                    searchSections.forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    document.getElementById(tab + 'Search').style.display = 'block';
+                    
+                    // Show/hide result sections
+                    resultSections.forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    document.getElementById(tab + 'Results').style.display = 'block';
+                    
+                    // Clear results when switching tabs
+                    if (tab === 'regular') {
+                        document.getElementById('resultsTable').style.display = 'none';
+                        document.getElementById('resultsHeader').style.display = 'none';
+                        document.getElementById('noResults').style.display = 'none';
+                        document.getElementById('loading').style.display = 'none';
+                    } else {
+                        document.getElementById('aiSearchResults').innerHTML = '';
+                    }
+                });
+            });
+        });
+    </script>
+} 

@@ -22,19 +22,31 @@ class ChorusDisplay {
             this.updateDisplay(window.chorusData);
         }
         
-        this.updateNavigationButtons();
+        // Only update navigation buttons if we're on a chorus display page
+        if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+            this.updateNavigationButtons();
+        }
     }
     
     async loadChoruses() {
         try {
+            // Check if we're on a chorus display page
+            if (!window.chorusData) {
+                return; // Not on a chorus display page, exit early
+            }
+            
             // Get all choruses for navigation
             const response = await fetch('/Home/Search?q=*');
             const data = await response.json();
             this.choruses = data.results || [];
             
             // Find current chorus index
-            this.currentChorusIndex = this.choruses.findIndex(c => c.id === window.chorusData.id);
-            if (this.currentChorusIndex === -1) {
+            if (window.chorusData && window.chorusData.id) {
+                this.currentChorusIndex = this.choruses.findIndex(c => c.id === window.chorusData.id);
+                if (this.currentChorusIndex === -1) {
+                    this.currentChorusIndex = 0;
+                }
+            } else {
                 this.currentChorusIndex = 0;
             }
             
@@ -46,18 +58,23 @@ class ChorusDisplay {
     
     setupEventListeners() {
         // Navigation buttons
-        document.getElementById('prevBtn').addEventListener('click', () => this.navigate(-1));
-        document.getElementById('nextBtn').addEventListener('click', () => this.navigate(1));
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const printBtn = document.getElementById('printBtn');
+        const closeBtn = document.getElementById('closeBtn');
         
-        // Control buttons
-        document.getElementById('printBtn').addEventListener('click', () => this.print());
-        document.getElementById('closeBtn').addEventListener('click', () => this.close());
+        if (prevBtn) prevBtn.addEventListener('click', () => this.navigate(-1));
+        if (nextBtn) nextBtn.addEventListener('click', () => this.navigate(1));
+        if (printBtn) printBtn.addEventListener('click', () => this.print());
+        if (closeBtn) closeBtn.addEventListener('click', () => this.close());
         
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboard(e));
-        
-        // Window resize
-        window.addEventListener('resize', () => this.updateDisplay());
+        // Keyboard shortcuts (only if we're on a chorus display page)
+        if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+            document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+            
+            // Window resize
+            window.addEventListener('resize', () => this.updateDisplay());
+        }
     }
     
     handleKeyboard(e) {
@@ -159,8 +176,16 @@ class ChorusDisplay {
     }
     
     updateDisplay(chorusData) {
-        document.getElementById('chorusTitle').textContent = chorusData.name;
-        document.getElementById('chorusKey').textContent = chorusData.key;
+        const chorusTitle = document.getElementById('chorusTitle');
+        const chorusKey = document.getElementById('chorusKey');
+        
+        // Check if we're on a chorus display page
+        if (!chorusTitle || !chorusKey) {
+            return; // Not on a chorus display page, exit early
+        }
+        
+        chorusTitle.textContent = chorusData.name;
+        chorusKey.textContent = chorusData.key;
         
         // Split text into lines and store for pagination
         this.currentChorusLines = chorusData.text.split('\n').filter(line => line.trim() !== '');
@@ -177,6 +202,12 @@ class ChorusDisplay {
     
     displayCurrentPage() {
         const chorusText = document.getElementById('chorusText');
+        
+        // Check if we're on a chorus display page
+        if (!chorusText) {
+            return; // Not on a chorus display page, exit early
+        }
+        
         const startIndex = this.currentPage * this.maxDisplayLines;
         const endIndex = Math.min(startIndex + this.maxDisplayLines, this.currentChorusLines.length);
         const pageLines = this.currentChorusLines.slice(startIndex, endIndex);
@@ -197,6 +228,12 @@ class ChorusDisplay {
     updateNavigationButtons() {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const pageIndicator = document.getElementById('pageIndicator');
+        
+        // If elements don't exist, return early
+        if (!prevBtn || !nextBtn) {
+            return;
+        }
         
         // Show navigation buttons if there are multiple choruses or multiple pages
         const shouldShowNav = this.choruses.length > 1 || this.totalPages > 1;
@@ -221,12 +258,13 @@ class ChorusDisplay {
         }
         
         // Update page indicator
-        const pageIndicator = document.getElementById('pageIndicator');
-        if (this.totalPages > 1) {
-            pageIndicator.style.display = 'block';
-            pageIndicator.textContent = `Page ${this.currentPage + 1} of ${this.totalPages}`;
-        } else {
-            pageIndicator.style.display = 'none';
+        if (pageIndicator) {
+            if (this.totalPages > 1) {
+                pageIndicator.style.display = 'block';
+                pageIndicator.textContent = `Page ${this.currentPage + 1} of ${this.totalPages}`;
+            } else {
+                pageIndicator.style.display = 'none';
+            }
         }
     }
     
@@ -288,11 +326,17 @@ class ChorusDisplay {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new ChorusDisplay();
+    // Only initialize ChorusDisplay if we're on a chorus display page
+    // Check if we have chorus data or if we're on a detail page
+    if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+        new ChorusDisplay();
+    }
 });
 
-// Show loading state while initializing
-document.body.classList.add('loading');
+// Show loading state while initializing (only on chorus display pages)
+if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+    document.body.classList.add('loading');
+}
 
 // Remove loading state after initialization
 window.addEventListener('load', () => {

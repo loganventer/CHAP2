@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="9.0.0" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="Qdrant.Client" Version="1.7.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.7" />
   </ItemGroup>
 
   <ItemGroup>

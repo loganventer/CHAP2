@@ -2,7 +2,7 @@ namespace CHAP2.Shared.Configuration;
 
 public class SharedApiSettings
 {
-    public const string DefaultApiBaseUrl = "http://localhost:5000";
+    public const string DefaultApiBaseUrl = "http://localhost:5001";
     public const int DefaultTimeoutSeconds = 30;
     public const int DefaultRetryAttempts = 3;
     public const int DefaultRetryDelayMs = 1000;

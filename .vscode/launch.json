@@ -36,7 +36,7 @@
             "preLaunchTask": "build CHAP2.Chorus.Api",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5000;https://localhost:7000"
+                "ASPNETCORE_URLS": "http://localhost:5001;https://localhost:7000"
             }
         },
         {
@@ -73,7 +73,44 @@
             "preLaunchTask": "build CHAP2WebPortal",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5001;https://localhost:7001"
+                "ASPNETCORE_URLS": "http://localhost:5002;https://localhost:7001"
+            }
+        },
+        {
+            "name": "CHAP2VectorizeConsole",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Vectorize/bin/Debug/net9.0/CHAP2.Console.Vectorize.dll",
+            "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Vectorize",
+            "stopAtEntry": false,
+            "preLaunchTask": "build CHAP2VectorizeConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "CHAP2VectorizeConsole (Custom Data Path)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Vectorize/bin/Debug/net9.0/CHAP2.Console.Vectorize.dll",
+            "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Vectorize",
+            "stopAtEntry": false,
+            "preLaunchTask": "build CHAP2VectorizeConsole",
+            "args": ["../../../CHAP2.Chorus.Api/data/chorus"],
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "CHAP2PromptConsole",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Prompt/bin/Debug/net9.0/CHAP2.Console.Prompt.dll",
+            "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Prompt",
+            "stopAtEntry": false,
+            "preLaunchTask": "build CHAP2PromptConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
             }
         }
     ]

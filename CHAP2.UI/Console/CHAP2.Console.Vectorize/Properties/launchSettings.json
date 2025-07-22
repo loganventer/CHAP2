@@ -1,0 +1,23 @@
+{
+  "profiles": {
+    "CHAP2.Console.Vectorize": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "CHAP2.Console.Vectorize (Custom Data Path)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "",
+      "commandLineArgs": "../../../CHAP2.Chorus.Api/data/chorus",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+} 

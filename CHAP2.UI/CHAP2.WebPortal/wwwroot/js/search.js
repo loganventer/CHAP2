@@ -259,10 +259,8 @@ const MusicalKeys = {
 
 const ChorusTypes = {
     0: 'Not Set',
-    1: 'Traditional', 2: 'Contemporary', 3: 'Gospel', 4: 'Hymn', 5: 'Worship',
-    6: 'Praise', 7: 'Spiritual', 8: 'Folk', 9: 'Classical', 10: 'Jazz',
-    11: 'Pop', 12: 'Rock', 13: 'Country', 14: 'Blues', 15: 'Reggae',
-    16: 'Latin', 17: 'African', 18: 'Asian', 19: 'European', 20: 'Other'
+    1: 'Praise',
+    2: 'Worship'
 };
 
 const TimeSignatures = {

@@ -70,6 +70,34 @@
       "type": "shell",
       "command": "dotnet run",
       "options": { "cwd": "${workspaceFolder}/CHAP2.UI/CHAP2.WebPortal" }
+    },
+    {
+      "label": "build CHAP2VectorizeConsole",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build"],
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Vectorize" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "run CHAP2VectorizeConsole",
+      "type": "shell",
+      "command": "dotnet run",
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Vectorize" }
+    },
+    {
+      "label": "build CHAP2PromptConsole",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build"],
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Prompt" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "run CHAP2PromptConsole",
+      "type": "shell",
+      "command": "dotnet run",
+      "options": { "cwd": "${workspaceFolder}/CHAP2.UI/Console/CHAP2.Console.Prompt" }
     }
   ]
 } 

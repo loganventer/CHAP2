@@ -4,6 +4,8 @@ using CHAP2.Shared.Configuration;
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Infrastructure.Repositories;
+using CHAP2.WebPortal.Configuration;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,14 @@ builder.Services.AddControllersWithViews();
 
 // Configure HttpClient for API communication using shared configuration
 builder.Services.AddCHAP2ApiClient(builder.Configuration);
+
+// Configure settings
+builder.Services.Configure<QdrantSettings>(builder.Configuration.GetSection("Qdrant"));
+builder.Services.Configure<OllamaSettings>(builder.Configuration.GetSection("Ollama"));
+
+// Register settings as singleton
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<QdrantSettings>>().Value);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<OllamaSettings>>().Value);
 
 // Register services
 builder.Services.AddScoped<IChorusApiService, ChorusApiService>();
@@ -25,6 +35,10 @@ builder.Services.AddScoped<IChorusRepository>(provider =>
     return new DiskChorusRepository(folderPath, logger);
 });
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
+// Register AI services
+builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
+builder.Services.AddHttpClient<IOllamaService, OllamaService>();
 
 // Configure CORS
 builder.Services.AddCors(options =>
