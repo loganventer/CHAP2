@@ -432,7 +432,12 @@ public class HomeController : Controller
 
 User query: """ + request.Query + @"""
 
-Based on the chorus database context provided, find the most relevant choruses and explain why they match the user's query.
+Based on the chorus database context provided below, find the most relevant choruses and explain why they match the user's query.
+
+CHORUS DATABASE CONTEXT:
+" + chorusContext + @"
+
+" + enumInfo + @"
 
 CRITICAL JSON FORMATTING RULES:
 1. ALL property names MUST be in double quotes: ""id"", ""name"", ""chorusText"", ""key"", ""type"", ""timeSignature"", ""explanation""
@@ -474,7 +479,7 @@ Return ONLY the JSON array, nothing else. Use ONLY IDs from the context provided
             await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "chunk", data = "Using AI to analyze search results and provide explanations..." })}\n\n");
             await Response.Body.FlushAsync();
             
-            var llmResponse = await _ollamaService.GenerateResponseWithContextAsync(ragPrompt, chorusContext + enumInfo);
+            var llmResponse = await _ollamaService.GenerateResponseAsync(ragPrompt);
             
             await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "chunk", data = "Processing AI analysis..." })}\n\n");
             await Response.Body.FlushAsync();
