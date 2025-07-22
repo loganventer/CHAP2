@@ -282,6 +282,12 @@ function setupTabSwitching() {
             const targetTab = button.getAttribute('data-tab');
             console.log('Tab switched to:', targetTab);
             
+            // Cancel AI search if it's running
+            if (window.aiSearch) {
+                console.log('Tab switching: Cancelling AI search');
+                window.aiSearch.cancelCurrentSearch();
+            }
+            
             // Clear all search results before switching
             clearAllSearchResults();
             

@@ -104,7 +104,31 @@ class AiSearch {
             });
         }
         
+        // Add tab switching event listeners
+        this.setupTabSwitching();
+        
         this.createStatusIndicator();
+    }
+    
+    setupTabSwitching() {
+        // Find tab buttons
+        const aiTab = document.querySelector('.tab-button[data-tab="ai"]');
+        const classicTab = document.querySelector('.tab-button[data-tab="regular"]');
+        
+        // Add event listeners to both tabs
+        if (aiTab) {
+            aiTab.addEventListener('click', () => {
+                console.log('AI Search: AI tab clicked, cancelling current search');
+                this.cancelCurrentSearch();
+            });
+        }
+        
+        if (classicTab) {
+            classicTab.addEventListener('click', () => {
+                console.log('AI Search: Classic tab clicked, cancelling current search');
+                this.cancelCurrentSearch();
+            });
+        }
     }
 
     createStatusIndicator() {
@@ -712,11 +736,17 @@ class AiSearch {
             // Search is complete
             this.stopRotatingMessages();
             this.updateAiStatus('✅ Search completed!', 'success');
+            
+            // Reset button state when search completes successfully
+            this.resetButtonState();
         }
         else if (data.type === 'error') {
             console.log('AI Search: Processing error:', data.message);
             // Handle error
             this.updateAiStatus('❌ ' + data.message, 'error');
+            
+            // Reset button state when search encounters an error
+            this.resetButtonState();
         }
         else {
             console.log('AI Search: Unknown data type:', data.type);
@@ -1089,6 +1119,9 @@ class AiSearch {
             // Update status message
             this.updateAiStatus('🎉 Search completed successfully!', 'success');
             
+            // Reset button state when search completes successfully
+            this.resetButtonState();
+            
             // Remove celebration class after animation
             setTimeout(() => {
                 statusIndicator.classList.remove('celebrating');
@@ -1124,6 +1157,23 @@ class AiSearch {
         const statusIndicator = document.getElementById('aiStatusIndicator');
         if (statusIndicator) {
             statusIndicator.style.display = 'none';
+        }
+        
+        // Clear search results
+        if (this.resultsContainer) {
+            this.resultsContainer.innerHTML = '';
+        }
+        
+        // Clear query understanding
+        const queryUnderstandingContainer = document.getElementById('queryUnderstandingContainer');
+        if (queryUnderstandingContainer) {
+            queryUnderstandingContainer.innerHTML = '';
+            queryUnderstandingContainer.style.display = 'none';
+        }
+        
+        // Clear AI analysis
+        if (this.aiAnalysisContainer) {
+            this.aiAnalysisContainer.style.display = 'none';
         }
         
         // Reset button state
