@@ -37,7 +37,8 @@ builder.Services.AddScoped<IIntelligentSearchService, IntelligentSearchService>(
 builder.Services.AddScoped<IChorusRepository>(provider =>
 {
     var logger = provider.GetRequiredService<ILogger<DiskChorusRepository>>();
-    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "data", "chorus");
+    // Point to the API's data directory instead of WebPortal's empty data directory
+    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "CHAP2.Chorus.Api", "data", "chorus");
     return new DiskChorusRepository(folderPath, logger);
 });
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();

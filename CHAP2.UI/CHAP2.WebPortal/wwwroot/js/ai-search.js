@@ -128,10 +128,6 @@ class AiSearch {
         statusIndicator.className = 'ai-status-indicator ai-status-thinking';
         statusIndicator.innerHTML = `
             <div class="ai-status-content">
-                <div class="ai-thinking-animation">
-                    <div class="ai-robot">🤖</div>
-                    <div class="ai-spinner"></div>
-                </div>
                 <div class="ai-status-text">
                     <h3>AI is analyzing your query...</h3>
                     <p>Understanding your search intent and generating relevant terms</p>
@@ -200,7 +196,12 @@ class AiSearch {
             statusText.style.opacity = '0';
             
             setTimeout(() => {
-                statusText.textContent = message;
+                // Update the message
+                if (typeof message === 'string') {
+                    statusText.innerHTML = `<h3>${message}</h3>`;
+                } else {
+                    statusText.textContent = message;
+                }
                 statusText.style.opacity = '1';
             }, 200);
         }
@@ -642,12 +643,15 @@ class AiSearch {
         // Add click functionality to open chorus display (same as original search)
         row.addEventListener('click', (e) => {
             // Don't trigger row click if clicking on action buttons
-                if (!e.target.closest('.action-btn')) {
-                const url = `/Home/ChorusDisplay/${result.id}`;
+            if (!e.target.closest('.action-btn')) {
+                const chorusId = result.id || result.Id;
+                if (chorusId) {
+                    const url = `/Home/ChorusDisplay/${chorusId}`;
                     const windowFeatures = 'width=1200,height=800,scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no';
                     window.open(url, '_blank', windowFeatures);
                 }
-            });
+            }
+        });
         
         // Add cursor pointer to indicate clickable
         row.style.cursor = 'pointer';
@@ -690,6 +694,11 @@ class AiSearch {
             // Phase 2: Display search results immediately (without explanations)
             this.displaySearchResultsWithoutExplanations(data.searchResults);
             this.updateAiStatus('💭 Generating explanations for each result...', 'thinking');
+            
+            // Celebrate success and fade out status after a delay
+            setTimeout(() => {
+                this.celebrateAndFadeStatus();
+            }, 1000);
         }
         else if (data.type === 'explanation') {
             console.log('AI Search: Processing explanation phase for index:', data.index);
@@ -1060,6 +1069,30 @@ class AiSearch {
         
         // Add sparkle effect
         this.addSparkleEffect(this.aiAnalysisContainer);
+    }
+
+    celebrateAndFadeStatus() {
+        const statusIndicator = document.getElementById('aiStatusIndicator');
+        if (statusIndicator) {
+            // Add celebration class
+            statusIndicator.classList.add('celebrating');
+            
+            // Update status message
+            this.updateAiStatus('🎉 Search completed successfully!', 'success');
+            
+            // Remove celebration class after animation
+            setTimeout(() => {
+                statusIndicator.classList.remove('celebrating');
+                
+                // Start gradual fade out after celebration
+                setTimeout(() => {
+                    statusIndicator.classList.add('fading');
+                    setTimeout(() => {
+                        statusIndicator.style.display = 'none';
+                    }, 3000); // Match the CSS animation duration
+                }, 3000); // Wait longer before starting fade
+            }, 2000);
+        }
     }
 }
 

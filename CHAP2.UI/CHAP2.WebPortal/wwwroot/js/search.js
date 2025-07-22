@@ -137,6 +137,9 @@ function debounce(func, wait) {
     };
 }
 
+// Debounced search function
+const debouncedSearch = debounce(performTraditionalSearch, searchDelay);
+
 // Perform traditional search
 async function performTraditionalSearch(searchTerm) {
     console.log('performTraditionalSearch called with:', searchTerm);

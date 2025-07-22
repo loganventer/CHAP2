@@ -18,6 +18,7 @@ public class HomeController : Controller
     private readonly IOllamaRagService _ollamaRagService;
     private readonly ITraditionalSearchWithAiService _traditionalSearchWithAiService;
     private readonly IIntelligentSearchService _intelligentSearchService;
+    private readonly ISearchService _searchService;
     private readonly ILogger<HomeController> _logger;
 
     public HomeController(
@@ -28,6 +29,7 @@ public class HomeController : Controller
         IOllamaRagService ollamaRagService,
         ITraditionalSearchWithAiService traditionalSearchWithAiService,
         IIntelligentSearchService intelligentSearchService,
+        ISearchService searchService,
         ILogger<HomeController> logger)
     {
         _chorusApiService = chorusApiService;
@@ -37,6 +39,7 @@ public class HomeController : Controller
         _ollamaRagService = ollamaRagService;
         _traditionalSearchWithAiService = traditionalSearchWithAiService;
         _intelligentSearchService = intelligentSearchService;
+        _searchService = searchService;
         _logger = logger;
     }
 
@@ -65,17 +68,53 @@ public class HomeController : Controller
                 return Json(new { results = new List<object>() });
             }
 
-            var results = await _chorusApiService.SearchChorusesAsync(q, searchMode, searchIn);
-            
-            // Apply sorting logic similar to console app
-            var sortedResults = results.OrderByDescending(r => 
-                r.Key.ToString().Equals(q, StringComparison.OrdinalIgnoreCase))
-                .ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            // Parse search mode
+            var mode = Enum.TryParse<SearchMode>(searchMode, true, out var searchModeEnum) 
+                ? searchModeEnum 
+                : SearchMode.Contains;
 
-            var response = sortedResults.Select(r => new
+            // Parse search scope - handle string values properly
+            SearchScope scope;
+            switch (searchIn?.ToLowerInvariant())
             {
-                id = r.Id,
+                case "name":
+                    scope = SearchScope.Name;
+                    break;
+                case "text":
+                    scope = SearchScope.Text;
+                    break;
+                case "key":
+                    scope = SearchScope.Key;
+                    break;
+                case "all":
+                default:
+                    scope = SearchScope.All;
+                    break;
+            }
+
+            var searchRequest = new SearchRequest(
+                Query: q,
+                Mode: mode,
+                Scope: scope,
+                MaxResults: 50
+            );
+
+            _logger.LogInformation("Performing search with request: Query={Query}, Mode={Mode}, Scope={Scope}", 
+                searchRequest.Query, searchRequest.Mode, searchRequest.Scope);
+
+            var searchResult = await _searchService.SearchAsync(searchRequest);
+            
+            if (searchResult.Error != null)
+            {
+                _logger.LogError("Search error: {Error}", searchResult.Error);
+                return Json(new { results = new List<object>(), error = searchResult.Error });
+            }
+
+            _logger.LogInformation("Search completed successfully. Found {Count} results", searchResult.Results.Count);
+
+            var response = searchResult.Results.Select(r => new
+            {
+                id = r.Id.ToString(),
                 name = r.Name,
                 key = (int)r.Key,
                 type = (int)r.Type,

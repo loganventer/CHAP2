@@ -29,16 +29,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
 
                 <div class="search-results-container">
-                    <div class="results-header" style="display: none;">
-                        <div class="results-count"></div>
+                    <div class="results-header" id="resultsHeader" style="display: none;">
+                        <div class="results-count" id="resultsCount"></div>
                         <div class="results-controls">
-                            <button class="btn-secondary export-btn" style="display: none;">
+                            <button class="btn-secondary export-btn" id="exportBtn" style="display: none;">
                                 <i class="fas fa-download"></i> Export
                             </button>
                         </div>
                     </div>
 
-                    <div class="loading-container" style="display: none;">
+                    <!-- Status indicator for connectivity -->
+                    <div class="status-container" style="display: none;">
+                        <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
+                        <span id="statusText">Checking connectivity...</span>
+                    </div>
+
+                    <div class="loading-container" id="loading" style="display: none;">
                         <div class="loading-spinner"></div>
                         <p>Searching...</p>
                     </div>
@@ -49,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
 
                     <div class="results-table-container">
-                        <table class="results-table" style="display: none;">
+                        <table class="results-table" id="resultsTable" style="display: none;">
                             <thead>
                                 <tr>
                                     <th class="col-number">#</th>
@@ -61,17 +67,55 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <th class="col-actions">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody id="resultsBody"></tbody>
                         </table>
                     </div>
 
-                    <div class="no-results" style="display: none;">
+                    <div class="no-results" id="noResults" style="display: none;">
                         <i class="fas fa-search"></i>
                         <p>No results found</p>
                     </div>
                 </div>
             </div>
         `;
+
+        // Add modal elements that search.js expects
+        const modalHTML = `
+            <!-- Detail Modal -->
+            <div id="detailModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modalTitle">Chorus Details</h3>
+                        <button id="modalClose" class="modal-close">&times;</button>
+                    </div>
+                    <div id="modalContent" class="modal-body">
+                        <!-- Modal content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Confirmation Modal -->
+            <div id="deleteModal" class="modal" style="display: none;">
+                <div class="delete-modal">
+                    <div class="delete-modal-header">
+                        <h3>Confirm Delete</h3>
+                    </div>
+                    <div class="delete-modal-body">
+                        <p>Are you sure you want to delete the chorus "<span id="deleteChorusName"></span>"?</p>
+                        <p class="text-muted">This action cannot be undone.</p>
+                    </div>
+                    <div class="delete-modal-actions">
+                        <button class="btn btn-secondary" onclick="hideDeleteModal()">Cancel</button>
+                        <button class="btn btn-danger" onclick="confirmDelete()">
+                            <i class="fas fa-trash"></i> Delete Chorus
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Append modal HTML to the search container
+        searchContainer.insertAdjacentHTML('beforeend', modalHTML);
 
         // Initialize the original search functionality
         initializeSearch();
