@@ -20,7 +20,7 @@ public class OllamaService : IOllamaService
         _httpClient.BaseAddress = new Uri($"http://{_settings.Host}:{_settings.Port}/");
     }
 
-    public async Task<string> GenerateResponseAsync(string prompt)
+    public async Task<string> GenerateResponseAsync(string prompt, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -43,11 +43,11 @@ public class OllamaService : IOllamaService
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
             _logger.LogDebug("Sending request to Ollama: {Request}", json);
-            var response = await _httpClient.PostAsync("api/generate", content);
+            var response = await _httpClient.PostAsync("api/generate", content, cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogDebug("Raw Ollama response: {Response}", responseContent);
                 var ollamaResponse = JsonSerializer.Deserialize<OllamaResponse>(responseContent);
                 
@@ -56,11 +56,16 @@ public class OllamaService : IOllamaService
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogError("Failed to generate response from Ollama. Status: {StatusCode}, Error: {Error}", 
                     response.StatusCode, errorContent);
                 throw new Exception($"Failed to generate response: {response.StatusCode} - {errorContent}");
             }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Ollama request was cancelled for prompt: {Prompt}", prompt);
+            throw;
         }
         catch (Exception ex)
         {
@@ -69,7 +74,7 @@ public class OllamaService : IOllamaService
         }
     }
 
-    public async IAsyncEnumerable<string> GenerateStreamingResponseAsync(string prompt)
+    public async IAsyncEnumerable<string> GenerateStreamingResponseAsync(string prompt, CancellationToken cancellationToken = default)
     {
         var request = new OllamaRequest
         {
@@ -89,21 +94,21 @@ public class OllamaService : IOllamaService
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         
-        var response = await _httpClient.PostAsync("api/generate", content);
+        var response = await _httpClient.PostAsync("api/generate", content, cancellationToken);
         
         if (!response.IsSuccessStatusCode)
         {
-            var errorContent = await response.Content.ReadAsStringAsync();
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogError("Failed to generate streaming response from Ollama. Status: {StatusCode}, Error: {Error}", 
                 response.StatusCode, errorContent);
             throw new Exception($"Failed to generate streaming response: {response.StatusCode} - {errorContent}");
         }
 
-        using var stream = await response.Content.ReadAsStreamAsync();
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new StreamReader(stream);
         
         string? line;
-        while ((line = await reader.ReadLineAsync()) != null)
+        while ((line = await reader.ReadLineAsync(cancellationToken)) != null)
         {
             if (!string.IsNullOrEmpty(line))
             {

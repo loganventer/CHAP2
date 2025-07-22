@@ -1,51 +1,37 @@
 // AI Search JavaScript with Enhanced Animations and Whizzbang Effects
 class AiSearch {
     constructor() {
+        this.searchInput = null;
+        this.searchBtn = null;
+        this.resultsContainer = null;
+        this.resultsList = null;
+        this.aiAnalysisContainer = null;
+        this.analysisContent = null;
+        this.statusContainer = null;
+        this.statusText = null;
         this.searchInProgress = false;
+        this.currentSearchController = null; // For cancelling ongoing requests
+        this.messageInterval = null;
+        this.currentMessageIndex = 0;
         this.statusMessages = {
             thinking: [
-                "🤖 Analyzing your search query...",
-                "🔍 Processing musical patterns...",
-                "🎵 Understanding chorus context...",
-                "🧠 Generating intelligent insights...",
-                "📊 Evaluating search results...",
-                "🎼 Analyzing musical keys and signatures...",
-                "✨ Finding the perfect matches...",
-                "🎯 Refining search parameters..."
-            ],
-            searching: [
-                "🔍 Searching through chorus database...",
-                "📚 Scanning musical archives...",
-                "🎵 Finding relevant choruses...",
-                "📖 Examining chorus content...",
-                "🎼 Matching musical criteria...",
-                "✨ Discovering hidden gems...",
-                "🎯 Narrowing down results...",
-                "📊 Processing search filters..."
+                '🤖 Analyzing your query...',
+                '🔍 Understanding search intent...',
+                '💭 Generating search terms...',
+                '📚 Searching vector database...',
+                '🧠 Processing results...'
             ],
             success: [
-                "✅ Search completed successfully!",
-                "🎉 Found some great choruses!",
-                "✨ Results are ready to explore!",
-                "🎵 Your musical journey awaits!",
-                "📚 Search results are in!",
-                "🎼 Ready to discover more!",
-                "✨ Time to explore the results!",
-                "🎯 Perfect matches found!"
+                '✅ Search completed!',
+                '🎉 Results ready!',
+                '✨ Analysis complete!'
             ],
             error: [
-                "❌ Search encountered an issue...",
-                "⚠️ Something went wrong...",
-                "🔧 Technical difficulties...",
-                "📡 Connection problems...",
-                "⚡ Service temporarily unavailable...",
-                "🔄 Please try again...",
-                "📱 System error detected...",
-                "🔍 Search failed to complete..."
+                '❌ Search failed',
+                '⚠️ Error occurred',
+                '🔧 Please try again'
             ]
         };
-        this.currentMessageIndex = 0;
-        this.messageInterval = null;
         this.init();
     }
     
@@ -98,8 +84,14 @@ class AiSearch {
                 if (event.key === 'Enter') {
                     console.log('AI Search Enter key pressed');
                     event.preventDefault();
-            this.performSearch();
+                    this.performSearch();
                 }
+            });
+            
+            // Add input event listener to cancel current search when new input is detected
+            this.searchInput.addEventListener('input', (event) => {
+                console.log('AI Search input detected, cancelling current search if any');
+                this.cancelCurrentSearch();
             });
         }
         
@@ -852,13 +844,14 @@ class AiSearch {
             return;
         }
         
-        if (this.searchInProgress) {
-            console.log('AI Search: Search already in progress, returning');
-            return;
-        }
+        // Cancel any existing search
+        this.cancelCurrentSearch();
         
         this.searchInProgress = true;
         console.log('AI Search: Search in progress set to true');
+        
+        // Create new AbortController for this search
+        this.currentSearchController = new AbortController();
         
         // Add a small delay to prevent double-triggering
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -918,7 +911,8 @@ class AiSearch {
                 body: JSON.stringify({
                     query: enhancedQuery,
                     maxResults: parseInt(document.getElementById('maxResults')?.value || '10')
-                })
+                }),
+                signal: this.currentSearchController.signal // Add abort signal
             });
 
             console.log('AI Search: Response status:', response.status);
@@ -958,6 +952,13 @@ class AiSearch {
                                 console.log('AI Search: Received streaming data:', jsonData);
                                 const data = JSON.parse(jsonData);
                                 console.log('AI Search: Parsed data:', data);
+                                
+                                // Check if this is a cancellation message
+                                if (data.type === 'cancelled') {
+                                    console.log('AI Search: Search was cancelled by user');
+                                    return; // Stop processing
+                                }
+                                
                                 this.handleStreamingUpdate(data);
                             } catch (e) {
                                 console.log('AI Search: Error parsing streaming data:', e);
@@ -994,6 +995,13 @@ class AiSearch {
 
         } catch (error) {
             console.error('Search error:', error);
+            
+            // Check if the error is due to cancellation
+            if (error.name === 'AbortError') {
+                console.log('AI Search: Search was cancelled by user');
+                return; // Don't show error message for cancelled searches
+            }
+            
             this.updateAiStatus('❌ Search failed', 'error');
             
             // Stop rotating messages on error
@@ -1011,6 +1019,7 @@ class AiSearch {
                 this.searchBtn.innerHTML = '<i class="fas fa-robot"></i> AI Search';
             }
             this.searchInProgress = false;
+            this.currentSearchController = null;
         }
     }
 
@@ -1092,6 +1101,49 @@ class AiSearch {
                     }, 3000); // Match the CSS animation duration
                 }, 3000); // Wait longer before starting fade
             }, 2000);
+        }
+    }
+
+    cancelCurrentSearch() {
+        console.log('AI Search: Cancelling current search...');
+        
+        // Cancel the current fetch request
+        if (this.currentSearchController) {
+            this.currentSearchController.abort();
+            this.currentSearchController = null;
+            console.log('AI Search: Current search aborted.');
+        }
+        
+        // Reset search state
+        this.searchInProgress = false;
+        
+        // Stop rotating messages
+        this.stopRotatingMessages();
+        
+        // Hide status indicator
+        const statusIndicator = document.getElementById('aiStatusIndicator');
+        if (statusIndicator) {
+            statusIndicator.style.display = 'none';
+        }
+        
+        // Reset button state
+        this.resetButtonState();
+    }
+    
+    resetButtonState() {
+        if (this.searchBtn) {
+            const btnText = this.searchBtn.querySelector('.btn-text');
+            const btnLoading = this.searchBtn.querySelector('.btn-loading');
+            
+            if (btnText && btnLoading) {
+                // Complex button structure
+                btnText.style.display = 'inline-block';
+                btnLoading.style.display = 'none';
+            } else {
+                // Simple button structure
+                this.searchBtn.disabled = false;
+                this.searchBtn.innerHTML = '<span class="btn-text">Search with AI Analysis</span>';
+            }
         }
     }
 }

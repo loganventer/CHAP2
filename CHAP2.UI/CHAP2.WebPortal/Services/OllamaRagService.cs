@@ -121,14 +121,20 @@ public class OllamaRagService : IOllamaRagService
 
 User Question: ""{query}""
 
+CRITICAL LANGUAGE REQUIREMENT:
+1. Analyze the language of the user's query carefully
+2. If the query contains Afrikaans words/phrases, respond in Afrikaans
+3. If the query is purely English, respond in English
+4. Match the exact language style and tone of the user's query
+5. Use the same language for your response as the user's query
+
 Found {results.Count} relevant choruses. Provide:
 
 1. **Direct Answer**: Brief response to the user's question
 2. **Top Matches**: 2-3 most relevant choruses with brief explanations
 3. **Key Themes**: Main religious/spiritual themes found
 
-Keep response concise (2-3 paragraphs). If query is in Afrikaans, respond in Afrikaans.
-Only mention choruses from the context provided.
+Keep response concise (2-3 paragraphs). Only mention choruses from the context provided. Use the SAME language as the user's query.
 
 Context:
 {contextBuilder}

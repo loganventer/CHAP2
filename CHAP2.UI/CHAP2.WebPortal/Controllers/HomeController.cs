@@ -821,23 +821,61 @@ Please provide a helpful and accurate response based on the chorus information p
             Response.Headers.Add("Cache-Control", "no-cache");
             Response.Headers.Add("Connection", "keep-alive");
 
-            // Stream the intelligent search response
-            await foreach (var chunk in _intelligentSearchService.SearchWithIntelligenceStreamingAsync(request.Query, request.MaxResults))
+            // Get cancellation token from request
+            var cancellationToken = HttpContext.RequestAborted;
+
+            // Stream the intelligent search response with cancellation support
+            await foreach (var chunk in _intelligentSearchService.SearchWithIntelligenceStreamingAsync(request.Query, request.MaxResults, cancellationToken))
             {
+                // Check for cancellation
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Streaming intelligent search cancelled for query: {Query}", request.Query);
+                    break;
+                }
+
                 await Response.WriteAsync($"data: {chunk}\n\n");
                 await Response.Body.FlushAsync();
             }
 
-            // Send completion signal
-            await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "complete" })}\n\n");
-            await Response.Body.FlushAsync();
+            // Only send completion signal if not cancelled
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "complete" })}\n\n");
+                await Response.Body.FlushAsync();
+            }
             
+            return new EmptyResult();
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Streaming intelligent search was cancelled for query: {Query}", request.Query);
             return new EmptyResult();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during streaming intelligent search: {Query}", request.Query);
-            return StatusCode(500, new { error = "Internal server error" });
+            
+            // Only try to send error response if headers haven't been sent yet
+            if (!Response.HasStarted)
+            {
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+            else
+            {
+                // If response has already started, try to send error as streaming data
+                try
+                {
+                    var errorData = System.Text.Json.JsonSerializer.Serialize(new { type = "error", message = "An error occurred during the search. Please try again." });
+                    await Response.WriteAsync($"data: {errorData}\n\n");
+                    await Response.Body.FlushAsync();
+                }
+                catch
+                {
+                    // If we can't send error data, just return empty result
+                }
+                return new EmptyResult();
+            }
         }
     }
 }

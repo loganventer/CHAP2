@@ -250,72 +250,72 @@ public class VectorSearchService : IVectorSearchService
         _logger = logger;
     }
 
-    public async Task<List<ChorusSearchResult>> SearchSimilarAsync(string query, int maxResults = 5)
+    public async Task<List<ChorusSearchResult>> SearchSimilarAsync(string query, int maxResults = 5, CancellationToken cancellationToken = default)
     {
         try
         {
             await InitializeClientAsync();
-            
-            // Generate embedding for the query using the same method as console app
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _logger.LogInformation("Searching for similar choruses with query: {Query}", query);
+
+            // Generate RAG-optimized embedding for the query
             var queryEmbedding = await GenerateRagOptimizedEmbeddingAsync(query);
-            
-            // Search in Qdrant with higher limit to get more candidates
-            var searchResults = await _client!.SearchAsync(
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Search in Qdrant
+            var searchResponse = await _client!.SearchAsync(
                 collectionName: _settings.CollectionName,
                 vector: queryEmbedding.ToArray(),
-                limit: (ulong)(maxResults * 3) // Get more candidates for filtering
+                limit: (ulong)maxResults,
+                cancellationToken: cancellationToken
             );
 
-            var results = new List<ChorusSearchResult>();
-            var queryLower = query.ToLowerInvariant();
-            
-            // Define semantic keywords for better matching
-            var semanticKeywords = new List<string> { "god", "lord", "jesus", "christ", "praise", "worship", "love", "grace", "faith", "prayer", "great", "mighty", "powerful" };
-            
-            foreach (var result in searchResults)
-            {
-                var payloadDict = result.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                var name = GetPayloadValue(payloadDict, "name") ?? "";
-                var chorusText = GetPayloadValue(payloadDict, "chorusText") ?? "";
-                var contentLower = $"{name} {chorusText}".ToLowerInvariant();
-                
-                // Calculate semantic similarity score
-                var semanticScore = CalculateSemanticSimilarity(queryLower, contentLower, semanticKeywords);
-                
-                // Combine vector score with semantic score
-                var combinedScore = (result.Score * 0.3f) + (semanticScore * 0.7f);
-                
-                var chorusResult = new ChorusSearchResult
-                {
-                    Id = result.Id.Uuid,
-                    Score = combinedScore,
-                    Name = name,
-                    ChorusText = chorusText,
-                    Key = ParseIntSafely(GetPayloadValue(payloadDict, "key")),
-                    Type = ParseIntSafely(GetPayloadValue(payloadDict, "type")),
-                    TimeSignature = ParseIntSafely(GetPayloadValue(payloadDict, "timeSignature")),
-                    CreatedAt = ParseDateTimeSafely(GetPayloadValue(payloadDict, "createdAt"))
-                };
-                
-                results.Add(chorusResult);
-            }
-            
-            // Sort by combined score and take top results
-            results = results.OrderByDescending(r => r.Score).Take(maxResults).ToList();
+            _logger.LogInformation("Qdrant search returned {Count} results", searchResponse.Count);
 
-            _logger.LogInformation("Found {Count} similar results for query: {Query}", results.Count, query);
-            
-            // Debug logging to see what we're actually getting
-            foreach (var result in results)
+            var results = new List<ChorusSearchResult>();
+            foreach (var point in searchResponse)
             {
-                _logger.LogDebug("Search result: ID={Id}, Name={Name}, Score={Score}", result.Id, result.Name, result.Score);
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                if (point.Payload != null)
+                {
+                    var payloadDict = point.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    var result = new ChorusSearchResult
+                    {
+                        Id = point.Id.Uuid, // Get ID from PointId, not payload
+                        Name = GetPayloadValue(payloadDict, "name") ?? "",
+                        ChorusText = GetPayloadValue(payloadDict, "chorusText") ?? "",
+                        Key = ParseIntSafely(GetPayloadValue(payloadDict, "key")),
+                        Type = ParseIntSafely(GetPayloadValue(payloadDict, "type")),
+                        TimeSignature = ParseIntSafely(GetPayloadValue(payloadDict, "timeSignature")),
+                        Score = point.Score
+                    };
+
+                    _logger.LogDebug("Vector search result: ID={Id}, Name={Name}, Score={Score}", result.Id, result.Name, result.Score);
+
+                    // Apply semantic similarity boost
+                    var semanticScore = CalculateSemanticSimilarity(query, result.ChorusText, ExtractKeywordsFromQuery(query));
+                    result.Score = (result.Score + semanticScore) / 2.0f;
+
+                    results.Add(result);
+                }
             }
+
+            // Sort by score and take top results
+            var sortedResults = results.OrderByDescending(r => r.Score).Take(maxResults).ToList();
             
-            return results;
+            _logger.LogInformation("Returning {Count} sorted results for query: {Query}", sortedResults.Count, query);
+            return sortedResults;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Vector search was cancelled for query: {Query}", query);
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error searching for similar choruses");
+            _logger.LogError(ex, "Error during vector search for query: {Query}", query);
             throw;
         }
     }
@@ -348,8 +348,9 @@ public class VectorSearchService : IVectorSearchService
         return Math.Min(score, 1.0f);
     }
 
-    public async Task<List<float>> GenerateEmbeddingAsync(string text)
+    public async Task<List<float>> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         return await GenerateRagOptimizedEmbeddingAsync(text);
     }
 
@@ -449,24 +450,21 @@ public class VectorSearchService : IVectorSearchService
                 var questionPos = Math.Abs((1400 + i * 20) % VECTOR_DIMENSION);
                 var contextPos = Math.Abs((1450 + i * 20) % VECTOR_DIMENSION);
                 
-                if (questionPos < VECTOR_DIMENSION) embedding[questionPos] += questionScore;
-                if (contextPos < VECTOR_DIMENSION) embedding[contextPos] += contextScore;
+                if (questionPos < VECTOR_DIMENSION)
+                {
+                    embedding[questionPos] += questionScore;
+                }
+                if (contextPos < VECTOR_DIMENSION)
+                {
+                    embedding[contextPos] += contextScore;
+                }
             }
             
-            // Add some uniqueness based on text hash (reduced for better RAG consistency)
-            var textHash = ComputeTextHash(normalizedText);
-            var random = new Random(textHash);
-            
-            for (int i = 0; i < VECTOR_DIMENSION; i++)
-            {
-                embedding[i] += (float)(random.NextDouble() * 0.02 - 0.01); // Reduced randomness
-            }
-            
-            // Normalize the vector to unit length
+            // Normalize the embedding
             var magnitude = (float)Math.Sqrt(embedding.Sum(x => x * x));
             if (magnitude > 0)
             {
-                for (int i = 0; i < embedding.Length; i++)
+                for (int i = 0; i < VECTOR_DIMENSION; i++)
                 {
                     embedding[i] /= magnitude;
                 }
@@ -476,9 +474,15 @@ public class VectorSearchService : IVectorSearchService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating RAG-optimized embedding for text");
+            _logger.LogError(ex, "Error generating RAG-optimized embedding for text: {Text}", text);
             throw;
         }
+    }
+
+    private List<string> ExtractKeywordsFromQuery(string query)
+    {
+        var words = query.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return words.Where(w => w.Length > 2).ToList();
     }
 
     private float GetSemanticWeight(string word)
@@ -518,7 +522,7 @@ public class VectorSearchService : IVectorSearchService
         return BitConverter.ToInt32(hashBytes, 0);
     }
 
-    public async Task<List<ChorusSearchResult>> GetAllChorusesAsync()
+    public async Task<List<ChorusSearchResult>> GetAllChorusesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -527,13 +531,15 @@ public class VectorSearchService : IVectorSearchService
             // Get all points from the collection
             var scrollResponse = await _client!.ScrollAsync(
                 collectionName: _settings.CollectionName,
-                limit: 1000 // Get all choruses (assuming less than 1000)
+                limit: 1000, // Get all choruses (assuming less than 1000)
+                cancellationToken: cancellationToken
             );
 
             var results = new List<ChorusSearchResult>();
             
             foreach (var point in scrollResponse.Result)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var payloadDict = point.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                 
                 var chorusResult = new ChorusSearchResult

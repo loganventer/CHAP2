@@ -6,8 +6,8 @@ namespace CHAP2.WebPortal.Services;
 
 public interface IIntelligentSearchService
 {
-    Task<IntelligentSearchResult> SearchWithIntelligenceAsync(string query, int maxResults = 10);
-    IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10);
+    Task<IntelligentSearchResult> SearchWithIntelligenceAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
 }
 
 public class IntelligentSearchResult
@@ -37,18 +37,18 @@ public class IntelligentSearchService : IIntelligentSearchService
         _logger = logger;
     }
 
-    public async Task<IntelligentSearchResult> SearchWithIntelligenceAsync(string query, int maxResults = 10)
+    public async Task<IntelligentSearchResult> SearchWithIntelligenceAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("Performing intelligent search for query: {Query}", query);
 
             // Step 1: Use LLM to understand the query
-            var queryUnderstanding = await GenerateQueryUnderstandingAsync(query);
+            var queryUnderstanding = await GenerateQueryUnderstandingAsync(query, cancellationToken);
             _logger.LogInformation("Query understanding: {Understanding}", queryUnderstanding);
 
             // Step 2: Search vector database
-            var searchResults = await _vectorSearchService.SearchSimilarAsync(queryUnderstanding, maxResults);
+            var searchResults = await _vectorSearchService.SearchSimilarAsync(queryUnderstanding, maxResults, cancellationToken);
             _logger.LogInformation("Found {Count} relevant choruses", searchResults.Count);
 
             if (!searchResults.Any())
@@ -63,10 +63,10 @@ public class IntelligentSearchService : IIntelligentSearchService
             }
 
             // Step 3: Generate AI analysis (without context parameter)
-            var aiAnalysis = await GenerateAnalysisAsync(query, searchResults);
+            var aiAnalysis = await GenerateAnalysisAsync(query, searchResults, cancellationToken);
 
             // Step 4: Generate explanations for each result
-            await GenerateExplanationsAsync(query, searchResults);
+            await GenerateExplanationsAsync(query, searchResults, cancellationToken);
 
             return new IntelligentSearchResult
             {
@@ -89,55 +89,63 @@ public class IntelligentSearchService : IIntelligentSearchService
         }
     }
 
-    public async IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10)
+    public async IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Performing streaming intelligent search for query: {Query}", query);
 
         // Step 1: Use LLM to understand the query
         _logger.LogInformation("Step 1: Generating query understanding...");
-        var queryUnderstanding = await GenerateQueryUnderstandingAsync(query);
+        cancellationToken.ThrowIfCancellationRequested();
+        var queryUnderstanding = await GenerateQueryUnderstandingAsync(query, cancellationToken);
         _logger.LogInformation("Query understanding generated: {Understanding}", queryUnderstanding);
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "queryUnderstanding", queryUnderstanding });
-        
+
         // Step 2: Search vector database
         _logger.LogInformation("Step 2: Searching vector database...");
-        var searchResults = await _vectorSearchService.SearchSimilarAsync(queryUnderstanding, maxResults);
-        _logger.LogInformation("Vector search completed. Found {Count} results", searchResults.Count);
+        cancellationToken.ThrowIfCancellationRequested();
         
-        // Debug: Log what the vector search returned
-        foreach (var result in searchResults)
+        List<ChorusSearchResult> searchResults;
+        bool vectorSearchFailed = false;
+        string vectorSearchError = "";
+        
+        try
         {
-            _logger.LogInformation("Vector result: ID={Id}, Name={Name}, Score={Score}", result.Id, result.Name, result.Score);
-            
-            // Test if the ID is a valid GUID
-            if (!Guid.TryParse(result.Id, out _))
-            {
-                _logger.LogWarning("Vector search returned invalid GUID: {Id}", result.Id);
-            }
+            searchResults = await _vectorSearchService.SearchSimilarAsync(queryUnderstanding, maxResults, cancellationToken);
+            _logger.LogInformation("Vector search found {Count} results for query: {Query}", searchResults.Count, query);
         }
-        
-        // Step 2.5: Fetch full details from API for each result
-        _logger.LogInformation("Step 2.5: Fetching full chorus details from API...");
-        
-        // Test API connectivity first
-        var isConnected = await _chorusApiService.TestConnectivityAsync();
-        _logger.LogInformation("API connectivity test result: {IsConnected}", isConnected);
-        
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during vector search for query: {Query}", query);
+            vectorSearchFailed = true;
+            vectorSearchError = "Vector search failed. Please try again.";
+            searchResults = new List<ChorusSearchResult>();
+        }
+
+        if (vectorSearchFailed)
+        {
+            yield return System.Text.Json.JsonSerializer.Serialize(new { type = "error", message = vectorSearchError });
+            yield break;
+        }
+
+        if (!searchResults.Any())
+        {
+            _logger.LogInformation("No search results found, sending error message");
+            yield return System.Text.Json.JsonSerializer.Serialize(new { type = "error", message = "I couldn't find any choruses matching your query. Please try different search terms." });
+            yield break;
+        }
+
+        // Step 3: Fetch detailed results
+        _logger.LogInformation("Step 3: Fetching detailed results for {Count} search results", searchResults.Count);
         var detailedResults = new List<ChorusSearchResult>();
         for (int i = 0; i < searchResults.Count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            _logger.LogInformation("Fetching details {Index}/{Total} for chorus: {Name}", i + 1, searchResults.Count, searchResults[i].Name);
             var detailedResult = await FetchChorusDetailsAsync(searchResults[i].Id);
             if (detailedResult != null)
             {
-                detailedResult.Score = searchResults[i].Score; // Preserve the search score
+                detailedResult.Score = searchResults[i].Score;
                 detailedResults.Add(detailedResult);
-                _logger.LogInformation("Added detailed result: {Name}", detailedResult.Name);
-            }
-            else
-            {
-                // Fallback to vector search result if API call fails
-                _logger.LogWarning("API fetch failed for ID {Id}, using vector result: {Name}", searchResults[i].Id, searchResults[i].Name);
-                detailedResults.Add(searchResults[i]);
             }
         }
         
@@ -145,31 +153,33 @@ public class IntelligentSearchService : IIntelligentSearchService
         
         if (!detailedResults.Any())
         {
-            _logger.LogInformation("No search results found, sending error message");
+            _logger.LogInformation("No detailed results found, sending error message");
             yield return System.Text.Json.JsonSerializer.Serialize(new { type = "error", message = "I couldn't find any choruses matching your query. Please try different search terms." });
             yield break;
         }
 
-        // Step 3: Generate explanations for each result individually
-        _logger.LogInformation("Step 3: Generating explanations for {Count} results", detailedResults.Count);
+        // Step 4: Generate explanations for each result individually
+        _logger.LogInformation("Step 4: Generating explanations for {Count} results", detailedResults.Count);
         for (int i = 0; i < detailedResults.Count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             _logger.LogInformation("Generating explanation {Index}/{Total} for chorus: {Name}", i + 1, detailedResults.Count, detailedResults[i].Name);
-            var explanation = await GenerateSingleExplanationAsync(query, detailedResults[i]);
+            var explanation = await GenerateSingleExplanationAsync(query, detailedResults[i], cancellationToken);
             yield return System.Text.Json.JsonSerializer.Serialize(new { type = "explanation", index = i, explanation });
         }
 
-        // Step 4: Generate AI analysis
-        _logger.LogInformation("Step 4: Generating AI analysis...");
-        var aiAnalysis = await GenerateAnalysisAsync(query, detailedResults);
+        // Step 5: Generate AI analysis
+        _logger.LogInformation("Step 5: Generating AI analysis...");
+        cancellationToken.ThrowIfCancellationRequested();
+        var aiAnalysis = await GenerateAnalysisAsync(query, detailedResults, cancellationToken);
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "aiAnalysis", analysis = aiAnalysis });
 
-        // Step 5: Complete
-        _logger.LogInformation("Step 5: Streaming search completed successfully");
+        // Step 6: Complete
+        _logger.LogInformation("Step 6: Streaming search completed successfully");
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "complete" });
     }
 
-    private async Task<string> GenerateQueryUnderstandingAsync(string query)
+    private async Task<string> GenerateQueryUnderstandingAsync(string query, CancellationToken cancellationToken = default)
     {
         var prompt = @"You are an expert at analyzing religious chorus queries and generating focused search terms.
 
@@ -207,7 +217,7 @@ IMPORTANT:
 
 Generate focused single-word search terms that will find the most relevant choruses for this specific query. Separate terms with commas, no explanations:";
 
-        var response = await _ollamaService.GenerateResponseAsync(prompt);
+        var response = await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);
         var searchTerms = response.Trim();
         
         // Parse the response and take all terms, ensuring they are single words
@@ -222,16 +232,16 @@ Generate focused single-word search terms that will find the most relevant choru
         return string.Join(", ", terms);
     }
 
-    private async Task<string> GenerateAnalysisAsync(string query, List<ChorusSearchResult> results)
+    private async Task<string> GenerateAnalysisAsync(string query, List<ChorusSearchResult> results, CancellationToken cancellationToken = default)
     {
         var prompt = CreateAnalysisPrompt(query, results);
-        return await _ollamaService.GenerateResponseAsync(prompt);
+        return await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);
     }
 
-    private async Task GenerateExplanationsAsync(string query, List<ChorusSearchResult> results)
+    private async Task GenerateExplanationsAsync(string query, List<ChorusSearchResult> results, CancellationToken cancellationToken = default)
     {
         var prompt = CreateExplanationPrompt(query, results);
-        var response = await _ollamaService.GenerateResponseAsync(prompt);
+        var response = await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);
         
         // Parse the response and assign explanations
         var lines = response.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -293,8 +303,12 @@ Provide a focused analysis highlighting the most relevant choruses:";
         promptBuilder.AppendLine("For each chorus below, provide a brief explanation of its most relevant aspect given the search context.");
         promptBuilder.AppendLine("Focus on the single most important connection. Keep explanations concise (1 sentence maximum).");
         promptBuilder.AppendLine();
-        promptBuilder.AppendLine("IMPORTANT: Analyze the language of each chorus text and provide your explanation in the SAME language.");
-        promptBuilder.AppendLine("If the chorus text is in Afrikaans, respond in Afrikaans. If it's in English, respond in English.");
+        promptBuilder.AppendLine("CRITICAL LANGUAGE REQUIREMENT:");
+        promptBuilder.AppendLine("1. Analyze the language of each chorus text carefully");
+        promptBuilder.AppendLine("2. If the chorus text contains Afrikaans words/phrases, respond in Afrikaans");
+        promptBuilder.AppendLine("3. If the chorus text is purely English, respond in English");
+        promptBuilder.AppendLine("4. Match the exact language style and tone of the chorus content");
+        promptBuilder.AppendLine("5. Use the same language for the explanation as the chorus uses");
         promptBuilder.AppendLine();
         promptBuilder.AppendLine("Choruses to explain:");
         promptBuilder.AppendLine();
@@ -307,7 +321,7 @@ Provide a focused analysis highlighting the most relevant choruses:";
             promptBuilder.AppendLine();
         }
 
-        promptBuilder.AppendLine("Explanations (one per line, no numbering, just the relevant aspect):");
+        promptBuilder.AppendLine("Explanations (one per line, no numbering, match the language of each chorus):");
 
         return promptBuilder.ToString();
     }
@@ -351,24 +365,28 @@ Provide a focused analysis highlighting the most relevant choruses:";
         return null;
     }
 
-    private async Task<string> GenerateSingleExplanationAsync(string query, ChorusSearchResult result)
+    private async Task<string> GenerateSingleExplanationAsync(string query, ChorusSearchResult result, CancellationToken cancellationToken = default)
     {
         var prompt = $@"You are an expert at explaining religious choruses.
 
 Consider the search context when explaining this chorus, but do NOT mention the search query in your response.
 
-IMPORTANT: Analyze the language of the chorus text below and provide your explanation in the SAME language.
-If the chorus text is in Afrikaans, respond in Afrikaans. If it's in English, respond in English.
+CRITICAL LANGUAGE REQUIREMENT:
+1. Analyze the language of the chorus text below carefully
+2. If the chorus text contains Afrikaans words/phrases, respond in Afrikaans
+3. If the chorus text is purely English, respond in English
+4. Match the exact language style and tone of the chorus content
+5. Use the same language for the explanation as the chorus uses
 
 Chorus to explain:
 **{result.Name}**
 Text: {result.ChorusText.Substring(0, Math.Min(150, result.ChorusText.Length))}...
 
-Provide a brief explanation of this chorus's most relevant aspect given the search context. Focus on the single most important connection. Keep it to 1 sentence maximum.
+Provide a brief explanation of this chorus's most relevant aspect given the search context. Focus on the single most important connection. Keep it to 1 sentence maximum. Use the SAME language as the chorus text.
 
 Explanation:";
 
-        var response = await _ollamaService.GenerateResponseAsync(prompt);
+        var response = await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);
         return response.Trim();
     }
 } 

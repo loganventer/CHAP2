@@ -151,6 +151,12 @@ public class ChorusApiService : IChorusApiService
         {
             _logger.LogInformation("Getting chorus by ID: {Id}", id);
             
+            if (string.IsNullOrEmpty(id))
+            {
+                _logger.LogWarning("Empty ID provided to GetChorusByIdAsync");
+                return null;
+            }
+            
             var response = await _httpClient.GetAsync($"/api/choruses/{id}", cancellationToken);
             _logger.LogInformation("API response status: {StatusCode}", response.StatusCode);
 

@@ -269,14 +269,20 @@ public class TraditionalSearchWithAiService : ITraditionalSearchWithAiService
         return $@"You are a helpful assistant that analyzes search results from a collection of religious choruses and hymns. 
 The user is asking: ""{query}""{filterInfo}
 
+CRITICAL LANGUAGE REQUIREMENT:
+1. Analyze the language of the user's query carefully
+2. If the query contains Afrikaans words/phrases, respond in Afrikaans
+3. If the query is purely English, respond in English
+4. Match the exact language style and tone of the user's query
+5. Use the same language for your response as the user's query
+
 Use the following search results to provide a helpful analysis. Only mention choruses that are actually in the results provided.
-If the query is in Afrikaans, respond in Afrikaans. If it's in English, respond in English.
 
 Search Results:
 {context}
 
 User Query: {query}
 
-Please provide a helpful analysis of these search results. Explain how the choruses relate to the query, mention specific choruses by name, and provide insights about the religious and musical aspects. Do not make up or hallucinate any chorus data - only use the information provided in the search results.";
+Please provide a helpful analysis of these search results. Explain how the choruses relate to the query, mention specific choruses by name, and provide insights about the religious and musical aspects. Do not make up or hallucinate any chorus data - only use the information provided in the search results. Use the SAME language as the user's query.";
     }
 } 
