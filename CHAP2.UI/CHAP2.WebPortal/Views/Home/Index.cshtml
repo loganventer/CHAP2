@@ -21,16 +21,16 @@
 
     <div class="search-input-container">
         <div class="search-tabs">
-            <button class="tab-button active" data-tab="regular">
+            <button class="tab-button" data-tab="regular">
                 <i class="fas fa-search"></i> Regular Search
             </button>
-            <button class="tab-button" data-tab="ai">
+            <button class="tab-button active" data-tab="ai">
                 <i class="fas fa-robot"></i> AI Search
             </button>
         </div>
         
         <!-- Regular Search -->
-        <div class="search-section" id="regularSearch">
+        <div class="search-section" id="regularSearch" style="display: none;">
             <div class="search-box">
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" 
@@ -51,7 +51,7 @@
         </div>
         
         <!-- AI Search -->
-        <div class="search-section" id="aiSearch" style="display: none;">
+        <div class="search-section active" id="aiSearch">
             <div class="search-box">
                 <i class="fas fa-robot search-icon"></i>
                 <input type="text" 
@@ -68,6 +68,84 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- AI Search Filters -->
+            <div class="search-filters" style="margin-top: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div class="filter-group">
+                    <label for="filterKey" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Musical Key:</label>
+                    <select id="filterKey" class="filter-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                        <option value="">All Keys</option>
+                        <option value="1">C</option>
+                        <option value="2">C#</option>
+                        <option value="3">D</option>
+                        <option value="4">D#</option>
+                        <option value="5">E</option>
+                        <option value="6">F</option>
+                        <option value="7">F#</option>
+                        <option value="8">G</option>
+                        <option value="9">G#</option>
+                        <option value="10">A</option>
+                        <option value="11">A#</option>
+                        <option value="12">B</option>
+                        <option value="13">C♭</option>
+                        <option value="14">D♭</option>
+                        <option value="15">E♭</option>
+                        <option value="16">F♭</option>
+                        <option value="17">G♭</option>
+                        <option value="18">A♭</option>
+                        <option value="19">B♭</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="filterType" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Chorus Type:</label>
+                    <select id="filterType" class="filter-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                        <option value="">All Types</option>
+                        <option value="1">Praise</option>
+                        <option value="2">Worship</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="filterTimeSignature" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Time Signature:</label>
+                    <select id="filterTimeSignature" class="filter-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                        <option value="">All Times</option>
+                        <option value="1">4/4</option>
+                        <option value="2">3/4</option>
+                        <option value="3">6/8</option>
+                        <option value="4">2/4</option>
+                        <option value="5">4/8</option>
+                        <option value="6">3/8</option>
+                        <option value="7">2/2</option>
+                        <option value="8">5/4</option>
+                        <option value="9">6/4</option>
+                        <option value="10">9/8</option>
+                        <option value="11">12/8</option>
+                        <option value="12">7/4</option>
+                        <option value="13">8/4</option>
+                        <option value="14">5/8</option>
+                        <option value="15">7/8</option>
+                        <option value="16">8/8</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="maxResults" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Max Results:</label>
+                    <select id="maxResults" class="filter-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group" style="align-self: end;">
+                    <button id="aiClearFiltersBtn" class="btn-secondary" style="padding: 8px 12px; font-size: 12px; margin-top: 20px;">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
+                </div>
+            </div>
+            
             <div class="search-info">
                 <span class="ai-search-info">Powered by AI - ask questions like "What choruses mention Jesus?"</span>
             </div>
@@ -204,46 +282,24 @@
 </div>
 
 @section Scripts {
+    <link rel="stylesheet" href="~/css/ai-search.css" />
     <script src="~/js/chorus-display.js"></script>
     <script src="~/js/ai-search.js"></script>
+    <script src="~/js/search-integration.js"></script>
     <script>
-        // Tab switching functionality
+        // Initialize both search modes when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const searchSections = document.querySelectorAll('.search-section');
-            const resultSections = document.querySelectorAll('.results-section');
+            // Initialize traditional search
+            if (typeof initializeSearch === 'function') {
+                initializeSearch();
+            }
             
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const tab = button.getAttribute('data-tab');
-                    
-                    // Update active tab button
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    
-                    // Show/hide search sections
-                    searchSections.forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    document.getElementById(tab + 'Search').style.display = 'block';
-                    
-                    // Show/hide result sections
-                    resultSections.forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    document.getElementById(tab + 'Results').style.display = 'block';
-                    
-                    // Clear results when switching tabs
-                    if (tab === 'regular') {
-                        document.getElementById('resultsTable').style.display = 'none';
-                        document.getElementById('resultsHeader').style.display = 'none';
-                        document.getElementById('noResults').style.display = 'none';
-                        document.getElementById('loading').style.display = 'none';
-                    } else {
-                        document.getElementById('aiSearchResults').innerHTML = '';
-                    }
-                });
-            });
+            // Initialize AI search
+            if (typeof window.aiSearch !== 'undefined') {
+                window.aiSearch.init();
+            }
+            
+            console.log('Search modes initialized');
         });
     </script>
 } 

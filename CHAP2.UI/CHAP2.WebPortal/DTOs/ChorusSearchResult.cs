@@ -10,4 +10,5 @@ public class ChorusSearchResult
     public int TimeSignature { get; set; }
     public DateTime CreatedAt { get; set; }
     public double Score { get; set; }
+    public string Explanation { get; set; } = string.Empty;
 } 

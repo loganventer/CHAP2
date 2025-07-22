@@ -105,31 +105,34 @@ public class OllamaRagService : IOllamaRagService
     private string CreateRagPrompt(string query, List<ChorusSearchResult> results)
     {
         var contextBuilder = new System.Text.StringBuilder();
-        contextBuilder.AppendLine("Here are the relevant choruses from the database:");
+        contextBuilder.AppendLine("Relevant choruses:");
         contextBuilder.AppendLine();
 
         for (int i = 0; i < results.Count; i++)
         {
             var result = results[i];
             contextBuilder.AppendLine($"{i + 1}. **{result.Name}** (Score: {result.Score:F3})");
-            contextBuilder.AppendLine($"   ID: {result.Id}");
-            contextBuilder.AppendLine($"   Key: {result.Key}, Type: {result.Type}, Time Signature: {result.TimeSignature}");
+            contextBuilder.AppendLine($"   Key: {result.Key}, Type: {result.Type}");
             contextBuilder.AppendLine($"   Text: {result.ChorusText}");
-            contextBuilder.AppendLine($"   Created: {result.CreatedAt:yyyy-MM-dd}");
             contextBuilder.AppendLine();
         }
 
-        return $@"You are a helpful assistant that searches through a collection of religious choruses and hymns. 
-The user is asking: ""{query}""
+        return $@"You are an expert on religious choruses and hymns. Provide a concise, accurate response.
 
-Use the following context to answer the user's question. Only mention choruses that are actually in the context provided.
-If the query is in Afrikaans, respond in Afrikaans. If it's in English, respond in English.
+User Question: ""{query}""
+
+Found {results.Count} relevant choruses. Provide:
+
+1. **Direct Answer**: Brief response to the user's question
+2. **Top Matches**: 2-3 most relevant choruses with brief explanations
+3. **Key Themes**: Main religious/spiritual themes found
+
+Keep response concise (2-3 paragraphs). If query is in Afrikaans, respond in Afrikaans.
+Only mention choruses from the context provided.
 
 Context:
 {contextBuilder}
 
-User Question: {query}
-
-Please provide a helpful response based on the actual choruses in the context. Do not make up or hallucinate any chorus data.";
+Provide a focused, helpful response:";
     }
 } 

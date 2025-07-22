@@ -588,13 +588,32 @@ Please provide a helpful and accurate response based on the chorus information p
         try
         {
             _logger.LogInformation("Processing traditional search with AI: {Query}", request.Query);
+            
+            // Log filter information if present
+            if (request.Filters != null)
+            {
+                _logger.LogInformation("Applied filters - Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
+                    request.Filters.Key, request.Filters.Type, request.Filters.TimeSignature);
+            }
 
-            var result = await _traditionalSearchWithAiService.SearchWithAiAnalysisAsync(request.Query, request.MaxResults);
+            var result = await _traditionalSearchWithAiService.SearchWithAiAnalysisAsync(request.Query, request.MaxResults, request.Filters);
             _logger.LogInformation("Traditional search with AI completed. Found {Count} results, AI analysis: {HasAi}", 
                 result.SearchResults.Count, result.HasAiAnalysis);
             
+            // Convert to DTOs with readable names
+            var searchResults = result.SearchResults.Select(c => new
+            {
+                id = c.Id,
+                name = c.Name,
+                chorusText = c.ChorusText,
+                key = GetKeyDisplayName(c.Key),
+                type = GetTypeDisplayName(c.Type),
+                timeSignature = GetTimeSignatureDisplayName(c.TimeSignature),
+                createdAt = c.CreatedAt
+            }).ToList();
+            
             return Json(new { 
-                searchResults = result.SearchResults,
+                searchResults = searchResults,
                 aiAnalysis = result.AiAnalysis,
                 hasAiAnalysis = result.HasAiAnalysis
             });
@@ -624,7 +643,7 @@ Please provide a helpful and accurate response based on the chorus information p
             Response.Headers.Add("Connection", "keep-alive");
 
             // Stream the AI analysis
-            await foreach (var chunk in _traditionalSearchWithAiService.SearchWithAiAnalysisStreamingAsync(request.Query, request.MaxResults))
+            await foreach (var chunk in _traditionalSearchWithAiService.SearchWithAiAnalysisStreamingAsync(request.Query, request.MaxResults, request.Filters))
             {
                 await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "chunk", data = chunk })}\n\n");
                 await Response.Body.FlushAsync();
@@ -641,6 +660,79 @@ Please provide a helpful and accurate response based on the chorus information p
             _logger.LogError(ex, "Error during streaming traditional search with AI: {Query}", request.Query);
             return StatusCode(500, new { error = "Internal server error" });
         }
+    }
+
+    private string GetKeyDisplayName(MusicalKey key)
+    {
+        return key switch
+        {
+            MusicalKey.NotSet => "Not Set",
+            MusicalKey.C => "C",
+            MusicalKey.CSharp => "C#",
+            MusicalKey.D => "D",
+            MusicalKey.DSharp => "D#",
+            MusicalKey.E => "E",
+            MusicalKey.F => "F",
+            MusicalKey.FSharp => "F#",
+            MusicalKey.G => "G",
+            MusicalKey.GSharp => "G#",
+            MusicalKey.A => "A",
+            MusicalKey.ASharp => "A#",
+            MusicalKey.B => "B",
+            MusicalKey.CFlat => "C♭",
+            MusicalKey.DFlat => "D♭",
+            MusicalKey.EFlat => "E♭",
+            MusicalKey.FFlat => "F♭",
+            MusicalKey.GFlat => "G♭",
+            MusicalKey.AFlat => "A♭",
+            MusicalKey.BFlat => "B♭",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetTypeDisplayName(ChorusType type)
+    {
+        return type switch
+        {
+            ChorusType.NotSet => "Not Set",
+            ChorusType.Praise => "Praise",
+            ChorusType.Worship => "Worship",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetTimeSignatureDisplayName(TimeSignature timeSignature)
+    {
+        return timeSignature switch
+        {
+            TimeSignature.NotSet => "Not Set",
+            TimeSignature.FourFour => "4/4",
+            TimeSignature.ThreeFour => "3/4",
+            TimeSignature.SixEight => "6/8",
+            TimeSignature.TwoFour => "2/4",
+            TimeSignature.FourEight => "4/8",
+            TimeSignature.ThreeEight => "3/8",
+            TimeSignature.TwoTwo => "2/2",
+            TimeSignature.FiveFour => "5/4",
+            TimeSignature.SixFour => "6/4",
+            TimeSignature.NineEight => "9/8",
+            TimeSignature.TwelveEight => "12/8",
+            TimeSignature.SevenFour => "7/4",
+            TimeSignature.EightFour => "8/4",
+            TimeSignature.FiveEight => "5/8",
+            TimeSignature.SevenEight => "7/8",
+            TimeSignature.EightEight => "8/8",
+            TimeSignature.TwoSixteen => "2/16",
+            TimeSignature.ThreeSixteen => "3/16",
+            TimeSignature.FourSixteen => "4/16",
+            TimeSignature.FiveSixteen => "5/16",
+            TimeSignature.SixSixteen => "6/16",
+            TimeSignature.SevenSixteen => "7/16",
+            TimeSignature.EightSixteen => "8/16",
+            TimeSignature.NineSixteen => "9/16",
+            TimeSignature.TwelveSixteen => "12/16",
+            _ => "Unknown"
+        };
     }
 
     [HttpPost]
@@ -693,12 +785,12 @@ Please provide a helpful and accurate response based on the chorus information p
             // Stream the intelligent search response
             await foreach (var chunk in _intelligentSearchService.SearchWithIntelligenceStreamingAsync(request.Query, request.MaxResults))
             {
-                await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "chunk", data = chunk })}\n\n");
+                await Response.WriteAsync($"data: {chunk}\n\n");
                 await Response.Body.FlushAsync();
             }
 
             // Send completion signal
-            await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "done" })}\n\n");
+            await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "complete" })}\n\n");
             await Response.Body.FlushAsync();
             
             return new EmptyResult();
@@ -715,6 +807,7 @@ public class TraditionalSearchRequest
 {
     public string Query { get; set; } = string.Empty;
     public int MaxResults { get; set; } = 10;
+    public SearchFilters? Filters { get; set; }
 }
 
 public class AskQuestionRequest

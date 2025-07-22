@@ -33,14 +33,68 @@
     margin-right: 0.5rem;
 }
 
+/* Tab Buttons with Frosted Effect */
+.tab-button {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    margin-right: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.tab-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tab-button.active {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
 /* Search Sections */
 .search-section {
     margin-bottom: 1rem;
 }
 
+/* Search Container with Frosted Effect */
+.search-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
 /* AI Search Results */
 #aiSearchResults {
     padding: 1rem 0;
+}
+
+/* AI Search Results with Frosted Effect */
+#aiSearchResults {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 /* Explanation Controls */
@@ -167,6 +221,20 @@
     margin: 20px 0;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     text-align: center;
+}
+
+/* AI Progress Container with Frosted Effect */
+.ai-progress-container {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    position: relative;
+    overflow: hidden;
 }
 
 .ai-progress-header h2 {
@@ -391,6 +459,13 @@
     z-index: 1000;
 }
 
+/* AI Modal Overlay with Frosted Effect */
+.ai-modal-overlay {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
 .ai-modal {
     background: white;
     border-radius: 12px;
@@ -399,6 +474,16 @@
     max-height: 90vh;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* AI Modal with Frosted Effect */
+.ai-modal {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
 .ai-modal-header {
@@ -465,9 +550,27 @@
     transition: border-color 0.3s ease;
 }
 
+/* Form Controls with Frosted Effect */
+.ai-question-section textarea,
+.ai-question-section input {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+}
+
 .ai-question-section textarea:focus {
     outline: none;
     border-color: #007bff;
+}
+
+.ai-question-section textarea:focus,
+.ai-question-section input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
 .ai-question-section button {
@@ -507,6 +610,16 @@
     border-radius: 3px;
     overflow: hidden;
     display: none;
+}
+
+/* Progress Bar with Frosted Effect */
+.progress-bar {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .progress-fill {
@@ -574,6 +687,16 @@
     animation: slideIn 0.3s ease;
 }
 
+/* Notification with Frosted Effect */
+.notification {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
 @keyframes slideIn {
     from {
         transform: translateX(100%);
@@ -633,39 +756,94 @@
 .query-understanding-section {
     margin-bottom: 1.5rem;
     padding: 1.5rem;
-    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 12px;
-    border-left: 4px solid #ffc107;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: white;
 }
 
-.query-understanding-header {
-    margin-bottom: 1rem;
+/* Query Understanding Section with Enhanced Frosted Effect */
+.query-understanding-section {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(102, 126, 234, 0.4);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    color: #1a1a1a;
+    position: relative;
+    overflow: hidden;
+}
+
+.query-understanding-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+    pointer-events: none;
+    z-index: -1;
 }
 
 .query-understanding-header h3 {
     margin: 0 0 0.5rem 0;
-    color: #856404;
+    color: #1a1a1a;
     font-size: 1.2rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+    letter-spacing: 0.5px;
+}
+
+.query-understanding-content {
+    background: rgba(255, 255, 255, 0.4);
+    padding: 1.2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    line-height: 1.6;
+    color: #1a1a1a;
+    font-size: 0.95rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+}
+
+.query-understanding-content span {
+    display: inline-block;
+    background: rgba(102, 126, 234, 0.9);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    margin: 0.3rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid rgba(102, 126, 234, 1);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.query-understanding-content span:hover {
+    background: rgba(102, 126, 234, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .query-understanding-header p {
     margin: 0;
-    color: #856404;
+    color: #2a2a2a;
     font-size: 0.9rem;
-}
-
-.query-understanding-content {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #ffeaa7;
-    line-height: 1.6;
-    color: #856404;
-    font-size: 0.95rem;
+    font-weight: 600;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+    line-height: 1.5;
 }
 
 /* AI Analysis Section */
@@ -676,6 +854,16 @@
     border-radius: 12px;
     border-left: 4px solid #007bff;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* AI Analysis Section with Frosted Effect */
+.ai-analysis-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .ai-analysis-header {
@@ -751,4 +939,813 @@
         padding: 0.75rem;
         font-size: 0.9rem;
     }
+} 
+
+/* AI Search Animations and Effects */
+
+/* Pulsing animation for the status indicator */
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* Enhanced whizzbang animations */
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+    40%, 43% { transform: translate3d(0, -30px, 0); }
+    70% { transform: translate3d(0, -15px, 0); }
+    90% { transform: translate3d(0, -4px, 0); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+    20%, 40%, 60%, 80% { transform: translateX(10px); }
+}
+
+@keyframes rainbow {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+@keyframes sparkle {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+}
+
+@keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(10deg); }
+    75% { transform: rotate(-10deg); }
+}
+
+@keyframes glowPulse {
+    0%, 100% { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    50% { box-shadow: 0 4px 25px rgba(102, 126, 234, 0.3); }
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* AI Status Window Styles */
+.ai-status {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.ai-status.searching {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    animation: pulse 2s infinite, glowPulse 3s infinite;
+}
+
+.ai-status.success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    animation: slideIn 0.5s ease-out, bounce 1s ease-out;
+}
+
+.ai-status.error {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    animation: slideIn 0.5s ease-out, shake 0.5s ease-out;
+}
+
+/* Typing effect for status messages */
+.typing-effect {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid;
+    animation: typing 2s steps(40, end), blink 0.75s step-end infinite;
+}
+
+/* AI Thinking Animation */
+.ai-thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-thinking::before {
+    content: "🤖";
+    font-size: 1.2em;
+    animation: pulse 1.5s infinite, wave 2s ease-in-out infinite;
+}
+
+.ai-thinking::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+
+/* Glow effect for success */
+.ai-status.success::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #4facfe, #00f2fe, #4facfe);
+    border-radius: 10px;
+    z-index: -1;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+}
+
+/* Results animation */
+.search-result-item {
+    animation: slideIn 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+/* Search Result Items with Frosted Effect */
+.search-result-item {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.search-result-item:nth-child(1) { animation-delay: 0.1s; }
+.search-result-item:nth-child(2) { animation-delay: 0.2s; }
+.search-result-item:nth-child(3) { animation-delay: 0.3s; }
+.search-result-item:nth-child(4) { animation-delay: 0.4s; }
+.search-result-item:nth-child(5) { animation-delay: 0.5s; }
+
+/* AI Analysis animation */
+.ai-analysis {
+    animation: fadeIn 0.8s ease-out;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+/* Hover effects */
+.ai-status:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* AI Status Indicator for Main Search - FIXED POSITIONING */
+.ai-status-indicator {
+    position: relative;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 8px auto;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    min-width: 250px;
+    max-width: 400px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 100;
+    /* Remove backdrop-filter to fix text rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Center the banner */
+    display: block;
+    text-align: center;
+}
+
+/* AI Status Indicator with Frosted Effect - Full Width, Narrow Height */
+.ai-status-indicator {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 1rem 2rem;
+    margin: 0.5rem 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    display: block;
+    z-index: 10;
+    min-height: 60px;
+    max-height: 80px;
+}
+
+.ai-status-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    text-align: center;
+    max-width: 100%;
+    flex-wrap: wrap;
+    height: 100%;
+    min-height: 40px;
+}
+
+.ai-thinking-animation {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.ai-robot {
+    font-size: 1.8rem;
+    animation: bounce 2s infinite;
+}
+
+.ai-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.ai-status-text {
+    flex: 1;
+    min-width: 200px;
+    text-align: left;
+}
+
+.ai-status-text h3 {
+    margin: 0 0 0.25rem 0;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    line-height: 1.2;
+}
+
+.ai-status-text p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+/* Status Indicator State Animations */
+.ai-status-indicator.ai-status-thinking {
+    animation: pulse 2s infinite, glowPulse 3s infinite;
+}
+
+.ai-status-indicator.ai-status-success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    animation: slideIn 0.5s ease-out, bounce 1s ease-out;
+}
+
+.ai-status-indicator.ai-status-error {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    animation: slideIn 0.5s ease-out, shake 0.5s ease-out;
+}
+
+/* AI Progress Steps */
+.ai-progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    position: relative;
+}
+
+.ai-progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #e0e0e0 0%, #667eea 50%, #e0e0e0 100%);
+    transform: translateY(-50%);
+    z-index: 1;
+    border-radius: 2px;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    opacity: 1;
+    transform: scale(1.2);
+    animation: bounce 0.6s ease-out;
+}
+
+.step-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4em;
+    color: white;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    animation: pulse 2s infinite, glowPulse 3s infinite;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.step-text {
+    font-size: 0.9em;
+    font-weight: 600;
+    text-align: center;
+    color: #333;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Enhanced Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: linear-gradient(90deg, #e0e0e0 0%, #f0f0f0 100%);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Enhanced Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: linear-gradient(90deg, #e0e0e0 0%, #f0f0f0 100%);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #4facfe 100%);
+    border-radius: 4px;
+    width: 0%;
+    animation: progressFill 3s ease-out forwards;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
+@keyframes progressFill {
+    to { width: 100%; }
+}
+
+/* Query Understanding Section */
+.query-understanding-section {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border-left: 5px solid #667eea;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.query-understanding-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #4facfe);
+    animation: rainbow 3s linear infinite;
+}
+
+.query-understanding-header h3 {
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.query-understanding-content {
+    color: #666;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+/* AI Analysis Section */
+.ai-analysis-section {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-analysis-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: spin 10s linear infinite;
+}
+
+.ai-analysis-header h3 {
+    color: white;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.ai-analysis-content {
+    line-height: 1.6;
+    opacity: 0.95;
+    font-weight: 500;
+}
+
+/* Notification Animations */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    padding: 20px;
+    z-index: 10001;
+    transition: all 0.3s ease;
+    max-width: 350px;
+    border: 1px solid rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 1.4em;
+    cursor: pointer;
+    color: #999;
+    margin-left: auto;
+    transition: all 0.2s ease;
+}
+
+.notification-close:hover {
+    color: #333;
+    transform: scale(1.1);
+}
+
+/* Whizzbang button effects */
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* Sparkle effects for results */
+.search-result-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+}
+
+.search-result-item:hover::after {
+    content: '✨';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    animation: sparkle 1s ease-in-out;
+}
+
+/* Responsive animations */
+@media (max-width: 768px) {
+    .ai-status-indicator {
+        font-size: 0.9em;
+        padding: 10px 12px;
+        min-width: 200px;
+        max-width: 100%;
+        margin-top: 10px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+    
+    .ai-particle {
+        width: 3px;
+        height: 3px;
+    }
+    
+    .step-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+    }
+    
+    .step-text {
+        font-size: 0.8em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .query-understanding-section,
+    .ai-analysis-section {
+        padding: 16px;
+        margin: 10px 0;
+    }
+    
+    .ai-robot {
+        font-size: 1em;
+    }
+    
+    .ai-spinner {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .ai-status-text {
+        font-size: 0.9em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        line-height: 1.3;
+    }
+} 
+
+/* Explanation Controls with Frosted Effect */
+.explanation-controls {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Explanation Row with Frosted Effect */
+.explanation-row {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.explanation-row.collapsed {
+    max-height: 60px;
+}
+
+/* Explanation Cell with Frosted Effect */
+.explanation-cell {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+}
+
+/* Explanation Content with Frosted Effect */
+.explanation-content {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 1rem;
+    margin: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+/* Explanation Icon with Frosted Effect */
+.explanation-icon {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Explanation Text with Enhanced Styling */
+.explanation-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.explanation-text strong {
+    color: white;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Explanation Toggle with Frosted Effect */
+.explanation-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.explanation-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.explanation-toggle i {
+    font-size: 0.7rem;
+    transition: transform 0.3s ease;
+}
+
+.explanation-toggle[data-tooltip*="Hide"] i {
+    transform: rotate(180deg);
+}
+
+/* Explanation Controls Buttons with Frosted Effect */
+.explanation-controls button {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.explanation-controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+} 
+
+/* Search Section Display States */
+.search-section {
+    transition: all 0.3s ease;
+}
+
+.search-section.active {
+    display: block !important;
+}
+
+.search-section:not(.active) {
+    display: none !important;
+}
+
+/* Traditional Search Specific Styles */
+#regularSearch .search-box {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#regularSearch .search-input {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: white;
+}
+
+#regularSearch .search-input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+#regularSearch .search-info {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
 } 

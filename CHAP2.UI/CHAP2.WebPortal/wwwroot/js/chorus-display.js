@@ -32,17 +32,20 @@ class ChorusDisplay {
         try {
             // Check if we're on a chorus display page
             if (!window.chorusData) {
+                console.log('Not on chorus display page, skipping chorus loading');
                 return; // Not on a chorus display page, exit early
             }
+            
+            console.log('Loading choruses for display page');
             
             // Get all choruses for navigation
             const response = await fetch('/Home/Search?q=*');
             const data = await response.json();
             this.choruses = data.results || [];
             
-            // Find current chorus index
+            // Find current chorus index - add null check for window.chorusData
             if (window.chorusData && window.chorusData.id) {
-                this.currentChorusIndex = this.choruses.findIndex(c => c.id === window.chorusData.id);
+                this.currentChorusIndex = this.choruses.findIndex(c => c && c.id === window.chorusData.id);
                 if (this.currentChorusIndex === -1) {
                     this.currentChorusIndex = 0;
                 }
@@ -63,13 +66,15 @@ class ChorusDisplay {
         const printBtn = document.getElementById('printBtn');
         const closeBtn = document.getElementById('closeBtn');
         
+        // Only add event listeners if the elements exist (they won't on the search page)
         if (prevBtn) prevBtn.addEventListener('click', () => this.navigate(-1));
         if (nextBtn) nextBtn.addEventListener('click', () => this.navigate(1));
         if (printBtn) printBtn.addEventListener('click', () => this.print());
         if (closeBtn) closeBtn.addEventListener('click', () => this.close());
         
         // Keyboard shortcuts (only if we're on a chorus display page)
-        if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+        if ((window.chorusData || window.location.pathname.includes('/Detail/')) && 
+            (prevBtn || nextBtn || printBtn || closeBtn)) {
             document.addEventListener('keydown', (e) => this.handleKeyboard(e));
             
             // Window resize
