@@ -497,7 +497,28 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Starting containers..." -ForegroundColor Gray
         if ($gpuAvailable -and -not $ForceCPU) {
             Write-Host "   Starting with GPU support..." -ForegroundColor Green
-            docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+            Write-Host "   Using GPU-enabled Docker Compose configuration..." -ForegroundColor Gray
+            
+            # Try the GPU compose file first
+            $gpuResult = docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "   GPU compose failed, trying alternative method..." -ForegroundColor Yellow
+                Write-Host "   Error: $gpuResult" -ForegroundColor Red
+                
+                # Alternative: Use runtime flag directly
+                Write-Host "   Trying with runtime flag..." -ForegroundColor Gray
+                docker-compose down 2>$null
+                docker-compose up -d --scale ollama=0 2>$null
+                docker run -d --name ollama-gpu --runtime=nvidia --gpus all -p 11434:11434 -v ollama_models:/root/.ollama ollama/ollama:latest
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   Ollama started with GPU runtime!" -ForegroundColor Green
+                } else {
+                    Write-Host "   GPU runtime failed, falling back to CPU..." -ForegroundColor Red
+                    docker-compose up -d
+                }
+            } else {
+                Write-Host "   GPU compose started successfully!" -ForegroundColor Green
+            }
         } else {
             Write-Host "   Starting with CPU support..." -ForegroundColor Yellow
             docker-compose up -d
@@ -542,12 +563,35 @@ function Install-NvidiaContainerToolkit {
         # Check GPU utilization
         if ($gpuAvailable -and -not $ForceCPU) {
             Write-Host "   Checking GPU utilization..." -ForegroundColor Gray
+            
+            # Check Docker Desktop GPU settings
+            Write-Host "   Checking Docker Desktop GPU configuration..." -ForegroundColor Gray
+            $dockerInfo = docker info 2>&1
+            if ($dockerInfo -match "nvidia") {
+                Write-Host "   Docker Desktop has NVIDIA support enabled!" -ForegroundColor Green
+            } else {
+                Write-Host "   Docker Desktop may not have GPU support enabled" -ForegroundColor Yellow
+                Write-Host "   Manual steps to enable GPU in Docker Desktop:" -ForegroundColor White
+                Write-Host "   1. Open Docker Desktop" -ForegroundColor Gray
+                Write-Host "   2. Go to Settings > Resources > WSL Integration" -ForegroundColor Gray
+                Write-Host "   3. Enable 'Use the WSL 2 based engine'" -ForegroundColor Gray
+                Write-Host "   4. Go to Settings > Resources > Advanced" -ForegroundColor Gray
+                Write-Host "   5. Enable 'Use GPU acceleration'" -ForegroundColor Gray
+                Write-Host "   6. Restart Docker Desktop" -ForegroundColor Gray
+            }
+            
+            # Determine container name based on deployment method
+            $ollamaContainer = "langchain_search_service-ollama-1"
+            if (docker ps --format "{{.Names}}" | Select-String "ollama-gpu") {
+                $ollamaContainer = "ollama-gpu"
+            }
+            
             Write-Host "   Testing GPU access with Ollama..." -ForegroundColor Gray
-            $gpuTest = docker exec langchain_search_service-ollama-1 ollama run mistral "Hello, are you using GPU?" 2>&1
+            $gpuTest = docker exec $ollamaContainer ollama run mistral "Hello, are you using GPU?" 2>&1
             Write-Host "   Ollama response: $gpuTest" -ForegroundColor Gray
             
             # Check if CUDA is available in the container
-            $cudaCheck = docker exec langchain_search_service-ollama-1 nvidia-smi 2>&1
+            $cudaCheck = docker exec $ollamaContainer nvidia-smi 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "   GPU is accessible in Ollama container!" -ForegroundColor Green
                 Write-Host "   GPU Info:" -ForegroundColor Gray
@@ -555,6 +599,7 @@ function Install-NvidiaContainerToolkit {
             } else {
                 Write-Host "   GPU not accessible in Ollama container" -ForegroundColor Red
                 Write-Host "   This may indicate GPU support is not properly configured" -ForegroundColor Yellow
+                Write-Host "   Container name: $ollamaContainer" -ForegroundColor Gray
             }
         }
         
