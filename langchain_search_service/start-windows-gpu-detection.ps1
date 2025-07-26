@@ -650,21 +650,11 @@ function Install-NvidiaContainerToolkit {
             Write-Host "   Data migration failed or already completed" -ForegroundColor Yellow
         }
         
-        # Step 7: Start web portal
+        # Step 7: Wait for all services to be ready
         Write-Host ""
-        Write-Host "Step 7: Starting web portal..." -ForegroundColor Yellow
-        Write-Host "   Navigating to web portal directory..." -ForegroundColor Gray
-        
-        # Change to the web portal directory
-        $webPortalPath = "..\CHAP2.UI\CHAP2.WebPortal"
-        if (Test-Path $webPortalPath) {
-            Set-Location $webPortalPath
-            Write-Host "   Starting .NET web portal..." -ForegroundColor Gray
-            Start-Process -FilePath "dotnet" -ArgumentList "run", "--urls", "http://localhost:5000" -NoNewWindow
-            Write-Host "   Web portal started on http://localhost:5000" -ForegroundColor Green
-        } else {
-            Write-Host "   Web portal directory not found at: $webPortalPath" -ForegroundColor Red
-        }
+        Write-Host "Step 7: Waiting for all services to be ready..." -ForegroundColor Yellow
+        Write-Host "   All services are now containerized and should be starting..." -ForegroundColor Gray
+        Start-Sleep -Seconds 15
         
         Write-Host ""
         Write-Host "========================================" -ForegroundColor Green
@@ -673,7 +663,10 @@ function Install-NvidiaContainerToolkit {
         Write-Host "  - Qdrant Vector Store: http://localhost:6333" -ForegroundColor Gray
         Write-Host "  - Ollama LLM Service: http://localhost:11434" -ForegroundColor Gray
         Write-Host "  - LangChain Service: http://localhost:8000" -ForegroundColor Gray
-        Write-Host "  - Web Portal: http://localhost:5000" -ForegroundColor Gray
+        Write-Host "  - CHAP2 API: http://localhost:5001" -ForegroundColor Gray
+        Write-Host "  - CHAP2 Web Portal: http://localhost:5000" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "All services are now containerized and managed by Docker!" -ForegroundColor Green
         Write-Host "========================================" -ForegroundColor Green
         return $true
         
