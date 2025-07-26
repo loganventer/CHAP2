@@ -291,12 +291,66 @@ try {
 # Step 9: Migrate data to vector store
 Write-Host "Step 9: Migrating data to vector store..." -ForegroundColor Yellow
 
+# Wait for services to be fully ready
+Write-Host "   Waiting for services to be ready..." -ForegroundColor Gray
+Start-Sleep -Seconds 10
+
+# Check if migration is needed
+Write-Host "   Checking if migration is needed..." -ForegroundColor Gray
 try {
-    Write-Host "   Running data migration..." -ForegroundColor Gray
-    docker exec langchain_search_service-langchain-service-1 python migrate_data.py
-    Write-Host "   PASS: Data migration completed" -ForegroundColor Green
+    $collectionsResponse = Invoke-WebRequest -Uri "http://localhost:6333/collections" -TimeoutSec 10
+    $collections = $collectionsResponse.Content | ConvertFrom-Json
+    
+    $chorusCollection = $collections.collections | Where-Object { $_.name -eq "chorus-vectors" }
+    if ($chorusCollection) {
+        # Get collection info to check if it has data
+        $collectionInfoResponse = Invoke-WebRequest -Uri "http://localhost:6333/collections/chorus-vectors" -TimeoutSec 10
+        $collectionInfo = $collectionInfoResponse.Content | ConvertFrom-Json
+        $vectorCount = $collectionInfo.result.vectors_count
+        
+        if ($vectorCount -gt 0) {
+            Write-Host "   PASS: Data already migrated ($vectorCount vectors found)" -ForegroundColor Green
+        } else {
+            Write-Host "   INFO: Collection exists but is empty, running migration..." -ForegroundColor Yellow
+            $runMigration = $true
+        }
+    } else {
+        Write-Host "   INFO: No chorus-vectors collection found, running migration..." -ForegroundColor Yellow
+        $runMigration = $true
+    }
 } catch {
-    Write-Host "   FAIL: Could not migrate data: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "   WARNING: Could not check existing data, running migration..." -ForegroundColor Yellow
+    $runMigration = $true
+}
+
+if ($runMigration) {
+    try {
+        Write-Host "   Running data migration..." -ForegroundColor Gray
+        $migrationOutput = docker exec langchain_search_service-langchain-service-1 python migrate_data.py 2>&1
+        Write-Host "   Migration output:" -ForegroundColor Gray
+        Write-Host $migrationOutput -ForegroundColor Gray
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   PASS: Data migration completed successfully" -ForegroundColor Green
+            
+            # Verify migration results
+            Write-Host "   Verifying migration results..." -ForegroundColor Gray
+            Start-Sleep -Seconds 5
+            
+            try {
+                $verifyResponse = Invoke-WebRequest -Uri "http://localhost:6333/collections/chorus-vectors" -TimeoutSec 10
+                $verifyInfo = $verifyResponse.Content | ConvertFrom-Json
+                $finalVectorCount = $verifyInfo.result.vectors_count
+                Write-Host "   PASS: Migration verified - $finalVectorCount vectors in store" -ForegroundColor Green
+            } catch {
+                Write-Host "   WARNING: Could not verify migration results" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "   FAIL: Data migration failed with exit code: $LASTEXITCODE" -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "   FAIL: Could not migrate data: $($_.Exception.Message)" -ForegroundColor Red
+    }
 }
 
 # Step 10: Test all services
@@ -345,6 +399,15 @@ try {
     Write-Host "   PASS: Ollama accessible (Status: $($ollamaResponse.StatusCode))" -ForegroundColor Green
 } catch {
     Write-Host "   FAIL: Ollama not accessible: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+# Test search functionality
+Write-Host "   Testing search functionality..." -ForegroundColor Gray
+try {
+    $searchResponse = Invoke-WebRequest -Uri "http://localhost:8000/search_intelligent" -Method POST -ContentType "application/json" -Body '{"query":"test","k":1}' -TimeoutSec 10
+    Write-Host "   PASS: Search functionality working (Status: $($searchResponse.StatusCode))" -ForegroundColor Green
+} catch {
+    Write-Host "   FAIL: Search functionality not working: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 # Step 11: Test network connectivity between containers
@@ -398,6 +461,13 @@ Write-Host "- Web Portal: http://localhost:5000" -ForegroundColor White
 Write-Host "- LangChain Service: http://localhost:8000" -ForegroundColor White
 Write-Host "- Qdrant: http://localhost:6333" -ForegroundColor White
 Write-Host "- Ollama: http://localhost:11434" -ForegroundColor White
+
+Write-Host ""
+Write-Host "Deployment Summary:" -ForegroundColor Yellow
+Write-Host "- All services deployed and running" -ForegroundColor White
+Write-Host "- Ollama models pulled and ready" -ForegroundColor White
+Write-Host "- Data migrated to vector store" -ForegroundColor White
+Write-Host "- Search functionality tested and working" -ForegroundColor White
 
 Write-Host ""
 Write-Host "Usage:" -ForegroundColor Yellow

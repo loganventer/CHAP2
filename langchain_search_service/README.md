@@ -31,7 +31,19 @@ A comprehensive search service for CHAP2 using LangChain, Qdrant vector database
    .\start-windows-gpu-detection.ps1
    ```
 
-3. **Access Services**:
+3. **Data Migration**:
+   The deployment script automatically:
+   - Checks if data migration is needed
+   - Migrates chorus data to the vector store
+   - Verifies migration success
+   - Tests search functionality
+   
+   For manual migration troubleshooting:
+   ```powershell
+   .\migrate-data.ps1
+   ```
+
+4. **Access Services**:
    - Web Portal: http://localhost:5000
    - CHAP2 API: http://localhost:5001/api
    - LangChain Service: http://localhost:8000
@@ -48,6 +60,18 @@ A comprehensive search service for CHAP2 using LangChain, Qdrant vector database
    ```bash
    ./start.sh
    ```
+
+## Deployment Process
+
+The deployment script performs these steps automatically:
+
+1. **Prerequisites Check**: Docker, PowerShell, GPU detection
+2. **Configuration Fix**: Updates API routes and settings
+3. **Container Management**: Stops, rebuilds, and starts all services
+4. **Model Setup**: Pulls required Ollama models (nomic-embed-text, mistral)
+5. **Data Migration**: Migrates chorus data to vector store with verification
+6. **Service Testing**: Tests all endpoints and connectivity
+7. **Search Validation**: Verifies search functionality works
 
 ## Architecture
 
@@ -111,12 +135,17 @@ If no GPU is detected, the system runs in CPU mode with full functionality.
    docker-compose logs -f
    ```
 
-3. **GPU not detected**:
+3. **No search results**:
+   - Check if data migration completed successfully
+   - Run manual migration: `.\migrate-data.ps1`
+   - Verify vector store has data: `curl http://localhost:6333/collections/chorus-vectors`
+
+4. **GPU not detected**:
    - Ensure NVIDIA drivers are installed
    - Install NVIDIA Container Toolkit
    - Restart Docker Desktop
 
-4. **Port conflicts**:
+5. **Port conflicts**:
    - Check if ports 5000, 5001, 8000, 6333, 11434 are in use
    - Stop conflicting services
 
