@@ -181,11 +181,34 @@ function Install-NvidiaContainerToolkit {
         
         $ubuntuLines = $allLines | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" }
         Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
+        if ($ubuntuLines.Count -gt 0) {
+            Write-Host "   Ubuntu distributions found:" -ForegroundColor Gray
+            foreach ($line in $ubuntuLines) {
+                Write-Host "     $line" -ForegroundColor Gray
+            }
+        }
         
         if ($ubuntuLines.Count -gt 0) {
             Write-Host "Ubuntu distribution found" -ForegroundColor Green
-            $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
-            Write-Host "Using distribution: $ubuntuDistro" -ForegroundColor Green
+            
+            # If multiple Ubuntu distributions, choose the best one
+            if ($ubuntuLines.Count -gt 1) {
+                Write-Host "   Multiple Ubuntu distributions found. Selecting the best one..." -ForegroundColor Yellow
+                
+                # Look for a running Ubuntu first, then any Ubuntu
+                $runningUbuntu = $ubuntuLines | Where-Object { $_ -match "Running" }
+                if ($runningUbuntu.Count -gt 0) {
+                    $ubuntuDistro = ($runningUbuntu[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
+                    Write-Host "   Selected running distribution: $ubuntuDistro" -ForegroundColor Green
+                } else {
+                    # Choose the first stopped Ubuntu
+                    $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
+                    Write-Host "   Selected stopped distribution: $ubuntuDistro" -ForegroundColor Green
+                }
+            } else {
+                $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
+                Write-Host "Using distribution: $ubuntuDistro" -ForegroundColor Green
+            }
             
             # Check if the distribution is using WSL2
             $distroVersion = ($distributions -split "`n" | Where-Object { $_ -match $ubuntuDistro } | Select-Object -First 1) -split "\s+" | Select-Object -Skip 2 -First 1
