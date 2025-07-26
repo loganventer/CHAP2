@@ -545,33 +545,21 @@ try {
         Configure-DockerDesktopGPU
         
         # Check and install Container Toolkit if needed
-        Write-Host ""
-        Write-Host "DEBUG: Checking Container Toolkit status..." -ForegroundColor Magenta
-        Write-Host "DEBUG: containerGPU = $containerGPU" -ForegroundColor Magenta
-        
         if (-not $containerGPU) {
             Write-Host "NVIDIA Container Toolkit not detected" -ForegroundColor Yellow
-            Write-Host "DEBUG: About to prompt for Container Toolkit installation..." -ForegroundColor Magenta
             
             if (Prompt-Installation -Component "NVIDIA Container Toolkit" -Description "Required for GPU acceleration in Docker" -ManualUrl "https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html") {
-                Write-Host "DEBUG: User agreed to install Container Toolkit, starting installation..." -ForegroundColor Magenta
                 if (Install-NvidiaContainerToolkit) {
                     Write-Host "Restarting Docker Desktop to apply changes..." -ForegroundColor Yellow
                     # Note: Docker Desktop restart would require user intervention
                     Write-Host "Please restart Docker Desktop manually and run this script again" -ForegroundColor Yellow
                     exit 0
                 }
-            } else {
-                Write-Host "DEBUG: User declined Container Toolkit installation" -ForegroundColor Magenta
             }
-        } else {
-            Write-Host "DEBUG: Container Toolkit already available, skipping installation" -ForegroundColor Magenta
         }
         
         # Re-check Container Toolkit after potential installation
-        Write-Host "DEBUG: Re-checking Container Toolkit after potential installation..." -ForegroundColor Magenta
         $containerGPU = Test-NvidiaContainerToolkit
-        Write-Host "DEBUG: Final containerGPU status = $containerGPU" -ForegroundColor Magenta
     }
     
     # Create configuration
