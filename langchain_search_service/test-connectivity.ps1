@@ -51,38 +51,38 @@ Write-Host "2. Testing internal container connectivity:" -ForegroundColor Yellow
 
 Write-Host "   Testing LangChain Service -> Qdrant..." -ForegroundColor Gray
 try {
-    $internalQdrant = docker exec langchain_search_service-langchain-service-1 curl -s http://qdrant:6333/collections
+    $internalQdrant = docker exec langchain_search_service-langchain-service-1 curl -s http://qdrant:6333/collections 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "   ✓ LangChain can reach Qdrant" -ForegroundColor Green
     } else {
-        Write-Host "   ✗ LangChain cannot reach Qdrant" -ForegroundColor Red
+        Write-Host "   ✗ LangChain cannot reach Qdrant (Exit code: $LASTEXITCODE)" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   ✗ Cannot test internal connectivity" -ForegroundColor Red
+    Write-Host "   ✗ Cannot test internal connectivity: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Write-Host "   Testing LangChain Service -> Ollama..." -ForegroundColor Gray
 try {
-    $internalOllama = docker exec langchain_search_service-langchain-service-1 curl -s http://ollama:11434/api/tags
+    $internalOllama = docker exec langchain_search_service-langchain-service-1 curl -s http://ollama:11434/api/tags 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "   ✓ LangChain can reach Ollama" -ForegroundColor Green
     } else {
-        Write-Host "   ✗ LangChain cannot reach Ollama" -ForegroundColor Red
+        Write-Host "   ✗ LangChain cannot reach Ollama (Exit code: $LASTEXITCODE)" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   ✗ Cannot test internal connectivity" -ForegroundColor Red
+    Write-Host "   ✗ Cannot test internal connectivity: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Write-Host "   Testing Web Portal -> LangChain Service..." -ForegroundColor Gray
 try {
-    $internalLangchain = docker exec langchain_search_service-chap2-webportal-1 curl -s http://langchain-service:8000/health
+    $internalLangchain = docker exec langchain_search_service-chap2-webportal-1 curl -s http://langchain-service:8000/health 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "   ✓ Web Portal can reach LangChain Service" -ForegroundColor Green
     } else {
-        Write-Host "   ✗ Web Portal cannot reach LangChain Service" -ForegroundColor Red
+        Write-Host "   ✗ Web Portal cannot reach LangChain Service (Exit code: $LASTEXITCODE)" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   ✗ Cannot test internal connectivity" -ForegroundColor Red
+    Write-Host "   ✗ Cannot test internal connectivity: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 # Test search functionality
