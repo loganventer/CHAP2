@@ -1,308 +1,196 @@
 # CHAP2 LangChain Search Service
 
-A Python-based search service using LangChain with Ollama and Qdrant for intelligent chorus search with RAG (Retrieval Augmented Generation), caching, and streaming support.
+A comprehensive search service for CHAP2 using LangChain, Qdrant vector database, and Ollama for local LLM capabilities.
 
 ## Features
 
+- **Vector Search**: Using Qdrant for similarity search
+- **Local LLM**: Ollama with Mistral model for AI-powered search
 - **RAG (Retrieval Augmented Generation)**: Combines vector search with LLM analysis
-- **GPU Acceleration**: Supports NVIDIA GPUs for faster inference
-- **Memory Caching**: In-memory cache for improved performance
-- **Streaming Support**: Real-time streaming responses
+- **Memory Cache**: In-memory caching for faster responses
+- **Chaining**: LangChain chains for complex search flows
 - **System Prompts**: Structured prompts for consistent LLM output
-- **Chaining**: Complex search workflows with LangChain chains
-- **Hybrid Search**: Combines dense and sparse vector search
-
-## Prerequisites
-
-### For CPU-only deployment:
-- Docker Desktop
-- Docker Compose
-
-### For GPU-accelerated deployment (Windows):
-- Docker Desktop with WSL 2 backend
-- NVIDIA GPU with CUDA support
-- NVIDIA Container Toolkit
-- NVIDIA GPU drivers
+- **Containerized**: Full Docker deployment with GPU support
 
 ## Quick Start
 
-### CPU Deployment (All Platforms)
+### Windows Deployment
 
-```bash
-# Clone and navigate to the service directory
-cd langchain_search_service
+1. **Prerequisites**:
+   - Docker Desktop installed and running
+   - PowerShell 5.1 or later
+   - NVIDIA GPU (optional, for GPU acceleration)
 
-# Start services
-./start.sh  # Linux/macOS
-# OR
-start-windows-gpu.bat  # Windows (CPU mode)
-# OR
-powershell -ExecutionPolicy Bypass -File start-windows-gpu.ps1  # Windows PowerShell
-```
-
-### GPU Deployment (Windows with NVIDIA)
-
-1. **Install NVIDIA Container Toolkit**:
-   - Download from: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
-   - Follow the Windows installation instructions
-
-2. **Configure Docker Desktop**:
-   - Enable "Use the WSL 2 based engine" in Docker Desktop settings
-   - Enable "Use GPU acceleration" in Docker Desktop settings
-   - Restart Docker Desktop
-
-3. **Start with GPU support**:
+2. **Deploy**:
    ```cmd
-   # Command Prompt
-   start-windows-gpu.bat
-   
-   # OR PowerShell
-   powershell -ExecutionPolicy Bypass -File start-windows-gpu.ps1
+   start-windows-gpu-detection.bat
    ```
 
-## Service Architecture
+   Or with PowerShell directly:
+   ```powershell
+   .\start-windows-gpu-detection.ps1
+   ```
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web Portal    │    │  LangChain      │    │     Ollama      │
-│   (.NET)        │◄──►│   Service       │◄──►│   (LLM +        │
-│                 │    │   (Python)      │    │   Embeddings)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                       ┌─────────────────┐
-                       │     Qdrant      │
-                       │  (Vector Store) │
-                       └─────────────────┘
-```
+3. **Access Services**:
+   - Web Portal: http://localhost:5000
+   - CHAP2 API: http://localhost:5001/api
+   - LangChain Service: http://localhost:8000
+   - Qdrant: http://localhost:6333
+   - Ollama: http://localhost:11434
 
-## API Endpoints
+### Linux/macOS Deployment
 
-### Basic Search
-```bash
-POST /search
-{
-  "query": "praise",
-  "k": 5
-}
-```
+1. **Prerequisites**:
+   - Docker and Docker Compose installed
+   - Make scripts executable: `chmod +x *.sh`
 
-### Intelligent Search (RAG)
-```bash
-POST /search_intelligent
-{
-  "query": "praise",
-  "k": 5,
-  "include_analysis": true
-}
-```
-
-### Streaming Intelligent Search
-```bash
-POST /search_intelligent_stream
-{
-  "query": "praise",
-  "k": 5
-}
-```
-
-### Add Documents
-```bash
-POST /add_documents
-[
-  {
-    "id": "chorus-1",
-    "text": "Praise Him, praise Him...",
-    "name": "Praise Him",
-    "key": 0,
-    "type": 0
-  }
-]
-```
-
-## Windows GPU Deployment
-
-### Prerequisites
-
-1. **Docker Desktop**: Install and enable Docker Desktop for Windows
-2. **NVIDIA GPU**: NVIDIA GPU with CUDA support (optional)
-3. **NVIDIA Drivers**: Latest NVIDIA drivers installed (if GPU available)
-4. **NVIDIA Container Toolkit**: Install NVIDIA Container Toolkit for Docker (if GPU available)
-
-### Installation Steps
-
-1. **Install NVIDIA Container Toolkit** (if you have an NVIDIA GPU):
+2. **Deploy**:
    ```bash
-   # Download and install from:
-   # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+   ./start.sh
    ```
 
-2. **Enable GPU Support in Docker Desktop** (if you have an NVIDIA GPU):
-   - Open Docker Desktop Settings
-   - Go to "Resources" → "WSL Integration" or "Advanced"
-   - Enable "Use the WSL 2 based engine"
-   - Enable "Use GPU acceleration" if available
+## Architecture
 
-### Deployment Scripts
+### Services
 
-#### Automatic GPU Detection & Installation (Recommended)
+- **Qdrant**: Vector database for similarity search
+- **Ollama**: Local LLM server with Mistral model
+- **LangChain Service**: Python FastAPI service for intelligent search
+- **CHAP2 API**: .NET API for chorus data management
+- **CHAP2 Web Portal**: .NET web application for user interface
 
-**Batch Script**:
-```cmd
-# Automatically detects GPU and installs requirements
-start-windows-gpu-detection.bat
-```
+### Data Flow
 
-**PowerShell Script** (More robust):
-```powershell
-# Automatically detects GPU and installs requirements
-.\start-windows-gpu-detection.ps1
-
-# Force CPU-only mode (ignores GPU detection)
-.\start-windows-gpu-detection.ps1 -ForceCPU
-
-# Auto-install all requirements without prompts
-.\start-windows-gpu-detection.ps1 -AutoInstall
-
-# Skip all prompts (use with -AutoInstall)
-.\start-windows-gpu-detection.ps1 -AutoInstall -SkipPrompts
-
-# Verbose mode for debugging
-.\start-windows-gpu-detection.ps1 -Verbose
-```
-
-#### Manual GPU Deployment (Legacy)
-
-**Batch Script**:
-```cmd
-# Manual GPU deployment (requires NVIDIA Container Toolkit)
-start-windows-gpu.bat
-```
-
-**PowerShell Script**:
-```powershell
-# Manual GPU deployment (requires NVIDIA Container Toolkit)
-.\start-windows-gpu.ps1
-```
-
-### GPU Detection & Installation Features
-
-The automatic detection scripts will:
-
-1. **Check Docker Desktop**: Verify Docker is running
-2. **Detect NVIDIA GPU**: Use `nvidia-smi` to check for GPU
-3. **Check NVIDIA Drivers**: Verify drivers are installed
-4. **Install NVIDIA Container Toolkit**: Auto-download and install if missing
-5. **Configure Docker Desktop**: Enable GPU acceleration and WSL 2
-6. **Create Configuration**: Generate appropriate `docker-compose.gpu.yml`
-7. **Deploy Services**: Start with optimal configuration
-8. **Verify Status**: Check all services are running
-
-### Automatic Installation Features
-
-- **NVIDIA Drivers**: Detects missing drivers and provides installation links
-- **NVIDIA Container Toolkit**: Auto-downloads and installs the latest version
-- **Docker Desktop Configuration**: Automatically enables GPU acceleration and WSL 2
-- **Administrator Privileges**: Handles permission requirements for installations
-- **User Prompts**: Interactive prompts for installation decisions (can be skipped with `-AutoInstall`)
-
-### Deployment Modes
-
-- **GPU-Accelerated**: Full GPU support with NVIDIA Container Toolkit
-- **GPU-Detected**: GPU available but Container Toolkit missing (runs on CPU)
-- **CPU-Only**: No GPU detected or forced CPU mode
-- **Forced CPU**: Manual override to ignore GPU detection
+1. User submits search query via Web Portal
+2. Web Portal calls LangChain Service
+3. LangChain Service queries Qdrant vector store
+4. LangChain Service uses Ollama LLM for analysis
+5. Results returned to Web Portal for display
 
 ## Configuration
 
+### API Routes
+
+All CHAP2 API endpoints are prefixed with `/api`:
+- `/api/health/ping` - Health check
+- `/api/choruses` - Get all choruses
+- `/api/choruses/search` - Search choruses
+- `/api/choruses/{id}` - Get specific chorus
+
 ### Environment Variables
 
-- `OLLAMA_URL`: Ollama service URL (default: `http://localhost:11434`)
-- `QDRANT_URL`: Qdrant service URL (default: `http://localhost:6333`)
+- `OLLAMA_URL`: Ollama service URL (default: http://localhost:11434)
+- `QDRANT_URL`: Qdrant service URL (default: http://localhost:6333)
+- `ASPNETCORE_ENVIRONMENT`: .NET environment (Development/Production)
 
-### GPU Configuration
+## GPU Support
 
-The Ollama container can be configured to use all available NVIDIA GPUs:
+### NVIDIA GPU
 
-```yaml
-deploy:
-  resources:
-    reservations:
-      devices:
-        - driver: nvidia
-          count: all
-          capabilities: [gpu]
-```
+The deployment script automatically detects NVIDIA GPUs and configures GPU support:
 
-## Performance Benefits
+1. **Detection**: Uses `nvidia-smi` to detect GPU
+2. **Container Toolkit**: Tests NVIDIA Container Toolkit
+3. **GPU Deployment**: Uses GPU-enabled Docker Compose files
 
-### GPU Acceleration
-- **Embeddings**: 5-10x faster with GPU
-- **LLM Inference**: 3-5x faster with GPU
-- **Batch Processing**: Significant speedup for multiple queries
+### CPU Fallback
 
-### Caching
-- **Memory Cache**: Instant responses for repeated queries
-- **Vector Cache**: Cached similarity search results
-- **LLM Cache**: Cached AI analysis responses
+If no GPU is detected, the system runs in CPU mode with full functionality.
 
 ## Troubleshooting
 
-### GPU Issues
-1. **Check NVIDIA drivers**: `nvidia-smi`
-2. **Verify Container Toolkit**: `docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi`
-3. **Docker Desktop settings**: Enable WSL 2 and GPU acceleration
+### Common Issues
 
-### Service Issues
-1. **Check logs**: `docker-compose logs -f`
-2. **Restart services**: `docker-compose restart`
-3. **Rebuild**: `docker-compose build --no-cache`
-
-### Model Issues
-1. **Pull models manually**:
-   ```bash
-   docker exec langchain_search_service-ollama-1 ollama pull nomic-embed-text
-   docker exec langchain_search_service-ollama-1 ollama pull mistral
+1. **Services not accessible**:
+   ```powershell
+   docker-compose restart
    ```
 
-## Development
+2. **Search not working**:
+   ```powershell
+   docker-compose logs -f
+   ```
 
-### Local Development
+3. **GPU not detected**:
+   - Ensure NVIDIA drivers are installed
+   - Install NVIDIA Container Toolkit
+   - Restart Docker Desktop
+
+4. **Port conflicts**:
+   - Check if ports 5000, 5001, 8000, 6333, 11434 are in use
+   - Stop conflicting services
+
+### Logs
+
+View service logs:
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# All services
+docker-compose logs -f
 
-# Run locally
-python main.py
+# Specific service
+docker-compose logs -f langchain-service
+docker-compose logs -f chap2-api
+docker-compose logs -f chap2-webportal
 ```
 
-### Testing
-```bash
-# Test the service
-curl -X POST http://localhost:8000/search_intelligent \
-  -H "Content-Type: application/json" \
-  -d '{"query": "praise", "k": 2}'
-```
+### Manual Commands
 
-## Monitoring
-
-### Health Check
 ```bash
+# Stop all services
+docker-compose down
+
+# Rebuild containers
+docker-compose build --no-cache
+
+# Start services
+docker-compose up -d
+
+# Check container status
+docker ps
+
+# Test API endpoints
+curl http://localhost:5001/api/health/ping
 curl http://localhost:8000/health
 ```
 
-### GPU Usage
+## Development
+
+### Adding New Features
+
+1. **LangChain Service**: Modify `main.py` for search logic
+2. **CHAP2 API**: Add controllers in `CHAP2.Chorus.Api/Controllers/`
+3. **Web Portal**: Add views in `CHAP2.UI/CHAP2.WebPortal/Views/`
+
+### Testing
+
 ```bash
-# Check GPU usage in Ollama container
-docker exec langchain_search_service-ollama-1 nvidia-smi
+# Test API endpoints
+curl http://localhost:5001/api/choruses
+
+# Test search
+curl -X POST http://localhost:8000/search_intelligent \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test search"}'
 ```
 
-### Service Logs
-```bash
-# View all logs
-docker-compose logs -f
+## File Structure
 
-# View specific service logs
-docker-compose logs -f langchain-service
-docker-compose logs -f ollama
-``` 
+```
+langchain_search_service/
+├── main.py                          # LangChain FastAPI service
+├── migrate_data.py                  # Data migration script
+├── requirements.txt                 # Python dependencies
+├── Dockerfile                      # LangChain service container
+├── docker-compose.yml              # Main deployment
+├── docker-compose.gpu.yml          # GPU deployment
+├── docker-compose.gpu-direct.yml   # Direct GPU deployment
+├── start-windows-gpu-detection.ps1 # Windows deployment script
+├── start-windows-gpu-detection.bat # Windows batch wrapper
+├── start.sh                        # Linux/macOS deployment
+├── fix-api-routes.ps1              # API route fixes
+└── README.md                       # This file
+```
+
+## License
+
+This project is part of the CHAP2 system for chorus management and search. 
