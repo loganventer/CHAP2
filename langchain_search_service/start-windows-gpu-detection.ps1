@@ -126,84 +126,175 @@ function Test-NvidiaContainerToolkit {
 
 # Function to install NVIDIA Container Toolkit
 function Install-NvidiaContainerToolkit {
-    Write-Host "Installing NVIDIA Container Toolkit..." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "Installing NVIDIA Container Toolkit" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
     
     # Check if running as administrator
     if (-not (Test-Administrator)) {
-        Write-Host "ERROR: Administrator privileges required to install NVIDIA Container Toolkit" -ForegroundColor Red
-        Write-Host "Please run this script as Administrator" -ForegroundColor Red
+        Write-Host "❌ ERROR: Administrator privileges required" -ForegroundColor Red
+        Write-Host "   Please run this script as Administrator" -ForegroundColor Red
+        Write-Host "   Right-click the script and select 'Run as Administrator'" -ForegroundColor Gray
         return $false
     }
     
+    Write-Host "✓ Administrator privileges confirmed" -ForegroundColor Green
+    
     try {
-        # Download and install NVIDIA Container Toolkit
-        Write-Host "Downloading NVIDIA Container Toolkit installer..." -ForegroundColor Yellow
+        # Step 1: Download installer
+        Write-Host ""
+        Write-Host "Step 1: Downloading installer..." -ForegroundColor Yellow
+        Write-Host "   Source: NVIDIA Container Toolkit for Windows" -ForegroundColor Gray
+        Write-Host "   Size: ~50MB (may take a few minutes)" -ForegroundColor Gray
         
-        # Get the latest version from NVIDIA
         $downloadUrl = "https://nvidia.github.io/libnvidia-container/windows/nvidia-container-toolkit-windows-latest.exe"
         $installerPath = "$env:TEMP\nvidia-container-toolkit-installer.exe"
         
-        # Download installer
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing
+        # Show download progress
+        $progressPreference = 'Continue'
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing -ProgressAction {
+            $percent = $_.PercentComplete
+            Write-Progress -Activity "Downloading NVIDIA Container Toolkit" -Status "$percent% Complete" -PercentComplete $percent
+        }
         
         if (Test-Path $installerPath) {
-            Write-Host "Installing NVIDIA Container Toolkit..." -ForegroundColor Yellow
-            Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
-            
-            # Clean up installer
-            Remove-Item $installerPath -Force
-            
-            Write-Host "✓ NVIDIA Container Toolkit installed successfully" -ForegroundColor Green
-            return $true
+            $fileSize = (Get-Item $installerPath).Length / 1MB
+            Write-Host "✓ Download completed ($([math]::Round($fileSize, 1)) MB)" -ForegroundColor Green
         } else {
-            Write-Host "ERROR: Failed to download NVIDIA Container Toolkit installer" -ForegroundColor Red
+            Write-Host "❌ Download failed" -ForegroundColor Red
             return $false
         }
+        
+        # Step 2: Install
+        Write-Host ""
+        Write-Host "Step 2: Installing NVIDIA Container Toolkit..." -ForegroundColor Yellow
+        Write-Host "   This may take 1-2 minutes" -ForegroundColor Gray
+        Write-Host "   Please wait for installation to complete..." -ForegroundColor Gray
+        
+        $startTime = Get-Date
+        $process = Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait -PassThru
+        
+        $duration = (Get-Date) - $startTime
+        Write-Host "✓ Installation completed in $($duration.TotalSeconds.ToString('F1')) seconds" -ForegroundColor Green
+        
+        # Step 3: Cleanup
+        Write-Host ""
+        Write-Host "Step 3: Cleaning up..." -ForegroundColor Yellow
+        Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+        Write-Host "✓ Temporary files cleaned up" -ForegroundColor Green
+        
+        # Step 4: Verify installation
+        Write-Host ""
+        Write-Host "Step 4: Verifying installation..." -ForegroundColor Yellow
+        
+        # Wait a moment for installation to settle
+        Start-Sleep -Seconds 3
+        
+        # Test if the installation was successful
+        $testResult = Test-NvidiaContainerToolkit
+        if ($testResult) {
+            Write-Host "✓ NVIDIA Container Toolkit verified successfully" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "========================================" -ForegroundColor Green
+            Write-Host "Installation Complete!" -ForegroundColor Green
+            Write-Host "========================================" -ForegroundColor Green
+            Write-Host "NVIDIA Container Toolkit is now ready for use" -ForegroundColor White
+            return $true
+        } else {
+            Write-Host "⚠ Installation may need Docker Desktop restart" -ForegroundColor Yellow
+            Write-Host "   Please restart Docker Desktop and run this script again" -ForegroundColor Yellow
+            return $false
+        }
+        
     } catch {
-        Write-Host "ERROR: Failed to install NVIDIA Container Toolkit" -ForegroundColor Red
-        Write-Host "Please install manually from: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "❌ ERROR: Installation failed" -ForegroundColor Red
+        Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Manual installation required:" -ForegroundColor Yellow
+        Write-Host "1. Visit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" -ForegroundColor Gray
+        Write-Host "2. Download and install NVIDIA Container Toolkit for Windows" -ForegroundColor Gray
+        Write-Host "3. Restart Docker Desktop" -ForegroundColor Gray
+        Write-Host "4. Run this script again" -ForegroundColor Gray
         return $false
     }
 }
 
 # Function to configure Docker Desktop for GPU
 function Configure-DockerDesktopGPU {
-    Write-Host "Configuring Docker Desktop for GPU support..." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "Configuring Docker Desktop for GPU" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
     
     try {
         # Check if Docker Desktop settings can be configured
         $dockerSettingsPath = "$env:APPDATA\Docker\settings.json"
         
         if (Test-Path $dockerSettingsPath) {
+            Write-Host "✓ Docker Desktop settings file found" -ForegroundColor Green
             $settings = Get-Content $dockerSettingsPath | ConvertFrom-Json
+            $modified = $false
             
-            # Enable GPU acceleration if not already enabled
+            # Check and enable GPU acceleration
+            Write-Host ""
+            Write-Host "Checking GPU acceleration setting..." -ForegroundColor Yellow
             if (-not $settings.gpuAcceleration) {
                 $settings.gpuAcceleration = $true
-                $settings | ConvertTo-Json -Depth 10 | Set-Content $dockerSettingsPath
+                $modified = $true
                 Write-Host "✓ GPU acceleration enabled in Docker Desktop" -ForegroundColor Green
             } else {
                 Write-Host "✓ GPU acceleration already enabled in Docker Desktop" -ForegroundColor Green
             }
             
-            # Enable WSL 2 if not already enabled
+            # Check and enable WSL 2 engine
+            Write-Host "Checking WSL 2 engine setting..." -ForegroundColor Yellow
             if (-not $settings.useWsl2Engine) {
                 $settings.useWsl2Engine = $true
-                $settings | ConvertTo-Json -Depth 10 | Set-Content $dockerSettingsPath
+                $modified = $true
                 Write-Host "✓ WSL 2 engine enabled in Docker Desktop" -ForegroundColor Green
             } else {
                 Write-Host "✓ WSL 2 engine already enabled in Docker Desktop" -ForegroundColor Green
             }
             
+            # Save changes if modified
+            if ($modified) {
+                Write-Host ""
+                Write-Host "Saving Docker Desktop configuration..." -ForegroundColor Yellow
+                $settings | ConvertTo-Json -Depth 10 | Set-Content $dockerSettingsPath
+                Write-Host "✓ Docker Desktop configuration updated" -ForegroundColor Green
+                Write-Host ""
+                Write-Host "⚠ IMPORTANT: Docker Desktop restart required" -ForegroundColor Yellow
+                Write-Host "   Please restart Docker Desktop to apply GPU settings" -ForegroundColor Yellow
+                Write-Host "   You can do this from the Docker Desktop system tray icon" -ForegroundColor Gray
+            } else {
+                Write-Host ""
+                Write-Host "✓ Docker Desktop already configured for GPU support" -ForegroundColor Green
+            }
+            
             return $true
         } else {
-            Write-Host "⚠ Docker Desktop settings file not found" -ForegroundColor Yellow
-            Write-Host "Please manually enable GPU acceleration in Docker Desktop settings" -ForegroundColor Yellow
+            Write-Host "❌ Docker Desktop settings file not found" -ForegroundColor Red
+            Write-Host "   This usually means Docker Desktop is not installed or not running" -ForegroundColor Gray
+            Write-Host ""
+            Write-Host "Manual configuration required:" -ForegroundColor Yellow
+            Write-Host "1. Open Docker Desktop" -ForegroundColor Gray
+            Write-Host "2. Go to Settings > General" -ForegroundColor Gray
+            Write-Host "3. Enable 'Use the WSL 2 based engine'" -ForegroundColor Gray
+            Write-Host "4. Go to Settings > Resources > WSL Integration" -ForegroundColor Gray
+            Write-Host "5. Enable GPU acceleration" -ForegroundColor Gray
             return $false
         }
     } catch {
-        Write-Host "⚠ Failed to configure Docker Desktop automatically" -ForegroundColor Yellow
-        Write-Host "Please manually enable GPU acceleration in Docker Desktop settings" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "❌ ERROR: Failed to configure Docker Desktop" -ForegroundColor Red
+        Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Manual configuration required:" -ForegroundColor Yellow
+        Write-Host "1. Open Docker Desktop Settings" -ForegroundColor Gray
+        Write-Host "2. Enable WSL 2 engine and GPU acceleration" -ForegroundColor Gray
+        Write-Host "3. Restart Docker Desktop" -ForegroundColor Gray
         return $false
     }
 }
@@ -217,6 +308,8 @@ function Prompt-Installation {
     )
     
     if ($AutoInstall -or $SkipPrompts) {
+        Write-Host ""
+        Write-Host "Auto-install mode enabled - proceeding with installation" -ForegroundColor Green
         return $true
     }
     
@@ -224,6 +317,13 @@ function Prompt-Installation {
     Write-Host "========================================" -ForegroundColor Yellow
     Write-Host "Installation Required" -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Component: $Component" -ForegroundColor Cyan
+    Write-Host "Purpose: $Description" -ForegroundColor White
+    Write-Host ""
+    Write-Host "This component is required for GPU acceleration." -ForegroundColor Gray
+    Write-Host "Without it, Ollama will run on CPU (slower performance)." -ForegroundColor Gray
+    Write-Host ""
     Write-Host "Component: $Component" -ForegroundColor White
     Write-Host "Description: $Description" -ForegroundColor Gray
     Write-Host ""
