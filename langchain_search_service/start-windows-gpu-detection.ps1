@@ -2,7 +2,8 @@
 
 param(
     [switch]$SkipGpuCheck,
-    [switch]$ForceRebuild
+    [switch]$ForceRebuild,
+    [switch]$ForceGpu
 )
 
 Write-Host "========================================" -ForegroundColor Green
@@ -71,9 +72,20 @@ if (-not $SkipGpuCheck) {
         Write-Host "   INFO: nvidia-smi not available, will use CPU mode" -ForegroundColor Yellow
         $script:UseGpu = $false
     }
+    
+    # Force GPU if requested
+    if ($ForceGpu) {
+        Write-Host "   FORCE: GPU mode enabled by user request" -ForegroundColor Yellow
+        $script:UseGpu = $true
+    }
 } else {
     Write-Host "Step 2: Skipping GPU detection (SkipGpuCheck specified)" -ForegroundColor Yellow
-    $script:UseGpu = $false
+    if ($ForceGpu) {
+        Write-Host "   FORCE: GPU mode enabled by user request" -ForegroundColor Yellow
+        $script:UseGpu = $true
+    } else {
+        $script:UseGpu = $false
+    }
 }
 
 # Step 3: Fix API Routes Configuration
