@@ -153,13 +153,31 @@ function Install-NvidiaContainerToolkit {
         Write-Host ""
         Write-Host "Step 2: Checking Ubuntu distribution..." -ForegroundColor Yellow
         $distributions = wsl --list --verbose 2>$null
-        if ($distributions -notmatch "Ubuntu") {
-            Write-Host "Ubuntu distribution not found. Installing Ubuntu..." -ForegroundColor Yellow
-            wsl --install -d Ubuntu
-            Write-Host "   Ubuntu installation started. Please complete the setup and run this script again." -ForegroundColor Yellow
-            return $false
-        } else {
+        Write-Host "Available WSL distributions:" -ForegroundColor Gray
+        Write-Host $distributions -ForegroundColor Gray
+        
+        # Check for any Ubuntu-like distribution (Ubuntu, Ubuntu-20.04, Ubuntu-22.04, etc.)
+        if ($distributions -match "Ubuntu") {
             Write-Host "Ubuntu distribution found" -ForegroundColor Green
+            $ubuntuDistro = ($distributions -split "`n" | Where-Object { $_ -match "Ubuntu" } | Select-Object -First 1) -split "\s+" | Select-Object -First 1
+            Write-Host "Using distribution: $ubuntuDistro" -ForegroundColor Green
+        } else {
+            Write-Host "Ubuntu distribution not found. Installing Ubuntu..." -ForegroundColor Yellow
+            Write-Host "   This will install the latest Ubuntu version" -ForegroundColor Gray
+            
+            # Try to install Ubuntu
+            $installResult = wsl --install -d Ubuntu 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "   Ubuntu installation started successfully" -ForegroundColor Green
+                Write-Host "   Please complete the Ubuntu setup (create username/password) and run this script again." -ForegroundColor Yellow
+            } else {
+                Write-Host "   Ubuntu installation failed: $installResult" -ForegroundColor Red
+                Write-Host "   Manual installation required:" -ForegroundColor Yellow
+                Write-Host "   1. Open PowerShell as Administrator" -ForegroundColor Gray
+                Write-Host "   2. Run: wsl --install -d Ubuntu" -ForegroundColor Gray
+                Write-Host "   3. Complete Ubuntu setup and run this script again" -ForegroundColor Gray
+            }
+            return $false
         }
         
         # Step 3: Install NVIDIA Container Toolkit in WSL2
@@ -179,7 +197,7 @@ function Install-NvidiaContainerToolkit {
         
         foreach ($command in $wslCommands) {
             Write-Host "   Running: $command" -ForegroundColor Gray
-            $result = wsl -d Ubuntu -e bash -c $command 2>&1
+            $result = wsl -d $ubuntuDistro -e bash -c $command 2>&1
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "   Command failed: $result" -ForegroundColor Red
                 Write-Host "   Manual installation required in WSL2" -ForegroundColor Yellow
