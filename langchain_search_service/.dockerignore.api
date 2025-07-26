@@ -1,0 +1,71 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore*
+
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+
+# IDE files
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Node modules (if any)
+node_modules/
+
+# Test files
+**/test-*/
+**/*.test.*
+**/*.spec.*
+
+# Documentation
+README.md
+*.md
+
+# Data files (will be mounted as volumes)
+**/data/
+**/chorus/
+
+# Console applications (not needed for API)
+**/Console/
+**/Console.Common/
+**/Console.Bulk/
+**/Console.Prompt/
+**/Console.Vectorize/
+**/SearchConsole/
+
+# Other UI projects (not needed for API)
+**/UI/*/
+**/CHAP2.UI/
+
+# LangChain service files (not needed for API)
+langchain_search_service/
+*.py
+*.pyc
+__pycache__/
+requirements.txt
+
+# Infrastructure projects not needed for API
+**/CHAP2.AI.Infrastructure/
+**/CHAP2.External.Infrastructure/ 
