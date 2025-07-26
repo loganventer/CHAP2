@@ -179,8 +179,17 @@ function Install-NvidiaContainerToolkit {
                 Write-Host "   Distribution is using WSL2" -ForegroundColor Green
             } else {
                 Write-Host "   Converting distribution to WSL2..." -ForegroundColor Yellow
-                wsl --set-version $ubuntuDistro 2
-                Write-Host "   Distribution converted to WSL2" -ForegroundColor Green
+                Write-Host "   This may take a few minutes..." -ForegroundColor Gray
+                $convertResult = wsl --set-version $ubuntuDistro 2 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   Distribution converted to WSL2 successfully" -ForegroundColor Green
+                } else {
+                    Write-Host "   Failed to convert to WSL2: $convertResult" -ForegroundColor Red
+                    Write-Host "   Manual conversion required:" -ForegroundColor Yellow
+                    Write-Host "   1. Run: wsl --set-version $ubuntuDistro 2" -ForegroundColor Gray
+                    Write-Host "   2. Restart this script" -ForegroundColor Gray
+                    return $false
+                }
             }
             
             # Check if the distribution is running
@@ -223,6 +232,15 @@ function Install-NvidiaContainerToolkit {
         # Commands to run in WSL2 with better feedback
         Write-Host "   Installing NVIDIA Container Toolkit in WSL2..." -ForegroundColor Yellow
         Write-Host "   This may take several minutes..." -ForegroundColor Gray
+        
+        # Verify we're using WSL2 before installation
+        Write-Host "   Verifying WSL2 environment..." -ForegroundColor Cyan
+        $wslCheck = wsl -d $ubuntuDistro -e bash -c "uname -a" 2>&1
+        if ($wslCheck -match "Microsoft") {
+            Write-Host "   Confirmed: Running in WSL2 environment" -ForegroundColor Green
+        } else {
+            Write-Host "   Warning: May not be running in WSL2 environment" -ForegroundColor Yellow
+        }
         
         # Step 3.1: Add NVIDIA repository
         Write-Host "   Step 3.1: Adding NVIDIA repository..." -ForegroundColor Cyan
