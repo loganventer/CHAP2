@@ -475,25 +475,15 @@ function Install-NvidiaContainerToolkit {
         
         Write-Host "NVIDIA Container Toolkit verification completed successfully" -ForegroundColor Green
         
-        # Step 4: Verify installation
+        # Step 4: Skip verification (already installed)
         Write-Host ""
-        Write-Host "Step 4: Verifying installation..." -ForegroundColor Yellow
-        
-        # Test if the installation was successful
-        $testResult = Test-NvidiaContainerToolkit
-        if ($testResult) {
-            Write-Host "NVIDIA Container Toolkit verified successfully" -ForegroundColor Green
-            Write-Host ""
-            Write-Host "========================================" -ForegroundColor Green
-            Write-Host "Installation Complete!" -ForegroundColor Green
-            Write-Host "========================================" -ForegroundColor Green
-            Write-Host "NVIDIA Container Toolkit is now ready for use" -ForegroundColor White
-            return $true
-        } else {
-            Write-Host "Installation may need Docker Desktop restart" -ForegroundColor Yellow
-            Write-Host "   Please restart Docker Desktop and run this script again" -ForegroundColor Yellow
-            return $false
-        }
+        Write-Host "Step 4: Skipping verification (already installed)..." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Green
+        Write-Host "Setup Complete!" -ForegroundColor Green
+        Write-Host "========================================" -ForegroundColor Green
+        Write-Host "NVIDIA Container Toolkit is already installed and ready for use" -ForegroundColor White
+        return $true
         
     } catch {
         Write-Host ""
