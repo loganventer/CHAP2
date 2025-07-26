@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+
+# IDE files
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Node modules (if any)
+node_modules/
+
+# Test files
+**/test-*/
+**/*.test.*
+**/*.spec.*
+
+# Documentation
+README.md
+*.md
+
+# Data files (will be mounted as volumes)
+**/data/
+**/chorus/
+
+# Console applications (not needed for web portal)
+**/Console/
+**/Console.Common/
+**/Console.Bulk/
+**/Console.Prompt/
+**/Console.Vectorize/
+**/SearchConsole/
+
+# Other UI projects (if any)
+**/UI/*/
+!**/UI/CHAP2.WebPortal/
+
+# API project (not needed for web portal)
+**/CHAP2.Chorus.Api/
+
+# Infrastructure projects not needed
+**/CHAP2.AI.Infrastructure/
+**/CHAP2.External.Infrastructure/ 
