@@ -143,9 +143,8 @@ function Install-NvidiaContainerToolkit {
         
         Write-Host "   Starting download..." -ForegroundColor Yellow
         
-        # Show download progress with simpler approach
+        # Download the installer
         try {
-            $progressPreference = 'Continue'
             Write-Host "   Downloading installer..." -ForegroundColor Yellow
             Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing
             Write-Host "   Download completed!" -ForegroundColor Green
