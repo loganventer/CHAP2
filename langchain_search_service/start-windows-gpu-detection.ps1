@@ -579,4 +579,58 @@ Write-Host "Troubleshooting:" -ForegroundColor Yellow
 Write-Host "- If services are not accessible, try: docker-compose restart" -ForegroundColor White
 Write-Host "- If search doesn't work, check container logs" -ForegroundColor White
 Write-Host "- For GPU issues, restart Docker Desktop" -ForegroundColor White
-Write-Host "- For container issues, check: docker-compose logs [service-name]" -ForegroundColor White 
+Write-Host "- For container issues, check: docker-compose logs [service-name]" -ForegroundColor White
+
+# Step 12: Cleanup Docker resources
+Write-Host ""
+Write-Host "Step 12: Cleaning up Docker resources..." -ForegroundColor Yellow
+
+Write-Host "   Removing dangling images..." -ForegroundColor Gray
+try {
+    $danglingImages = docker images -f "dangling=true" -q
+    if ($danglingImages) {
+        docker rmi $danglingImages 2>$null
+        Write-Host "   PASS: Dangling images removed" -ForegroundColor Green
+    } else {
+        Write-Host "   INFO: No dangling images found" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "   WARNING: Could not remove dangling images" -ForegroundColor Yellow
+}
+
+Write-Host "   Removing unused images..." -ForegroundColor Gray
+try {
+    docker image prune -f 2>$null
+    Write-Host "   PASS: Unused images removed" -ForegroundColor Green
+} catch {
+    Write-Host "   WARNING: Could not remove unused images" -ForegroundColor Yellow
+}
+
+Write-Host "   Removing unused containers..." -ForegroundColor Gray
+try {
+    docker container prune -f 2>$null
+    Write-Host "   PASS: Unused containers removed" -ForegroundColor Green
+} catch {
+    Write-Host "   WARNING: Could not remove unused containers" -ForegroundColor Yellow
+}
+
+Write-Host "   Removing unused networks..." -ForegroundColor Gray
+try {
+    docker network prune -f 2>$null
+    Write-Host "   PASS: Unused networks removed" -ForegroundColor Green
+} catch {
+    Write-Host "   WARNING: Could not remove unused networks" -ForegroundColor Yellow
+}
+
+Write-Host "   Final disk usage:" -ForegroundColor Gray
+try {
+    $finalDiskUsage = docker system df
+    Write-Host $finalDiskUsage -ForegroundColor Gray
+} catch {
+    Write-Host "   WARNING: Could not get disk usage" -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "Deployment and cleanup completed!" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green 
