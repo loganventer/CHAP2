@@ -493,8 +493,7 @@ function Install-NvidiaContainerToolkit {
         Write-Host "Manual installation required:" -ForegroundColor Yellow
         Write-Host "1. Open WSL2 Ubuntu terminal" -ForegroundColor Gray
         Write-Host "2. Follow: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" -ForegroundColor Gray
-        Write-Host "3. Restart Docker Desktop" -ForegroundColor Gray
-        Write-Host "4. Run this script again" -ForegroundColor Gray
+        Write-Host "3. Run this script again" -ForegroundColor Gray
         return $false
     }
 }
@@ -543,9 +542,7 @@ function Configure-DockerDesktopGPU {
                 $settings | ConvertTo-Json -Depth 10 | Set-Content $dockerSettingsPath
                 Write-Host "Docker Desktop configuration updated" -ForegroundColor Green
                 Write-Host ""
-                Write-Host "IMPORTANT: Docker Desktop restart required" -ForegroundColor Yellow
-                Write-Host "   Please restart Docker Desktop to apply GPU settings" -ForegroundColor Yellow
-                Write-Host "   You can do this from the Docker Desktop system tray icon" -ForegroundColor Gray
+                Write-Host "Docker Desktop configuration completed" -ForegroundColor Green
             } else {
                 Write-Host ""
                 Write-Host "Docker Desktop already configured for GPU support" -ForegroundColor Green
@@ -572,7 +569,6 @@ function Configure-DockerDesktopGPU {
         Write-Host "Manual configuration required:" -ForegroundColor Yellow
         Write-Host "1. Open Docker Desktop Settings" -ForegroundColor Gray
         Write-Host "2. Enable WSL 2 engine and GPU acceleration" -ForegroundColor Gray
-        Write-Host "3. Restart Docker Desktop" -ForegroundColor Gray
         return $false
     }
 }
@@ -805,9 +801,8 @@ try {
             
             if (Prompt-Installation -Component "NVIDIA Container Toolkit" -Description "Required for GPU acceleration in Docker" -ManualUrl "https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html") {
                 if (Install-NvidiaContainerToolkit) {
-                    Write-Host "Restarting Docker Desktop to apply changes..." -ForegroundColor Yellow
-                    # Note: Docker Desktop restart would require user intervention
-                    Write-Host "Please restart Docker Desktop manually and run this script again" -ForegroundColor Yellow
+                    Write-Host "NVIDIA Container Toolkit installation completed" -ForegroundColor Green
+                    Write-Host "Setup completed successfully" -ForegroundColor Green
                     exit 0
                 }
             }
