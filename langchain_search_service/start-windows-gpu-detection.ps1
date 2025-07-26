@@ -201,6 +201,11 @@ function Install-NvidiaContainerToolkit {
                 }
                 Write-Host "   First 10 char codes: $($charCodes -join ', ')" -ForegroundColor Gray
             }
+            
+            # Try different case variations
+            $lowerMatch = $cleanedLine.ToLower() -match "ubuntu"
+            $upperMatch = $cleanedLine.ToUpper() -match "UBUNTU"
+            Write-Host "   Lower case match: $lowerMatch, Upper case match: $upperMatch" -ForegroundColor Gray
         }
         
         # Handle multiple whitespace issues and asterisks
@@ -233,6 +238,26 @@ function Install-NvidiaContainerToolkit {
                 $cleaned -match "^\s*\*?\s*Ubuntu"
             }
             Write-Host "   Aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
+        }
+        
+        # If still no Ubuntu found, try the most aggressive search possible
+        if ($ubuntuLines.Count -eq 0) {
+            Write-Host "   Trying most aggressive Ubuntu search (any case, any position)..." -ForegroundColor Yellow
+            $ubuntuLines = $allLines | Where-Object { 
+                $line = $_
+                $lowerLine = $line.ToLower()
+                $upperLine = $line.ToUpper()
+                
+                # Check every possible variation
+                $line -match "ubuntu" -or 
+                $line -match "Ubuntu" -or 
+                $line -match "UBUNTU" -or
+                $lowerLine -match "ubuntu" -or
+                $upperLine -match "UBUNTU" -or
+                $line -match ".*ubuntu.*" -or
+                $line -match ".*Ubuntu.*"
+            }
+            Write-Host "   Most aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
         }
         
         if ($ubuntuLines.Count -gt 0) {
