@@ -213,11 +213,24 @@ async def search_intelligent(request: IntelligentSearchRequest):
     
     context = "\n".join(context_parts)
     
-    # Create an enhanced query for better analysis
-    enhanced_query = f"Analyze these religious choruses for someone searching for: {request.query}"
+    # Create an enhanced prompt for better analysis
+    analysis_prompt = f"""
+You are a helpful assistant for religious chorus search. Analyze the following choruses for someone searching for: "{request.query}"
+
+Context (choruses found):
+{context}
+
+Please provide a thoughtful analysis that includes:
+1. A summary of the choruses that match the query
+2. Key themes or messages found in these choruses
+3. How these choruses relate to the user's search query
+4. Any notable patterns or insights about the music or lyrics
+
+Keep your analysis concise but insightful. Focus on providing value to someone searching for religious choruses.
+"""
     
-    # Use RAG chain with enhanced context
-    answer = qa_chain.run(enhanced_query)
+    # Use LLM directly with enhanced prompt for better analysis
+    answer = llm.invoke(analysis_prompt)
     
     # Also return the top docs for transparency (use original k)
     search_docs = vector_store.similarity_search_with_score(request.query, k=request.k)
