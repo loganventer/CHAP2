@@ -446,23 +446,20 @@ function Install-NvidiaContainerToolkit {
         
         # Step 3.1: Add NVIDIA repository
         Write-Host "   Step 3.1: Adding NVIDIA repository..." -ForegroundColor Cyan
-        Write-Host "   Note: You may be prompted for your Ubuntu password for sudo commands" -ForegroundColor Yellow
         Write-Host "   Downloading NVIDIA GPG key..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo -S gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo -S gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to add GPG key: $result" -ForegroundColor Red
             Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "   This may be due to sudo password requirement" -ForegroundColor Yellow
             return $false
         }
         Write-Host "   GPG key downloaded and installed successfully" -ForegroundColor Green
         
         Write-Host "   Adding NVIDIA repository to sources list..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo -S tee /etc/apt/sources.list.d/nvidia-container-toolkit.list" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo -S tee /etc/apt/sources.list.d/nvidia-container-toolkit.list" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to add repository: $result" -ForegroundColor Red
             Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "   This may be due to sudo password requirement" -ForegroundColor Yellow
             return $false
         }
         Write-Host "   Repository added to sources list successfully" -ForegroundColor Green
@@ -470,11 +467,10 @@ function Install-NvidiaContainerToolkit {
         # Step 3.2: Update package list
         Write-Host "   Step 3.2: Updating package list..." -ForegroundColor Cyan
         Write-Host "   Running apt-get update (this may take 1-2 minutes)..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "sudo -S apt-get update" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S apt-get update" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to update package list: $result" -ForegroundColor Red
             Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "   This may be due to sudo password requirement" -ForegroundColor Yellow
             return $false
         }
         Write-Host "   Package list updated successfully" -ForegroundColor Green
@@ -483,11 +479,10 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Step 3.3: Installing NVIDIA Container Toolkit..." -ForegroundColor Cyan
         Write-Host "   This step may take 2-5 minutes..." -ForegroundColor Gray
         Write-Host "   Downloading and installing nvidia-container-toolkit package..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "sudo -S apt-get install -y nvidia-container-toolkit" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S apt-get install -y nvidia-container-toolkit" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to install NVIDIA Container Toolkit: $result" -ForegroundColor Red
             Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "   This may be due to sudo password requirement" -ForegroundColor Yellow
             return $false
         }
         Write-Host "   NVIDIA Container Toolkit installed successfully" -ForegroundColor Green
@@ -495,11 +490,10 @@ function Install-NvidiaContainerToolkit {
         # Step 3.4: Configure Docker runtime
         Write-Host "   Step 3.4: Configuring Docker runtime..." -ForegroundColor Cyan
         Write-Host "   Running nvidia-ctk runtime configure..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "sudo -S nvidia-ctk runtime configure --runtime=docker" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S nvidia-ctk runtime configure --runtime=docker" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to configure Docker runtime: $result" -ForegroundColor Red
             Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "   This may be due to sudo password requirement" -ForegroundColor Yellow
             return $false
         }
         Write-Host "   Docker runtime configured successfully" -ForegroundColor Green
@@ -507,11 +501,11 @@ function Install-NvidiaContainerToolkit {
         # Step 3.5: Restart Docker
         Write-Host "   Step 3.5: Restarting Docker service..." -ForegroundColor Cyan
         Write-Host "   Attempting to restart Docker service..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "sudo -S systemctl restart docker" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S systemctl restart docker" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Warning: Failed to restart Docker service: $result" -ForegroundColor Yellow
             Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Yellow
-            Write-Host "   This may be due to sudo password requirement or Docker Desktop management" -ForegroundColor Gray
+            Write-Host "   This may be due to Docker Desktop management" -ForegroundColor Gray
         } else {
             Write-Host "   Docker service restarted successfully" -ForegroundColor Green
         }
