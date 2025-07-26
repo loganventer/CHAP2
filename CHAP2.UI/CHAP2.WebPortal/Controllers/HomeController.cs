@@ -479,9 +479,9 @@ public class HomeController : Controller
             var prompt = CreatePromptWithContext(request.Question, context);
             
             // Return streaming response
-            Response.Headers.Add("Content-Type", "text/event-stream");
-            Response.Headers.Add("Cache-Control", "no-cache");
-            Response.Headers.Add("Connection", "keep-alive");
+            Response.Headers["Content-Type"] = "text/event-stream";
+            Response.Headers["Cache-Control"] = "no-cache";
+            Response.Headers["Connection"] = "keep-alive";
             
             var chorusData = searchResults.Select(r => new
             {
@@ -592,9 +592,9 @@ Please provide a helpful and accurate response based on the chorus information p
             _logger.LogInformation("Processing streaming RAG search: {Query}", request.Query);
 
             // Set up streaming response headers
-            Response.Headers.Add("Content-Type", "text/event-stream");
-            Response.Headers.Add("Cache-Control", "no-cache");
-            Response.Headers.Add("Connection", "keep-alive");
+            Response.Headers["Content-Type"] = "text/event-stream";
+            Response.Headers["Cache-Control"] = "no-cache";
+            Response.Headers["Connection"] = "keep-alive";
 
             // Stream the RAG response
             await foreach (var chunk in _ollamaRagService.SearchWithRagStreamingAsync(request.Query, request.MaxResults))
@@ -677,9 +677,9 @@ Please provide a helpful and accurate response based on the chorus information p
             _logger.LogInformation("Processing streaming traditional search with AI: {Query}", request.Query);
 
             // Set up streaming response headers
-            Response.Headers.Add("Content-Type", "text/event-stream");
-            Response.Headers.Add("Cache-Control", "no-cache");
-            Response.Headers.Add("Connection", "keep-alive");
+            Response.Headers["Content-Type"] = "text/event-stream";
+            Response.Headers["Cache-Control"] = "no-cache";
+            Response.Headers["Connection"] = "keep-alive";
 
             // Stream the AI analysis
             await foreach (var chunk in _traditionalSearchWithAiService.SearchWithAiAnalysisStreamingAsync(request.Query, request.MaxResults, request.Filters))
@@ -817,9 +817,9 @@ Please provide a helpful and accurate response based on the chorus information p
             _logger.LogInformation("Processing streaming intelligent search: {Query}", request.Query);
 
             // Set up streaming response headers
-            Response.Headers.Add("Content-Type", "text/event-stream");
-            Response.Headers.Add("Cache-Control", "no-cache");
-            Response.Headers.Add("Connection", "keep-alive");
+            Response.Headers["Content-Type"] = "text/event-stream";
+            Response.Headers["Cache-Control"] = "no-cache";
+            Response.Headers["Connection"] = "keep-alive";
 
             // Create a cancellation token that only cancels on explicit user interruption
             // We'll use a timeout-based approach instead of relying on HttpContext.RequestAborted
@@ -915,6 +915,9 @@ Please provide a helpful and accurate response based on the chorus information p
                     _logger.LogError(ex, "Error during system restart");
                 }
             });
+
+            // Add a small delay to make this truly async
+            await Task.Delay(1);
 
             return Ok(new { 
                 message = "System restart initiated. The portal will restart in 5 seconds.",

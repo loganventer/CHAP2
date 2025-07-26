@@ -39,13 +39,13 @@ public class SlideController : ChapControllerAbstractBase
         var fileContent = await ReadRequestBodyAsync();
         _logger.LogInformation("File content length: {Length} bytes", fileContent?.Length ?? 0);
         
-        if (!ValidateFileContent(fileContent, filename))
+        if (!ValidateFileContent(fileContent!, filename))
         {
             _logger.LogWarning("File validation failed");
             return BadRequest("Invalid file content or filename");
         }
 
-        var chorus = _slideToChorusService.ConvertToChorus(fileContent, filename);
+        var chorus = _slideToChorusService.ConvertToChorus(fileContent!, filename);
         if (string.IsNullOrWhiteSpace(chorus.Name))
         {
             _logger.LogWarning("Could not extract chorus name from slide file");

@@ -135,7 +135,7 @@ public class LangChainSearchService : ILangChainSearchService
         }
     }
 
-    public async IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Performing streaming intelligent LangChain search for query: {Query}", query);
 

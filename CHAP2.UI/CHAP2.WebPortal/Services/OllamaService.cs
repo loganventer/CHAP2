@@ -84,7 +84,7 @@ public class OllamaService : IOllamaService
         }
     }
 
-    public async IAsyncEnumerable<string> GenerateStreamingResponseAsync(string prompt, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> GenerateStreamingResponseAsync(string prompt, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var request = new OllamaRequest
         {

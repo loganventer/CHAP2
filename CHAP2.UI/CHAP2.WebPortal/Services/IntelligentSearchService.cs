@@ -109,7 +109,7 @@ public class IntelligentSearchService : IIntelligentSearchService
         }
     }
 
-    public async IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Performing streaming intelligent search for query: {Query}", query);
 
@@ -162,7 +162,7 @@ public class IntelligentSearchService : IIntelligentSearchService
         }
     }
 
-    private async IAsyncEnumerable<string> FallbackStreamingSearchAsync(string query, int maxResults, CancellationToken cancellationToken)
+    private async IAsyncEnumerable<string> FallbackStreamingSearchAsync(string query, int maxResults, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         // Step 1: Use LLM to understand the query
         _logger.LogInformation("Step 1: Generating query understanding...");

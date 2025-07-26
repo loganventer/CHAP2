@@ -354,7 +354,7 @@ public class VectorSearchService : IVectorSearchService
         return await GenerateRagOptimizedEmbeddingAsync(text);
     }
 
-    private async Task<List<float>> GenerateRagOptimizedEmbeddingAsync(string text)
+    private Task<List<float>> GenerateRagOptimizedEmbeddingAsync(string text)
     {
         try
         {
@@ -470,7 +470,7 @@ public class VectorSearchService : IVectorSearchService
                 }
             }
             
-            return embedding.ToList();
+            return Task.FromResult(embedding.ToList());
         }
         catch (Exception ex)
         {
@@ -567,13 +567,14 @@ public class VectorSearchService : IVectorSearchService
         }
     }
 
-    private async Task InitializeClientAsync()
+    private Task InitializeClientAsync()
     {
         if (_client == null)
         {
             _client = new QdrantClient(_settings.Host, _settings.Port + 1); // Use gRPC port
             _logger.LogDebug("Initialized Qdrant client for collection: {CollectionName}", _settings.CollectionName);
         }
+        return Task.CompletedTask;
     }
 
     private static string? GetPayloadValue(Dictionary<string, Value> payload, string key)
