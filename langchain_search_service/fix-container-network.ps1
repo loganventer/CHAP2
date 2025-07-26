@@ -87,40 +87,40 @@ Write-Host "Step 6: Testing container connectivity..." -ForegroundColor Yellow
 # Test LangChain -> Qdrant
 Write-Host "   Testing LangChain -> Qdrant..." -ForegroundColor Gray
 try {
-    $pingTest = docker exec langchain_search_service-langchain-service-1 ping -c 3 qdrant 2>$null
+    $qdrantTest = docker exec langchain_search_service-langchain-service-1 curl -s http://qdrant:6333/collections 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "   PASS: LangChain can ping Qdrant" -ForegroundColor Green
+        Write-Host "   PASS: LangChain can reach Qdrant" -ForegroundColor Green
     } else {
-        Write-Host "   FAIL: LangChain cannot ping Qdrant" -ForegroundColor Red
+        Write-Host "   FAIL: LangChain cannot reach Qdrant" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   FAIL: Cannot test LangChain -> Qdrant ping" -ForegroundColor Red
+    Write-Host "   FAIL: Cannot test LangChain -> Qdrant connectivity" -ForegroundColor Red
 }
 
 # Test LangChain -> Ollama
 Write-Host "   Testing LangChain -> Ollama..." -ForegroundColor Gray
 try {
-    $pingTest = docker exec langchain_search_service-langchain-service-1 ping -c 3 ollama 2>$null
+    $ollamaTest = docker exec langchain_search_service-langchain-service-1 curl -s http://ollama:11434/api/tags 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "   PASS: LangChain can ping Ollama" -ForegroundColor Green
+        Write-Host "   PASS: LangChain can reach Ollama" -ForegroundColor Green
     } else {
-        Write-Host "   FAIL: LangChain cannot ping Ollama" -ForegroundColor Red
+        Write-Host "   FAIL: LangChain cannot reach Ollama" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   FAIL: Cannot test LangChain -> Ollama ping" -ForegroundColor Red
+    Write-Host "   FAIL: Cannot test LangChain -> Ollama connectivity" -ForegroundColor Red
 }
 
 # Test Web Portal -> LangChain
 Write-Host "   Testing Web Portal -> LangChain..." -ForegroundColor Gray
 try {
-    $pingTest = docker exec langchain_search_service-chap2-webportal-1 ping -c 3 langchain-service 2>$null
+    $langchainTest = docker exec langchain_search_service-chap2-webportal-1 curl -s http://langchain-service:8000/health 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "   PASS: Web Portal can ping LangChain" -ForegroundColor Green
+        Write-Host "   PASS: Web Portal can reach LangChain" -ForegroundColor Green
     } else {
-        Write-Host "   FAIL: Web Portal cannot ping LangChain" -ForegroundColor Red
+        Write-Host "   FAIL: Web Portal cannot reach LangChain" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   FAIL: Cannot test Web Portal -> LangChain ping" -ForegroundColor Red
+    Write-Host "   FAIL: Cannot test Web Portal -> LangChain connectivity" -ForegroundColor Red
 }
 
 # Step 7: Test search functionality

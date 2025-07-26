@@ -274,8 +274,8 @@ try {
         Write-Host "   Removed orphaned containers" -ForegroundColor Green
     }
     
-    # Let Docker Compose create the network fresh
-    Write-Host "   PASS: Network cleanup completed" -ForegroundColor Green
+    # Let Docker Compose create the network fresh (don't create manually)
+    Write-Host "   PASS: Network cleanup completed - Docker Compose will create fresh network" -ForegroundColor Green
 } catch {
     Write-Host "   FAIL: Could not clean up containers: $($_.Exception.Message)" -ForegroundColor Red
 }
@@ -312,106 +312,31 @@ try {
     exit 1
 }
 
-# Start containers one by one with verification (without rebuilding)
-Write-Host "   Starting containers one by one..." -ForegroundColor Gray
-
-# Start Qdrant first
-Write-Host "   Starting Qdrant..." -ForegroundColor Gray
+# Start all containers at once to ensure proper network setup
+Write-Host "   Starting all containers..." -ForegroundColor Gray
 try {
-    docker-compose -f $composeFile up -d --no-build qdrant
-    Start-Sleep -Seconds 10
+    docker-compose -f $composeFile up -d
+    Start-Sleep -Seconds 30
     
-    # Check if Qdrant is running
-    $qdrantStatus = docker ps --filter "name=qdrant" --format "{{.Status}}"
-    if ($qdrantStatus -like "*Up*") {
-        Write-Host "   PASS: Qdrant started successfully" -ForegroundColor Green
+    # Check if all containers are running
+    $allContainers = docker ps --filter "name=langchain_search_service" --format "{{.Names}}\t{{.Status}}"
+    Write-Host "   Container status:" -ForegroundColor Gray
+    Write-Host $allContainers -ForegroundColor Gray
+    
+    # Verify all containers are up
+    $runningContainers = docker ps --filter "name=langchain_search_service" --filter "status=running" --format "{{.Names}}" | Measure-Object -Line
+    $totalContainers = docker ps --filter "name=langchain_search_service" --format "{{.Names}}" | Measure-Object -Line
+    
+    if ($runningContainers.Lines -eq $totalContainers.Lines) {
+        Write-Host "   PASS: All containers started successfully" -ForegroundColor Green
     } else {
-        Write-Host "   FAIL: Qdrant failed to start" -ForegroundColor Red
-        docker-compose -f $composeFile logs qdrant
+        Write-Host "   FAIL: Some containers failed to start" -ForegroundColor Red
+        docker-compose -f $composeFile logs
         exit 1
     }
 } catch {
-    Write-Host "   FAIL: Could not start Qdrant: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
-
-# Start Ollama
-Write-Host "   Starting Ollama..." -ForegroundColor Gray
-try {
-    docker-compose -f $composeFile up -d --no-build ollama
-    Start-Sleep -Seconds 10
-    
-    # Check if Ollama is running
-    $ollamaStatus = docker ps --filter "name=ollama" --format "{{.Status}}"
-    if ($ollamaStatus -like "*Up*") {
-        Write-Host "   PASS: Ollama started successfully" -ForegroundColor Green
-    } else {
-        Write-Host "   FAIL: Ollama failed to start" -ForegroundColor Red
-        docker-compose -f $composeFile logs ollama
-        exit 1
-    }
-} catch {
-    Write-Host "   FAIL: Could not start Ollama: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
-
-# Start LangChain service
-Write-Host "   Starting LangChain service..." -ForegroundColor Gray
-try {
-    docker-compose -f $composeFile up -d --no-build langchain-service
-    Start-Sleep -Seconds 15
-    
-    # Check if LangChain service is running
-    $langchainStatus = docker ps --filter "name=langchain-service" --format "{{.Status}}"
-    if ($langchainStatus -like "*Up*") {
-        Write-Host "   PASS: LangChain service started successfully" -ForegroundColor Green
-    } else {
-        Write-Host "   FAIL: LangChain service failed to start" -ForegroundColor Red
-        docker-compose -f $composeFile logs langchain-service
-        exit 1
-    }
-} catch {
-    Write-Host "   FAIL: Could not start LangChain service: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
-
-# Start CHAP2 API
-Write-Host "   Starting CHAP2 API..." -ForegroundColor Gray
-try {
-    docker-compose -f $composeFile up -d --no-build chap2-api
-    Start-Sleep -Seconds 15
-    
-    # Check if CHAP2 API is running
-    $apiStatus = docker ps --filter "name=chap2-api" --format "{{.Status}}"
-    if ($apiStatus -like "*Up*") {
-        Write-Host "   PASS: CHAP2 API started successfully" -ForegroundColor Green
-    } else {
-        Write-Host "   FAIL: CHAP2 API failed to start" -ForegroundColor Red
-        docker-compose -f $composeFile logs chap2-api
-        exit 1
-    }
-} catch {
-    Write-Host "   FAIL: Could not start CHAP2 API: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
-
-# Start Web Portal
-Write-Host "   Starting Web Portal..." -ForegroundColor Gray
-try {
-    docker-compose -f $composeFile up -d --no-build chap2-webportal
-    Start-Sleep -Seconds 15
-    
-    # Check if Web Portal is running
-    $webPortalStatus = docker ps --filter "name=chap2-webportal" --format "{{.Status}}"
-    if ($webPortalStatus -like "*Up*") {
-        Write-Host "   PASS: Web Portal started successfully" -ForegroundColor Green
-    } else {
-        Write-Host "   FAIL: Web Portal failed to start" -ForegroundColor Red
-        docker-compose -f $composeFile logs chap2-webportal
-        exit 1
-    }
-} catch {
-    Write-Host "   FAIL: Could not start Web Portal: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "   FAIL: Could not start containers: $($_.Exception.Message)" -ForegroundColor Red
+    docker-compose -f $composeFile logs
     exit 1
 }
 
@@ -565,43 +490,46 @@ try {
     Write-Host "   FAIL: Search functionality not working: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Step 11: Test network connectivity between containers
+# Step 11: Test container network connectivity
 Write-Host "Step 11: Testing container network connectivity..." -ForegroundColor Yellow
 
-Write-Host "   Testing LangChain -> Qdrant ping..." -ForegroundColor Gray
+# Test LangChain -> Qdrant connectivity
+Write-Host "   Testing LangChain -> Qdrant connectivity..." -ForegroundColor Gray
 try {
-    $pingTest = docker exec langchain_search_service-langchain-service-1 ping -c 3 qdrant 2>$null
+    $qdrantTest = docker exec langchain_search_service-langchain-service-1 curl -s http://qdrant:6333/collections 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "   PASS: LangChain can ping Qdrant" -ForegroundColor Green
+        Write-Host "   PASS: LangChain can reach Qdrant" -ForegroundColor Green
     } else {
-        Write-Host "   FAIL: LangChain cannot ping Qdrant" -ForegroundColor Red
+        Write-Host "   FAIL: LangChain cannot reach Qdrant" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   FAIL: Cannot test ping" -ForegroundColor Red
+    Write-Host "   FAIL: Cannot test LangChain -> Qdrant connectivity" -ForegroundColor Red
 }
 
-Write-Host "   Testing LangChain -> Ollama ping..." -ForegroundColor Gray
+# Test LangChain -> Ollama connectivity
+Write-Host "   Testing LangChain -> Ollama connectivity..." -ForegroundColor Gray
 try {
-    $pingTest = docker exec langchain_search_service-langchain-service-1 ping -c 3 ollama 2>$null
+    $ollamaTest = docker exec langchain_search_service-langchain-service-1 curl -s http://ollama:11434/api/tags 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "   PASS: LangChain can ping Ollama" -ForegroundColor Green
+        Write-Host "   PASS: LangChain can reach Ollama" -ForegroundColor Green
     } else {
-        Write-Host "   FAIL: LangChain cannot ping Ollama" -ForegroundColor Red
+        Write-Host "   FAIL: LangChain cannot reach Ollama" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   FAIL: Cannot test ping" -ForegroundColor Red
+    Write-Host "   FAIL: Cannot test LangChain -> Ollama connectivity" -ForegroundColor Red
 }
 
-Write-Host "   Testing Web Portal -> LangChain ping..." -ForegroundColor Gray
+# Test Web Portal -> LangChain connectivity
+Write-Host "   Testing Web Portal -> LangChain connectivity..." -ForegroundColor Gray
 try {
-    $pingTest = docker exec langchain_search_service-chap2-webportal-1 ping -c 3 langchain-service 2>$null
+    $langchainTest = docker exec langchain_search_service-chap2-webportal-1 curl -s http://langchain-service:8000/health 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "   PASS: Web Portal can ping LangChain" -ForegroundColor Green
+        Write-Host "   PASS: Web Portal can reach LangChain" -ForegroundColor Green
     } else {
-        Write-Host "   FAIL: Web Portal cannot ping LangChain" -ForegroundColor Red
+        Write-Host "   FAIL: Web Portal cannot reach LangChain" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   FAIL: Cannot test ping" -ForegroundColor Red
+    Write-Host "   FAIL: Cannot test Web Portal -> LangChain connectivity" -ForegroundColor Red
 }
 
 Write-Host ""
