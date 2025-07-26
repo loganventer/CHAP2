@@ -163,7 +163,24 @@ function Install-NvidiaContainerToolkit {
         # Step 2: Check for Ubuntu distribution
         Write-Host ""
         Write-Host "Step 2: Checking Ubuntu distribution..." -ForegroundColor Yellow
+        
+        # Try both wsl and wsl2 commands to see which works better
+        Write-Host "   Trying wsl --list --verbose..." -ForegroundColor Gray
         $distributions = wsl --list --verbose 2>$null
+        Write-Host "   wsl output length: $($distributions.Length)" -ForegroundColor Gray
+        
+        Write-Host "   Trying wsl2 --list --verbose..." -ForegroundColor Gray
+        $distributions2 = wsl2 --list --verbose 2>$null
+        Write-Host "   wsl2 output length: $($distributions2.Length)" -ForegroundColor Gray
+        
+        # Use whichever gives us more output
+        if ($distributions2.Length -gt $distributions.Length) {
+            $distributions = $distributions2
+            Write-Host "   Using wsl2 output (more detailed)" -ForegroundColor Green
+        } else {
+            Write-Host "   Using wsl output" -ForegroundColor Green
+        }
+        
         Write-Host "Available WSL distributions:" -ForegroundColor Gray
         Write-Host $distributions -ForegroundColor Gray
         
@@ -187,6 +204,15 @@ function Install-NvidiaContainerToolkit {
             $UbuntuMatch = $cleanedLine -match "Ubuntu"
             Write-Host "   Original: '$line'" -ForegroundColor Gray
             Write-Host "   Cleaned: '$cleanedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
+            
+            # Show character codes for the first few characters to identify hidden characters
+            if ($line.Length -gt 0) {
+                $charCodes = @()
+                for ($i = 0; $i -lt [Math]::Min(10, $line.Length); $i++) {
+                    $charCodes += [int][char]$line[$i]
+                }
+                Write-Host "   First 10 char codes: $($charCodes -join ', ')" -ForegroundColor Gray
+            }
         }
         
         # Handle multiple whitespace issues and asterisks
@@ -250,7 +276,14 @@ function Install-NvidiaContainerToolkit {
             } else {
                 Write-Host "   Converting distribution to WSL2..." -ForegroundColor Yellow
                 Write-Host "   This may take a few minutes..." -ForegroundColor Gray
-                $convertResult = wsl --set-version $ubuntuDistro 2 2>&1
+                
+                # Try wsl2 command first, then fallback to wsl
+                $convertResult = wsl2 --set-version $ubuntuDistro 2 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "   wsl2 command failed, trying wsl..." -ForegroundColor Yellow
+                    $convertResult = wsl --set-version $ubuntuDistro 2 2>&1
+                }
+                
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "   Distribution converted to WSL2 successfully" -ForegroundColor Green
                 } else {
@@ -266,9 +299,18 @@ function Install-NvidiaContainerToolkit {
             $distroState = ($distributions -split "`n" | Where-Object { $_ -match $ubuntuDistro } | Select-Object -First 1) -split "\s+" | Select-Object -Skip 1 -First 1
             if ($distroState -eq "Stopped") {
                 Write-Host "   Starting Ubuntu distribution..." -ForegroundColor Yellow
-                # Just start the distribution, don't enter it
-                wsl -d $ubuntuDistro -e echo "Distribution started" > $null
-                Write-Host "   Ubuntu distribution started" -ForegroundColor Green
+                # Try wsl2 first, then fallback to wsl
+                $startResult = wsl2 -d $ubuntuDistro -e echo "Distribution started" 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "   wsl2 command failed, trying wsl..." -ForegroundColor Yellow
+                    $startResult = wsl -d $ubuntuDistro -e echo "Distribution started" 2>&1
+                }
+                
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   Ubuntu distribution started" -ForegroundColor Green
+                } else {
+                    Write-Host "   Failed to start distribution: $startResult" -ForegroundColor Red
+                }
             } else {
                 Write-Host "   Ubuntu distribution is already running" -ForegroundColor Green
             }
