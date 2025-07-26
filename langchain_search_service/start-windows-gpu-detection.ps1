@@ -88,8 +88,26 @@ if (-not $SkipGpuCheck) {
     }
 }
 
-# Step 3: Fix API Routes Configuration
-Write-Host "Step 3: Fixing API routes configuration..." -ForegroundColor Yellow
+# Step 3: Verify Docker Build Configuration
+Write-Host "Step 3: Verifying Docker build configuration..." -ForegroundColor Yellow
+
+# Check if .dockerignore files are properly configured
+if (Test-Path "langchain_search_service/.dockerignore") {
+    Write-Host "   PASS: LangChain service .dockerignore exists" -ForegroundColor Green
+} else {
+    Write-Host "   FAIL: LangChain service .dockerignore missing" -ForegroundColor Red
+    exit 1
+}
+
+if (Test-Path "langchain_search_service/.dockerignore.webportal") {
+    Write-Host "   PASS: Web portal .dockerignore exists" -ForegroundColor Green
+} else {
+    Write-Host "   FAIL: Web portal .dockerignore missing" -ForegroundColor Red
+    exit 1
+}
+
+# Step 4: Fix API Routes Configuration
+Write-Host "Step 4: Fixing API routes configuration..." -ForegroundColor Yellow
 
 # Update Web Portal appsettings.json
 $webPortalAppSettings = @"
@@ -235,8 +253,8 @@ try {
     Write-Host "   FAIL: Could not update docker-compose.gpu-direct.yml: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Step 4: Stop existing containers and clean up
-Write-Host "Step 4: Stopping existing containers and cleaning up..." -ForegroundColor Yellow
+# Step 5: Stop existing containers and clean up
+Write-Host "Step 5: Stopping existing containers and cleaning up..." -ForegroundColor Yellow
 
 # Determine which compose file to use for cleanup
 if ($script:UseGpu) {
@@ -280,8 +298,8 @@ try {
     Write-Host "   FAIL: Could not clean up containers: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Step 5: Build and start containers with better error handling
-Write-Host "Step 5: Building and starting containers..." -ForegroundColor Yellow
+# Step 6: Build and start containers with better error handling
+Write-Host "Step 6: Building and starting containers..." -ForegroundColor Yellow
 
 # Determine which compose file to use
 if ($script:UseGpu) {
@@ -340,17 +358,17 @@ try {
     exit 1
 }
 
-# Step 6: Wait for containers to be ready
-Write-Host "Step 6: Waiting for containers to be ready..." -ForegroundColor Yellow
+# Step 7: Wait for containers to be ready
+Write-Host "Step 7: Waiting for containers to be ready..." -ForegroundColor Yellow
 Start-Sleep -Seconds 30
 
-# Step 7: Check container status
-Write-Host "Step 7: Checking container status..." -ForegroundColor Yellow
+# Step 8: Check container status
+Write-Host "Step 8: Checking container status..." -ForegroundColor Yellow
 $containers = docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>&1
 Write-Host $containers -ForegroundColor Gray
 
-# Step 8: Pull Ollama models
-Write-Host "Step 8: Pulling Ollama models..." -ForegroundColor Yellow
+# Step 9: Pull Ollama models
+Write-Host "Step 9: Pulling Ollama models..." -ForegroundColor Yellow
 
 try {
     Write-Host "   Pulling nomic-embed-text model..." -ForegroundColor Gray
@@ -368,8 +386,8 @@ try {
     Write-Host "   FAIL: Could not pull mistral model: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Step 9: Migrate data to vector store
-Write-Host "Step 9: Migrating data to vector store..." -ForegroundColor Yellow
+# Step 10: Migrate data to vector store
+Write-Host "Step 10: Migrating data to vector store..." -ForegroundColor Yellow
 
 # Wait for services to be fully ready
 Write-Host "   Waiting for services to be ready..." -ForegroundColor Gray
@@ -433,8 +451,8 @@ if ($runMigration) {
     }
 }
 
-# Step 10: Test all services
-Write-Host "Step 10: Testing all services..." -ForegroundColor Yellow
+# Step 11: Test all services
+Write-Host "Step 11: Testing all services..." -ForegroundColor Yellow
 
 # Test CHAP2 API
 Write-Host "   Testing CHAP2 API..." -ForegroundColor Gray
@@ -490,8 +508,8 @@ try {
     Write-Host "   FAIL: Search functionality not working: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Step 11: Test container network connectivity
-Write-Host "Step 11: Testing container network connectivity..." -ForegroundColor Yellow
+# Step 12: Test container network connectivity
+Write-Host "Step 12: Testing container network connectivity..." -ForegroundColor Yellow
 
 # Test LangChain -> Qdrant connectivity (using IP since DNS fails but services work)
 Write-Host "   Testing LangChain -> Qdrant connectivity..." -ForegroundColor Gray
@@ -581,9 +599,9 @@ Write-Host "- If search doesn't work, check container logs" -ForegroundColor Whi
 Write-Host "- For GPU issues, restart Docker Desktop" -ForegroundColor White
 Write-Host "- For container issues, check: docker-compose -f $composeFile logs [service-name]" -ForegroundColor White
 
-# Step 12: Cleanup Docker resources
+# Step 13: Cleanup Docker resources
 Write-Host ""
-Write-Host "Step 12: Cleaning up Docker resources..." -ForegroundColor Yellow
+Write-Host "Step 13: Cleaning up Docker resources..." -ForegroundColor Yellow
 
 Write-Host "   Removing dangling images..." -ForegroundColor Gray
 try {

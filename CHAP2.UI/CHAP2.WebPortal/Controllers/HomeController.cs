@@ -68,51 +68,15 @@ public class HomeController : Controller
                 return Json(new { results = new List<object>() });
             }
 
-            // Parse search mode
-            var mode = Enum.TryParse<SearchMode>(searchMode, true, out var searchModeEnum) 
-                ? searchModeEnum 
-                : SearchMode.Contains;
-
-            // Parse search scope - handle string values properly
-            SearchScope scope;
-            switch (searchIn?.ToLowerInvariant())
-            {
-                case "name":
-                    scope = SearchScope.Name;
-                    break;
-                case "text":
-                    scope = SearchScope.Text;
-                    break;
-                case "key":
-                    scope = SearchScope.Key;
-                    break;
-                case "all":
-                default:
-                    scope = SearchScope.All;
-                    break;
-            }
-
-            var searchRequest = new SearchRequest(
-                Query: q,
-                Mode: mode,
-                Scope: scope,
-                MaxResults: 50
-            );
-
             _logger.LogInformation("Performing search with request: Query={Query}, Mode={Mode}, Scope={Scope}", 
-                searchRequest.Query, searchRequest.Mode, searchRequest.Scope);
+                q, searchMode, searchIn);
 
-            var searchResult = await _searchService.SearchAsync(searchRequest);
+            // Use the API service instead of local search service
+            var choruses = await _chorusApiService.SearchChorusesAsync(q, searchMode, searchIn);
             
-            if (searchResult.Error != null)
-            {
-                _logger.LogError("Search error: {Error}", searchResult.Error);
-                return Json(new { results = new List<object>(), error = searchResult.Error });
-            }
+            _logger.LogInformation("Search completed successfully. Found {Count} results", choruses.Count);
 
-            _logger.LogInformation("Search completed successfully. Found {Count} results", searchResult.Results.Count);
-
-            var response = searchResult.Results.Select(r => new
+            var response = choruses.Select(r => new
             {
                 id = r.Id.ToString(),
                 name = r.Name,

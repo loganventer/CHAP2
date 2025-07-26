@@ -52,7 +52,7 @@ services:
       - qdrant
       - ollama
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5001
     volumes:
       - ../CHAP2.Chorus.Api/data:/app/data:ro  # Mount chorus data
@@ -64,12 +64,12 @@ services:
       context: ..
       dockerfile: langchain_search_service/Dockerfile.webportal.simple
     ports:
-      - "5000:5000"
+      - "5002:5000"
     depends_on:
       - chap2-api
       - langchain-service
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
       - LangChainService__BaseUrl=http://langchain-service:8000
       - ApiService__BaseUrl=http://chap2-api:5001
