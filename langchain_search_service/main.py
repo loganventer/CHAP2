@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
     
     # Initialize Ollama embeddings
     embeddings = OllamaEmbeddings(
-        model="nomic-embed-text",
+        model="nomic-embed-text",  # Use original model which generates 768-dimensional embeddings
         base_url=ollama_url
     )
     # Initialize Ollama LLM

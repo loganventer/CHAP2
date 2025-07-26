@@ -14,7 +14,7 @@ public class VectorSearchService : IVectorSearchService
     private readonly QdrantSettings _settings;
     private readonly ILogger<VectorSearchService> _logger;
     private QdrantClient? _client;
-    private const int VECTOR_DIMENSION = 1536;
+    private const int VECTOR_DIMENSION = 768;
     
     // Enhanced vocabulary with RAG-optimized features (same as console app)
     private static readonly Dictionary<string, int[]> WordPositions = new()
