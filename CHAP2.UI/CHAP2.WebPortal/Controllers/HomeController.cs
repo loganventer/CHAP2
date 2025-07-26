@@ -880,6 +880,157 @@ Please provide a helpful and accurate response based on the chorus information p
             }
         }
     }
+
+    [HttpPost]
+    [Route("api/restart-system")]
+    public async Task<IActionResult> RestartSystem([FromBody] RestartSystemRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("System restart requested by: {UserAgent}", Request.Headers["User-Agent"].ToString());
+            
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(request?.Confirmation) || request.Confirmation != "RESTART_ALL_SERVICES")
+            {
+                return BadRequest(new { error = "Invalid confirmation code. Use 'RESTART_ALL_SERVICES' to confirm." });
+            }
+
+            // Check if we're in development mode (for safety)
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (environment != "Development")
+            {
+                _logger.LogWarning("Restart system endpoint called in non-development environment: {Environment}", environment);
+                return StatusCode(403, new { error = "System restart is only available in development mode." });
+            }
+
+            // Start the restart process in the background
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await RestartAllServicesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during system restart");
+                }
+            });
+
+            return Ok(new { 
+                message = "System restart initiated. The portal will restart in 5 seconds.",
+                timestamp = DateTime.UtcNow,
+                services = new[] { "Qdrant", "Ollama", "LangChain Service", "Web Portal" }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initiating system restart");
+            return StatusCode(500, new { error = "Failed to initiate system restart" });
+        }
+    }
+
+    private async Task RestartAllServicesAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Starting system restart process...");
+
+            // Step 1: Stop all Docker containers
+            _logger.LogInformation("Step 1: Stopping Docker containers...");
+            await ExecuteCommandAsync("docker-compose", "down", "langchain_search_service");
+
+            // Step 2: Start containers with GPU support if available
+            _logger.LogInformation("Step 2: Starting Docker containers...");
+            var gpuAvailable = await CheckGpuAvailabilityAsync();
+            
+            if (gpuAvailable)
+            {
+                _logger.LogInformation("GPU detected, starting with GPU support...");
+                await ExecuteCommandAsync("docker-compose", "-f docker-compose.yml -f docker-compose.gpu.yml up -d", "langchain_search_service");
+            }
+            else
+            {
+                _logger.LogInformation("No GPU detected, starting with CPU support...");
+                await ExecuteCommandAsync("docker-compose", "up -d", "langchain_search_service");
+            }
+
+            // Step 3: Wait for services to be ready
+            _logger.LogInformation("Step 3: Waiting for services to be ready...");
+            await Task.Delay(TimeSpan.FromSeconds(30));
+
+            // Step 4: Pull Ollama models if needed
+            _logger.LogInformation("Step 4: Ensuring Ollama models are available...");
+            await ExecuteCommandAsync("docker", "exec langchain_search_service-ollama-1 ollama pull nomic-embed-text", "langchain_search_service");
+            await ExecuteCommandAsync("docker", "exec langchain_search_service-ollama-1 ollama pull mistral", "langchain_search_service");
+
+            // Step 5: Wait a bit more for everything to stabilize
+            await Task.Delay(TimeSpan.FromSeconds(10));
+
+            _logger.LogInformation("System restart completed successfully");
+
+            // Step 6: Restart the web portal itself
+            _logger.LogInformation("Step 6: Restarting web portal...");
+            await Task.Delay(TimeSpan.FromSeconds(5)); // Give time for response to be sent
+            
+            // Exit the application to trigger restart
+            Environment.Exit(0);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during system restart process");
+        }
+    }
+
+    private async Task<bool> CheckGpuAvailabilityAsync()
+    {
+        try
+        {
+            var result = await ExecuteCommandAsync("nvidia-smi", "", "");
+            return !string.IsNullOrEmpty(result) && result.Contains("NVIDIA");
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<string> ExecuteCommandAsync(string command, string arguments, string workingDirectory)
+    {
+        try
+        {
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new System.Diagnostics.Process { StartInfo = startInfo };
+            process.Start();
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                _logger.LogWarning("Command failed: {Command} {Arguments}, ExitCode: {ExitCode}, Error: {Error}", 
+                    command, arguments, process.ExitCode, error);
+            }
+
+            return output;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing command: {Command} {Arguments}", command, arguments);
+            return string.Empty;
+        }
+    }
 }
 
 public class TraditionalSearchRequest
@@ -910,6 +1061,11 @@ public class IntelligentSearchRequest
 {
     public string Query { get; set; } = string.Empty;
     public int MaxResults { get; set; } = 10;
+}
+
+public class RestartSystemRequest
+{
+    public string Confirmation { get; set; } = string.Empty;
 }
 
 public class LlmSearchResult
