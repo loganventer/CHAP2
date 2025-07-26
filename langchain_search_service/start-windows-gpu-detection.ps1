@@ -451,17 +451,23 @@ function Install-NvidiaContainerToolkit {
             Write-Host "   NVIDIA GPU support not detected in Docker" -ForegroundColor Yellow
         }
         
-        # Step 3.2: Try to enable GPU support in Docker Desktop
-        Write-Host "   Step 3.2: Enabling GPU support in Docker Desktop..." -ForegroundColor Cyan
-        Write-Host "   This requires manual configuration in Docker Desktop settings" -ForegroundColor Gray
+        # Step 3.2: Verify Docker Desktop GPU support
+        Write-Host "   Step 3.2: Verifying Docker Desktop GPU support..." -ForegroundColor Cyan
+        Write-Host "   Checking if Docker Desktop is configured for GPU support..." -ForegroundColor Gray
         
-        Write-Host "   Manual steps required:" -ForegroundColor Yellow
-        Write-Host "   1. Open Docker Desktop" -ForegroundColor Gray
-        Write-Host "   2. Go to Settings > Resources > WSL Integration" -ForegroundColor Gray
-        Write-Host "   3. Enable 'Enable integration with my default WSL distro'" -ForegroundColor Gray
-        Write-Host "   4. Go to Settings > Resources > Advanced" -ForegroundColor Gray
-        Write-Host "   5. Increase memory allocation if needed" -ForegroundColor Gray
-        Write-Host "   6. Restart Docker Desktop" -ForegroundColor Gray
+        # Check if Docker Desktop has GPU support enabled
+        $dockerInfo = docker info 2>&1
+        if ($dockerInfo -match "nvidia") {
+            Write-Host "   Docker Desktop has NVIDIA GPU support enabled" -ForegroundColor Green
+        } else {
+            Write-Host "   Docker Desktop may need GPU configuration" -ForegroundColor Yellow
+            Write-Host "   If GPU support is not working, check Docker Desktop settings:" -ForegroundColor Gray
+            Write-Host "   1. Open Docker Desktop" -ForegroundColor Gray
+            Write-Host "   2. Go to Settings > Resources > WSL Integration" -ForegroundColor Gray
+            Write-Host "   3. Enable 'Enable integration with my default WSL distro'" -ForegroundColor Gray
+            Write-Host "   4. Go to Settings > Resources > Advanced" -ForegroundColor Gray
+            Write-Host "   5. Increase memory allocation if needed" -ForegroundColor Gray
+        }
         
         # Step 3.3: Verify NVIDIA Container Toolkit installation
         Write-Host "   Step 3.3: Verifying NVIDIA Container Toolkit installation..." -ForegroundColor Cyan
