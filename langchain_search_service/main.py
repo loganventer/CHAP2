@@ -124,21 +124,26 @@ async def lifespan(app: FastAPI):
     system_prompt = PromptTemplate(
         input_variables=["context", "question"],
         template="""
-You are a helpful assistant for religious chorus search. Use only the provided context to answer the user's question. If the answer is not in the context, say you don't know.
+You are a helpful assistant for religious chorus search. Your task is to analyze the provided choruses and give meaningful insights about them.
 
-Context:
+Context (choruses found):
 {context}
 
-Question:
-{question}
+Question: {question}
 
-Answer (in the same language as the context):
+Please provide a thoughtful analysis that includes:
+1. A summary of the choruses that match the query
+2. Key themes or messages found in these choruses
+3. How these choruses relate to the user's search query
+4. Any notable patterns or insights about the music or lyrics
+
+Keep your analysis concise but insightful. Focus on providing value to someone searching for religious choruses.
 """
     )
     # Build the RAG chain
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
-        retriever=vector_store.as_retriever(search_kwargs={"k": 8}),
+        retriever=vector_store.as_retriever(search_kwargs={"k": 12}),  # Increased from 8 to 12 for better context
         chain_type_kwargs={"prompt": system_prompt}
     )
     logger.info("LangChain services initialized successfully")
@@ -197,18 +202,34 @@ async def search_intelligent(request: IntelligentSearchRequest):
         logger.info(f"Cache hit for RAG query: {request.query}")
         return search_cache[cache_key]
     logger.info(f"Cache miss for RAG query: {request.query}")
-    # Use RAG chain (retrieval + LLM)
-    answer = qa_chain.run(request.query)
-    # Also return the top docs for transparency
-    docs = vector_store.similarity_search_with_score(request.query, k=request.k)
+    
+    # Get more documents for better context (k=12 instead of 8)
+    docs = vector_store.similarity_search_with_score(request.query, k=12)
+    
+    # Create a more detailed context for analysis
+    context_parts = []
+    for i, (doc, score) in enumerate(docs[:8]):  # Use top 8 for analysis
+        context_parts.append(f"Chorus {i+1} (Score: {score:.3f}):\nTitle: {doc.metadata.get('name', 'Unknown')}\nText: {doc.page_content}\n")
+    
+    context = "\n".join(context_parts)
+    
+    # Create an enhanced query for better analysis
+    enhanced_query = f"Analyze these religious choruses for someone searching for: {request.query}"
+    
+    # Use RAG chain with enhanced context
+    answer = qa_chain.run(enhanced_query)
+    
+    # Also return the top docs for transparency (use original k)
+    search_docs = vector_store.similarity_search_with_score(request.query, k=request.k)
     search_results = []
-    for doc, score in docs:
+    for doc, score in search_docs:
         search_results.append(SearchResult(
             id=doc.metadata.get("id", ""),
             text=doc.page_content,
             score=float(score),
             metadata=doc.metadata
         ))
+    
     result = IntelligentSearchResult(
         search_results=search_results,
         ai_analysis=answer,
