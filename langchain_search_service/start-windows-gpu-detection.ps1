@@ -539,7 +539,45 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Available Ollama models:" -ForegroundColor Gray
         docker exec langchain_search_service-ollama-1 ollama list
         
-        Write-Host "   Container deployment completed successfully!" -ForegroundColor Green
+        # Step 6: Migrate data to vector store
+        Write-Host ""
+        Write-Host "Step 6: Migrating data to vector store..." -ForegroundColor Yellow
+        Write-Host "   Waiting for services to be ready..." -ForegroundColor Gray
+        Start-Sleep -Seconds 10
+        
+        Write-Host "   Running data migration..." -ForegroundColor Gray
+        docker exec langchain_search_service-langchain-service-1 python migrate_data.py
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   Data migration completed successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "   Data migration failed or already completed" -ForegroundColor Yellow
+        }
+        
+        # Step 7: Start web portal
+        Write-Host ""
+        Write-Host "Step 7: Starting web portal..." -ForegroundColor Yellow
+        Write-Host "   Navigating to web portal directory..." -ForegroundColor Gray
+        
+        # Change to the web portal directory
+        $webPortalPath = "..\CHAP2.UI\CHAP2.WebPortal"
+        if (Test-Path $webPortalPath) {
+            Set-Location $webPortalPath
+            Write-Host "   Starting .NET web portal..." -ForegroundColor Gray
+            Start-Process -FilePath "dotnet" -ArgumentList "run", "--urls", "http://localhost:5000" -NoNewWindow
+            Write-Host "   Web portal started on http://localhost:5000" -ForegroundColor Green
+        } else {
+            Write-Host "   Web portal directory not found at: $webPortalPath" -ForegroundColor Red
+        }
+        
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Green
+        Write-Host "Deployment completed successfully!" -ForegroundColor Green
+        Write-Host "Services available:" -ForegroundColor White
+        Write-Host "  - Qdrant Vector Store: http://localhost:6333" -ForegroundColor Gray
+        Write-Host "  - Ollama LLM Service: http://localhost:11434" -ForegroundColor Gray
+        Write-Host "  - LangChain Service: http://localhost:8000" -ForegroundColor Gray
+        Write-Host "  - Web Portal: http://localhost:5000" -ForegroundColor Gray
+        Write-Host "========================================" -ForegroundColor Green
         return $true
         
     } catch {
