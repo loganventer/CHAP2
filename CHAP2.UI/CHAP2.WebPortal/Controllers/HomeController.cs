@@ -451,76 +451,7 @@ public class HomeController : Controller
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> AskQuestionStream([FromBody] AskQuestionRequest request)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(request.Question))
-            {
-                return BadRequest(new { error = "Question is required" });
-            }
 
-            // Search for relevant choruses
-            var searchResults = await _vectorSearchService.SearchSimilarAsync(request.Question, 5);
-            
-            if (!searchResults.Any())
-            {
-                return Json(new { 
-                    answer = "I couldn't find any relevant choruses for your question. Please try rephrasing your query.",
-                    choruses = new List<object>()
-                });
-            }
-
-            // Build context from search results
-            var context = BuildContextFromResults(searchResults);
-            
-            // Create prompt with context
-            var prompt = CreatePromptWithContext(request.Question, context);
-            
-            // Return streaming response
-            Response.Headers["Content-Type"] = "text/event-stream";
-            Response.Headers["Cache-Control"] = "no-cache";
-            Response.Headers["Connection"] = "keep-alive";
-            
-            var chorusData = searchResults.Select(r => new
-            {
-                id = r.Id,
-                name = r.Name,
-                key = r.Key,
-                type = r.Type,
-                timeSignature = r.TimeSignature,
-                chorusText = r.ChorusText,
-                createdAt = r.CreatedAt,
-                score = r.Score
-            });
-
-            // Send initial data with choruses
-            await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "choruses", data = chorusData })}\n\n");
-            await Response.Body.FlushAsync();
-
-            // Stream the AI response
-            await foreach (var chunk in _ollamaService.GenerateStreamingResponseAsync(prompt))
-            {
-                await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "chunk", data = chunk })}\n\n");
-                await Response.Body.FlushAsync();
-            }
-
-            // Send completion signal
-            await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "done" })}\n\n");
-            await Response.Body.FlushAsync();
-            
-            return new EmptyResult();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing streaming question: {Question}", request.Question);
-            return Json(new { 
-                answer = $"Sorry, I encountered an error while processing your question: {ex.Message}",
-                choruses = new List<object>()
-            });
-        }
-    }
 
     private static string BuildContextFromResults(List<ChorusSearchResult> results)
     {
@@ -579,42 +510,7 @@ Please provide a helpful and accurate response based on the chorus information p
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> RagSearchStream([FromBody] RagSearchRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Query))
-        {
-            return BadRequest(new { error = "Query is required" });
-        }
 
-        try
-        {
-            _logger.LogInformation("Processing streaming RAG search: {Query}", request.Query);
-
-            // Set up streaming response headers
-            Response.Headers["Content-Type"] = "text/event-stream";
-            Response.Headers["Cache-Control"] = "no-cache";
-            Response.Headers["Connection"] = "keep-alive";
-
-            // Stream the RAG response
-            await foreach (var chunk in _ollamaRagService.SearchWithRagStreamingAsync(request.Query, request.MaxResults))
-            {
-                await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "chunk", data = chunk })}\n\n");
-                await Response.Body.FlushAsync();
-            }
-
-            // Send completion signal
-            await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "done" })}\n\n");
-            await Response.Body.FlushAsync();
-            
-            return new EmptyResult();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during streaming RAG search: {Query}", request.Query);
-            return StatusCode(500, new { error = "Internal server error" });
-        }
-    }
 
     [HttpPost]
     public async Task<IActionResult> TraditionalSearchWithAi([FromBody] TraditionalSearchRequest request)
@@ -664,42 +560,7 @@ Please provide a helpful and accurate response based on the chorus information p
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> TraditionalSearchWithAiStream([FromBody] TraditionalSearchRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Query))
-        {
-            return BadRequest(new { error = "Query is required" });
-        }
 
-        try
-        {
-            _logger.LogInformation("Processing streaming traditional search with AI: {Query}", request.Query);
-
-            // Set up streaming response headers
-            Response.Headers["Content-Type"] = "text/event-stream";
-            Response.Headers["Cache-Control"] = "no-cache";
-            Response.Headers["Connection"] = "keep-alive";
-
-            // Stream the AI analysis
-            await foreach (var chunk in _traditionalSearchWithAiService.SearchWithAiAnalysisStreamingAsync(request.Query, request.MaxResults, request.Filters))
-            {
-                await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "chunk", data = chunk })}\n\n");
-                await Response.Body.FlushAsync();
-            }
-
-            // Send completion signal
-            await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "done" })}\n\n");
-            await Response.Body.FlushAsync();
-            
-            return new EmptyResult();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during streaming traditional search with AI: {Query}", request.Query);
-            return StatusCode(500, new { error = "Internal server error" });
-        }
-    }
 
     private string GetKeyDisplayName(MusicalKey key)
     {
@@ -804,82 +665,7 @@ Please provide a helpful and accurate response based on the chorus information p
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> IntelligentSearchStream([FromBody] IntelligentSearchRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Query))
-        {
-            return BadRequest(new { error = "Query is required" });
-        }
 
-        try
-        {
-            _logger.LogInformation("Processing streaming intelligent search: {Query}", request.Query);
-
-            // Set up streaming response headers
-            Response.Headers["Content-Type"] = "text/event-stream";
-            Response.Headers["Cache-Control"] = "no-cache";
-            Response.Headers["Connection"] = "keep-alive";
-
-            // Create a cancellation token that only cancels on explicit user interruption
-            // We'll use a timeout-based approach instead of relying on HttpContext.RequestAborted
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5)); // 5 minute timeout
-            var cancellationToken = cts.Token;
-
-            // Stream the intelligent search response with cancellation support
-            await foreach (var chunk in _intelligentSearchService.SearchWithIntelligenceStreamingAsync(request.Query, request.MaxResults, cancellationToken))
-            {
-                // Check for cancellation
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    _logger.LogInformation("Streaming intelligent search cancelled for query: {Query}", request.Query);
-                    break;
-                }
-
-                await Response.WriteAsync($"data: {chunk}\n\n");
-                await Response.Body.FlushAsync();
-            }
-
-            // Only send completion signal if not cancelled
-            if (!cancellationToken.IsCancellationRequested)
-            {
-                await Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(new { type = "complete" })}\n\n");
-                await Response.Body.FlushAsync();
-            }
-            
-            return new EmptyResult();
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Streaming intelligent search was cancelled for query: {Query}", request.Query);
-            return new EmptyResult();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during streaming intelligent search: {Query}", request.Query);
-            
-            // Only try to send error response if headers haven't been sent yet
-            if (!Response.HasStarted)
-            {
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-            else
-            {
-                // If response has already started, try to send error as streaming data
-                try
-                {
-                    var errorData = System.Text.Json.JsonSerializer.Serialize(new { type = "error", message = "An error occurred during the search. Please try again." });
-                    await Response.WriteAsync($"data: {errorData}\n\n");
-                    await Response.Body.FlushAsync();
-                }
-                catch
-                {
-                    // If we can't send error data, just return empty result
-                }
-                return new EmptyResult();
-            }
-        }
-    }
 
     [HttpPost]
     [Route("api/restart-system")]

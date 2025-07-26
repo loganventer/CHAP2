@@ -695,77 +695,7 @@ class AiSearch {
         }
     }
 
-    handleStreamingUpdate(data) {
-        // Compatibility shim for backend 'event' format
-        if (data.event && data.data) {
-            try {
-                const inner = JSON.parse(data.data);
-                if (data.event === 'search_results') inner.type = 'searchResults';
-                else if (data.event === 'ai_analysis') inner.type = 'aiAnalysis';
-                else if (data.event === 'query_understanding') inner.type = 'queryUnderstanding';
-                else if (data.event === 'complete') inner.type = 'complete';
-                else if (data.event === 'error') inner.type = 'error';
-                data = inner;
-            } catch (e) {
-                console.error('Could not parse inner data:', e, data.data);
-            }
-        }
-        console.log('AI Search: handleStreamingUpdate called with:', data);
-        console.log('AI Search: data.type =', data.type);
-        
-        if (data.type === 'queryUnderstanding') {
-            console.log('AI Search: Processing queryUnderstanding phase');
-            // Phase 1: Display search terms immediately
-            this.displayQueryUnderstanding(data.queryUnderstanding);
-            this.updateAiStatus('🔍 Searching vector database with AI-generated terms...', 'thinking');
-        }
-        else if (data.type === 'searchResults') {
-            console.log('AI Search: Processing searchResults phase');
-            // Phase 2: Display search results immediately (without explanations)
-            this.displaySearchResultsWithoutExplanations(data.searchResults);
-            this.updateAiStatus('💭 Generating explanations for each result...', 'thinking');
-            
-            // Celebrate success and fade out status after a delay
-            setTimeout(() => {
-                this.celebrateAndFadeStatus();
-            }, 1000);
-        }
-        else if (data.type === 'explanation') {
-            console.log('AI Search: Processing explanation phase for index:', data.index);
-            // Phase 3: Add explanation to specific result
-            this.addExplanationToResult(data.index, data.explanation);
-        }
-        else if (data.type === 'aiAnalysis') {
-            console.log('AI Search: Processing aiAnalysis phase');
-            // Display AI analysis
-            this.displayAiAnalysis(data.analysis);
-        }
-        else if (data.type === 'status') {
-            console.log('AI Search: Processing status update:', data.message);
-            // Update status message
-            this.updateAiStatus(data.message, data.statusType || 'thinking');
-        }
-        else if (data.type === 'complete') {
-            console.log('AI Search: Processing complete phase');
-            // Search is complete
-            this.stopRotatingMessages();
-            this.updateAiStatus('✅ Search completed!', 'success');
-            
-            // Reset button state when search completes successfully
-            this.resetButtonState();
-        }
-        else if (data.type === 'error') {
-            console.log('AI Search: Processing error:', data.message);
-            // Handle error
-            this.updateAiStatus('❌ ' + data.message, 'error');
-            
-            // Reset button state when search encounters an error
-            this.resetButtonState();
-        }
-        else {
-            console.log('AI Search: Unknown data type:', data.type);
-        }
-    }
+
 
     updateSingleExplanation(index, explanation) {
         const resultRows = this.resultsContainer.querySelectorAll('.search-result-item');
@@ -946,8 +876,8 @@ class AiSearch {
             const enhancedQuery = this.buildEnhancedQuery(query, filters);
             console.log('AI Search: Enhanced query:', enhancedQuery);
 
-            console.log('AI Search: Making fetch request to /Home/IntelligentSearchStream');
-            const response = await fetch('/Home/IntelligentSearchStream', {
+            console.log('AI Search: Making fetch request to /Home/IntelligentSearch');
+            const response = await fetch('/Home/IntelligentSearch', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -964,56 +894,20 @@ class AiSearch {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            console.log('AI Search: Starting streaming response processing...');
-
-            // Use streaming response for real-time updates
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let chunkCount = 0;
+            console.log('AI Search: Processing response...');
             
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) {
-                        console.log('AI Search: Streaming completed after', chunkCount, 'chunks');
-                        break;
-                    }
-                    
-                    chunkCount++;
-                    console.log('AI Search: Received chunk', chunkCount, 'with', value.length, 'bytes');
-                    
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop() || ''; // Keep incomplete line in buffer
-                    
-                    console.log('AI Search: Processing', lines.length, 'lines from chunk');
-                    
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const jsonData = line.slice(6);
-                                console.log('AI Search: Received streaming data:', jsonData);
-                                const data = JSON.parse(jsonData);
-                                console.log('AI Search: Parsed data:', data);
-                                
-                                // Check if this is a cancellation message
-                                if (data.type === 'cancelled') {
-                                    console.log('AI Search: Search was cancelled by user');
-                                    return; // Stop processing
-                                }
-                                
-                                this.handleStreamingUpdate(data);
-                            } catch (e) {
-                                console.log('AI Search: Error parsing streaming data:', e);
-                                console.log('AI Search: Raw data was:', line.slice(6));
-                            }
-                        }
-                    }
+            // Get the JSON response
+            const data = await response.json();
+            console.log('AI Search: Received data:', data);
+            
+            // Process the results
+            if (data.searchResults && data.searchResults.length > 0) {
+                this.displaySearchResultsWithAnimation(data.searchResults);
+                if (data.aiAnalysis) {
+                    this.displayAiAnalysis(data.aiAnalysis);
                 }
-            } catch (streamError) {
-                console.error('AI Search: Error during streaming:', streamError);
-                throw streamError;
+            } else {
+                this.displaySearchResultsWithAnimation([]);
             }
 
             // Update status to success and stop rotating animation
