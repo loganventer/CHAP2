@@ -21,16 +21,16 @@
 
     <div class="search-input-container">
         <div class="search-tabs">
-            <button class="tab-button" data-tab="regular">
+            <button class="tab-button active" data-tab="regular">
                 <i class="fas fa-search"></i> Regular Search
             </button>
-            <button class="tab-button active" data-tab="ai">
+            <button class="tab-button" data-tab="ai">
                 <i class="fas fa-robot"></i> AI Search
             </button>
         </div>
         
         <!-- Regular Search -->
-        <div class="search-section" id="regularSearch" style="display: none;">
+        <div class="search-section active" id="regularSearch">
             <div class="search-box">
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" 
@@ -51,7 +51,7 @@
         </div>
         
         <!-- AI Search -->
-        <div class="search-section active" id="aiSearch">
+        <div class="search-section" id="aiSearch" style="display: none;">
             <div class="search-box">
                 <i class="fas fa-robot search-icon"></i>
                 <input type="text" 
