@@ -476,39 +476,52 @@ function Install-NvidiaContainerToolkit {
         # Install in WSL
         Write-Host "   Installing NVIDIA Container Toolkit in WSL..." -ForegroundColor Gray
         
-        # Add NVIDIA repository
+        # Add NVIDIA repository with timeout
         Write-Host "   Adding NVIDIA repository..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo -S gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg" 2>&1
+        Write-Host "   Downloading GPG key (this may take a moment)..." -ForegroundColor Gray
+        
+        # Try without sudo first, then with sudo if needed
+        $result = wsl -d $ubuntuDistro -e bash -c "timeout 60 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to add GPG key: $result" -ForegroundColor Red
+            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
+            Write-Host "   This may be due to network issues or repository unavailability" -ForegroundColor Yellow
             return $false
         }
+        Write-Host "   GPG key added successfully" -ForegroundColor Green
         
-        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo -S tee /etc/apt/sources.list.d/nvidia-container-toolkit.list" 2>&1
+        Write-Host "   Adding repository to sources list..." -ForegroundColor Gray
+        $result = wsl -d $ubuntuDistro -e bash -c "timeout 60 curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to add repository: $result" -ForegroundColor Red
+            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
+            Write-Host "   This may be due to network issues or repository unavailability" -ForegroundColor Yellow
             return $false
         }
+        Write-Host "   Repository added successfully" -ForegroundColor Green
         
         # Update and install
         Write-Host "   Updating package list..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S apt-get update" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "timeout 120 sudo apt-get update" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to update package list: $result" -ForegroundColor Red
+            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
             return $false
         }
         
         Write-Host "   Installing NVIDIA Container Toolkit..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S apt-get install -y nvidia-container-toolkit" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "timeout 300 sudo apt-get install -y nvidia-container-toolkit" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to install NVIDIA Container Toolkit: $result" -ForegroundColor Red
+            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
             return $false
         }
         
         Write-Host "   Configuring Docker runtime..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S nvidia-ctk runtime configure --runtime=docker" 2>&1
+        $result = wsl -d $ubuntuDistro -e bash -c "timeout 60 sudo nvidia-ctk runtime configure --runtime=docker" 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "   Failed to configure Docker runtime: $result" -ForegroundColor Red
+            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
             return $false
         }
         
