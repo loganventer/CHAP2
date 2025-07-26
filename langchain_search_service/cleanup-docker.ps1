@@ -14,7 +14,12 @@ try {
 # Step 2: Stop and remove containers
 Write-Host "Step 2: Stopping and removing containers..." -ForegroundColor Yellow
 try {
-    docker-compose down
+    # Try GPU compose first, then fallback to CPU
+try {
+    docker-compose -f docker-compose.gpu.yml down
+} catch {
+    docker-compose -f docker-compose.yml down
+}
     Write-Host "   PASS: Containers stopped and removed" -ForegroundColor Green
 } catch {
     Write-Host "   FAIL: Could not stop containers" -ForegroundColor Red
@@ -96,5 +101,5 @@ Write-Host "========================================" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "To rebuild your services:" -ForegroundColor Yellow
-Write-Host "1. Run: docker-compose up -d" -ForegroundColor White
+Write-Host "1. Run: docker-compose -f docker-compose.gpu.yml up -d (or docker-compose -f docker-compose.yml up -d for CPU)" -ForegroundColor White
 Write-Host "2. Or run: .\start-windows-gpu-detection.ps1" -ForegroundColor White 

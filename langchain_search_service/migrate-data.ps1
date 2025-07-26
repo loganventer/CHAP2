@@ -14,7 +14,7 @@ try {
     Write-Host "   PASS: LangChain Service accessible (Status: $($langchainResponse.StatusCode))" -ForegroundColor Green
 } catch {
     Write-Host "   FAIL: LangChain Service not accessible: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "   Please ensure containers are running with: docker-compose up -d" -ForegroundColor Yellow
+    Write-Host "   Please ensure containers are running with: docker-compose -f docker-compose.gpu.yml up -d (or docker-compose -f docker-compose.yml up -d for CPU)" -ForegroundColor Yellow
     exit 1
 }
 
@@ -25,7 +25,7 @@ try {
     Write-Host "   PASS: Qdrant accessible (Status: $($qdrantResponse.StatusCode))" -ForegroundColor Green
 } catch {
     Write-Host "   FAIL: Qdrant not accessible: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "   Please ensure containers are running with: docker-compose up -d" -ForegroundColor Yellow
+    Write-Host "   Please ensure containers are running with: docker-compose -f docker-compose.gpu.yml up -d (or docker-compose -f docker-compose.yml up -d for CPU)" -ForegroundColor Yellow
     exit 1
 }
 

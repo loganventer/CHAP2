@@ -1,14 +1,12 @@
 #Requires -Version 5.1
 
-param(
-    [switch]$SkipGpuCheck,
-    [switch]$ForceRebuild,
-    [switch]$ForceGpu
-)
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "CHAP2 Force GPU Deployment" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
 
-Write-Host "========================================" -ForegroundColor Green
-Write-Host "CHAP2 LangChain Search Service Deployment" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Green
+# Force GPU mode - skip all detection
+$script:UseGpu = $true
+Write-Host "FORCE: GPU mode enabled - skipping all detection" -ForegroundColor Yellow
 
 # Step 1: Check prerequisites
 Write-Host "Step 1: Checking prerequisites..." -ForegroundColor Yellow
@@ -36,57 +34,10 @@ try {
     exit 1
 }
 
-# Step 2: GPU Detection and Setup
-if (-not $SkipGpuCheck) {
-    Write-Host "Step 2: Detecting GPU and setting up NVIDIA Container Toolkit..." -ForegroundColor Yellow
-    
-    # Check for NVIDIA GPU
-    try {
-        $gpuInfo = nvidia-smi 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "   PASS: NVIDIA GPU detected" -ForegroundColor Green
-            Write-Host "   GPU Info:" -ForegroundColor Gray
-            Write-Host $gpuInfo -ForegroundColor Gray
-            
-            # Check NVIDIA Container Toolkit
-            Write-Host "   Checking NVIDIA Container Toolkit..." -ForegroundColor Gray
-            try {
-                $toolkitTest = docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi 2>$null
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "   PASS: NVIDIA Container Toolkit is working" -ForegroundColor Green
-                    $script:UseGpu = $true
-                } else {
-                    Write-Host "   FAIL: NVIDIA Container Toolkit not working" -ForegroundColor Red
-                    Write-Host "   Please install NVIDIA Container Toolkit manually" -ForegroundColor Yellow
-                    $script:UseGpu = $false
-                }
-            } catch {
-                Write-Host "   FAIL: Cannot test NVIDIA Container Toolkit" -ForegroundColor Red
-                $script:UseGpu = $false
-            }
-        } else {
-            Write-Host "   INFO: No NVIDIA GPU detected, will use CPU mode" -ForegroundColor Yellow
-            $script:UseGpu = $false
-        }
-    } catch {
-        Write-Host "   INFO: nvidia-smi not available, will use CPU mode" -ForegroundColor Yellow
-        $script:UseGpu = $false
-    }
-    
-    # Force GPU if requested
-    if ($ForceGpu) {
-        Write-Host "   FORCE: GPU mode enabled by user request" -ForegroundColor Yellow
-        $script:UseGpu = $true
-    }
-} else {
-    Write-Host "Step 2: Skipping GPU detection (SkipGpuCheck specified)" -ForegroundColor Yellow
-    if ($ForceGpu) {
-        Write-Host "   FORCE: GPU mode enabled by user request" -ForegroundColor Yellow
-        $script:UseGpu = $true
-    } else {
-        $script:UseGpu = $false
-    }
-}
+# Step 2: Force GPU Configuration
+Write-Host "Step 2: Using FORCED GPU configuration..." -ForegroundColor Yellow
+Write-Host "   Using GPU-enabled Docker Compose configuration..." -ForegroundColor Green
+$composeFile = "docker-compose.gpu.yml"
 
 # Step 3: Fix API Routes Configuration
 Write-Host "Step 3: Fixing API routes configuration..." -ForegroundColor Yellow
@@ -238,16 +189,9 @@ try {
 # Step 4: Stop existing containers and clean up
 Write-Host "Step 4: Stopping existing containers and cleaning up..." -ForegroundColor Yellow
 
-# Determine which compose file to use for cleanup
-if ($script:UseGpu) {
-    $cleanupComposeFile = "docker-compose.gpu.yml"
-} else {
-    $cleanupComposeFile = "docker-compose.yml"
-}
-
 try {
     Write-Host "   Stopping all containers..." -ForegroundColor Gray
-    docker-compose -f $cleanupComposeFile down
+    docker-compose -f $composeFile down
     Start-Sleep -Seconds 5
     
     # Force remove any remaining containers
@@ -280,26 +224,12 @@ try {
     Write-Host "   FAIL: Could not clean up containers: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Step 5: Build and start containers with better error handling
-Write-Host "Step 5: Building and starting containers..." -ForegroundColor Yellow
-
-# Determine which compose file to use
-if ($script:UseGpu) {
-    Write-Host "   Using GPU-enabled Docker Compose configuration..." -ForegroundColor Green
-    $composeFile = "docker-compose.gpu.yml"
-} else {
-    Write-Host "   Using CPU-only Docker Compose configuration..." -ForegroundColor Yellow
-    $composeFile = "docker-compose.yml"
-}
+# Step 5: Build and start containers with GPU
+Write-Host "Step 5: Building and starting containers with GPU..." -ForegroundColor Yellow
 
 try {
-    if ($ForceRebuild) {
-        Write-Host "   Force rebuilding containers..." -ForegroundColor Gray
-        docker-compose -f $composeFile build --no-cache
-    } else {
-        Write-Host "   Building containers (using cache if available)..." -ForegroundColor Gray
-        docker-compose -f $composeFile build
-    }
+    Write-Host "   Building containers with GPU support..." -ForegroundColor Gray
+    docker-compose -f $composeFile build --no-cache
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   FAIL: Container build failed" -ForegroundColor Red
@@ -313,7 +243,7 @@ try {
 }
 
 # Start all containers at once to ensure proper network setup
-Write-Host "   Starting all containers..." -ForegroundColor Gray
+Write-Host "   Starting all containers with GPU..." -ForegroundColor Gray
 try {
     docker-compose -f $composeFile up -d
     Start-Sleep -Seconds 30
@@ -328,7 +258,7 @@ try {
     $totalContainers = docker ps --filter "name=langchain_search_service" --format "{{.Names}}" | Measure-Object -Line
     
     if ($runningContainers.Lines -eq $totalContainers.Lines) {
-        Write-Host "   PASS: All containers started successfully" -ForegroundColor Green
+        Write-Host "   PASS: All containers started successfully with GPU" -ForegroundColor Green
     } else {
         Write-Host "   FAIL: Some containers failed to start" -ForegroundColor Red
         docker-compose -f $composeFile logs
@@ -542,14 +472,14 @@ try {
         }
     } else {
         Write-Host "   FAIL: Cannot get LangChain IP" -ForegroundColor Red
-    }
+        }
 } catch {
     Write-Host "   FAIL: Cannot test Web Portal -> LangChain connectivity" -ForegroundColor Red
 }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "Deployment complete!" -ForegroundColor Green
+Write-Host "FORCE GPU Deployment complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
 Write-Host ""
@@ -561,8 +491,8 @@ Write-Host "- Qdrant: http://localhost:6333" -ForegroundColor White
 Write-Host "- Ollama: http://localhost:11434" -ForegroundColor White
 
 Write-Host ""
-Write-Host "Deployment Summary:" -ForegroundColor Yellow
-Write-Host "- All services deployed and running" -ForegroundColor White
+Write-Host "FORCE GPU Deployment Summary:" -ForegroundColor Yellow
+Write-Host "- All services deployed with GPU support" -ForegroundColor White
 Write-Host "- Ollama models pulled and ready" -ForegroundColor White
 Write-Host "- Data migrated to vector store" -ForegroundColor White
 Write-Host "- Search functionality tested and working" -ForegroundColor White
@@ -632,5 +562,5 @@ try {
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "Deployment and cleanup completed!" -ForegroundColor Green
+Write-Host "FORCE GPU Deployment and cleanup completed!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green 

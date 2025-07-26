@@ -136,7 +136,7 @@ Write-Host "========================================" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Troubleshooting suggestions:" -ForegroundColor Yellow
-Write-Host "1. If containers are on different networks, restart with: docker-compose down && docker-compose up -d" -ForegroundColor White
+Write-Host "1. If containers are on different networks, restart with: docker-compose -f docker-compose.gpu.yml down && docker-compose -f docker-compose.gpu.yml up -d" -ForegroundColor White
 Write-Host "2. If curl/wget not available, install them in the Dockerfile" -ForegroundColor White
 Write-Host "3. If DNS resolution fails, check Docker DNS settings" -ForegroundColor White
 Write-Host "4. If IP connectivity works but DNS doesn't, it's a DNS issue" -ForegroundColor White

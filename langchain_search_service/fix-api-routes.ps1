@@ -159,11 +159,26 @@ try {
 Write-Host "Step 6: Rebuilding and restarting containers..." -ForegroundColor Yellow
 
 try {
-    docker-compose down
+    # Try GPU compose first, then fallback to CPU
+try {
+    docker-compose -f docker-compose.gpu.yml down
+} catch {
+    docker-compose -f docker-compose.yml down
+}
     Start-Sleep -Seconds 5
     
-    docker-compose build --no-cache
-    docker-compose up -d
+    # Try GPU compose first, then fallback to CPU
+try {
+    docker-compose -f docker-compose.gpu.yml build --no-cache
+} catch {
+    docker-compose -f docker-compose.yml build --no-cache
+}
+    # Try GPU compose first, then fallback to CPU
+try {
+    docker-compose -f docker-compose.gpu.yml up -d
+} catch {
+    docker-compose -f docker-compose.yml up -d
+}
     
     Write-Host "   PASS: Containers rebuilt and restarted" -ForegroundColor Green
 } catch {

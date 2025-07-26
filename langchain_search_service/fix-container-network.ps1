@@ -5,7 +5,12 @@ Write-Host "========================================" -ForegroundColor Green
 # Step 1: Stop all containers
 Write-Host "Step 1: Stopping all containers..." -ForegroundColor Yellow
 try {
-    docker-compose down
+    # Try GPU compose first, then fallback to CPU
+try {
+    docker-compose -f docker-compose.gpu.yml down
+} catch {
+    docker-compose -f docker-compose.yml down
+}
     Start-Sleep -Seconds 5
     Write-Host "   PASS: All containers stopped" -ForegroundColor Green
 } catch {
