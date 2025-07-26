@@ -120,6 +120,99 @@ POST /add_documents
 ]
 ```
 
+## Windows GPU Deployment
+
+### Prerequisites
+
+1. **Docker Desktop**: Install and enable Docker Desktop for Windows
+2. **NVIDIA GPU**: NVIDIA GPU with CUDA support (optional)
+3. **NVIDIA Drivers**: Latest NVIDIA drivers installed (if GPU available)
+4. **NVIDIA Container Toolkit**: Install NVIDIA Container Toolkit for Docker (if GPU available)
+
+### Installation Steps
+
+1. **Install NVIDIA Container Toolkit** (if you have an NVIDIA GPU):
+   ```bash
+   # Download and install from:
+   # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+   ```
+
+2. **Enable GPU Support in Docker Desktop** (if you have an NVIDIA GPU):
+   - Open Docker Desktop Settings
+   - Go to "Resources" → "WSL Integration" or "Advanced"
+   - Enable "Use the WSL 2 based engine"
+   - Enable "Use GPU acceleration" if available
+
+### Deployment Scripts
+
+#### Automatic GPU Detection & Installation (Recommended)
+
+**Batch Script**:
+```cmd
+# Automatically detects GPU and installs requirements
+start-windows-gpu-detection.bat
+```
+
+**PowerShell Script** (More robust):
+```powershell
+# Automatically detects GPU and installs requirements
+.\start-windows-gpu-detection.ps1
+
+# Force CPU-only mode (ignores GPU detection)
+.\start-windows-gpu-detection.ps1 -ForceCPU
+
+# Auto-install all requirements without prompts
+.\start-windows-gpu-detection.ps1 -AutoInstall
+
+# Skip all prompts (use with -AutoInstall)
+.\start-windows-gpu-detection.ps1 -AutoInstall -SkipPrompts
+
+# Verbose mode for debugging
+.\start-windows-gpu-detection.ps1 -Verbose
+```
+
+#### Manual GPU Deployment (Legacy)
+
+**Batch Script**:
+```cmd
+# Manual GPU deployment (requires NVIDIA Container Toolkit)
+start-windows-gpu.bat
+```
+
+**PowerShell Script**:
+```powershell
+# Manual GPU deployment (requires NVIDIA Container Toolkit)
+.\start-windows-gpu.ps1
+```
+
+### GPU Detection & Installation Features
+
+The automatic detection scripts will:
+
+1. **Check Docker Desktop**: Verify Docker is running
+2. **Detect NVIDIA GPU**: Use `nvidia-smi` to check for GPU
+3. **Check NVIDIA Drivers**: Verify drivers are installed
+4. **Install NVIDIA Container Toolkit**: Auto-download and install if missing
+5. **Configure Docker Desktop**: Enable GPU acceleration and WSL 2
+6. **Create Configuration**: Generate appropriate `docker-compose.gpu.yml`
+7. **Deploy Services**: Start with optimal configuration
+8. **Verify Status**: Check all services are running
+
+### Automatic Installation Features
+
+- **NVIDIA Drivers**: Detects missing drivers and provides installation links
+- **NVIDIA Container Toolkit**: Auto-downloads and installs the latest version
+- **Docker Desktop Configuration**: Automatically enables GPU acceleration and WSL 2
+- **Administrator Privileges**: Handles permission requirements for installations
+- **User Prompts**: Interactive prompts for installation decisions (can be skipped with `-AutoInstall`)
+
+### Deployment Modes
+
+- **GPU-Accelerated**: Full GPU support with NVIDIA Container Toolkit
+- **GPU-Detected**: GPU available but Container Toolkit missing (runs on CPU)
+- **CPU-Only**: No GPU detected or forced CPU mode
+- **Forced CPU**: Manual override to ignore GPU detection
+
 ## Configuration
 
 ### Environment Variables
@@ -129,7 +222,7 @@ POST /add_documents
 
 ### GPU Configuration
 
-The Ollama container is configured to use all available NVIDIA GPUs:
+The Ollama container can be configured to use all available NVIDIA GPUs:
 
 ```yaml
 deploy:

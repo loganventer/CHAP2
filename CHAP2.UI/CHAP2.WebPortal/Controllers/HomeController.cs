@@ -821,8 +821,10 @@ Please provide a helpful and accurate response based on the chorus information p
             Response.Headers.Add("Cache-Control", "no-cache");
             Response.Headers.Add("Connection", "keep-alive");
 
-            // Get cancellation token from request
-            var cancellationToken = HttpContext.RequestAborted;
+            // Create a cancellation token that only cancels on explicit user interruption
+            // We'll use a timeout-based approach instead of relying on HttpContext.RequestAborted
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5)); // 5 minute timeout
+            var cancellationToken = cts.Token;
 
             // Stream the intelligent search response with cancellation support
             await foreach (var chunk in _intelligentSearchService.SearchWithIntelligenceStreamingAsync(request.Query, request.MaxResults, cancellationToken))

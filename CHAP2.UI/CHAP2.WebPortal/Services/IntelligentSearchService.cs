@@ -123,9 +123,15 @@ public class IntelligentSearchService : IIntelligentSearchService
         {
             while (await langChainEnumerator.MoveNextAsync())
             {
+                // Only check cancellation token at yield points, not during processing
                 langChainResults.Add(langChainEnumerator.Current);
             }
             langChainSuccess = true;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("LangChain streaming search was cancelled for query: {Query}", query);
+            throw;
         }
         catch (Exception ex)
         {
@@ -141,6 +147,7 @@ public class IntelligentSearchService : IIntelligentSearchService
         {
             foreach (var result in langChainResults)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 yield return result;
             }
         }
@@ -159,14 +166,12 @@ public class IntelligentSearchService : IIntelligentSearchService
     {
         // Step 1: Use LLM to understand the query
         _logger.LogInformation("Step 1: Generating query understanding...");
-        cancellationToken.ThrowIfCancellationRequested();
         var queryUnderstanding = await GenerateQueryUnderstandingAsync(query, cancellationToken);
         _logger.LogInformation("Query understanding generated: {Understanding}", queryUnderstanding);
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "queryUnderstanding", queryUnderstanding });
 
         // Step 2: Search vector database
         _logger.LogInformation("Step 2: Searching vector database...");
-        cancellationToken.ThrowIfCancellationRequested();
         
         List<ChorusSearchResult> searchResults;
         bool vectorSearchFailed = false;
@@ -176,6 +181,11 @@ public class IntelligentSearchService : IIntelligentSearchService
         {
             searchResults = await _vectorSearchService.SearchSimilarAsync(queryUnderstanding, maxResults, cancellationToken);
             _logger.LogInformation("Vector search found {Count} results for query: {Query}", searchResults.Count, query);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Vector search was cancelled for query: {Query}", query);
+            throw;
         }
         catch (Exception vectorEx)
         {
@@ -203,7 +213,6 @@ public class IntelligentSearchService : IIntelligentSearchService
         var detailedResults = new List<ChorusSearchResult>();
         for (int i = 0; i < searchResults.Count; i++)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             _logger.LogInformation("Fetching details {Index}/{Total} for chorus: {Name}", i + 1, searchResults.Count, searchResults[i].Name);
             var detailedResult = await FetchChorusDetailsAsync(searchResults[i].Id);
             if (detailedResult != null)
@@ -226,7 +235,6 @@ public class IntelligentSearchService : IIntelligentSearchService
         _logger.LogInformation("Step 4: Generating explanations for {Count} results", detailedResults.Count);
         for (int i = 0; i < detailedResults.Count; i++)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             _logger.LogInformation("Generating explanation {Index}/{Total} for chorus: {Name}", i + 1, detailedResults.Count, detailedResults[i].Name);
             var explanation = await GenerateSingleExplanationAsync(query, detailedResults[i], cancellationToken);
             yield return System.Text.Json.JsonSerializer.Serialize(new { type = "explanation", index = i, explanation });
@@ -234,7 +242,6 @@ public class IntelligentSearchService : IIntelligentSearchService
 
         // Step 5: Generate AI analysis
         _logger.LogInformation("Step 5: Generating AI analysis...");
-        cancellationToken.ThrowIfCancellationRequested();
         var aiAnalysis = await GenerateAnalysisAsync(query, detailedResults, cancellationToken);
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "aiAnalysis", analysis = aiAnalysis });
 
