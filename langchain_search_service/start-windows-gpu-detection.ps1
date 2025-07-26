@@ -53,21 +53,27 @@ if (-not $SkipGpuCheck) {
                 $toolkitTest = docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi 2>$null
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "   PASS: NVIDIA Container Toolkit is working" -ForegroundColor Green
+                    $script:UseGpu = $true
                 } else {
                     Write-Host "   FAIL: NVIDIA Container Toolkit not working" -ForegroundColor Red
                     Write-Host "   Please install NVIDIA Container Toolkit manually" -ForegroundColor Yellow
+                    $script:UseGpu = $false
                 }
             } catch {
                 Write-Host "   FAIL: Cannot test NVIDIA Container Toolkit" -ForegroundColor Red
+                $script:UseGpu = $false
             }
         } else {
             Write-Host "   INFO: No NVIDIA GPU detected, will use CPU mode" -ForegroundColor Yellow
+            $script:UseGpu = $false
         }
     } catch {
         Write-Host "   INFO: nvidia-smi not available, will use CPU mode" -ForegroundColor Yellow
+        $script:UseGpu = $false
     }
 } else {
     Write-Host "Step 2: Skipping GPU detection (SkipGpuCheck specified)" -ForegroundColor Yellow
+    $script:UseGpu = $false
 }
 
 # Step 3: Fix API Routes Configuration
@@ -220,9 +226,16 @@ try {
 # Step 4: Stop existing containers and clean up
 Write-Host "Step 4: Stopping existing containers and cleaning up..." -ForegroundColor Yellow
 
+# Determine which compose file to use for cleanup
+if ($script:UseGpu) {
+    $cleanupComposeFile = "docker-compose.gpu.yml"
+} else {
+    $cleanupComposeFile = "docker-compose.yml"
+}
+
 try {
     Write-Host "   Stopping all containers..." -ForegroundColor Gray
-    docker-compose down
+    docker-compose -f $cleanupComposeFile down
     Start-Sleep -Seconds 5
     
     # Force remove any remaining containers
@@ -258,13 +271,22 @@ try {
 # Step 5: Build and start containers with better error handling
 Write-Host "Step 5: Building and starting containers..." -ForegroundColor Yellow
 
+# Determine which compose file to use
+if ($script:UseGpu) {
+    Write-Host "   Using GPU-enabled Docker Compose configuration..." -ForegroundColor Green
+    $composeFile = "docker-compose.gpu.yml"
+} else {
+    Write-Host "   Using CPU-only Docker Compose configuration..." -ForegroundColor Yellow
+    $composeFile = "docker-compose.yml"
+}
+
 try {
     if ($ForceRebuild) {
         Write-Host "   Force rebuilding containers..." -ForegroundColor Gray
-        docker-compose build --no-cache
+        docker-compose -f $composeFile build --no-cache
     } else {
         Write-Host "   Building containers (using cache if available)..." -ForegroundColor Gray
-        docker-compose build
+        docker-compose -f $composeFile build
     }
     
     if ($LASTEXITCODE -ne 0) {
@@ -284,7 +306,7 @@ Write-Host "   Starting containers one by one..." -ForegroundColor Gray
 # Start Qdrant first
 Write-Host "   Starting Qdrant..." -ForegroundColor Gray
 try {
-    docker-compose up -d --no-build qdrant
+    docker-compose -f $composeFile up -d --no-build qdrant
     Start-Sleep -Seconds 10
     
     # Check if Qdrant is running
@@ -293,7 +315,7 @@ try {
         Write-Host "   PASS: Qdrant started successfully" -ForegroundColor Green
     } else {
         Write-Host "   FAIL: Qdrant failed to start" -ForegroundColor Red
-        docker-compose logs qdrant
+        docker-compose -f $composeFile logs qdrant
         exit 1
     }
 } catch {
@@ -304,7 +326,7 @@ try {
 # Start Ollama
 Write-Host "   Starting Ollama..." -ForegroundColor Gray
 try {
-    docker-compose up -d --no-build ollama
+    docker-compose -f $composeFile up -d --no-build ollama
     Start-Sleep -Seconds 10
     
     # Check if Ollama is running
@@ -313,7 +335,7 @@ try {
         Write-Host "   PASS: Ollama started successfully" -ForegroundColor Green
     } else {
         Write-Host "   FAIL: Ollama failed to start" -ForegroundColor Red
-        docker-compose logs ollama
+        docker-compose -f $composeFile logs ollama
         exit 1
     }
 } catch {
@@ -324,7 +346,7 @@ try {
 # Start LangChain service
 Write-Host "   Starting LangChain service..." -ForegroundColor Gray
 try {
-    docker-compose up -d --no-build langchain-service
+    docker-compose -f $composeFile up -d --no-build langchain-service
     Start-Sleep -Seconds 15
     
     # Check if LangChain service is running
@@ -333,7 +355,7 @@ try {
         Write-Host "   PASS: LangChain service started successfully" -ForegroundColor Green
     } else {
         Write-Host "   FAIL: LangChain service failed to start" -ForegroundColor Red
-        docker-compose logs langchain-service
+        docker-compose -f $composeFile logs langchain-service
         exit 1
     }
 } catch {
@@ -344,7 +366,7 @@ try {
 # Start CHAP2 API
 Write-Host "   Starting CHAP2 API..." -ForegroundColor Gray
 try {
-    docker-compose up -d --no-build chap2-api
+    docker-compose -f $composeFile up -d --no-build chap2-api
     Start-Sleep -Seconds 15
     
     # Check if CHAP2 API is running
@@ -353,7 +375,7 @@ try {
         Write-Host "   PASS: CHAP2 API started successfully" -ForegroundColor Green
     } else {
         Write-Host "   FAIL: CHAP2 API failed to start" -ForegroundColor Red
-        docker-compose logs chap2-api
+        docker-compose -f $composeFile logs chap2-api
         exit 1
     }
 } catch {
@@ -364,7 +386,7 @@ try {
 # Start Web Portal
 Write-Host "   Starting Web Portal..." -ForegroundColor Gray
 try {
-    docker-compose up -d --no-build chap2-webportal
+    docker-compose -f $composeFile up -d --no-build chap2-webportal
     Start-Sleep -Seconds 15
     
     # Check if Web Portal is running
@@ -373,7 +395,7 @@ try {
         Write-Host "   PASS: Web Portal started successfully" -ForegroundColor Green
     } else {
         Write-Host "   FAIL: Web Portal failed to start" -ForegroundColor Red
-        docker-compose logs chap2-webportal
+        docker-compose -f $composeFile logs chap2-webportal
         exit 1
     }
 } catch {
