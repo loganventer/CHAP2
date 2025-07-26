@@ -602,20 +602,26 @@ Please provide a helpful and accurate response based on the chorus information p
     [HttpPost]
     public async Task<IActionResult> IntelligentSearch([FromBody] IntelligentSearchRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Query))
-        {
-            return BadRequest(new { error = "Query is required" });
-        }
-
         try
         {
-            _logger.LogInformation("Processing intelligent search: {Query}", request.Query);
+            _logger.LogInformation("IntelligentSearch called with query: {Query}, maxResults: {MaxResults}", 
+                request.Query, request.MaxResults);
 
-            var result = await _intelligentSearchService.SearchWithIntelligenceAsync(request.Query, request.MaxResults);
-            _logger.LogInformation("Intelligent search completed. Found {Count} results, AI analysis: {HasAi}", 
-                result.SearchResults.Count, result.HasAiAnalysis);
+            var result = await _intelligentSearchService.SearchWithIntelligenceAsync(
+                request.Query, request.MaxResults, HttpContext.RequestAborted);
+
+            _logger.LogInformation("IntelligentSearch returned {Count} results", result.SearchResults.Count);
             
-            return Json(new { 
+            // Debug: Log each result
+            for (int i = 0; i < result.SearchResults.Count; i++)
+            {
+                var searchResult = result.SearchResults[i];
+                _logger.LogInformation("Result {Index}: {Name} (ID: {Id})", 
+                    i + 1, searchResult.Name, searchResult.Id);
+            }
+
+            return Json(new
+            {
                 searchResults = result.SearchResults,
                 aiAnalysis = result.AiAnalysis,
                 hasAiAnalysis = result.HasAiAnalysis,
@@ -624,8 +630,8 @@ Please provide a helpful and accurate response based on the chorus information p
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during intelligent search: {Query}", request.Query);
-            return StatusCode(500, new { error = "Internal server error" });
+            _logger.LogError(ex, "Error in IntelligentSearch for query: {Query}", request.Query);
+            return Json(new { error = "Search failed", details = ex.Message });
         }
     }
 

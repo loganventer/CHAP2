@@ -30,6 +30,7 @@ qdrant_client = None
 
 # Simple in-memory cache (for demo; use Redis for production)
 search_cache = {}
+cache_timestamp = 0  # Add timestamp for cache invalidation
 
 class SearchRequest(BaseModel):
     query: str
@@ -197,7 +198,8 @@ async def search(request: SearchRequest):
 
 @app.post("/search_intelligent", response_model=IntelligentSearchResult)
 async def search_intelligent(request: IntelligentSearchRequest):
-    cache_key = f"rag|{request.query.lower()}|{request.k}"
+    # Use timestamp-based cache key to prevent stale cache
+    cache_key = f"rag|{request.query.lower()}|{request.k}|{cache_timestamp}"
     if cache_key in search_cache:
         logger.info(f"Cache hit for RAG query: {request.query}")
         return search_cache[cache_key]
@@ -281,6 +283,14 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
             logger.error(f"Error in streaming search: {e}")
             yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
     return EventSourceResponse(generate_stream())
+
+@app.post("/clear_cache")
+async def clear_cache():
+    global search_cache, cache_timestamp
+    search_cache.clear()
+    cache_timestamp += 1
+    logger.info("Cache cleared and timestamp incremented")
+    return {"message": "Cache cleared successfully"}
 
 @app.post("/add_documents")
 async def add_documents(documents: List[Dict[str, Any]]):
