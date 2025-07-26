@@ -185,24 +185,62 @@ function Install-NvidiaContainerToolkit {
         Write-Host "Step 3: Installing NVIDIA Container Toolkit in WSL2..." -ForegroundColor Yellow
         Write-Host "   This will install the toolkit in the Ubuntu WSL2 environment" -ForegroundColor Gray
         
-        # Commands to run in WSL2
-        $wslCommands = @(
-            "curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg",
-            "curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list",
-            "sudo apt-get update",
-            "sudo apt-get install -y nvidia-container-toolkit",
-            "sudo nvidia-ctk runtime configure --runtime=docker",
-            "sudo systemctl restart docker"
-        )
+        # Commands to run in WSL2 with better feedback
+        Write-Host "   Installing NVIDIA Container Toolkit in WSL2..." -ForegroundColor Yellow
+        Write-Host "   This may take several minutes..." -ForegroundColor Gray
         
-        foreach ($command in $wslCommands) {
-            Write-Host "   Running: $command" -ForegroundColor Gray
-            $result = wsl -d $ubuntuDistro -e bash -c $command 2>&1
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "   Command failed: $result" -ForegroundColor Red
-                Write-Host "   Manual installation required in WSL2" -ForegroundColor Yellow
-                return $false
-            }
+        # Step 3.1: Add NVIDIA repository
+        Write-Host "   Step 3.1: Adding NVIDIA repository..." -ForegroundColor Cyan
+        $result = wsl -d $ubuntuDistro -e bash -c "curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to add GPG key: $result" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "   GPG key added successfully" -ForegroundColor Green
+        
+        $result = wsl -d $ubuntuDistro -e bash -c "curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to add repository: $result" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "   Repository added successfully" -ForegroundColor Green
+        
+        # Step 3.2: Update package list
+        Write-Host "   Step 3.2: Updating package list..." -ForegroundColor Cyan
+        $result = wsl -d $ubuntuDistro -e bash -c "sudo apt-get update" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to update package list: $result" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "   Package list updated successfully" -ForegroundColor Green
+        
+        # Step 3.3: Install NVIDIA Container Toolkit
+        Write-Host "   Step 3.3: Installing NVIDIA Container Toolkit..." -ForegroundColor Cyan
+        Write-Host "   This step may take 2-5 minutes..." -ForegroundColor Gray
+        $result = wsl -d $ubuntuDistro -e bash -c "sudo apt-get install -y nvidia-container-toolkit" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to install NVIDIA Container Toolkit: $result" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "   NVIDIA Container Toolkit installed successfully" -ForegroundColor Green
+        
+        # Step 3.4: Configure Docker runtime
+        Write-Host "   Step 3.4: Configuring Docker runtime..." -ForegroundColor Cyan
+        $result = wsl -d $ubuntuDistro -e bash -c "sudo nvidia-ctk runtime configure --runtime=docker" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to configure Docker runtime: $result" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "   Docker runtime configured successfully" -ForegroundColor Green
+        
+        # Step 3.5: Restart Docker
+        Write-Host "   Step 3.5: Restarting Docker service..." -ForegroundColor Cyan
+        $result = wsl -d $ubuntuDistro -e bash -c "sudo systemctl restart docker" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Warning: Failed to restart Docker service: $result" -ForegroundColor Yellow
+            Write-Host "   This is normal if Docker Desktop is managing the service" -ForegroundColor Gray
+        } else {
+            Write-Host "   Docker service restarted successfully" -ForegroundColor Green
         }
         
         Write-Host "NVIDIA Container Toolkit installed in WSL2" -ForegroundColor Green
