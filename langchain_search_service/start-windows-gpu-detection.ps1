@@ -172,29 +172,31 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Raw distribution list:" -ForegroundColor Gray
         Write-Host $distributions -ForegroundColor Gray
         
-        # More robust Ubuntu detection with leading whitespace handling
+        # More robust Ubuntu detection with multiple whitespace handling
         Write-Host "   Debug: Checking each line for Ubuntu..." -ForegroundColor Gray
         $allLines = $distributions -split "`n" | Where-Object { $_.Trim() -ne "" }
         foreach ($line in $allLines) {
             Write-Host "   Line: '$line'" -ForegroundColor Gray
         }
         
-        Write-Host "   Debug: Testing string matching with leading whitespace..." -ForegroundColor Gray
+        Write-Host "   Debug: Testing string matching with multiple whitespace handling..." -ForegroundColor Gray
         foreach ($line in $allLines) {
-            $trimmedLine = $line.Trim()
-            $ubuntuMatch = $trimmedLine -match "ubuntu"
-            $UbuntuMatch = $trimmedLine -match "Ubuntu"
+            # More aggressive cleaning: normalize all whitespace (multiple spaces/tabs become single space)
+            $cleanedLine = $line -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+            $ubuntuMatch = $cleanedLine -match "ubuntu"
+            $UbuntuMatch = $cleanedLine -match "Ubuntu"
             Write-Host "   Original: '$line'" -ForegroundColor Gray
-            Write-Host "   Trimmed: '$trimmedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
+            Write-Host "   Cleaned: '$cleanedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
         }
         
-        # Handle leading whitespace and asterisks
+        # Handle multiple whitespace issues and asterisks
         $ubuntuLines = $allLines | Where-Object { 
-            $trimmed = $_.Trim()
-            $trimmed -match "ubuntu" -or 
-            $trimmed -match "Ubuntu" -or
-            $trimmed -match "^\s*\*?\s*ubuntu" -or
-            $trimmed -match "^\s*\*?\s*Ubuntu"
+            # Normalize whitespace first, then check for Ubuntu
+            $cleaned = $_ -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+            $cleaned -match "ubuntu" -or 
+            $cleaned -match "Ubuntu" -or
+            $cleaned -match "^\s*\*?\s*ubuntu" -or
+            $cleaned -match "^\s*\*?\s*Ubuntu"
         }
         Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
         if ($ubuntuLines.Count -gt 0) {
@@ -208,12 +210,13 @@ function Install-NvidiaContainerToolkit {
         if ($ubuntuLines.Count -eq 0) {
             Write-Host "   Trying more aggressive Ubuntu search..." -ForegroundColor Yellow
             $ubuntuLines = $allLines | Where-Object { 
-                $trimmed = $_.Trim()
-                $trimmed -match "ubuntu" -or 
-                $trimmed -match "Ubuntu" -or 
-                $trimmed -match "UBUNTU" -or
-                $trimmed -match "^\s*\*?\s*ubuntu" -or
-                $trimmed -match "^\s*\*?\s*Ubuntu"
+                # Normalize whitespace first, then check for Ubuntu
+                $cleaned = $_ -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+                $cleaned -match "ubuntu" -or 
+                $cleaned -match "Ubuntu" -or 
+                $cleaned -match "UBUNTU" -or
+                $cleaned -match "^\s*\*?\s*ubuntu" -or
+                $cleaned -match "^\s*\*?\s*Ubuntu"
             }
             Write-Host "   Aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
         }
@@ -280,8 +283,11 @@ function Install-NvidiaContainerToolkit {
             Write-Host "   All distributions found:" -ForegroundColor Gray
             Write-Host $allDistros -ForegroundColor Gray
             
-            # Look for any distribution that contains "ubuntu" (case insensitive)
-            $possibleUbuntu = $allDistros | Where-Object { $_ -match "ubuntu" }
+            # Look for any distribution that contains "ubuntu" (case insensitive) with improved whitespace handling
+            $possibleUbuntu = $allDistros | Where-Object { 
+                $cleaned = $_ -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+                $cleaned -match "ubuntu" 
+            }
             if ($possibleUbuntu.Count -gt 0) {
                 Write-Host "   Found possible Ubuntu distribution via fallback" -ForegroundColor Green
                 $ubuntuDistro = ($possibleUbuntu[0] -split "\s+" | Where-Object { $_ -match "ubuntu" })[0]
