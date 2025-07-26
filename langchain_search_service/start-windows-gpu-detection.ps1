@@ -172,21 +172,22 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Raw distribution list:" -ForegroundColor Gray
         Write-Host $distributions -ForegroundColor Gray
         
-        # More robust Ubuntu detection
+        # More robust Ubuntu detection with whitespace handling
         Write-Host "   Debug: Checking each line for Ubuntu..." -ForegroundColor Gray
-        $allLines = $distributions -split "`n"
+        $allLines = $distributions -split "`n" | Where-Object { $_.Trim() -ne "" }
         foreach ($line in $allLines) {
             Write-Host "   Line: '$line'" -ForegroundColor Gray
         }
         
         Write-Host "   Debug: Testing string matching..." -ForegroundColor Gray
         foreach ($line in $allLines) {
-            $ubuntuMatch = $line -match "ubuntu"
-            $UbuntuMatch = $line -match "Ubuntu"
-            Write-Host "   Line '$line' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
+            $trimmedLine = $line.Trim()
+            $ubuntuMatch = $trimmedLine -match "ubuntu"
+            $UbuntuMatch = $trimmedLine -match "Ubuntu"
+            Write-Host "   Line '$trimmedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
         }
         
-        $ubuntuLines = $allLines | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" }
+        $ubuntuLines = $allLines | Where-Object { $_.Trim() -match "ubuntu" -or $_.Trim() -match "Ubuntu" }
         Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
         if ($ubuntuLines.Count -gt 0) {
             Write-Host "   Ubuntu distributions found:" -ForegroundColor Gray
@@ -199,11 +200,10 @@ function Install-NvidiaContainerToolkit {
         if ($ubuntuLines.Count -eq 0) {
             Write-Host "   Trying more aggressive Ubuntu search..." -ForegroundColor Yellow
             $ubuntuLines = $allLines | Where-Object { 
-                $_ -match "ubuntu" -or 
-                $_ -match "Ubuntu" -or 
-                $_ -match "UBUNTU" -or
-                $_ -match "ubuntu" -or
-                $_ -match "Ubuntu"
+                $trimmed = $_.Trim()
+                $trimmed -match "ubuntu" -or 
+                $trimmed -match "Ubuntu" -or 
+                $trimmed -match "UBUNTU"
             }
             Write-Host "   Aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
         }
