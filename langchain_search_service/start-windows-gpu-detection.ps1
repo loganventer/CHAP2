@@ -243,49 +243,14 @@ function New-DockerComposeGPU {
     if ($GPUAvailable -and -not $ForceCPU) {
         if ($ContainerGPU) {
             Write-Host "Creating GPU-enabled configuration..." -ForegroundColor Green
-            $content = @"
-version: '3.8'
-
-services:
-  ollama:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-"@
+            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]"
         } else {
             Write-Host "Creating GPU configuration (NVIDIA Container Toolkit required)..." -ForegroundColor Yellow
-            $content = @"
-version: '3.8'
-
-services:
-  ollama:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-# NOTE: This configuration requires NVIDIA Container Toolkit to be installed
-# If you see GPU errors, install NVIDIA Container Toolkit from:
-# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
-"@
+            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]`n`n# NOTE: This configuration requires NVIDIA Container Toolkit to be installed`n# If you see GPU errors, install NVIDIA Container Toolkit from:`n# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
         }
     } else {
         Write-Host "Creating CPU-only configuration..." -ForegroundColor Yellow
-        $content = @"
-version: '3.8'
-
-services:
-  ollama:
-    # No GPU configuration - running on CPU
-    # To enable GPU support, install NVIDIA drivers and Container Toolkit
-"@
+        $content = "version: '3.8'`n`nservices:`n  ollama:`n    # No GPU configuration - running on CPU`n    # To enable GPU support, install NVIDIA drivers and Container Toolkit"
     }
     
     $content | Out-File -FilePath "docker-compose.gpu.yml" -Encoding UTF8
