@@ -99,25 +99,25 @@ async def lifespan(app: FastAPI):
                 raise
     # Ensure collection exists
     try:
-        logger.info("Checking if collection 'choruses' exists...")
-        client.get_collection("choruses")
-        logger.info("Collection 'choruses' already exists")
+        logger.info("Checking if collection 'chorus-vectors' exists...")
+        client.get_collection("chorus-vectors")
+        logger.info("Collection 'chorus-vectors' already exists")
     except Exception as e:
-        logger.info(f"Collection 'choruses' does not exist, creating it... Error: {e}")
+        logger.info(f"Collection 'chorus-vectors' does not exist, creating it... Error: {e}")
         client.create_collection(
-            collection_name="choruses",
+            collection_name="chorus-vectors",
             vectors_config={
                 "size": 768,  # nomic-embed-text embedding size
                 "distance": "Cosine"
             }
         )
-        logger.info("Collection 'choruses' created successfully")
+        logger.info("Collection 'chorus-vectors' created successfully")
     
     qdrant_client = client
     # Initialize vector store
     vector_store = Qdrant(
         client=client,
-        collection_name="choruses",
+        collection_name="chorus-vectors",
         embeddings=embeddings,
     )
     # System prompt template for RAG
