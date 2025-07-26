@@ -173,7 +173,15 @@ function Install-NvidiaContainerToolkit {
         Write-Host $distributions -ForegroundColor Gray
         
         # More robust Ubuntu detection
-        $ubuntuLines = $distributions -split "`n" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" }
+        Write-Host "   Debug: Checking each line for Ubuntu..." -ForegroundColor Gray
+        $allLines = $distributions -split "`n"
+        foreach ($line in $allLines) {
+            Write-Host "   Line: '$line'" -ForegroundColor Gray
+        }
+        
+        $ubuntuLines = $allLines | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" }
+        Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
+        
         if ($ubuntuLines.Count -gt 0) {
             Write-Host "Ubuntu distribution found" -ForegroundColor Green
             $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
@@ -212,8 +220,22 @@ function Install-NvidiaContainerToolkit {
             Write-Host "   No Ubuntu distribution found in the list" -ForegroundColor Red
             Write-Host "   Found distributions:" -ForegroundColor Gray
             Write-Host $ubuntuLines -ForegroundColor Gray
-            Write-Host "Ubuntu distribution not found. Installing Ubuntu..." -ForegroundColor Yellow
-            Write-Host "   This will install the latest Ubuntu version" -ForegroundColor Gray
+            
+            # Try to find any distribution that might be Ubuntu (fallback)
+            Write-Host "   Trying fallback detection..." -ForegroundColor Yellow
+            $allDistros = $allLines | Where-Object { $_ -match "\S" -and $_ -notmatch "NAME" -and $_ -notmatch "---" }
+            Write-Host "   All distributions found:" -ForegroundColor Gray
+            Write-Host $allDistros -ForegroundColor Gray
+            
+            # Look for any distribution that contains "ubuntu" (case insensitive)
+            $possibleUbuntu = $allDistros | Where-Object { $_ -match "ubuntu" }
+            if ($possibleUbuntu.Count -gt 0) {
+                Write-Host "   Found possible Ubuntu distribution via fallback" -ForegroundColor Green
+                $ubuntuDistro = ($possibleUbuntu[0] -split "\s+" | Where-Object { $_ -match "ubuntu" })[0]
+                Write-Host "Using distribution: $ubuntuDistro" -ForegroundColor Green
+            } else {
+                Write-Host "Ubuntu distribution not found. Installing Ubuntu..." -ForegroundColor Yellow
+                Write-Host "   This will install the latest Ubuntu version" -ForegroundColor Gray
             
             # Try to install Ubuntu with a specific version to avoid conflicts
             $installResult = wsl --install -d Ubuntu-22.04 2>&1
