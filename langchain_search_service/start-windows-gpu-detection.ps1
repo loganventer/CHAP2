@@ -263,7 +263,7 @@ try {
         Write-Host "   Force rebuilding containers..." -ForegroundColor Gray
         docker-compose build --no-cache
     } else {
-        Write-Host "   Building containers..." -ForegroundColor Gray
+        Write-Host "   Building containers (using cache if available)..." -ForegroundColor Gray
         docker-compose build
     }
     
@@ -278,13 +278,13 @@ try {
     exit 1
 }
 
-# Start containers one by one with verification
+# Start containers one by one with verification (without rebuilding)
 Write-Host "   Starting containers one by one..." -ForegroundColor Gray
 
 # Start Qdrant first
 Write-Host "   Starting Qdrant..." -ForegroundColor Gray
 try {
-    docker-compose up -d qdrant
+    docker-compose up -d --no-build qdrant
     Start-Sleep -Seconds 10
     
     # Check if Qdrant is running
@@ -304,7 +304,7 @@ try {
 # Start Ollama
 Write-Host "   Starting Ollama..." -ForegroundColor Gray
 try {
-    docker-compose up -d ollama
+    docker-compose up -d --no-build ollama
     Start-Sleep -Seconds 10
     
     # Check if Ollama is running
@@ -324,7 +324,7 @@ try {
 # Start LangChain service
 Write-Host "   Starting LangChain service..." -ForegroundColor Gray
 try {
-    docker-compose up -d langchain-service
+    docker-compose up -d --no-build langchain-service
     Start-Sleep -Seconds 15
     
     # Check if LangChain service is running
@@ -344,7 +344,7 @@ try {
 # Start CHAP2 API
 Write-Host "   Starting CHAP2 API..." -ForegroundColor Gray
 try {
-    docker-compose up -d chap2-api
+    docker-compose up -d --no-build chap2-api
     Start-Sleep -Seconds 15
     
     # Check if CHAP2 API is running
@@ -364,7 +364,7 @@ try {
 # Start Web Portal
 Write-Host "   Starting Web Portal..." -ForegroundColor Gray
 try {
-    docker-compose up -d chap2-webportal
+    docker-compose up -d --no-build chap2-webportal
     Start-Sleep -Seconds 15
     
     # Check if Web Portal is running
