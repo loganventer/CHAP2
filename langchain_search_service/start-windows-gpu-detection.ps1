@@ -144,19 +144,30 @@ function Install-NvidiaContainerToolkit {
         
         Write-Host "   Starting download..." -ForegroundColor Yellow
         
-        # Download the installer
+        # Download the installer with better error handling
         try {
             Write-Host "   Downloading installer..." -ForegroundColor Yellow
             Write-Host "   Note: If download fails, please download manually from:" -ForegroundColor Gray
             Write-Host "   https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
-            Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing
+            
+            # Set timeout and retry settings
+            $webClient = New-Object System.Net.WebClient
+            $webClient.Timeout = 300000  # 5 minutes timeout
+            $webClient.DownloadFile($downloadUrl, $installerPath)
+            
             Write-Host "   Download completed!" -ForegroundColor Green
         } catch {
             Write-Host "   Download failed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "   This could be due to:" -ForegroundColor Yellow
+            Write-Host "   - Network connectivity issues" -ForegroundColor Gray
+            Write-Host "   - Firewall blocking the download" -ForegroundColor Gray
+            Write-Host "   - GitHub rate limiting" -ForegroundColor Gray
+            Write-Host "   " -ForegroundColor White
             Write-Host "   Manual download required:" -ForegroundColor Yellow
             Write-Host "   1. Visit: https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
             Write-Host "   2. Download the latest Windows AMD64 installer" -ForegroundColor Gray
             Write-Host "   3. Run the installer manually" -ForegroundColor Gray
+            Write-Host "   4. Restart this script after installation" -ForegroundColor Gray
             throw
         }
         
