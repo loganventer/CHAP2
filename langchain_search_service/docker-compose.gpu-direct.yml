@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+    # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+
+
+  # Ollama for LLM and Embeddings (with direct GPU support)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama  # Persistent model storage
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+
+  # LangChain Search Service
+  langchain-service:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
+      - ollama
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - OLLAMA_URL=http://ollama:11434
+    volumes:
+      - ./data:/app/data:ro  # Mount data directory for migration
+    restart: unless-stopped
+
+
+volumes:
+  qdrant_data:
+  ollama_models:  # Persistent volume for Ollama models 

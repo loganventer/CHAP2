@@ -497,27 +497,43 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Starting containers..." -ForegroundColor Gray
         if ($gpuAvailable -and -not $ForceCPU) {
             Write-Host "   Starting with GPU support..." -ForegroundColor Green
-            Write-Host "   Using GPU-enabled Docker Compose configuration..." -ForegroundColor Gray
             
-            # Try the GPU compose file first
-            $gpuResult = docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d 2>&1
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "   GPU compose failed, trying alternative method..." -ForegroundColor Yellow
+            # Method 1: Try direct GPU compose file
+            Write-Host "   Method 1: Trying direct GPU compose..." -ForegroundColor Gray
+            $gpuResult = docker-compose -f docker-compose.gpu-direct.yml up -d 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "   Direct GPU compose started successfully!" -ForegroundColor Green
+            } else {
+                Write-Host "   Direct GPU compose failed, trying override method..." -ForegroundColor Yellow
                 Write-Host "   Error: $gpuResult" -ForegroundColor Red
                 
-                # Alternative: Use runtime flag directly
-                Write-Host "   Trying with runtime flag..." -ForegroundColor Gray
-                docker-compose down 2>$null
-                docker-compose up -d --scale ollama=0 2>$null
-                docker run -d --name ollama-gpu --runtime=nvidia --gpus all -p 11434:11434 -v ollama_models:/root/.ollama ollama/ollama:latest
+                # Method 2: Try compose override
+                Write-Host "   Method 2: Trying compose override..." -ForegroundColor Gray
+                $gpuResult = docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d 2>&1
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Host "   Ollama started with GPU runtime!" -ForegroundColor Green
+                    Write-Host "   GPU override started successfully!" -ForegroundColor Green
                 } else {
-                    Write-Host "   GPU runtime failed, falling back to CPU..." -ForegroundColor Red
-                    docker-compose up -d
+                    Write-Host "   GPU override failed, trying manual GPU container..." -ForegroundColor Yellow
+                    Write-Host "   Error: $gpuResult" -ForegroundColor Red
+                    
+                    # Method 3: Manual GPU container
+                    Write-Host "   Method 3: Creating manual GPU container..." -ForegroundColor Gray
+                    docker-compose down 2>$null
+                    docker-compose up -d --scale ollama=0 2>$null
+                    
+                    # Remove existing GPU container if it exists
+                    docker rm -f ollama-gpu 2>$null
+                    
+                    # Create GPU container with explicit flags
+                    $gpuRun = docker run -d --name ollama-gpu --runtime=nvidia --gpus all -p 11434:11434 -v ollama_models:/root/.ollama -e OLLAMA_HOST=0.0.0.0 ollama/ollama:latest 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "   Manual GPU container started successfully!" -ForegroundColor Green
+                    } else {
+                        Write-Host "   Manual GPU container failed, falling back to CPU..." -ForegroundColor Red
+                        Write-Host "   Error: $gpuRun" -ForegroundColor Red
+                        docker-compose up -d
+                    }
                 }
-            } else {
-                Write-Host "   GPU compose started successfully!" -ForegroundColor Green
             }
         } else {
             Write-Host "   Starting with CPU support..." -ForegroundColor Yellow
@@ -586,9 +602,26 @@ function Install-NvidiaContainerToolkit {
                 $ollamaContainer = "ollama-gpu"
             }
             
+            # Force Ollama to use GPU by setting environment variable
+            Write-Host "   Forcing Ollama to use GPU..." -ForegroundColor Gray
+            docker exec $ollamaContainer sh -c "export OLLAMA_GPU_LAYERS=35 && echo 'GPU layers set to 35'"
+            
+            # Check Ollama GPU configuration
+            Write-Host "   Checking Ollama GPU configuration..." -ForegroundColor Gray
+            $ollamaConfig = docker exec $ollamaContainer ollama show mistral 2>&1
+            Write-Host "   Mistral model config: $ollamaConfig" -ForegroundColor Gray
+            
             Write-Host "   Testing GPU access with Ollama..." -ForegroundColor Gray
-            $gpuTest = docker exec $ollamaContainer ollama run mistral "Hello, are you using GPU?" 2>&1
+            
+            # Test with GPU monitoring
+            Write-Host "   Starting GPU inference test..." -ForegroundColor Gray
+            $gpuTest = docker exec $ollamaContainer ollama run mistral "Hello, are you using GPU? Please respond with 'GPU TEST COMPLETE' if you can see this message." 2>&1
             Write-Host "   Ollama response: $gpuTest" -ForegroundColor Gray
+            
+            # Check if GPU was used during inference
+            Write-Host "   Checking GPU utilization during inference..." -ForegroundColor Gray
+            $gpuUtil = docker exec $ollamaContainer nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits 2>&1
+            Write-Host "   GPU utilization: $gpuUtil" -ForegroundColor Gray
             
             # Check if CUDA is available in the container
             $cudaCheck = docker exec $ollamaContainer nvidia-smi 2>&1
