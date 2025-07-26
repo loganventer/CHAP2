@@ -224,102 +224,112 @@ function Install-NvidiaContainerToolkit {
             }
         }
         
-        Write-Host "   Debug: Testing string matching with multiple whitespace handling..." -ForegroundColor Gray
-        foreach ($line in $allLines) {
-            # More aggressive cleaning: normalize all whitespace (multiple spaces/tabs become single space)
-            $cleanedLine = $line -replace '\s+', ' ' -replace '^\s+|\s+$', ''
-            $ubuntuMatch = $cleanedLine -match "ubuntu"
-            $UbuntuMatch = $cleanedLine -match "Ubuntu"
-            Write-Host "   Original: '$line'" -ForegroundColor Gray
-            Write-Host "   Cleaned: '$cleanedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
-            
-            # Show character codes for the first few characters to identify hidden characters
-            if ($line.Length -gt 0) {
-                $charCodes = @()
-                for ($i = 0; $i -lt [Math]::Min(10, $line.Length); $i++) {
-                    $charCodes += [int][char]$line[$i]
+        # Only run detection logic if we haven't found Ubuntu via direct access
+        if (-not $ubuntuFound) {
+            Write-Host "   Debug: Testing string matching with multiple whitespace handling..." -ForegroundColor Gray
+            foreach ($line in $allLines) {
+                # More aggressive cleaning: normalize all whitespace (multiple spaces/tabs become single space)
+                $cleanedLine = $line -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+                $ubuntuMatch = $cleanedLine -match "ubuntu"
+                $UbuntuMatch = $cleanedLine -match "Ubuntu"
+                Write-Host "   Original: '$line'" -ForegroundColor Gray
+                Write-Host "   Cleaned: '$cleanedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
+                
+                # Show character codes for the first few characters to identify hidden characters
+                if ($line.Length -gt 0) {
+                    $charCodes = @()
+                    for ($i = 0; $i -lt [Math]::Min(10, $line.Length); $i++) {
+                        $charCodes += [int][char]$line[$i]
+                    }
+                    Write-Host "   First 10 char codes: $($charCodes -join ', ')" -ForegroundColor Gray
                 }
-                Write-Host "   First 10 char codes: $($charCodes -join ', ')" -ForegroundColor Gray
+                
+                # Try different case variations
+                $lowerMatch = $cleanedLine.ToLower() -match "ubuntu"
+                $upperMatch = $cleanedLine.ToUpper() -match "UBUNTU"
+                Write-Host "   Lower case match: $lowerMatch, Upper case match: $upperMatch" -ForegroundColor Gray
             }
             
-            # Try different case variations
-            $lowerMatch = $cleanedLine.ToLower() -match "ubuntu"
-            $upperMatch = $cleanedLine.ToUpper() -match "UBUNTU"
-            Write-Host "   Lower case match: $lowerMatch, Upper case match: $upperMatch" -ForegroundColor Gray
-        }
-        
-        # Handle multiple whitespace issues and asterisks
-        $ubuntuLines = $allLines | Where-Object { 
-            # Normalize whitespace first, then check for Ubuntu
-            $cleaned = $_ -replace '\s+', ' ' -replace '^\s+|\s+$', ''
-            $cleaned -match "ubuntu" -or 
-            $cleaned -match "Ubuntu" -or
-            $cleaned -match "^\s*\*?\s*ubuntu" -or
-            $cleaned -match "^\s*\*?\s*Ubuntu"
-        }
-        Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
-        if ($ubuntuLines.Count -gt 0) {
-            Write-Host "   Ubuntu distributions found:" -ForegroundColor Gray
-            foreach ($line in $ubuntuLines) {
-                Write-Host "     $line" -ForegroundColor Gray
-            }
-        }
-        
-        # If no Ubuntu found, try more aggressive search
-        if ($ubuntuLines.Count -eq 0) {
-            Write-Host "   Trying more aggressive Ubuntu search..." -ForegroundColor Yellow
+            # Handle multiple whitespace issues and asterisks
             $ubuntuLines = $allLines | Where-Object { 
                 # Normalize whitespace first, then check for Ubuntu
                 $cleaned = $_ -replace '\s+', ' ' -replace '^\s+|\s+$', ''
                 $cleaned -match "ubuntu" -or 
-                $cleaned -match "Ubuntu" -or 
-                $cleaned -match "UBUNTU" -or
+                $cleaned -match "Ubuntu" -or
                 $cleaned -match "^\s*\*?\s*ubuntu" -or
                 $cleaned -match "^\s*\*?\s*Ubuntu"
             }
-            Write-Host "   Aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
-        }
-        
-        # If still no Ubuntu found, try the most aggressive search possible
-        if ($ubuntuLines.Count -eq 0) {
-            Write-Host "   Trying most aggressive Ubuntu search (any case, any position)..." -ForegroundColor Yellow
-            $ubuntuLines = $allLines | Where-Object { 
-                $line = $_
-                $lowerLine = $line.ToLower()
-                $upperLine = $line.ToUpper()
-                
-                # Check every possible variation
-                $line -match "ubuntu" -or 
-                $line -match "Ubuntu" -or 
-                $line -match "UBUNTU" -or
-                $lowerLine -match "ubuntu" -or
-                $upperLine -match "UBUNTU" -or
-                $line -match ".*ubuntu.*" -or
-                $line -match ".*Ubuntu.*"
+            Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
+            if ($ubuntuLines.Count -gt 0) {
+                Write-Host "   Ubuntu distributions found:" -ForegroundColor Gray
+                foreach ($line in $ubuntuLines) {
+                    Write-Host "     $line" -ForegroundColor Gray
+                }
             }
-            Write-Host "   Most aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
+            
+            # If no Ubuntu found, try more aggressive search
+            if ($ubuntuLines.Count -eq 0) {
+                Write-Host "   Trying more aggressive Ubuntu search..." -ForegroundColor Yellow
+                $ubuntuLines = $allLines | Where-Object { 
+                    # Normalize whitespace first, then check for Ubuntu
+                    $cleaned = $_ -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+                    $cleaned -match "ubuntu" -or 
+                    $cleaned -match "Ubuntu" -or 
+                    $cleaned -match "UBUNTU" -or
+                    $cleaned -match "^\s*\*?\s*ubuntu" -or
+                    $cleaned -match "^\s*\*?\s*Ubuntu"
+                }
+                Write-Host "   Aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
+            }
+            
+            # If still no Ubuntu found, try the most aggressive search possible
+            if ($ubuntuLines.Count -eq 0) {
+                Write-Host "   Trying most aggressive Ubuntu search (any case, any position)..." -ForegroundColor Yellow
+                $ubuntuLines = $allLines | Where-Object { 
+                    $line = $_
+                    $lowerLine = $line.ToLower()
+                    $upperLine = $line.ToUpper()
+                    
+                    # Check every possible variation
+                    $line -match "ubuntu" -or 
+                    $line -match "Ubuntu" -or 
+                    $line -match "UBUNTU" -or
+                    $lowerLine -match "ubuntu" -or
+                    $upperLine -match "UBUNTU" -or
+                    $line -match ".*ubuntu.*" -or
+                    $line -match ".*Ubuntu.*"
+                }
+                Write-Host "   Most aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
+            }
+        } else {
+            Write-Host "   Skipping detection logic - Ubuntu found via direct access" -ForegroundColor Green
         }
         
-        if ($ubuntuLines.Count -gt 0) {
+        if ($ubuntuFound -or $ubuntuLines.Count -gt 0) {
             Write-Host "Ubuntu distribution found" -ForegroundColor Green
             
-            # If multiple Ubuntu distributions, choose the best one
-            if ($ubuntuLines.Count -gt 1) {
-                Write-Host "   Multiple Ubuntu distributions found. Selecting the best one..." -ForegroundColor Yellow
-                
-                # Look for a running Ubuntu first, then any Ubuntu
-                $runningUbuntu = $ubuntuLines | Where-Object { $_ -match "Running" }
-                if ($runningUbuntu.Count -gt 0) {
-                    $ubuntuDistro = ($runningUbuntu[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
-                    Write-Host "   Selected running distribution: $ubuntuDistro" -ForegroundColor Green
-                } else {
-                    # Choose the first stopped Ubuntu
-                    $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
-                    Write-Host "   Selected stopped distribution: $ubuntuDistro" -ForegroundColor Green
-                }
+            # If we found Ubuntu via direct access, use it
+            if ($ubuntuFound) {
+                Write-Host "   Using Ubuntu found via direct access: $ubuntuDistro" -ForegroundColor Green
             } else {
-                $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
-                Write-Host "Using distribution: $ubuntuDistro" -ForegroundColor Green
+                # If multiple Ubuntu distributions, choose the best one
+                if ($ubuntuLines.Count -gt 1) {
+                    Write-Host "   Multiple Ubuntu distributions found. Selecting the best one..." -ForegroundColor Yellow
+                    
+                    # Look for a running Ubuntu first, then any Ubuntu
+                    $runningUbuntu = $ubuntuLines | Where-Object { $_ -match "Running" }
+                    if ($runningUbuntu.Count -gt 0) {
+                        $ubuntuDistro = ($runningUbuntu[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
+                        Write-Host "   Selected running distribution: $ubuntuDistro" -ForegroundColor Green
+                    } else {
+                        # Choose the first stopped Ubuntu
+                        $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
+                        Write-Host "   Selected stopped distribution: $ubuntuDistro" -ForegroundColor Green
+                    }
+                } else {
+                    $ubuntuDistro = ($ubuntuLines[0] -split "\s+" | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" })[0]
+                    Write-Host "Using distribution: $ubuntuDistro" -ForegroundColor Green
+                }
             }
             
             # Check if the distribution is using WSL2
