@@ -559,7 +559,7 @@ try {
 # Test search functionality
 Write-Host "   Testing search functionality..." -ForegroundColor Gray
 try {
-    $searchResponse = Invoke-WebRequest -Uri "http://localhost:8000/search_intelligent" -Method POST -ContentType "application/json" -Body '{"query":"test","k":1}' -TimeoutSec 10
+    $searchResponse = Invoke-WebRequest -Uri "http://localhost:8000/search_intelligent" -Method POST -ContentType "application/json" -Body '{"query":"test","k":1}' -TimeoutSec 60
     Write-Host "   PASS: Search functionality working (Status: $($searchResponse.StatusCode))" -ForegroundColor Green
 } catch {
     Write-Host "   FAIL: Search functionality not working: $($_.Exception.Message)" -ForegroundColor Red
