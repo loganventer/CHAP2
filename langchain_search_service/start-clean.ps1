@@ -1,4 +1,4 @@
-# CHAP2 LangChain Service - Clean Start
+# CHAP2 LangChain Service - Windows GPU Detection (Clean)
 param([switch]$ForceCPU, [switch]$Verbose)
 
 Write-Host "CHAP2 LangChain Service - Windows GPU Detection" -ForegroundColor Cyan
@@ -13,7 +13,7 @@ function Test-DockerDesktop {
     try {
         $dockerVersion = docker version 2>$null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Docker Desktop is running" -ForegroundColor Green
+            Write-Host "Docker Desktop is running" -ForegroundColor Green
             return $true
         } else {
             Write-Host "ERROR: Docker Desktop is not running" -ForegroundColor Red
@@ -31,14 +31,14 @@ function Test-NvidiaGPU {
         if (Test-Command "nvidia-smi") {
             $gpuInfo = nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader,nounits 2>$null
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ NVIDIA GPU detected" -ForegroundColor Green
+                Write-Host "NVIDIA GPU detected" -ForegroundColor Green
                 return $true
             }
         }
-        Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
+        Write-Host "No NVIDIA GPU detected" -ForegroundColor Yellow
         return $false
     } catch {
-        Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
+        Write-Host "No NVIDIA GPU detected" -ForegroundColor Yellow
         return $false
     }
 }
@@ -50,59 +50,76 @@ function Test-NvidiaContainerToolkit {
             docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi 2>$null
             return $LASTEXITCODE
         }
-        
         if (Wait-Job $job -Timeout 30) {
             $result = Receive-Job $job
             Remove-Job $job
             if ($result -eq 0) {
-                Write-Host "✓ NVIDIA Container Toolkit is available" -ForegroundColor Green
+                Write-Host "NVIDIA Container Toolkit is available" -ForegroundColor Green
                 return $true
             } else {
-                Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+                Write-Host "NVIDIA Container Toolkit not available" -ForegroundColor Yellow
                 return $false
             }
         } else {
             Stop-Job $job
             Remove-Job $job
-            Write-Host "⚠ NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
+            Write-Host "NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
             return $false
         }
     } catch {
-        Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+        Write-Host "NVIDIA Container Toolkit not available" -ForegroundColor Yellow
         return $false
     }
 }
 
 function New-DockerComposeGPU {
     param([bool]$GPUAvailable, [bool]$ContainerGPU)
-    
     Write-Host "Creating docker-compose.gpu.yml..." -ForegroundColor Yellow
-    
     if ($GPUAvailable -and -not $ForceCPU) {
         if ($ContainerGPU) {
             Write-Host "Creating GPU-enabled configuration..." -ForegroundColor Green
-            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]"
+            $content = "version: '3.8'
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]"
         } else {
             Write-Host "Creating GPU configuration..." -ForegroundColor Yellow
-            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]"
+            $content = "version: '3.8'
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]"
         }
     } else {
         Write-Host "Creating CPU-only configuration..." -ForegroundColor Yellow
-        $content = "version: '3.8'`n`nservices:`n  ollama:`n    # No GPU configuration"
+        $content = "version: '3.8'
+
+services:
+  ollama:
+    # No GPU configuration"
     }
-    
     $content | Out-File -FilePath "docker-compose.gpu.yml" -Encoding UTF8
-    Write-Host "✓ Configuration file created" -ForegroundColor Green
+    Write-Host "Configuration file created" -ForegroundColor Green
 }
 
 function Start-Services {
     param([bool]$GPUAvailable)
-    
     Write-Host "Starting CHAP2 LangChain Services" -ForegroundColor Cyan
-    
     Write-Host "Stopping existing containers..." -ForegroundColor Yellow
     docker-compose down 2>$null
-    
     Write-Host "Starting Qdrant and Ollama containers..." -ForegroundColor Yellow
     if ($GPUAvailable -and -not $ForceCPU) {
         Write-Host "Using GPU-enabled configuration" -ForegroundColor Green
@@ -111,66 +128,57 @@ function Start-Services {
         Write-Host "Using CPU-only configuration" -ForegroundColor Yellow
         docker-compose up -d qdrant ollama
     }
-    
     Write-Host "Waiting for Ollama to start..." -ForegroundColor Yellow
     Start-Sleep -Seconds 10
-    
     Write-Host "Pulling Ollama models..." -ForegroundColor Yellow
     docker exec langchain_search_service-ollama-1 ollama pull nomic-embed-text 2>$null
     docker exec langchain_search_service-ollama-1 ollama pull mistral 2>$null
-    
     Write-Host "Starting LangChain service..." -ForegroundColor Yellow
     if ($GPUAvailable -and -not $ForceCPU) {
         docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d langchain-service
     } else {
         docker-compose up -d langchain-service
     }
-    
     Write-Host "Waiting for services to be ready..." -ForegroundColor Yellow
     Start-Sleep -Seconds 15
 }
 
 function Test-ServiceStatus {
     Write-Host "Service Status" -ForegroundColor Cyan
-    
     $services = @(
         @{Name="Qdrant"; URL="http://localhost:6333/collections"},
         @{Name="Ollama"; URL="http://localhost:11434/api/tags"},
         @{Name="LangChain service"; URL="http://localhost:8000/health"}
     )
-    
     foreach ($service in $services) {
-        Write-Host "Checking $($service.Name)..." -ForegroundColor Yellow
+        Write-Host ("Checking {0}..." -f $service.Name) -ForegroundColor Yellow
         try {
             $response = Invoke-WebRequest -Uri $service.URL -TimeoutSec 5 -ErrorAction SilentlyContinue
             if ($response.StatusCode -eq 200) {
-                Write-Host "✓ $($service.Name) is running" -ForegroundColor Green
+                Write-Host ("{0} is running" -f $service.Name) -ForegroundColor Green
             } else {
-                Write-Host "✗ $($service.Name) is not responding" -ForegroundColor Red
+                Write-Host ("{0} is not responding" -f $service.Name) -ForegroundColor Red
             }
         } catch {
-            Write-Host "✗ $($service.Name) is not responding" -ForegroundColor Red
+            Write-Host ("{0} is not responding" -f $service.Name) -ForegroundColor Red
         }
     }
 }
 
 function Show-DeploymentSummary {
     param([bool]$GPUAvailable, [bool]$ContainerGPU)
-    
     Write-Host "Deployment Summary" -ForegroundColor Cyan
-    
     if ($ForceCPU) {
-        Write-Host "ℹ CPU-only deployment (forced)" -ForegroundColor Yellow
+        Write-Host "CPU-only deployment (forced)" -ForegroundColor Yellow
     } elseif ($GPUAvailable) {
         if ($ContainerGPU) {
-            Write-Host "✓ GPU-accelerated deployment successful" -ForegroundColor Green
+            Write-Host "GPU-accelerated deployment successful" -ForegroundColor Green
         } else {
-            Write-Host "⚠ GPU detected but Container Toolkit not available" -ForegroundColor Yellow
+            Write-Host "GPU detected but Container Toolkit not available" -ForegroundColor Yellow
         }
     } else {
-        Write-Host "ℹ CPU-only deployment successful" -ForegroundColor Yellow
+        Write-Host "CPU-only deployment successful" -ForegroundColor Yellow
     }
-    
     Write-Host "Services are ready:" -ForegroundColor Cyan
     Write-Host "- Qdrant Vector Database: http://localhost:6333" -ForegroundColor White
     Write-Host "- Ollama LLM Service: http://localhost:11434" -ForegroundColor White
@@ -181,19 +189,15 @@ try {
     if (-not (Test-DockerDesktop)) {
         exit 1
     }
-    
     $gpuAvailable = Test-NvidiaGPU
     $containerGPU = Test-NvidiaContainerToolkit
-    
     New-DockerComposeGPU -GPUAvailable $gpuAvailable -ContainerGPU $containerGPU
     Start-Services -GPUAvailable $gpuAvailable
     Test-ServiceStatus
     Show-DeploymentSummary -GPUAvailable $gpuAvailable -ContainerGPU $containerGPU
-    
 } catch {
-    Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ("ERROR: {0}" -f $_.Exception.Message) -ForegroundColor Red
     exit 1
 }
-
 Write-Host "Press any key to exit..." -ForegroundColor Cyan
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") 

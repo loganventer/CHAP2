@@ -3,7 +3,9 @@
 
 param(
     [switch]$ForceCPU,
-    [switch]$Verbose
+    [switch]$Verbose,
+    [switch]$AutoInstall,
+    [switch]$SkipPrompts
 )
 
 Write-Host "CHAP2 LangChain Service - Windows GPU Detection" -ForegroundColor Cyan
@@ -20,7 +22,7 @@ function Test-DockerDesktop {
     try {
         $dockerVersion = docker version 2>$null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Docker Desktop is running" -ForegroundColor Green
+            Write-Host "Docker Desktop is running" -ForegroundColor Green
             return $true
         } else {
             Write-Host "ERROR: Docker Desktop is not running" -ForegroundColor Red
@@ -39,14 +41,14 @@ function Test-NvidiaGPU {
         if (Test-Command "nvidia-smi") {
             $gpuInfo = nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader,nounits 2>$null
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ NVIDIA GPU detected" -ForegroundColor Green
+                Write-Host "NVIDIA GPU detected" -ForegroundColor Green
                 return $true
             }
         }
-        Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
+        Write-Host "No NVIDIA GPU detected" -ForegroundColor Yellow
         return $false
     } catch {
-        Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
+        Write-Host "No NVIDIA GPU detected" -ForegroundColor Yellow
         return $false
     }
 }
@@ -64,20 +66,20 @@ function Test-NvidiaContainerToolkit {
             $result = Receive-Job $job
             Remove-Job $job
             if ($result -eq 0) {
-                Write-Host "✓ NVIDIA Container Toolkit is available" -ForegroundColor Green
+                Write-Host "NVIDIA Container Toolkit is available" -ForegroundColor Green
                 return $true
             } else {
-                Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+                Write-Host "NVIDIA Container Toolkit not available" -ForegroundColor Yellow
                 return $false
             }
         } else {
             Stop-Job $job
             Remove-Job $job
-            Write-Host "⚠ NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
+            Write-Host "NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
             return $false
         }
     } catch {
-        Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+        Write-Host "NVIDIA Container Toolkit not available" -ForegroundColor Yellow
         return $false
     }
 }
@@ -105,7 +107,7 @@ function New-DockerComposeGPU {
     }
     
     $content | Out-File -FilePath "docker-compose.gpu.yml" -Encoding UTF8
-    Write-Host "✓ Configuration file created" -ForegroundColor Green
+    Write-Host "Configuration file created" -ForegroundColor Green
 }
 
 # Function to start services
@@ -163,16 +165,16 @@ function Test-ServiceStatus {
     )
     
     foreach ($service in $services) {
-        Write-Host "Checking $($service.Name)..." -ForegroundColor Yellow
+        Write-Host ("Checking {0}..." -f $service.Name) -ForegroundColor Yellow
         try {
             $response = Invoke-WebRequest -Uri $service.URL -TimeoutSec 5 -ErrorAction SilentlyContinue
             if ($response.StatusCode -eq 200) {
-                Write-Host "✓ $($service.Name) is running" -ForegroundColor Green
+                Write-Host ("{0} is running" -f $service.Name) -ForegroundColor Green
             } else {
-                Write-Host "✗ $($service.Name) is not responding" -ForegroundColor Red
+                Write-Host ("{0} is not responding" -f $service.Name) -ForegroundColor Red
             }
         } catch {
-            Write-Host "✗ $($service.Name) is not responding" -ForegroundColor Red
+            Write-Host ("{0} is not responding" -f $service.Name) -ForegroundColor Red
         }
     }
 }
@@ -187,15 +189,15 @@ function Show-DeploymentSummary {
     Write-Host "Deployment Summary" -ForegroundColor Cyan
     
     if ($ForceCPU) {
-        Write-Host "ℹ CPU-only deployment (forced)" -ForegroundColor Yellow
+        Write-Host "CPU-only deployment (forced)" -ForegroundColor Yellow
     } elseif ($GPUAvailable) {
         if ($ContainerGPU) {
-            Write-Host "✓ GPU-accelerated deployment successful" -ForegroundColor Green
+            Write-Host "GPU-accelerated deployment successful" -ForegroundColor Green
         } else {
-            Write-Host "⚠ GPU detected but Container Toolkit not available" -ForegroundColor Yellow
+            Write-Host "GPU detected but Container Toolkit not available" -ForegroundColor Yellow
         }
     } else {
-        Write-Host "ℹ CPU-only deployment successful" -ForegroundColor Yellow
+        Write-Host "CPU-only deployment successful" -ForegroundColor Yellow
     }
     
     Write-Host "Services are ready:" -ForegroundColor Cyan
@@ -219,7 +221,7 @@ try {
     Show-DeploymentSummary -GPUAvailable $gpuAvailable -ContainerGPU $containerGPU
     
 } catch {
-    Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ("ERROR: {0}" -f $_.Exception.Message) -ForegroundColor Red
     exit 1
 }
 

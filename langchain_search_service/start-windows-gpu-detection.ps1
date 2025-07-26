@@ -146,10 +146,8 @@ function Install-NvidiaContainerToolkit {
         # Show download progress with simpler approach
         try {
             $progressPreference = 'Continue'
-            Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing -ProgressAction {
-                $percent = $_.PercentComplete
-                Write-Host "   Downloading... $percent% complete" -ForegroundColor Cyan
-            }
+            Write-Host "   Downloading installer..." -ForegroundColor Yellow
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing
             Write-Host "   Download completed!" -ForegroundColor Green
         } catch {
             Write-Host "   Download failed: $($_.Exception.Message)" -ForegroundColor Red
