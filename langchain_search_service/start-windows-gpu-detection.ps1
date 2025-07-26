@@ -546,8 +546,33 @@ function Install-NvidiaContainerToolkit {
                     if ($LASTEXITCODE -eq 0) {
                         Write-Host "   Manual GPU Ollama container started successfully!" -ForegroundColor Green
                     } else {
-                        Write-Host "   Manual GPU container failed, falling back to CPU..." -ForegroundColor Red
+                        Write-Host "   Manual GPU container failed, trying CPU with separate builds..." -ForegroundColor Red
                         Write-Host "   Error: $gpuRun" -ForegroundColor Red
+                        
+                        # Method 4: Build .NET services separately
+                        Write-Host "   Method 4: Building .NET services separately..." -ForegroundColor Gray
+                        docker-compose down 2>$null
+                        
+                        # Build API service
+                        Write-Host "   Building CHAP2 API service..." -ForegroundColor Gray
+                        docker build -f Dockerfile.api -t chap2-api .. 2>&1
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Host "   API service built successfully!" -ForegroundColor Green
+                        } else {
+                            Write-Host "   API service build failed, skipping .NET services" -ForegroundColor Red
+                        }
+                        
+                        # Build Web Portal service
+                        Write-Host "   Building CHAP2 Web Portal service..." -ForegroundColor Gray
+                        docker build -f Dockerfile.webportal -t chap2-webportal .. 2>&1
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Host "   Web Portal service built successfully!" -ForegroundColor Green
+                        } else {
+                            Write-Host "   Web Portal service build failed, skipping .NET services" -ForegroundColor Red
+                        }
+                        
+                        # Start CPU services
+                        Write-Host "   Starting CPU services..." -ForegroundColor Gray
                         docker-compose up -d
                     }
                 }
