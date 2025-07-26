@@ -515,8 +515,29 @@ function Install-NvidiaContainerToolkit {
         
         # Pull Ollama models
         Write-Host "   Pulling Ollama models..." -ForegroundColor Gray
-        docker exec ollama ollama pull nomic-embed-text 2>$null
-        docker exec ollama ollama pull mistral 2>$null
+        Write-Host "   Waiting for Ollama container to be ready..." -ForegroundColor Gray
+        Start-Sleep -Seconds 5
+        
+        # Try to pull models with proper container name
+        Write-Host "   Pulling nomic-embed-text model..." -ForegroundColor Gray
+        docker exec langchain_search_service-ollama-1 ollama pull nomic-embed-text
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   nomic-embed-text model pulled successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "   Failed to pull nomic-embed-text model" -ForegroundColor Red
+        }
+        
+        Write-Host "   Pulling mistral model..." -ForegroundColor Gray
+        docker exec langchain_search_service-ollama-1 ollama pull mistral
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   mistral model pulled successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "   Failed to pull mistral model" -ForegroundColor Red
+        }
+        
+        # Show available models
+        Write-Host "   Available Ollama models:" -ForegroundColor Gray
+        docker exec langchain_search_service-ollama-1 ollama list
         
         Write-Host "   Container deployment completed successfully!" -ForegroundColor Green
         return $true
