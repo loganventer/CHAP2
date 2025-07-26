@@ -31,17 +31,21 @@ try {
     Write-Host "   WARNING: Could not remove network: $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
-# Step 3: Create a fresh network
-Write-Host "Step 3: Creating fresh network..." -ForegroundColor Yellow
-try {
-    docker network create langchain_search_service_default
-    Write-Host "   PASS: Fresh network created" -ForegroundColor Green
-} catch {
-    Write-Host "   FAIL: Could not create network: $($_.Exception.Message)" -ForegroundColor Red
-}
+# Step 3: Let Docker Compose create the network (don't create manually)
+Write-Host "Step 3: Preparing for fresh network creation..." -ForegroundColor Yellow
+Write-Host "   PASS: Ready for Docker Compose to create network" -ForegroundColor Green
 
 # Step 4: Start containers with proper networking
 Write-Host "Step 4: Starting containers with proper networking..." -ForegroundColor Yellow
+
+# Remove the manually created network to let Docker Compose create it properly
+Write-Host "   Removing manually created network..." -ForegroundColor Gray
+try {
+    docker network rm langchain_search_service_default 2>$null
+    Start-Sleep -Seconds 2
+} catch {
+    # Network might not exist, that's okay
+}
 
 # Determine which compose file to use
 $gpuAvailable = $false
