@@ -555,7 +555,7 @@ function Install-NvidiaContainerToolkit {
                         
                         # Build API service
                         Write-Host "   Building CHAP2 API service..." -ForegroundColor Gray
-                        docker build -f Dockerfile.api -t chap2-api .. 2>&1
+                        docker build -f Dockerfile.api.simple -t chap2-api .. 2>&1
                         if ($LASTEXITCODE -eq 0) {
                             Write-Host "   API service built successfully!" -ForegroundColor Green
                         } else {
@@ -564,7 +564,7 @@ function Install-NvidiaContainerToolkit {
                         
                         # Build Web Portal service
                         Write-Host "   Building CHAP2 Web Portal service..." -ForegroundColor Gray
-                        docker build -f Dockerfile.webportal -t chap2-webportal .. 2>&1
+                        docker build -f Dockerfile.webportal.simple -t chap2-webportal .. 2>&1
                         if ($LASTEXITCODE -eq 0) {
                             Write-Host "   Web Portal service built successfully!" -ForegroundColor Green
                         } else {

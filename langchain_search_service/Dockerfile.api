@@ -16,6 +16,7 @@ WORKDIR "/src/CHAP2.Chorus.Api"
 RUN dotnet build "CHAP2.Chorus.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
+WORKDIR "/src/CHAP2.Chorus.Api"
 RUN dotnet publish "CHAP2.Chorus.Api.csproj" -c Release -o /app/publish
 
 FROM base AS final

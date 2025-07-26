@@ -47,7 +47,7 @@ services:
   chap2-api:
     build:
       context: ..
-      dockerfile: langchain_search_service/Dockerfile.api
+      dockerfile: langchain_search_service/Dockerfile.api.simple
     ports:
       - "5001:5001"
     depends_on:
@@ -64,7 +64,7 @@ services:
   chap2-webportal:
     build:
       context: ..
-      dockerfile: langchain_search_service/Dockerfile.webportal
+      dockerfile: langchain_search_service/Dockerfile.webportal.simple
     ports:
       - "5000:5000"
     depends_on:
