@@ -136,9 +136,10 @@ function Install-NvidiaContainerToolkit {
         Write-Host "Step 1: Downloading installer..." -ForegroundColor Yellow
         Write-Host "   Source: NVIDIA Container Toolkit for Windows" -ForegroundColor Gray
         Write-Host "   Size: ~50MB (may take a few minutes)" -ForegroundColor Gray
-        Write-Host "   URL: https://nvidia.github.io/libnvidia-container/windows/nvidia-container-toolkit-windows-latest.exe" -ForegroundColor Gray
+        Write-Host "   URL: https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
         
-        $downloadUrl = "https://nvidia.github.io/libnvidia-container/windows/nvidia-container-toolkit-windows-latest.exe"
+        # Get the latest release URL
+        $downloadUrl = "https://github.com/NVIDIA/nvidia-container-toolkit/releases/latest/download/nvidia-container-toolkit-windows-amd64.exe"
         $installerPath = "$env:TEMP\nvidia-container-toolkit-installer.exe"
         
         Write-Host "   Starting download..." -ForegroundColor Yellow
@@ -146,10 +147,16 @@ function Install-NvidiaContainerToolkit {
         # Download the installer
         try {
             Write-Host "   Downloading installer..." -ForegroundColor Yellow
+            Write-Host "   Note: If download fails, please download manually from:" -ForegroundColor Gray
+            Write-Host "   https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
             Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing
             Write-Host "   Download completed!" -ForegroundColor Green
         } catch {
             Write-Host "   Download failed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "   Manual download required:" -ForegroundColor Yellow
+            Write-Host "   1. Visit: https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
+            Write-Host "   2. Download the latest Windows AMD64 installer" -ForegroundColor Gray
+            Write-Host "   3. Run the installer manually" -ForegroundColor Gray
             throw
         }
         
