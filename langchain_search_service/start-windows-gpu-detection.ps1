@@ -500,34 +500,51 @@ function Install-NvidiaContainerToolkit {
             
             # Method 1: Try direct GPU compose file
             Write-Host "   Method 1: Trying direct GPU compose..." -ForegroundColor Gray
-            $gpuResult = docker-compose -f docker-compose.gpu-direct.yml up -d 2>&1
+            Write-Host "   Building and starting with GPU support..." -ForegroundColor Gray
+            
+            # Check if we're in the right directory for build context
+            if (-not (Test-Path "..\CHAP2.UI\CHAP2.WebPortal")) {
+                Write-Host "   Warning: Build context not found, trying from parent directory..." -ForegroundColor Yellow
+                Set-Location ..
+                $gpuResult = docker-compose -f langchain_search_service/docker-compose.gpu-direct.yml up -d --build 2>&1
+                Set-Location langchain_search_service
+            } else {
+                $gpuResult = docker-compose -f docker-compose.gpu-direct.yml up -d --build 2>&1
+            }
+            
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "   Direct GPU compose started successfully!" -ForegroundColor Green
             } else {
                 Write-Host "   Direct GPU compose failed, trying override method..." -ForegroundColor Yellow
-                Write-Host "   Error: $gpuResult" -ForegroundColor Red
+                Write-Host "   Error details:" -ForegroundColor Red
+                Write-Host $gpuResult -ForegroundColor Red
+                Write-Host "   This might be due to build context or syntax issues" -ForegroundColor Yellow
                 
                 # Method 2: Try compose override
                 Write-Host "   Method 2: Trying compose override..." -ForegroundColor Gray
-                $gpuResult = docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d 2>&1
+                $gpuResult = docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build 2>&1
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "   GPU override started successfully!" -ForegroundColor Green
                 } else {
-                    Write-Host "   GPU override failed, trying manual GPU container..." -ForegroundColor Yellow
+                    Write-Host "   GPU override failed, trying CPU with manual GPU Ollama..." -ForegroundColor Yellow
                     Write-Host "   Error: $gpuResult" -ForegroundColor Red
                     
-                    # Method 3: Manual GPU container
-                    Write-Host "   Method 3: Creating manual GPU container..." -ForegroundColor Gray
+                    # Method 3: CPU compose with manual GPU Ollama
+                    Write-Host "   Method 3: Starting CPU services with manual GPU Ollama..." -ForegroundColor Gray
                     docker-compose down 2>$null
+                    
+                    # Start CPU services (excluding Ollama)
+                    Write-Host "   Starting CPU services..." -ForegroundColor Gray
                     docker-compose up -d --scale ollama=0 2>$null
                     
                     # Remove existing GPU container if it exists
                     docker rm -f ollama-gpu 2>$null
                     
                     # Create GPU container with explicit flags
+                    Write-Host "   Creating GPU-enabled Ollama container..." -ForegroundColor Gray
                     $gpuRun = docker run -d --name ollama-gpu --runtime=nvidia --gpus all -p 11434:11434 -v ollama_models:/root/.ollama -e OLLAMA_HOST=0.0.0.0 ollama/ollama:latest 2>&1
                     if ($LASTEXITCODE -eq 0) {
-                        Write-Host "   Manual GPU container started successfully!" -ForegroundColor Green
+                        Write-Host "   Manual GPU Ollama container started successfully!" -ForegroundColor Green
                     } else {
                         Write-Host "   Manual GPU container failed, falling back to CPU..." -ForegroundColor Red
                         Write-Host "   Error: $gpuRun" -ForegroundColor Red
