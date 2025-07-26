@@ -168,6 +168,7 @@ function Install-NvidiaContainerToolkit {
         Write-Host $distributions -ForegroundColor Gray
         
         # Check for any Ubuntu-like distribution (Ubuntu, Ubuntu-20.04, Ubuntu-22.04, etc.)
+        Write-Host "   Checking for Ubuntu distributions..." -ForegroundColor Gray
         if ($distributions -match "Ubuntu") {
             Write-Host "Ubuntu distribution found" -ForegroundColor Green
             $ubuntuDistro = ($distributions -split "`n" | Where-Object { $_ -match "Ubuntu" } | Select-Object -First 1) -split "\s+" | Select-Object -First 1
@@ -192,13 +193,18 @@ function Install-NvidiaContainerToolkit {
                 }
             }
             
-            # Check if the distribution is running
+            # Check if the distribution is running and start it if needed
             $distroState = ($distributions -split "`n" | Where-Object { $_ -match $ubuntuDistro } | Select-Object -First 1) -split "\s+" | Select-Object -Skip 1 -First 1
             if ($distroState -eq "Stopped") {
                 Write-Host "   Starting Ubuntu distribution..." -ForegroundColor Yellow
-                wsl -d $ubuntuDistro
+                # Just start the distribution, don't enter it
+                wsl -d $ubuntuDistro -e echo "Distribution started" > $null
+                Write-Host "   Ubuntu distribution started" -ForegroundColor Green
+            } else {
+                Write-Host "   Ubuntu distribution is already running" -ForegroundColor Green
             }
         } else {
+            Write-Host "   No Ubuntu distribution found in the list" -ForegroundColor Red
             Write-Host "Ubuntu distribution not found. Installing Ubuntu..." -ForegroundColor Yellow
             Write-Host "   This will install the latest Ubuntu version" -ForegroundColor Gray
             
