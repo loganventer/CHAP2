@@ -221,6 +221,7 @@ try {
 Write-Host "Step 4: Stopping existing containers and cleaning up..." -ForegroundColor Yellow
 
 try {
+    Write-Host "   Stopping all containers..." -ForegroundColor Gray
     docker-compose down
     Start-Sleep -Seconds 5
     
@@ -239,7 +240,7 @@ try {
     Write-Host "   FAIL: Could not clean up containers: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Step 5: Build and start containers
+# Step 5: Build and start containers with better error handling
 Write-Host "Step 5: Building and starting containers..." -ForegroundColor Yellow
 
 try {
@@ -251,12 +252,117 @@ try {
         docker-compose build
     }
     
-    Write-Host "   Starting containers..." -ForegroundColor Gray
-    docker-compose up -d
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   FAIL: Container build failed" -ForegroundColor Red
+        exit 1
+    }
     
-    Write-Host "   PASS: Containers started successfully" -ForegroundColor Green
+    Write-Host "   PASS: Containers built successfully" -ForegroundColor Green
 } catch {
-    Write-Host "   FAIL: Could not build/start containers: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "   FAIL: Could not build containers: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
+# Start containers one by one with verification
+Write-Host "   Starting containers one by one..." -ForegroundColor Gray
+
+# Start Qdrant first
+Write-Host "   Starting Qdrant..." -ForegroundColor Gray
+try {
+    docker-compose up -d qdrant
+    Start-Sleep -Seconds 10
+    
+    # Check if Qdrant is running
+    $qdrantStatus = docker ps --filter "name=qdrant" --format "{{.Status}}"
+    if ($qdrantStatus -like "*Up*") {
+        Write-Host "   PASS: Qdrant started successfully" -ForegroundColor Green
+    } else {
+        Write-Host "   FAIL: Qdrant failed to start" -ForegroundColor Red
+        docker-compose logs qdrant
+        exit 1
+    }
+} catch {
+    Write-Host "   FAIL: Could not start Qdrant: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
+# Start Ollama
+Write-Host "   Starting Ollama..." -ForegroundColor Gray
+try {
+    docker-compose up -d ollama
+    Start-Sleep -Seconds 10
+    
+    # Check if Ollama is running
+    $ollamaStatus = docker ps --filter "name=ollama" --format "{{.Status}}"
+    if ($ollamaStatus -like "*Up*") {
+        Write-Host "   PASS: Ollama started successfully" -ForegroundColor Green
+    } else {
+        Write-Host "   FAIL: Ollama failed to start" -ForegroundColor Red
+        docker-compose logs ollama
+        exit 1
+    }
+} catch {
+    Write-Host "   FAIL: Could not start Ollama: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
+# Start LangChain service
+Write-Host "   Starting LangChain service..." -ForegroundColor Gray
+try {
+    docker-compose up -d langchain-service
+    Start-Sleep -Seconds 15
+    
+    # Check if LangChain service is running
+    $langchainStatus = docker ps --filter "name=langchain-service" --format "{{.Status}}"
+    if ($langchainStatus -like "*Up*") {
+        Write-Host "   PASS: LangChain service started successfully" -ForegroundColor Green
+    } else {
+        Write-Host "   FAIL: LangChain service failed to start" -ForegroundColor Red
+        docker-compose logs langchain-service
+        exit 1
+    }
+} catch {
+    Write-Host "   FAIL: Could not start LangChain service: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
+# Start CHAP2 API
+Write-Host "   Starting CHAP2 API..." -ForegroundColor Gray
+try {
+    docker-compose up -d chap2-api
+    Start-Sleep -Seconds 15
+    
+    # Check if CHAP2 API is running
+    $apiStatus = docker ps --filter "name=chap2-api" --format "{{.Status}}"
+    if ($apiStatus -like "*Up*") {
+        Write-Host "   PASS: CHAP2 API started successfully" -ForegroundColor Green
+    } else {
+        Write-Host "   FAIL: CHAP2 API failed to start" -ForegroundColor Red
+        docker-compose logs chap2-api
+        exit 1
+    }
+} catch {
+    Write-Host "   FAIL: Could not start CHAP2 API: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
+# Start Web Portal
+Write-Host "   Starting Web Portal..." -ForegroundColor Gray
+try {
+    docker-compose up -d chap2-webportal
+    Start-Sleep -Seconds 15
+    
+    # Check if Web Portal is running
+    $webPortalStatus = docker ps --filter "name=chap2-webportal" --format "{{.Status}}"
+    if ($webPortalStatus -like "*Up*") {
+        Write-Host "   PASS: Web Portal started successfully" -ForegroundColor Green
+    } else {
+        Write-Host "   FAIL: Web Portal failed to start" -ForegroundColor Red
+        docker-compose logs chap2-webportal
+        exit 1
+    }
+} catch {
+    Write-Host "   FAIL: Could not start Web Portal: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 
@@ -480,4 +586,5 @@ Write-Host ""
 Write-Host "Troubleshooting:" -ForegroundColor Yellow
 Write-Host "- If services are not accessible, try: docker-compose restart" -ForegroundColor White
 Write-Host "- If search doesn't work, check container logs" -ForegroundColor White
-Write-Host "- For GPU issues, restart Docker Desktop" -ForegroundColor White 
+Write-Host "- For GPU issues, restart Docker Desktop" -ForegroundColor White
+Write-Host "- For container issues, check: docker-compose logs [service-name]" -ForegroundColor White 
