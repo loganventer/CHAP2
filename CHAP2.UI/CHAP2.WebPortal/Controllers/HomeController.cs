@@ -611,14 +611,6 @@ Please provide a helpful and accurate response based on the chorus information p
                 request.Query, request.MaxResults, HttpContext.RequestAborted);
 
             _logger.LogInformation("IntelligentSearch returned {Count} results", result.SearchResults.Count);
-            
-            // Debug: Log each result
-            for (int i = 0; i < result.SearchResults.Count; i++)
-            {
-                var searchResult = result.SearchResults[i];
-                _logger.LogInformation("Result {Index}: {Name} (ID: {Id})", 
-                    i + 1, searchResult.Name, searchResult.Id);
-            }
 
             return Json(new
             {

@@ -283,18 +283,6 @@ class AiSearch {
         console.log('AI Search: displaySearchResultsWithAnimation called with:', results);
         console.log('AI Search: resultsContainer exists:', !!this.resultsContainer);
         
-        // Debug: Log the raw results data
-        const debugContent = document.getElementById('debugContent');
-        if (debugContent) {
-            debugContent.innerHTML = `
-                <strong>Raw Results Data:</strong><br>
-                <pre>${JSON.stringify(results, null, 2)}</pre>
-                <br><strong>Results Length:</strong> ${results ? results.length : 'null'}<br>
-                <strong>Results Type:</strong> ${typeof results}<br>
-                <strong>Is Array:</strong> ${Array.isArray(results)}<br>
-            `;
-        }
-        
         if (!this.resultsContainer) {
             console.error('AI Search: resultsContainer is null!');
             return;
