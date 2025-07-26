@@ -136,7 +136,7 @@ function Install-NvidiaContainerToolkit {
         Write-Host "Step 1: Checking WSL2 installation..." -ForegroundColor Yellow
         $wslVersion = wsl --version 2>$null
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "WSL2 not detected. Installing WSL2..." -ForegroundColor Yellow
+            Write-Host "WSL not detected. Installing WSL2..." -ForegroundColor Yellow
             Write-Host "   This will install Ubuntu as the default distribution" -ForegroundColor Gray
             
             # Enable WSL feature
@@ -146,7 +146,18 @@ function Install-NvidiaContainerToolkit {
             Write-Host "   WSL features enabled. Please restart your computer and run this script again." -ForegroundColor Yellow
             return $false
         } else {
-            Write-Host "WSL2 is installed" -ForegroundColor Green
+            Write-Host "WSL is installed" -ForegroundColor Green
+        }
+        
+        # Check if WSL2 is the default version
+        Write-Host "   Checking WSL version..." -ForegroundColor Yellow
+        $wslStatus = wsl --status 2>$null
+        if ($wslStatus -match "Default Version: 2") {
+            Write-Host "   WSL2 is set as default version" -ForegroundColor Green
+        } else {
+            Write-Host "   WSL1 detected. Setting WSL2 as default..." -ForegroundColor Yellow
+            wsl --set-default-version 2
+            Write-Host "   WSL2 set as default version" -ForegroundColor Green
         }
         
         # Step 2: Check for Ubuntu distribution
@@ -161,6 +172,16 @@ function Install-NvidiaContainerToolkit {
             Write-Host "Ubuntu distribution found" -ForegroundColor Green
             $ubuntuDistro = ($distributions -split "`n" | Where-Object { $_ -match "Ubuntu" } | Select-Object -First 1) -split "\s+" | Select-Object -First 1
             Write-Host "Using distribution: $ubuntuDistro" -ForegroundColor Green
+            
+            # Check if the distribution is using WSL2
+            $distroVersion = ($distributions -split "`n" | Where-Object { $_ -match $ubuntuDistro } | Select-Object -First 1) -split "\s+" | Select-Object -Skip 2 -First 1
+            if ($distroVersion -eq "2") {
+                Write-Host "   Distribution is using WSL2" -ForegroundColor Green
+            } else {
+                Write-Host "   Converting distribution to WSL2..." -ForegroundColor Yellow
+                wsl --set-version $ubuntuDistro 2
+                Write-Host "   Distribution converted to WSL2" -ForegroundColor Green
+            }
             
             # Check if the distribution is running
             $distroState = ($distributions -split "`n" | Where-Object { $_ -match $ubuntuDistro } | Select-Object -First 1) -split "\s+" | Select-Object -Skip 1 -First 1
