@@ -206,6 +206,24 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Direct Ubuntu-22.04 test result: $testResult2" -ForegroundColor Gray
         Write-Host "   Direct Ubuntu-22.04 test exit code: $LASTEXITCODE" -ForegroundColor Gray
         
+        # If Ubuntu is directly accessible, use it regardless of detection
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   Ubuntu is directly accessible - using it!" -ForegroundColor Green
+            $ubuntuDistro = "Ubuntu"
+            $ubuntuFound = $true
+        } else {
+            # Try Ubuntu-22.04 if regular Ubuntu failed
+            $testResult2 = wsl -d Ubuntu-22.04 -e echo "Ubuntu-22.04 is accessible" 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "   Ubuntu-22.04 is directly accessible - using it!" -ForegroundColor Green
+                $ubuntuDistro = "Ubuntu-22.04"
+                $ubuntuFound = $true
+            } else {
+                Write-Host "   Direct Ubuntu access failed, continuing with detection logic..." -ForegroundColor Yellow
+                $ubuntuFound = $false
+            }
+        }
+        
         Write-Host "   Debug: Testing string matching with multiple whitespace handling..." -ForegroundColor Gray
         foreach ($line in $allLines) {
             # More aggressive cleaning: normalize all whitespace (multiple spaces/tabs become single space)
