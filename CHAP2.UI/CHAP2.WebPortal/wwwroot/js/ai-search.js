@@ -823,10 +823,12 @@ class AiSearch {
         const regularTab = document.querySelector('.tab-button[data-tab="regular"]');
         
         console.log('AI Search: Tab detection - aiTab:', !!aiTab, 'regularTab:', !!regularTab);
+        console.log('AI Search: aiTab active:', aiTab?.classList.contains('active'));
         console.log('AI Search: regularTab active:', regularTab?.classList.contains('active'));
         
-        if (regularTab && regularTab.classList.contains('active')) {
-            console.log('AI Search: Traditional search is active, skipping AI search');
+        // Only proceed if AI tab is active
+        if (!aiTab || !aiTab.classList.contains('active')) {
+            console.log('AI Search: AI tab is not active, skipping AI search');
             return;
         }
         
