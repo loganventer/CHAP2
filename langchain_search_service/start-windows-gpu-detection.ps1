@@ -438,46 +438,83 @@ function Install-NvidiaContainerToolkit {
             Write-Host "   Docker check output: $dockerCheck" -ForegroundColor Gray
         }
         
-        # Step 3.1: Download NVIDIA Container Toolkit for Windows
-        Write-Host "   Step 3.1: Downloading NVIDIA Container Toolkit for Windows..." -ForegroundColor Cyan
-        Write-Host "   Downloading from NVIDIA GitHub releases..." -ForegroundColor Gray
+        # Step 3.1: Check for existing NVIDIA Container Toolkit
+        Write-Host "   Step 3.1: Checking for existing NVIDIA Container Toolkit..." -ForegroundColor Cyan
+        Write-Host "   Note: NVIDIA Container Toolkit for Windows may not be available" -ForegroundColor Yellow
+        Write-Host "   Checking if Docker Desktop supports GPU acceleration..." -ForegroundColor Gray
         
-        $downloadUrl = "https://github.com/NVIDIA/nvidia-container-toolkit/releases/latest/download/nvidia-container-toolkit-windows-amd64.exe"
-        $downloadPath = "$env:TEMP\nvidia-container-toolkit-windows-amd64.exe"
-        
-        try {
-            $webClient = New-Object System.Net.WebClient
-            $webClient.Timeout = 300000  # 5 minutes
-            Write-Host "   Downloading NVIDIA Container Toolkit..." -ForegroundColor Gray
-            $webClient.DownloadFile($downloadUrl, $downloadPath)
-            Write-Host "   Download completed successfully" -ForegroundColor Green
-        } catch {
-            Write-Host "   Failed to download: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "   Manual download required:" -ForegroundColor Yellow
-            Write-Host "   1. Visit: $downloadUrl" -ForegroundColor Gray
-            Write-Host "   2. Download and run the installer manually" -ForegroundColor Gray
-            return $false
-        }
-        
-        # Step 3.2: Install NVIDIA Container Toolkit
-        Write-Host "   Step 3.2: Installing NVIDIA Container Toolkit..." -ForegroundColor Cyan
-        Write-Host "   Running installer (this may take a few minutes)..." -ForegroundColor Gray
-        
-        $installResult = Start-Process -FilePath $downloadPath -ArgumentList "/S" -Wait -PassThru
-        if ($installResult.ExitCode -eq 0) {
-            Write-Host "   NVIDIA Container Toolkit installed successfully" -ForegroundColor Green
+        # Check if Docker Desktop has GPU support enabled
+        $dockerInfo = docker info 2>&1
+        if ($dockerInfo -match "nvidia") {
+            Write-Host "   NVIDIA GPU support already detected in Docker" -ForegroundColor Green
         } else {
-            Write-Host "   Installation failed with exit code: $($installResult.ExitCode)" -ForegroundColor Red
-            Write-Host "   Manual installation required" -ForegroundColor Yellow
+            Write-Host "   NVIDIA GPU support not detected in Docker" -ForegroundColor Yellow
+        }
+        
+        # Step 3.2: Try to enable GPU support in Docker Desktop
+        Write-Host "   Step 3.2: Enabling GPU support in Docker Desktop..." -ForegroundColor Cyan
+        Write-Host "   This requires manual configuration in Docker Desktop settings" -ForegroundColor Gray
+        
+        Write-Host "   Manual steps required:" -ForegroundColor Yellow
+        Write-Host "   1. Open Docker Desktop" -ForegroundColor Gray
+        Write-Host "   2. Go to Settings > Resources > WSL Integration" -ForegroundColor Gray
+        Write-Host "   3. Enable 'Enable integration with my default WSL distro'" -ForegroundColor Gray
+        Write-Host "   4. Go to Settings > Resources > Advanced" -ForegroundColor Gray
+        Write-Host "   5. Increase memory allocation if needed" -ForegroundColor Gray
+        Write-Host "   6. Restart Docker Desktop" -ForegroundColor Gray
+        
+        # Step 3.3: Install NVIDIA Container Toolkit in WSL (if needed)
+        Write-Host "   Step 3.3: Installing NVIDIA Container Toolkit in WSL..." -ForegroundColor Cyan
+        Write-Host "   This will install the toolkit in the Ubuntu WSL environment" -ForegroundColor Gray
+        
+        # Prompt for Ubuntu password
+        Write-Host "   Ubuntu sudo commands require your password" -ForegroundColor Yellow
+        $ubuntuPassword = Read-Host "   Please enter your Ubuntu password" -AsSecureString
+        $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ubuntuPassword)
+        $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+        
+        # Install in WSL
+        Write-Host "   Installing NVIDIA Container Toolkit in WSL..." -ForegroundColor Gray
+        
+        # Add NVIDIA repository
+        Write-Host "   Adding NVIDIA repository..." -ForegroundColor Gray
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo -S gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to add GPG key: $result" -ForegroundColor Red
             return $false
         }
         
-        # Step 3.3: Configure Docker Desktop
-        Write-Host "   Step 3.3: Configuring Docker Desktop..." -ForegroundColor Cyan
-        Write-Host "   Note: Docker Desktop may need to be restarted to apply changes" -ForegroundColor Gray
-        Write-Host "   Please restart Docker Desktop after installation completes" -ForegroundColor Yellow
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo -S tee /etc/apt/sources.list.d/nvidia-container-toolkit.list" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to add repository: $result" -ForegroundColor Red
+            return $false
+        }
         
-        Write-Host "NVIDIA Container Toolkit installed for Windows Docker" -ForegroundColor Green
+        # Update and install
+        Write-Host "   Updating package list..." -ForegroundColor Gray
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S apt-get update" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to update package list: $result" -ForegroundColor Red
+            return $false
+        }
+        
+        Write-Host "   Installing NVIDIA Container Toolkit..." -ForegroundColor Gray
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S apt-get install -y nvidia-container-toolkit" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to install NVIDIA Container Toolkit: $result" -ForegroundColor Red
+            return $false
+        }
+        
+        Write-Host "   Configuring Docker runtime..." -ForegroundColor Gray
+        $result = wsl -d $ubuntuDistro -e bash -c "echo '$plainPassword' | sudo -S nvidia-ctk runtime configure --runtime=docker" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   Failed to configure Docker runtime: $result" -ForegroundColor Red
+            return $false
+        }
+        
+        Write-Host "   NVIDIA Container Toolkit installed in WSL successfully" -ForegroundColor Green
+        
+        Write-Host "NVIDIA Container Toolkit installed in WSL successfully" -ForegroundColor Green
         
         # Step 4: Verify installation
         Write-Host ""
@@ -732,7 +769,7 @@ function Test-ServiceStatus {
     foreach ($service in $services) {
         Write-Host ("Checking {0}..." -f $service.Name) -ForegroundColor Yellow
         try {
-            $response = Invoke-WebRequest -Uri $service.URL -TimeoutSec 5 -ErrorAction SilentlyContinue
+            $response = Invoke-WebRequest -Uri $service.URL -ErrorAction SilentlyContinue
             if ($response.StatusCode -eq 200) {
                 Write-Host ("{0} is running" -f $service.Name) -ForegroundColor Green
             } else {
