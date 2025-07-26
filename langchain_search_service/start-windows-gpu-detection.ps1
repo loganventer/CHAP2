@@ -179,6 +179,13 @@ function Install-NvidiaContainerToolkit {
             Write-Host "   Line: '$line'" -ForegroundColor Gray
         }
         
+        Write-Host "   Debug: Testing string matching..." -ForegroundColor Gray
+        foreach ($line in $allLines) {
+            $ubuntuMatch = $line -match "ubuntu"
+            $UbuntuMatch = $line -match "Ubuntu"
+            Write-Host "   Line '$line' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
+        }
+        
         $ubuntuLines = $allLines | Where-Object { $_ -match "ubuntu" -or $_ -match "Ubuntu" }
         Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
         if ($ubuntuLines.Count -gt 0) {
@@ -186,6 +193,19 @@ function Install-NvidiaContainerToolkit {
             foreach ($line in $ubuntuLines) {
                 Write-Host "     $line" -ForegroundColor Gray
             }
+        }
+        
+        # If no Ubuntu found, try more aggressive search
+        if ($ubuntuLines.Count -eq 0) {
+            Write-Host "   Trying more aggressive Ubuntu search..." -ForegroundColor Yellow
+            $ubuntuLines = $allLines | Where-Object { 
+                $_ -match "ubuntu" -or 
+                $_ -match "Ubuntu" -or 
+                $_ -match "UBUNTU" -or
+                $_ -match "ubuntu" -or
+                $_ -match "Ubuntu"
+            }
+            Write-Host "   Aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
         }
         
         if ($ubuntuLines.Count -gt 0) {
