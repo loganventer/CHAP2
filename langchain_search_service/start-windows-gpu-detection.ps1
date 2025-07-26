@@ -172,22 +172,30 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Raw distribution list:" -ForegroundColor Gray
         Write-Host $distributions -ForegroundColor Gray
         
-        # More robust Ubuntu detection with whitespace handling
+        # More robust Ubuntu detection with leading whitespace handling
         Write-Host "   Debug: Checking each line for Ubuntu..." -ForegroundColor Gray
         $allLines = $distributions -split "`n" | Where-Object { $_.Trim() -ne "" }
         foreach ($line in $allLines) {
             Write-Host "   Line: '$line'" -ForegroundColor Gray
         }
         
-        Write-Host "   Debug: Testing string matching..." -ForegroundColor Gray
+        Write-Host "   Debug: Testing string matching with leading whitespace..." -ForegroundColor Gray
         foreach ($line in $allLines) {
             $trimmedLine = $line.Trim()
             $ubuntuMatch = $trimmedLine -match "ubuntu"
             $UbuntuMatch = $trimmedLine -match "Ubuntu"
-            Write-Host "   Line '$trimmedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
+            Write-Host "   Original: '$line'" -ForegroundColor Gray
+            Write-Host "   Trimmed: '$trimmedLine' - ubuntu match: $ubuntuMatch, Ubuntu match: $UbuntuMatch" -ForegroundColor Gray
         }
         
-        $ubuntuLines = $allLines | Where-Object { $_.Trim() -match "ubuntu" -or $_.Trim() -match "Ubuntu" }
+        # Handle leading whitespace and asterisks
+        $ubuntuLines = $allLines | Where-Object { 
+            $trimmed = $_.Trim()
+            $trimmed -match "ubuntu" -or 
+            $trimmed -match "Ubuntu" -or
+            $trimmed -match "^\s*\*?\s*ubuntu" -or
+            $trimmed -match "^\s*\*?\s*Ubuntu"
+        }
         Write-Host "   Ubuntu lines found: $($ubuntuLines.Count)" -ForegroundColor Gray
         if ($ubuntuLines.Count -gt 0) {
             Write-Host "   Ubuntu distributions found:" -ForegroundColor Gray
@@ -203,7 +211,9 @@ function Install-NvidiaContainerToolkit {
                 $trimmed = $_.Trim()
                 $trimmed -match "ubuntu" -or 
                 $trimmed -match "Ubuntu" -or 
-                $trimmed -match "UBUNTU"
+                $trimmed -match "UBUNTU" -or
+                $trimmed -match "^\s*\*?\s*ubuntu" -or
+                $trimmed -match "^\s*\*?\s*Ubuntu"
             }
             Write-Host "   Aggressive search found: $($ubuntuLines.Count) Ubuntu distributions" -ForegroundColor Gray
         }
