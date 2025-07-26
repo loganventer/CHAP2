@@ -9,17 +9,29 @@ EXPOSE 5000
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy the entire solution structure
-COPY . .
+# Copy only the necessary project files first
+COPY ["CHAP2.Domain/CHAP2.Domain.csproj", "CHAP2.Domain/"]
+COPY ["CHAP2.Shared/CHAP2.Shared.csproj", "CHAP2.Shared/"]
+COPY ["CHAP2.Application/CHAP2.Application.csproj", "CHAP2.Application/"]
+COPY ["CHAP2.Infrastructure/CHAP2.Infrastructure.csproj", "CHAP2.Infrastructure/"]
+COPY ["CHAP2.UI/CHAP2.WebPortal/CHAP2.Web.csproj", "CHAP2.UI/CHAP2.WebPortal/"]
 
-# Find and restore all project files
-RUN find . -name "*.csproj" -exec dotnet restore {} \;
+# Restore dependencies
+RUN dotnet restore "CHAP2.UI/CHAP2.WebPortal/CHAP2.Web.csproj"
+
+# Copy source code
+COPY CHAP2.Domain/ CHAP2.Domain/
+COPY CHAP2.Shared/ CHAP2.Shared/
+COPY CHAP2.Application/ CHAP2.Application/
+COPY CHAP2.Infrastructure/ CHAP2.Infrastructure/
+COPY CHAP2.UI/CHAP2.WebPortal/ CHAP2.UI/CHAP2.WebPortal/
 
 # Build the web portal project
-RUN dotnet build "CHAP2.UI/CHAP2.WebPortal/CHAP2.Web.csproj" -c Release -o /app/build
+WORKDIR "/src/CHAP2.UI/CHAP2.WebPortal"
+RUN dotnet build "CHAP2.Web.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "CHAP2.UI/CHAP2.WebPortal/CHAP2.Web.csproj" -c Release -o /app/publish
+RUN dotnet publish "CHAP2.Web.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app

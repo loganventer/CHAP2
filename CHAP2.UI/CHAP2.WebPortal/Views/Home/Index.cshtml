@@ -284,11 +284,13 @@
 @section Scripts {
     <link rel="stylesheet" href="~/css/ai-search.css" />
     <script src="~/js/chorus-display.js"></script>
+    <script src="~/js/search.js"></script>
     <script src="~/js/ai-search.js"></script>
-    <script src="~/js/search-integration.js"></script>
     <script>
         // Initialize both search modes when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing search modes...');
+            
             // Initialize traditional search
             if (typeof initializeSearch === 'function') {
                 initializeSearch();
@@ -299,7 +301,56 @@
                 window.aiSearch.init();
             }
             
+            // Set up tab switching
+            setupTabSwitching();
+            
             console.log('Search modes initialized');
         });
+        
+        function setupTabSwitching() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const searchSections = document.querySelectorAll('.search-section');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.getAttribute('data-tab');
+                    console.log('Tab switched to:', targetTab);
+                    
+                    // Cancel AI search if it's running
+                    if (window.aiSearch) {
+                        console.log('Tab switching: Cancelling AI search');
+                        window.aiSearch.cancelCurrentSearch();
+                    }
+                    
+                    // Update active tab button
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // Update active search section
+                    searchSections.forEach(section => {
+                        section.classList.remove('active');
+                        section.style.display = 'none';
+                    });
+                    
+                    const targetSection = document.getElementById(targetTab + 'Search');
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        targetSection.style.display = 'block';
+                    }
+                    
+                    // Re-initialize search if switching to regular search
+                    if (targetTab === 'regular') {
+                        console.log('Switching to regular search, re-initializing...');
+                        setTimeout(() => {
+                            if (typeof initializeSearch === 'function') {
+                                initializeSearch();
+                            }
+                        }, 100);
+                    }
+                    
+                    console.log('Tab switching completed');
+                });
+            });
+        }
     </script>
 } 

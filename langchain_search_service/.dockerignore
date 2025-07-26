@@ -8,19 +8,19 @@ docker-compose*
 .dockerignore
 
 # Build outputs
-bin/
-obj/
-*.dll
-*.exe
-*.pdb
+**/bin/
+**/obj/
+**/publish/
 
-# IDE
-.vs/
+# IDE files
 .vscode/
+.idea/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
@@ -34,12 +34,41 @@ Thumbs.db
 # Node modules (if any)
 node_modules/
 
-# Python (for langchain service)
-__pycache__/
+# Test files
+**/test-*/
+**/*.test.*
+**/*.spec.*
+
+# Documentation
+README.md
+*.md
+
+# Data files (will be mounted as volumes)
+**/data/
+**/chorus/
+
+# Console applications (not needed for web portal)
+**/Console/
+**/Console.Common/
+**/Console.Bulk/
+**/Console.Prompt/
+**/Console.Vectorize/
+**/SearchConsole/
+
+# Other UI projects (if any)
+**/UI/*/
+!**/UI/CHAP2.WebPortal/
+
+# API project (not needed for web portal)
+**/CHAP2.Chorus.Api/
+
+# Infrastructure projects not needed
+**/CHAP2.AI.Infrastructure/
+**/CHAP2.External.Infrastructure/
+
+# LangChain service files
+langchain_search_service/
+*.py
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.env 
+__pycache__/
+requirements.txt 
