@@ -236,27 +236,28 @@ function Install-NvidiaContainerToolkit {
             } else {
                 Write-Host "Ubuntu distribution not found. Installing Ubuntu..." -ForegroundColor Yellow
                 Write-Host "   This will install the latest Ubuntu version" -ForegroundColor Gray
-            
-            # Try to install Ubuntu with a specific version to avoid conflicts
-            $installResult = wsl --install -d Ubuntu-22.04 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "   Ubuntu installation started successfully" -ForegroundColor Green
-                Write-Host "   Please complete the Ubuntu setup (create username/password) and run this script again." -ForegroundColor Yellow
-            } else {
-                # Try with just Ubuntu if specific version fails
-                $installResult = wsl --install -d Ubuntu 2>&1
+                
+                # Try to install Ubuntu with a specific version to avoid conflicts
+                $installResult = wsl --install -d Ubuntu-22.04 2>&1
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "   Ubuntu installation started successfully" -ForegroundColor Green
                     Write-Host "   Please complete the Ubuntu setup (create username/password) and run this script again." -ForegroundColor Yellow
                 } else {
-                    Write-Host "   Ubuntu installation failed: $installResult" -ForegroundColor Red
-                    Write-Host "   Manual installation required:" -ForegroundColor Yellow
-                    Write-Host "   1. Open PowerShell as Administrator" -ForegroundColor Gray
-                    Write-Host "   2. Run: wsl --install -d Ubuntu-22.04" -ForegroundColor Gray
-                    Write-Host "   3. Complete Ubuntu setup and run this script again" -ForegroundColor Gray
+                    # Try with just Ubuntu if specific version fails
+                    $installResult = wsl --install -d Ubuntu 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "   Ubuntu installation started successfully" -ForegroundColor Green
+                        Write-Host "   Please complete the Ubuntu setup (create username/password) and run this script again." -ForegroundColor Yellow
+                    } else {
+                        Write-Host "   Ubuntu installation failed: $installResult" -ForegroundColor Red
+                        Write-Host "   Manual installation required:" -ForegroundColor Yellow
+                        Write-Host "   1. Open PowerShell as Administrator" -ForegroundColor Gray
+                        Write-Host "   2. Run: wsl --install -d Ubuntu-22.04" -ForegroundColor Gray
+                        Write-Host "   3. Complete Ubuntu setup and run this script again" -ForegroundColor Gray
+                    }
                 }
+                return $false
             }
-            return $false
         }
         
         # Step 3: Install NVIDIA Container Toolkit in WSL2
