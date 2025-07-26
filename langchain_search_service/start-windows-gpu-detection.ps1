@@ -113,11 +113,11 @@ function Test-NvidiaContainerToolkit {
     }
 }
 
-# Function to install NVIDIA Container Toolkit
+# Function to install NVIDIA Container Toolkit via WSL2
 function Install-NvidiaContainerToolkit {
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "Installing NVIDIA Container Toolkit" -ForegroundColor Cyan
+    Write-Host "Installing NVIDIA Container Toolkit via WSL2" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     
     # Check if running as administrator
@@ -131,78 +131,67 @@ function Install-NvidiaContainerToolkit {
     Write-Host "Administrator privileges confirmed" -ForegroundColor Green
     
     try {
-        # Step 1: Download installer
+        # Step 1: Check WSL2 installation
         Write-Host ""
-        Write-Host "Step 1: Downloading installer..." -ForegroundColor Yellow
-        Write-Host "   Source: NVIDIA Container Toolkit for Windows" -ForegroundColor Gray
-        Write-Host "   Size: ~50MB (may take a few minutes)" -ForegroundColor Gray
-        Write-Host "   URL: https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
-        
-        # Get the latest release URL
-        $downloadUrl = "https://github.com/NVIDIA/nvidia-container-toolkit/releases/latest/download/nvidia-container-toolkit-windows-amd64.exe"
-        $installerPath = "$env:TEMP\nvidia-container-toolkit-installer.exe"
-        
-        Write-Host "   Starting download..." -ForegroundColor Yellow
-        
-        # Download the installer with better error handling
-        try {
-            Write-Host "   Downloading installer..." -ForegroundColor Yellow
-            Write-Host "   Note: If download fails, please download manually from:" -ForegroundColor Gray
-            Write-Host "   https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
+        Write-Host "Step 1: Checking WSL2 installation..." -ForegroundColor Yellow
+        $wslVersion = wsl --version 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "WSL2 not detected. Installing WSL2..." -ForegroundColor Yellow
+            Write-Host "   This will install Ubuntu as the default distribution" -ForegroundColor Gray
             
-            # Set timeout and retry settings
-            $webClient = New-Object System.Net.WebClient
-            $webClient.Timeout = 300000  # 5 minutes timeout
-            $webClient.DownloadFile($downloadUrl, $installerPath)
+            # Enable WSL feature
+            dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+            dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
             
-            Write-Host "   Download completed!" -ForegroundColor Green
-        } catch {
-            Write-Host "   Download failed: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "   This could be due to:" -ForegroundColor Yellow
-            Write-Host "   - Network connectivity issues" -ForegroundColor Gray
-            Write-Host "   - Firewall blocking the download" -ForegroundColor Gray
-            Write-Host "   - GitHub rate limiting" -ForegroundColor Gray
-            Write-Host "   " -ForegroundColor White
-            Write-Host "   Manual download required:" -ForegroundColor Yellow
-            Write-Host "   1. Visit: https://github.com/NVIDIA/nvidia-container-toolkit/releases" -ForegroundColor Gray
-            Write-Host "   2. Download the latest Windows AMD64 installer" -ForegroundColor Gray
-            Write-Host "   3. Run the installer manually" -ForegroundColor Gray
-            Write-Host "   4. Restart this script after installation" -ForegroundColor Gray
-            throw
-        }
-        
-        if (Test-Path $installerPath) {
-            $fileSize = (Get-Item $installerPath).Length / 1MB
-            Write-Host "Download completed ($([math]::Round($fileSize, 1)) MB)" -ForegroundColor Green
-        } else {
-            Write-Host "Download failed" -ForegroundColor Red
+            Write-Host "   WSL features enabled. Please restart your computer and run this script again." -ForegroundColor Yellow
             return $false
+        } else {
+            Write-Host "WSL2 is installed" -ForegroundColor Green
         }
         
-        # Step 2: Install
+        # Step 2: Check for Ubuntu distribution
         Write-Host ""
-        Write-Host "Step 2: Installing NVIDIA Container Toolkit..." -ForegroundColor Yellow
-        Write-Host "   This may take 1-2 minutes" -ForegroundColor Gray
-        Write-Host "   Please wait for installation to complete..." -ForegroundColor Gray
+        Write-Host "Step 2: Checking Ubuntu distribution..." -ForegroundColor Yellow
+        $distributions = wsl --list --verbose 2>$null
+        if ($distributions -notmatch "Ubuntu") {
+            Write-Host "Ubuntu distribution not found. Installing Ubuntu..." -ForegroundColor Yellow
+            wsl --install -d Ubuntu
+            Write-Host "   Ubuntu installation started. Please complete the setup and run this script again." -ForegroundColor Yellow
+            return $false
+        } else {
+            Write-Host "Ubuntu distribution found" -ForegroundColor Green
+        }
         
-        $startTime = Get-Date
-        $process = Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait -PassThru
-        
-        $duration = (Get-Date) - $startTime
-        Write-Host "Installation completed in $($duration.TotalSeconds.ToString('F1')) seconds" -ForegroundColor Green
-        
-        # Step 3: Cleanup
+        # Step 3: Install NVIDIA Container Toolkit in WSL2
         Write-Host ""
-        Write-Host "Step 3: Cleaning up..." -ForegroundColor Yellow
-        Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
-        Write-Host "Temporary files cleaned up" -ForegroundColor Green
+        Write-Host "Step 3: Installing NVIDIA Container Toolkit in WSL2..." -ForegroundColor Yellow
+        Write-Host "   This will install the toolkit in the Ubuntu WSL2 environment" -ForegroundColor Gray
+        
+        # Commands to run in WSL2
+        $wslCommands = @(
+            "curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg",
+            "curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list",
+            "sudo apt-get update",
+            "sudo apt-get install -y nvidia-container-toolkit",
+            "sudo nvidia-ctk runtime configure --runtime=docker",
+            "sudo systemctl restart docker"
+        )
+        
+        foreach ($command in $wslCommands) {
+            Write-Host "   Running: $command" -ForegroundColor Gray
+            $result = wsl -d Ubuntu -e bash -c $command 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "   Command failed: $result" -ForegroundColor Red
+                Write-Host "   Manual installation required in WSL2" -ForegroundColor Yellow
+                return $false
+            }
+        }
+        
+        Write-Host "NVIDIA Container Toolkit installed in WSL2" -ForegroundColor Green
         
         # Step 4: Verify installation
         Write-Host ""
         Write-Host "Step 4: Verifying installation..." -ForegroundColor Yellow
-        
-        # Wait a moment for installation to settle
-        Start-Sleep -Seconds 3
         
         # Test if the installation was successful
         $testResult = Test-NvidiaContainerToolkit
@@ -226,8 +215,8 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
         Write-Host ""
         Write-Host "Manual installation required:" -ForegroundColor Yellow
-        Write-Host "1. Visit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" -ForegroundColor Gray
-        Write-Host "2. Download and install NVIDIA Container Toolkit for Windows" -ForegroundColor Gray
+        Write-Host "1. Open WSL2 Ubuntu terminal" -ForegroundColor Gray
+        Write-Host "2. Follow: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" -ForegroundColor Gray
         Write-Host "3. Restart Docker Desktop" -ForegroundColor Gray
         Write-Host "4. Run this script again" -ForegroundColor Gray
         return $false
