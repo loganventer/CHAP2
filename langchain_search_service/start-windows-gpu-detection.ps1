@@ -147,15 +147,24 @@ function Install-NvidiaContainerToolkit {
         Write-Host "Step 1: Downloading installer..." -ForegroundColor Yellow
         Write-Host "   Source: NVIDIA Container Toolkit for Windows" -ForegroundColor Gray
         Write-Host "   Size: ~50MB (may take a few minutes)" -ForegroundColor Gray
+        Write-Host "   URL: https://nvidia.github.io/libnvidia-container/windows/nvidia-container-toolkit-windows-latest.exe" -ForegroundColor Gray
         
         $downloadUrl = "https://nvidia.github.io/libnvidia-container/windows/nvidia-container-toolkit-windows-latest.exe"
         $installerPath = "$env:TEMP\nvidia-container-toolkit-installer.exe"
         
-        # Show download progress
-        $progressPreference = 'Continue'
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing -ProgressAction {
-            $percent = $_.PercentComplete
-            Write-Progress -Activity "Downloading NVIDIA Container Toolkit" -Status "$percent% Complete" -PercentComplete $percent
+        Write-Host "   Starting download..." -ForegroundColor Yellow
+        
+        # Show download progress with simpler approach
+        try {
+            $progressPreference = 'Continue'
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -UseBasicParsing -ProgressAction {
+                $percent = $_.PercentComplete
+                Write-Host "   Downloading... $percent% complete" -ForegroundColor Cyan
+            }
+            Write-Host "   Download completed!" -ForegroundColor Green
+        } catch {
+            Write-Host "   ❌ Download failed: $($_.Exception.Message)" -ForegroundColor Red
+            throw
         }
         
         if (Test-Path $installerPath) {
@@ -536,20 +545,33 @@ try {
         Configure-DockerDesktopGPU
         
         # Check and install Container Toolkit if needed
+        Write-Host ""
+        Write-Host "DEBUG: Checking Container Toolkit status..." -ForegroundColor Magenta
+        Write-Host "DEBUG: containerGPU = $containerGPU" -ForegroundColor Magenta
+        
         if (-not $containerGPU) {
             Write-Host "NVIDIA Container Toolkit not detected" -ForegroundColor Yellow
+            Write-Host "DEBUG: About to prompt for Container Toolkit installation..." -ForegroundColor Magenta
+            
             if (Prompt-Installation -Component "NVIDIA Container Toolkit" -Description "Required for GPU acceleration in Docker" -ManualUrl "https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html") {
+                Write-Host "DEBUG: User agreed to install Container Toolkit, starting installation..." -ForegroundColor Magenta
                 if (Install-NvidiaContainerToolkit) {
                     Write-Host "Restarting Docker Desktop to apply changes..." -ForegroundColor Yellow
                     # Note: Docker Desktop restart would require user intervention
                     Write-Host "Please restart Docker Desktop manually and run this script again" -ForegroundColor Yellow
                     exit 0
                 }
+            } else {
+                Write-Host "DEBUG: User declined Container Toolkit installation" -ForegroundColor Magenta
             }
+        } else {
+            Write-Host "DEBUG: Container Toolkit already available, skipping installation" -ForegroundColor Magenta
         }
         
         # Re-check Container Toolkit after potential installation
+        Write-Host "DEBUG: Re-checking Container Toolkit after potential installation..." -ForegroundColor Magenta
         $containerGPU = Test-NvidiaContainerToolkit
+        Write-Host "DEBUG: Final containerGPU status = $containerGPU" -ForegroundColor Magenta
     }
     
     # Create configuration
