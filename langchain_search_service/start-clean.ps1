@@ -46,12 +46,25 @@ function Test-NvidiaGPU {
 function Test-NvidiaContainerToolkit {
     Write-Host "Checking NVIDIA Container Toolkit..." -ForegroundColor Yellow
     try {
-        $testResult = docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ NVIDIA Container Toolkit is available" -ForegroundColor Green
-            return $true
+        $job = Start-Job -ScriptBlock {
+            docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi 2>$null
+            return $LASTEXITCODE
+        }
+        
+        if (Wait-Job $job -Timeout 30) {
+            $result = Receive-Job $job
+            Remove-Job $job
+            if ($result -eq 0) {
+                Write-Host "✓ NVIDIA Container Toolkit is available" -ForegroundColor Green
+                return $true
+            } else {
+                Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+                return $false
+            }
         } else {
-            Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+            Stop-Job $job
+            Remove-Job $job
+            Write-Host "⚠ NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
             return $false
         }
     } catch {

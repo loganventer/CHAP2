@@ -37,8 +37,7 @@ function Test-DockerDesktop {
             Write-Host "✓ Docker Desktop is running" -ForegroundColor Green
             return $true
         } else {
-            Write-Host "ERROR: Docker Desktop is not running or not installed." -ForegroundColor Red
-            Write-Host "Please start Docker Desktop and try again." -ForegroundColor Red
+            Write-Host "ERROR: Docker Desktop is not running" -ForegroundColor Red
             return $false
         }
     } catch {
@@ -55,14 +54,10 @@ function Test-NvidiaGPU {
             $gpuInfo = nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader,nounits 2>$null
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "✓ NVIDIA GPU detected" -ForegroundColor Green
-                Write-Host ""
-                Write-Host "NVIDIA GPU Information:" -ForegroundColor Cyan
-                $gpuInfo | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
-                Write-Host ""
                 return $true
             }
         }
-        Write-Host "⚠ No NVIDIA GPU detected or nvidia-smi not available" -ForegroundColor Yellow
+        Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
         return $false
     } catch {
         Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
@@ -93,13 +88,11 @@ function Test-NvidiaDrivers {
 function Test-NvidiaContainerToolkit {
     Write-Host "Checking NVIDIA Container Toolkit..." -ForegroundColor Yellow
     try {
-        # Use a timeout to prevent hanging
         $job = Start-Job -ScriptBlock {
             docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi 2>$null
             return $LASTEXITCODE
         }
         
-        # Wait for up to 30 seconds
         if (Wait-Job $job -Timeout 30) {
             $result = Receive-Job $job
             Remove-Job $job
@@ -111,11 +104,9 @@ function Test-NvidiaContainerToolkit {
                 return $false
             }
         } else {
-            # Timeout occurred
             Stop-Job $job
             Remove-Job $job
-            Write-Host "⚠ NVIDIA Container Toolkit check timed out (30s)" -ForegroundColor Yellow
-            Write-Host "  This usually means GPU support is not properly configured" -ForegroundColor Gray
+            Write-Host "⚠ NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
             return $false
         }
     } catch {
@@ -371,12 +362,12 @@ function New-DockerComposeGPU {
             Write-Host "Creating GPU-enabled configuration..." -ForegroundColor Green
             $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]"
         } else {
-            Write-Host "Creating GPU configuration (NVIDIA Container Toolkit required)..." -ForegroundColor Yellow
-            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]`n`n# NOTE: This configuration requires NVIDIA Container Toolkit to be installed`n# If you see GPU errors, install NVIDIA Container Toolkit from:`n# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
+            Write-Host "Creating GPU configuration..." -ForegroundColor Yellow
+            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]"
         }
     } else {
         Write-Host "Creating CPU-only configuration..." -ForegroundColor Yellow
-        $content = "version: '3.8'`n`nservices:`n  ollama:`n    # No GPU configuration - running on CPU`n    # To enable GPU support, install NVIDIA drivers and Container Toolkit"
+        $content = "version: '3.8'`n`nservices:`n  ollama:`n    # No GPU configuration"
     }
     
     $content | Out-File -FilePath "docker-compose.gpu.yml" -Encoding UTF8
@@ -413,19 +404,9 @@ function Start-Services {
     Start-Sleep -Seconds 10
     
     # Pull required models
-    Write-Host "Pulling Ollama models (this may take a while on first run)..." -ForegroundColor Yellow
-    $models = @("nomic-embed-text", "mistral")
-    
-    foreach ($model in $models) {
-        Write-Host "Pulling $model..." -ForegroundColor Yellow
-        $result = docker exec langchain_search_service-ollama-1 ollama pull $model 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "⚠ Warning: Failed to pull $model model" -ForegroundColor Yellow
-            Write-Host "This may be due to network issues or insufficient disk space" -ForegroundColor Yellow
-        } else {
-            Write-Host "✓ $model pulled successfully" -ForegroundColor Green
-        }
-    }
+    Write-Host "Pulling Ollama models..." -ForegroundColor Yellow
+    docker exec langchain_search_service-ollama-1 ollama pull nomic-embed-text 2>$null
+    docker exec langchain_search_service-ollama-1 ollama pull mistral 2>$null
     
     # Start LangChain service
     Write-Host "Starting LangChain service..." -ForegroundColor Yellow
