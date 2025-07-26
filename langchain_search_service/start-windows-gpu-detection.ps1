@@ -463,71 +463,50 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   5. Increase memory allocation if needed" -ForegroundColor Gray
         Write-Host "   6. Restart Docker Desktop" -ForegroundColor Gray
         
-        # Step 3.3: Install NVIDIA Container Toolkit in WSL (if needed)
-        Write-Host "   Step 3.3: Installing NVIDIA Container Toolkit in WSL..." -ForegroundColor Cyan
-        Write-Host "   This will install the toolkit in the Ubuntu WSL environment" -ForegroundColor Gray
+        # Step 3.3: Verify NVIDIA Container Toolkit installation
+        Write-Host "   Step 3.3: Verifying NVIDIA Container Toolkit installation..." -ForegroundColor Cyan
+        Write-Host "   Checking if NVIDIA Container Toolkit is already installed..." -ForegroundColor Gray
         
-        # Prompt for Ubuntu password
-        Write-Host "   Ubuntu sudo commands require your password" -ForegroundColor Yellow
-        $ubuntuPassword = Read-Host "   Please enter your Ubuntu password" -AsSecureString
-        $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ubuntuPassword)
-        $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-        
-        # Install in WSL
-        Write-Host "   Installing NVIDIA Container Toolkit in WSL..." -ForegroundColor Gray
-        
-        # Add NVIDIA repository with timeout
-        Write-Host "   Adding NVIDIA repository..." -ForegroundColor Gray
-        Write-Host "   Downloading GPG key (this may take a moment)..." -ForegroundColor Gray
-        
-        # Try without sudo first, then with sudo if needed
-        $result = wsl -d $ubuntuDistro -e bash -c "timeout 60 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "   Failed to add GPG key: $result" -ForegroundColor Red
-            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "   This may be due to network issues or repository unavailability" -ForegroundColor Yellow
-            return $false
-        }
-        Write-Host "   GPG key added successfully" -ForegroundColor Green
-        
-        Write-Host "   Adding repository to sources list..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "timeout 60 curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "   Failed to add repository: $result" -ForegroundColor Red
-            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "   This may be due to network issues or repository unavailability" -ForegroundColor Yellow
-            return $false
-        }
-        Write-Host "   Repository added successfully" -ForegroundColor Green
-        
-        # Update and install
-        Write-Host "   Updating package list..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "timeout 120 sudo apt-get update" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "   Failed to update package list: $result" -ForegroundColor Red
-            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            return $false
+        # Check if nvidia-container-toolkit is installed
+        $result = wsl -d $ubuntuDistro -e bash -c "dpkg -l | grep nvidia-container-toolkit" 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   NVIDIA Container Toolkit is already installed" -ForegroundColor Green
+        } else {
+            Write-Host "   NVIDIA Container Toolkit not found in package list" -ForegroundColor Yellow
+            Write-Host "   Checking if nvidia-ctk command is available..." -ForegroundColor Gray
+            
+            $result = wsl -d $ubuntuDistro -e bash -c "which nvidia-ctk" 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "   nvidia-ctk command found - toolkit is installed" -ForegroundColor Green
+            } else {
+                Write-Host "   NVIDIA Container Toolkit not found" -ForegroundColor Red
+                Write-Host "   Please install it manually or run the full installation script" -ForegroundColor Yellow
+                return $false
+            }
         }
         
-        Write-Host "   Installing NVIDIA Container Toolkit..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "timeout 300 sudo apt-get install -y nvidia-container-toolkit" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "   Failed to install NVIDIA Container Toolkit: $result" -ForegroundColor Red
-            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            return $false
+        # Verify Docker runtime configuration
+        Write-Host "   Verifying Docker runtime configuration..." -ForegroundColor Gray
+        $result = wsl -d $ubuntuDistro -e bash -c "cat /etc/docker/daemon.json 2>/dev/null | grep nvidia" 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   Docker runtime is configured for NVIDIA" -ForegroundColor Green
+        } else {
+            Write-Host "   Docker runtime not configured for NVIDIA" -ForegroundColor Yellow
+            Write-Host "   Configuring Docker runtime..." -ForegroundColor Gray
+            
+            $result = wsl -d $ubuntuDistro -e bash -c "timeout 60 sudo nvidia-ctk runtime configure --runtime=docker" 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "   Failed to configure Docker runtime: $result" -ForegroundColor Red
+                Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
+                Write-Host "   Manual configuration may be required" -ForegroundColor Yellow
+            } else {
+                Write-Host "   Docker runtime configured successfully" -ForegroundColor Green
+            }
         }
         
-        Write-Host "   Configuring Docker runtime..." -ForegroundColor Gray
-        $result = wsl -d $ubuntuDistro -e bash -c "timeout 60 sudo nvidia-ctk runtime configure --runtime=docker" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "   Failed to configure Docker runtime: $result" -ForegroundColor Red
-            Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
-            return $false
-        }
+        Write-Host "   NVIDIA Container Toolkit verification completed" -ForegroundColor Green
         
-        Write-Host "   NVIDIA Container Toolkit installed in WSL successfully" -ForegroundColor Green
-        
-        Write-Host "NVIDIA Container Toolkit installed in WSL successfully" -ForegroundColor Green
+        Write-Host "NVIDIA Container Toolkit verification completed successfully" -ForegroundColor Green
         
         # Step 4: Verify installation
         Write-Host ""
