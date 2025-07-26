@@ -497,7 +497,7 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   Starting containers..." -ForegroundColor Gray
         if ($gpuAvailable -and -not $ForceCPU) {
             Write-Host "   Starting with GPU support..." -ForegroundColor Green
-            docker-compose up -d
+            docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
         } else {
             Write-Host "   Starting with CPU support..." -ForegroundColor Yellow
             docker-compose up -d
@@ -538,6 +538,25 @@ function Install-NvidiaContainerToolkit {
         # Show available models
         Write-Host "   Available Ollama models:" -ForegroundColor Gray
         docker exec langchain_search_service-ollama-1 ollama list
+        
+        # Check GPU utilization
+        if ($gpuAvailable -and -not $ForceCPU) {
+            Write-Host "   Checking GPU utilization..." -ForegroundColor Gray
+            Write-Host "   Testing GPU access with Ollama..." -ForegroundColor Gray
+            $gpuTest = docker exec langchain_search_service-ollama-1 ollama run mistral "Hello, are you using GPU?" 2>&1
+            Write-Host "   Ollama response: $gpuTest" -ForegroundColor Gray
+            
+            # Check if CUDA is available in the container
+            $cudaCheck = docker exec langchain_search_service-ollama-1 nvidia-smi 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "   GPU is accessible in Ollama container!" -ForegroundColor Green
+                Write-Host "   GPU Info:" -ForegroundColor Gray
+                Write-Host $cudaCheck -ForegroundColor Gray
+            } else {
+                Write-Host "   GPU not accessible in Ollama container" -ForegroundColor Red
+                Write-Host "   This may indicate GPU support is not properly configured" -ForegroundColor Yellow
+            }
+        }
         
         # Step 6: Migrate data to vector store
         Write-Host ""
