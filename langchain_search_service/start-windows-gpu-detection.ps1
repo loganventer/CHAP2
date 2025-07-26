@@ -483,6 +483,42 @@ function Install-NvidiaContainerToolkit {
         Write-Host "Setup Complete!" -ForegroundColor Green
         Write-Host "========================================" -ForegroundColor Green
         Write-Host "NVIDIA Container Toolkit is already installed and ready for use" -ForegroundColor White
+        
+        # Step 5: Deploy and start containers
+        Write-Host ""
+        Write-Host "Step 5: Deploying and starting containers..." -ForegroundColor Yellow
+        Write-Host "   Starting Qdrant, Ollama, and LangChain services..." -ForegroundColor Gray
+        
+        # Stop any existing containers
+        Write-Host "   Stopping any existing containers..." -ForegroundColor Gray
+        docker-compose down 2>$null
+        
+        # Start containers with GPU support if available
+        Write-Host "   Starting containers..." -ForegroundColor Gray
+        if ($gpuAvailable -and -not $ForceCPU) {
+            Write-Host "   Starting with GPU support..." -ForegroundColor Green
+            docker-compose up -d
+        } else {
+            Write-Host "   Starting with CPU support..." -ForegroundColor Yellow
+            docker-compose up -d
+        }
+        
+        # Wait for containers to start
+        Write-Host "   Waiting for containers to start..." -ForegroundColor Gray
+        Start-Sleep -Seconds 10
+        
+        # Check if containers are running
+        Write-Host "   Checking container status..." -ForegroundColor Gray
+        $containers = docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>$null
+        Write-Host "   Running containers:" -ForegroundColor Green
+        Write-Host $containers -ForegroundColor Gray
+        
+        # Pull Ollama models
+        Write-Host "   Pulling Ollama models..." -ForegroundColor Gray
+        docker exec ollama ollama pull nomic-embed-text 2>$null
+        docker exec ollama ollama pull mistral 2>$null
+        
+        Write-Host "   Container deployment completed successfully!" -ForegroundColor Green
         return $true
         
     } catch {
