@@ -32,7 +32,7 @@ function Test-DockerDesktop {
     try {
         $dockerVersion = docker version 2>$null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Docker Desktop is running" -ForegroundColor Green
+            Write-Host "Docker Desktop is running" -ForegroundColor Green
             return $true
         } else {
             Write-Host "ERROR: Docker Desktop is not running" -ForegroundColor Red
@@ -51,14 +51,14 @@ function Test-NvidiaGPU {
         if (Test-Command "nvidia-smi") {
             $gpuInfo = nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader,nounits 2>$null
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ NVIDIA GPU detected" -ForegroundColor Green
+                Write-Host "NVIDIA GPU detected" -ForegroundColor Green
                 return $true
             }
         }
-        Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
+        Write-Host "No NVIDIA GPU detected" -ForegroundColor Yellow
         return $false
     } catch {
-        Write-Host "⚠ No NVIDIA GPU detected" -ForegroundColor Yellow
+        Write-Host "No NVIDIA GPU detected" -ForegroundColor Yellow
         return $false
     }
 }
@@ -70,14 +70,14 @@ function Test-NvidiaDrivers {
         if (Test-Command "nvidia-smi") {
             $driverInfo = nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>$null
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ NVIDIA drivers are installed" -ForegroundColor Green
+                Write-Host "NVIDIA drivers are installed" -ForegroundColor Green
                 return $true
             }
         }
-        Write-Host "⚠ NVIDIA drivers not detected" -ForegroundColor Yellow
+        Write-Host "NVIDIA drivers not detected" -ForegroundColor Yellow
         return $false
     } catch {
-        Write-Host "⚠ NVIDIA drivers not detected" -ForegroundColor Yellow
+        Write-Host "NVIDIA drivers not detected" -ForegroundColor Yellow
         return $false
     }
 }
@@ -95,20 +95,20 @@ function Test-NvidiaContainerToolkit {
             $result = Receive-Job $job
             Remove-Job $job
             if ($result -eq 0) {
-                Write-Host "✓ NVIDIA Container Toolkit is available" -ForegroundColor Green
+                Write-Host "NVIDIA Container Toolkit is available" -ForegroundColor Green
                 return $true
             } else {
-                Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+                Write-Host "NVIDIA Container Toolkit not available" -ForegroundColor Yellow
                 return $false
             }
         } else {
             Stop-Job $job
             Remove-Job $job
-            Write-Host "⚠ NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
+            Write-Host "NVIDIA Container Toolkit check timed out" -ForegroundColor Yellow
             return $false
         }
     } catch {
-        Write-Host "⚠ NVIDIA Container Toolkit not available" -ForegroundColor Yellow
+        Write-Host "NVIDIA Container Toolkit not available" -ForegroundColor Yellow
         return $false
     }
 }
@@ -122,13 +122,13 @@ function Install-NvidiaContainerToolkit {
     
     # Check if running as administrator
     if (-not (Test-Administrator)) {
-        Write-Host "❌ ERROR: Administrator privileges required" -ForegroundColor Red
+        Write-Host "ERROR: Administrator privileges required" -ForegroundColor Red
         Write-Host "   Please run this script as Administrator" -ForegroundColor Red
         Write-Host "   Right-click the script and select 'Run as Administrator'" -ForegroundColor Gray
         return $false
     }
     
-    Write-Host "✓ Administrator privileges confirmed" -ForegroundColor Green
+    Write-Host "Administrator privileges confirmed" -ForegroundColor Green
     
     try {
         # Step 1: Download installer
@@ -152,15 +152,15 @@ function Install-NvidiaContainerToolkit {
             }
             Write-Host "   Download completed!" -ForegroundColor Green
         } catch {
-            Write-Host "   ❌ Download failed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "   Download failed: $($_.Exception.Message)" -ForegroundColor Red
             throw
         }
         
         if (Test-Path $installerPath) {
             $fileSize = (Get-Item $installerPath).Length / 1MB
-            Write-Host "✓ Download completed ($([math]::Round($fileSize, 1)) MB)" -ForegroundColor Green
+            Write-Host "Download completed ($([math]::Round($fileSize, 1)) MB)" -ForegroundColor Green
         } else {
-            Write-Host "❌ Download failed" -ForegroundColor Red
+            Write-Host "Download failed" -ForegroundColor Red
             return $false
         }
         
@@ -174,13 +174,13 @@ function Install-NvidiaContainerToolkit {
         $process = Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait -PassThru
         
         $duration = (Get-Date) - $startTime
-        Write-Host "✓ Installation completed in $($duration.TotalSeconds.ToString('F1')) seconds" -ForegroundColor Green
+        Write-Host "Installation completed in $($duration.TotalSeconds.ToString('F1')) seconds" -ForegroundColor Green
         
         # Step 3: Cleanup
         Write-Host ""
         Write-Host "Step 3: Cleaning up..." -ForegroundColor Yellow
         Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
-        Write-Host "✓ Temporary files cleaned up" -ForegroundColor Green
+        Write-Host "Temporary files cleaned up" -ForegroundColor Green
         
         # Step 4: Verify installation
         Write-Host ""
@@ -192,7 +192,7 @@ function Install-NvidiaContainerToolkit {
         # Test if the installation was successful
         $testResult = Test-NvidiaContainerToolkit
         if ($testResult) {
-            Write-Host "✓ NVIDIA Container Toolkit verified successfully" -ForegroundColor Green
+            Write-Host "NVIDIA Container Toolkit verified successfully" -ForegroundColor Green
             Write-Host ""
             Write-Host "========================================" -ForegroundColor Green
             Write-Host "Installation Complete!" -ForegroundColor Green
@@ -200,14 +200,14 @@ function Install-NvidiaContainerToolkit {
             Write-Host "NVIDIA Container Toolkit is now ready for use" -ForegroundColor White
             return $true
         } else {
-            Write-Host "⚠ Installation may need Docker Desktop restart" -ForegroundColor Yellow
+            Write-Host "Installation may need Docker Desktop restart" -ForegroundColor Yellow
             Write-Host "   Please restart Docker Desktop and run this script again" -ForegroundColor Yellow
             return $false
         }
         
     } catch {
         Write-Host ""
-        Write-Host "❌ ERROR: Installation failed" -ForegroundColor Red
+        Write-Host "ERROR: Installation failed" -ForegroundColor Red
         Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
         Write-Host ""
         Write-Host "Manual installation required:" -ForegroundColor Yellow
@@ -231,7 +231,7 @@ function Configure-DockerDesktopGPU {
         $dockerSettingsPath = "$env:APPDATA\Docker\settings.json"
         
         if (Test-Path $dockerSettingsPath) {
-            Write-Host "✓ Docker Desktop settings file found" -ForegroundColor Green
+            Write-Host "Docker Desktop settings file found" -ForegroundColor Green
             $settings = Get-Content $dockerSettingsPath | ConvertFrom-Json
             $modified = $false
             
@@ -241,9 +241,9 @@ function Configure-DockerDesktopGPU {
             if (-not $settings.gpuAcceleration) {
                 $settings.gpuAcceleration = $true
                 $modified = $true
-                Write-Host "✓ GPU acceleration enabled in Docker Desktop" -ForegroundColor Green
+                Write-Host "GPU acceleration enabled in Docker Desktop" -ForegroundColor Green
             } else {
-                Write-Host "✓ GPU acceleration already enabled in Docker Desktop" -ForegroundColor Green
+                Write-Host "GPU acceleration already enabled in Docker Desktop" -ForegroundColor Green
             }
             
             # Check and enable WSL 2 engine
@@ -251,9 +251,9 @@ function Configure-DockerDesktopGPU {
             if (-not $settings.useWsl2Engine) {
                 $settings.useWsl2Engine = $true
                 $modified = $true
-                Write-Host "✓ WSL 2 engine enabled in Docker Desktop" -ForegroundColor Green
+                Write-Host "WSL 2 engine enabled in Docker Desktop" -ForegroundColor Green
             } else {
-                Write-Host "✓ WSL 2 engine already enabled in Docker Desktop" -ForegroundColor Green
+                Write-Host "WSL 2 engine already enabled in Docker Desktop" -ForegroundColor Green
             }
             
             # Save changes if modified
@@ -261,19 +261,19 @@ function Configure-DockerDesktopGPU {
                 Write-Host ""
                 Write-Host "Saving Docker Desktop configuration..." -ForegroundColor Yellow
                 $settings | ConvertTo-Json -Depth 10 | Set-Content $dockerSettingsPath
-                Write-Host "✓ Docker Desktop configuration updated" -ForegroundColor Green
+                Write-Host "Docker Desktop configuration updated" -ForegroundColor Green
                 Write-Host ""
-                Write-Host "⚠ IMPORTANT: Docker Desktop restart required" -ForegroundColor Yellow
+                Write-Host "IMPORTANT: Docker Desktop restart required" -ForegroundColor Yellow
                 Write-Host "   Please restart Docker Desktop to apply GPU settings" -ForegroundColor Yellow
                 Write-Host "   You can do this from the Docker Desktop system tray icon" -ForegroundColor Gray
             } else {
                 Write-Host ""
-                Write-Host "✓ Docker Desktop already configured for GPU support" -ForegroundColor Green
+                Write-Host "Docker Desktop already configured for GPU support" -ForegroundColor Green
             }
             
             return $true
         } else {
-            Write-Host "❌ Docker Desktop settings file not found" -ForegroundColor Red
+            Write-Host "Docker Desktop settings file not found" -ForegroundColor Red
             Write-Host "   This usually means Docker Desktop is not installed or not running" -ForegroundColor Gray
             Write-Host ""
             Write-Host "Manual configuration required:" -ForegroundColor Yellow
@@ -286,7 +286,7 @@ function Configure-DockerDesktopGPU {
         }
     } catch {
         Write-Host ""
-        Write-Host "❌ ERROR: Failed to configure Docker Desktop" -ForegroundColor Red
+        Write-Host "ERROR: Failed to configure Docker Desktop" -ForegroundColor Red
         Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
         Write-Host ""
         Write-Host "Manual configuration required:" -ForegroundColor Yellow
@@ -392,7 +392,7 @@ services:
     # No GPU configuration"
     }
     $content | Out-File -FilePath "docker-compose.gpu.yml" -Encoding UTF8
-    Write-Host "✓ Configuration file created" -ForegroundColor Green
+    Write-Host "Configuration file created" -ForegroundColor Green
 }
 
 # Function to start services
@@ -440,12 +440,12 @@ function Test-ServiceStatus {
         try {
             $response = Invoke-WebRequest -Uri $service.URL -TimeoutSec 5 -ErrorAction SilentlyContinue
             if ($response.StatusCode -eq 200) {
-                Write-Host ("✓ {0} is running" -f $service.Name) -ForegroundColor Green
+                Write-Host ("{0} is running" -f $service.Name) -ForegroundColor Green
             } else {
-                Write-Host ("✗ {0} is not responding" -f $service.Name) -ForegroundColor Red
+                Write-Host ("{0} is not responding" -f $service.Name) -ForegroundColor Red
             }
         } catch {
-            Write-Host ("✗ {0} is not responding" -f $service.Name) -ForegroundColor Red
+            Write-Host ("{0} is not responding" -f $service.Name) -ForegroundColor Red
         }
     }
 }
@@ -459,23 +459,23 @@ function Show-DeploymentSummary {
     
     Write-Host "Deployment Summary" -ForegroundColor Cyan
     if ($ForceCPU) {
-        Write-Host "ℹ CPU-only deployment (forced)" -ForegroundColor Yellow
+        Write-Host "CPU-only deployment (forced)" -ForegroundColor Yellow
         Write-Host "  - GPU support disabled by -ForceCPU parameter" -ForegroundColor Gray
         Write-Host "  - Ollama running on CPU" -ForegroundColor Gray
     } elseif ($GPUAvailable) {
         if ($ContainerGPU) {
-            Write-Host "✓ GPU-accelerated deployment successful" -ForegroundColor Green
+            Write-Host "GPU-accelerated deployment successful" -ForegroundColor Green
             Write-Host "  - NVIDIA GPU detected and enabled" -ForegroundColor Gray
             Write-Host "  - NVIDIA Container Toolkit available" -ForegroundColor Gray
             Write-Host "  - Ollama running with GPU acceleration" -ForegroundColor Gray
         } else {
-            Write-Host "⚠ GPU detected but Container Toolkit not available" -ForegroundColor Yellow
+            Write-Host "GPU detected but Container Toolkit not available" -ForegroundColor Yellow
             Write-Host "  - NVIDIA GPU detected" -ForegroundColor Gray
             Write-Host "  - Install NVIDIA Container Toolkit for GPU acceleration" -ForegroundColor Gray
             Write-Host "  - Currently running on CPU" -ForegroundColor Gray
         }
     } else {
-        Write-Host "ℹ CPU-only deployment successful" -ForegroundColor Yellow
+        Write-Host "CPU-only deployment successful" -ForegroundColor Yellow
         Write-Host "  - No NVIDIA GPU detected" -ForegroundColor Gray
         Write-Host "  - Ollama running on CPU" -ForegroundColor Gray
         Write-Host "  - Performance may be slower than GPU version" -ForegroundColor Gray
