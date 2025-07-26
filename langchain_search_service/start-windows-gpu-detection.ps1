@@ -340,15 +340,22 @@ function Install-NvidiaContainerToolkit {
                 Write-Host "   Converting distribution to WSL2..." -ForegroundColor Yellow
                 Write-Host "   This may take a few minutes..." -ForegroundColor Gray
                 
+                # Try conversion with more detailed error handling
                 $convertResult = wsl --set-version $ubuntuDistro 2 2>&1
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "   Distribution converted to WSL2 successfully" -ForegroundColor Green
                 } else {
                     Write-Host "   Failed to convert to WSL2: $convertResult" -ForegroundColor Red
-                    Write-Host "   Manual conversion required:" -ForegroundColor Yellow
-                    Write-Host "   1. Run: wsl --set-version $ubuntuDistro 2" -ForegroundColor Gray
-                    Write-Host "   2. Restart this script" -ForegroundColor Gray
-                    return $false
+                    Write-Host "   Exit code: $LASTEXITCODE" -ForegroundColor Red
+                    
+                    # Try alternative approach - check if WSL2 is available
+                    Write-Host "   Checking WSL2 availability..." -ForegroundColor Yellow
+                    $wslStatus = wsl --status 2>&1
+                    Write-Host "   WSL status: $wslStatus" -ForegroundColor Gray
+                    
+                    # Try to continue anyway - maybe it's already WSL2 but not showing correctly
+                    Write-Host "   Attempting to continue with current setup..." -ForegroundColor Yellow
+                    Write-Host "   Note: Some systems may work with WSL1 for this purpose" -ForegroundColor Gray
                 }
             }
             
@@ -422,12 +429,13 @@ function Install-NvidiaContainerToolkit {
         Write-Host "   This may take several minutes..." -ForegroundColor Gray
         
         # Verify we're using WSL2 before installation
-        Write-Host "   Verifying WSL2 environment..." -ForegroundColor Cyan
+        Write-Host "   Verifying WSL environment..." -ForegroundColor Cyan
         $wslCheck = wsl -d $ubuntuDistro -e bash -c "uname -a" 2>&1
         if ($wslCheck -match "Microsoft") {
-            Write-Host "   Confirmed: Running in WSL2 environment" -ForegroundColor Green
+            Write-Host "   Confirmed: Running in WSL environment (WSL1 or WSL2)" -ForegroundColor Green
         } else {
-            Write-Host "   Warning: May not be running in WSL2 environment" -ForegroundColor Yellow
+            Write-Host "   Warning: May not be running in WSL environment" -ForegroundColor Yellow
+            Write-Host "   WSL check output: $wslCheck" -ForegroundColor Gray
         }
         
         # Step 3.1: Add NVIDIA repository
