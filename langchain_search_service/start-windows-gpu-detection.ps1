@@ -11,10 +11,8 @@ param(
 # Set error action preference
 $ErrorActionPreference = "Continue"
 
-Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "CHAP2 LangChain Service - Windows GPU Detection" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
 
 # Function to check if command exists
 function Test-Command($cmdname) {
@@ -360,16 +358,39 @@ function New-DockerComposeGPU {
     if ($GPUAvailable -and -not $ForceCPU) {
         if ($ContainerGPU) {
             Write-Host "Creating GPU-enabled configuration..." -ForegroundColor Green
-            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]"
+            $content = "version: '3.8'
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]"
         } else {
             Write-Host "Creating GPU configuration..." -ForegroundColor Yellow
-            $content = "version: '3.8'`n`nservices:`n  ollama:`n    deploy:`n      resources:`n        reservations:`n          devices:`n            - driver: nvidia`n              count: all`n              capabilities: [gpu]"
+            $content = "version: '3.8'
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]"
         }
     } else {
         Write-Host "Creating CPU-only configuration..." -ForegroundColor Yellow
-        $content = "version: '3.8'`n`nservices:`n  ollama:`n    # No GPU configuration"
+        $content = "version: '3.8'
+
+services:
+  ollama:
+    # No GPU configuration"
     }
-    
     $content | Out-File -FilePath "docker-compose.gpu.yml" -Encoding UTF8
     Write-Host "✓ Configuration file created" -ForegroundColor Green
 }
@@ -380,16 +401,9 @@ function Start-Services {
         [bool]$GPUAvailable
     )
     
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "Starting CHAP2 LangChain Services" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    
-    # Stop existing containers
     Write-Host "Stopping existing containers..." -ForegroundColor Yellow
     docker-compose down 2>$null
-    
-    # Start Qdrant and Ollama
     Write-Host "Starting Qdrant and Ollama containers..." -ForegroundColor Yellow
     if ($GPUAvailable -and -not $ForceCPU) {
         Write-Host "Using GPU-enabled configuration" -ForegroundColor Green
@@ -398,53 +412,40 @@ function Start-Services {
         Write-Host "Using CPU-only configuration" -ForegroundColor Yellow
         docker-compose up -d qdrant ollama
     }
-    
-    # Wait for Ollama to be ready
     Write-Host "Waiting for Ollama to start..." -ForegroundColor Yellow
     Start-Sleep -Seconds 10
-    
-    # Pull required models
     Write-Host "Pulling Ollama models..." -ForegroundColor Yellow
     docker exec langchain_search_service-ollama-1 ollama pull nomic-embed-text 2>$null
     docker exec langchain_search_service-ollama-1 ollama pull mistral 2>$null
-    
-    # Start LangChain service
     Write-Host "Starting LangChain service..." -ForegroundColor Yellow
     if ($GPUAvailable -and -not $ForceCPU) {
         docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d langchain-service
     } else {
         docker-compose up -d langchain-service
     }
-    
-    # Wait for services to be ready
     Write-Host "Waiting for services to be ready..." -ForegroundColor Yellow
     Start-Sleep -Seconds 15
 }
 
 # Function to check service status
 function Test-ServiceStatus {
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "Service Status" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    
     $services = @(
         @{Name="Qdrant"; URL="http://localhost:6333/collections"},
         @{Name="Ollama"; URL="http://localhost:11434/api/tags"},
         @{Name="LangChain service"; URL="http://localhost:8000/health"}
     )
-    
     foreach ($service in $services) {
-        Write-Host "Checking $($service.Name)..." -ForegroundColor Yellow
+        Write-Host ("Checking {0}..." -f $service.Name) -ForegroundColor Yellow
         try {
             $response = Invoke-WebRequest -Uri $service.URL -TimeoutSec 5 -ErrorAction SilentlyContinue
             if ($response.StatusCode -eq 200) {
-                Write-Host "✓ $($service.Name) is running" -ForegroundColor Green
+                Write-Host ("✓ {0} is running" -f $service.Name) -ForegroundColor Green
             } else {
-                Write-Host "✗ $($service.Name) is not responding" -ForegroundColor Red
+                Write-Host ("✗ {0} is not responding" -f $service.Name) -ForegroundColor Red
             }
         } catch {
-            Write-Host "✗ $($service.Name) is not responding" -ForegroundColor Red
+            Write-Host ("✗ {0} is not responding" -f $service.Name) -ForegroundColor Red
         }
     }
 }
@@ -456,11 +457,7 @@ function Show-DeploymentSummary {
         [bool]$ContainerGPU
     )
     
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "Deployment Summary" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    
     if ($ForceCPU) {
         Write-Host "ℹ CPU-only deployment (forced)" -ForegroundColor Yellow
         Write-Host "  - GPU support disabled by -ForceCPU parameter" -ForegroundColor Gray
@@ -489,9 +486,6 @@ function Show-DeploymentSummary {
     Write-Host "- Qdrant Vector Database: http://localhost:6333" -ForegroundColor White
     Write-Host "- Ollama LLM Service: http://localhost:11434" -ForegroundColor White
     Write-Host "- LangChain Search Service: http://localhost:8000" -ForegroundColor White
-    Write-Host ""
-    Write-Host "To start the web portal, run:" -ForegroundColor Cyan
-    Write-Host "dotnet run --project CHAP2.UI/CHAP2.WebPortal/CHAP2.Web.csproj --urls `"http://localhost:5000`"" -ForegroundColor White
 }
 
 # Main execution
@@ -556,13 +550,12 @@ try {
     Show-DeploymentSummary -GPUAvailable $gpuAvailable -ContainerGPU $containerGPU
     
 } catch {
-    Write-Host "ERROR: An unexpected error occurred: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ("ERROR: {0}" -f $_.Exception.Message) -ForegroundColor Red
     if ($Verbose) {
         Write-Host $_.Exception.StackTrace -ForegroundColor Red
     }
     exit 1
 }
 
-Write-Host ""
 Write-Host "Press any key to exit..." -ForegroundColor Cyan
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") 
