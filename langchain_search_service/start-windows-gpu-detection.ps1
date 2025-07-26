@@ -232,10 +232,25 @@ try {
         Write-Host "   Removed remaining containers" -ForegroundColor Green
     }
     
-    # Remove and recreate network
-    docker network rm langchain_search_service_default 2>$null
-    docker network create langchain_search_service_default 2>$null
-    Write-Host "   PASS: Network cleaned up" -ForegroundColor Green
+    # Remove and recreate network properly
+    Write-Host "   Cleaning up Docker network..." -ForegroundColor Gray
+    try {
+        # Force remove the network if it exists
+        docker network rm langchain_search_service_default 2>$null
+        Start-Sleep -Seconds 2
+    } catch {
+        # Network might not exist, that's okay
+    }
+    
+    # Remove any orphaned containers that might be using the network
+    $orphanedContainers = docker ps -aq --filter "network=langchain_search_service_default" 2>$null
+    if ($orphanedContainers) {
+        docker rm -f $orphanedContainers 2>$null
+        Write-Host "   Removed orphaned containers" -ForegroundColor Green
+    }
+    
+    # Let Docker Compose create the network fresh
+    Write-Host "   PASS: Network cleanup completed" -ForegroundColor Green
 } catch {
     Write-Host "   FAIL: Could not clean up containers: $($_.Exception.Message)" -ForegroundColor Red
 }
