@@ -20,17 +20,20 @@ public class IntelligentSearchResult
 
 public class IntelligentSearchService : IIntelligentSearchService
 {
+    private readonly ILangChainSearchService _langChainSearchService;
     private readonly IVectorSearchService _vectorSearchService;
     private readonly IOllamaService _ollamaService;
     private readonly IChorusApiService _chorusApiService;
     private readonly ILogger<IntelligentSearchService> _logger;
 
     public IntelligentSearchService(
+        ILangChainSearchService langChainSearchService,
         IVectorSearchService vectorSearchService,
         IOllamaService ollamaService,
         IChorusApiService chorusApiService,
         ILogger<IntelligentSearchService> logger)
     {
+        _langChainSearchService = langChainSearchService;
         _vectorSearchService = vectorSearchService;
         _ollamaService = ollamaService;
         _chorusApiService = chorusApiService;
@@ -42,6 +45,22 @@ public class IntelligentSearchService : IIntelligentSearchService
         try
         {
             _logger.LogInformation("Performing intelligent search for query: {Query}", query);
+
+            // Use LangChain service for intelligent search
+            var result = await _langChainSearchService.SearchWithIntelligenceAsync(query, maxResults, cancellationToken);
+            
+            _logger.LogInformation("LangChain search returned {Count} results", result.SearchResults.Count);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during intelligent search for query: {Query}", query);
+            
+            // Fallback to original implementation if LangChain fails
+            try
+            {
+                _logger.LogInformation("Falling back to original search implementation");
 
             // Step 1: Use LLM to understand the query
             var queryUnderstanding = await GenerateQueryUnderstandingAsync(query, cancellationToken);
@@ -76,9 +95,9 @@ public class IntelligentSearchService : IIntelligentSearchService
                 QueryUnderstanding = queryUnderstanding
             };
         }
-        catch (Exception ex)
+            catch (Exception fallbackEx)
         {
-            _logger.LogError(ex, "Error during intelligent search for query: {Query}", query);
+                _logger.LogError(fallbackEx, "Fallback search also failed for query: {Query}", query);
             return new IntelligentSearchResult
             {
                 SearchResults = new List<ChorusSearchResult>(),
@@ -86,6 +105,7 @@ public class IntelligentSearchService : IIntelligentSearchService
                 HasAiAnalysis = false,
                 QueryUnderstanding = "Error occurred"
             };
+            }
         }
     }
 
@@ -93,6 +113,50 @@ public class IntelligentSearchService : IIntelligentSearchService
     {
         _logger.LogInformation("Performing streaming intelligent search for query: {Query}", query);
 
+        // Try LangChain service first
+        var langChainEnumerator = _langChainSearchService.SearchWithIntelligenceStreamingAsync(query, maxResults, cancellationToken).GetAsyncEnumerator();
+        
+        var langChainResults = new List<string>();
+        var langChainSuccess = false;
+        
+        try
+        {
+            while (await langChainEnumerator.MoveNextAsync())
+            {
+                langChainResults.Add(langChainEnumerator.Current);
+            }
+            langChainSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during streaming LangChain search for query: {Query}", query);
+        }
+        finally
+        {
+            await langChainEnumerator.DisposeAsync();
+        }
+
+        // Yield LangChain results if successful
+        if (langChainSuccess && langChainResults.Any())
+        {
+            foreach (var result in langChainResults)
+            {
+                yield return result;
+            }
+        }
+        else
+        {
+            // If LangChain failed, fallback to original implementation
+            _logger.LogInformation("Falling back to original streaming search implementation");
+            await foreach (var result in FallbackStreamingSearchAsync(query, maxResults, cancellationToken))
+            {
+                yield return result;
+            }
+        }
+    }
+
+    private async IAsyncEnumerable<string> FallbackStreamingSearchAsync(string query, int maxResults, CancellationToken cancellationToken)
+    {
         // Step 1: Use LLM to understand the query
         _logger.LogInformation("Step 1: Generating query understanding...");
         cancellationToken.ThrowIfCancellationRequested();
@@ -113,9 +177,9 @@ public class IntelligentSearchService : IIntelligentSearchService
             searchResults = await _vectorSearchService.SearchSimilarAsync(queryUnderstanding, maxResults, cancellationToken);
             _logger.LogInformation("Vector search found {Count} results for query: {Query}", searchResults.Count, query);
         }
-        catch (Exception ex)
+        catch (Exception vectorEx)
         {
-            _logger.LogError(ex, "Error during vector search for query: {Query}", query);
+            _logger.LogError(vectorEx, "Error during vector search for query: {Query}", query);
             vectorSearchFailed = true;
             vectorSearchError = "Vector search failed. Please try again.";
             searchResults = new List<ChorusSearchResult>();

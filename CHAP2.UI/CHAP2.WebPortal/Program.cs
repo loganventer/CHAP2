@@ -47,6 +47,9 @@ builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
 builder.Services.AddHttpClient<IOllamaService, OllamaService>();
 
+// Register LangChain service
+builder.Services.AddHttpClient<ILangChainSearchService, LangChainSearchService>();
+
 // Configure CORS
 builder.Services.AddCors(options =>
 {

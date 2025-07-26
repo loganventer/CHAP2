@@ -696,6 +696,20 @@ class AiSearch {
     }
 
     handleStreamingUpdate(data) {
+        // Compatibility shim for backend 'event' format
+        if (data.event && data.data) {
+            try {
+                const inner = JSON.parse(data.data);
+                if (data.event === 'search_results') inner.type = 'searchResults';
+                else if (data.event === 'ai_analysis') inner.type = 'aiAnalysis';
+                else if (data.event === 'query_understanding') inner.type = 'queryUnderstanding';
+                else if (data.event === 'complete') inner.type = 'complete';
+                else if (data.event === 'error') inner.type = 'error';
+                data = inner;
+            } catch (e) {
+                console.error('Could not parse inner data:', e, data.data);
+            }
+        }
         console.log('AI Search: handleStreamingUpdate called with:', data);
         console.log('AI Search: data.type =', data.type);
         

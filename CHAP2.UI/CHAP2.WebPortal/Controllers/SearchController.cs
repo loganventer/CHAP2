@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Enums;
 using CHAP2.WebPortal.DTOs;
+using CHAP2.WebPortal.Services;
 
 namespace CHAP2.WebPortal.Controllers;
 
@@ -10,13 +11,16 @@ namespace CHAP2.WebPortal.Controllers;
 public class SearchController : ControllerBase
 {
     private readonly ISearchService _searchService;
+    private readonly IIntelligentSearchService _intelligentSearchService;
     private readonly ILogger<SearchController> _logger;
 
     public SearchController(
         ISearchService searchService,
+        IIntelligentSearchService intelligentSearchService,
         ILogger<SearchController> logger)
     {
         _searchService = searchService ?? throw new ArgumentNullException(nameof(searchService));
+        _intelligentSearchService = intelligentSearchService ?? throw new ArgumentNullException(nameof(intelligentSearchService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -79,24 +83,12 @@ public class SearchController : ControllerBase
                 return BadRequest(new { error = "Query is required" });
             }
 
-            var searchRequest = new SearchRequest(
-                Query: request.Query.Trim(),
-                Mode: ParseSearchMode(request.SearchMode),
-                Scope: ParseSearchScope(request.SearchScope),
-                MaxResults: request.MaxResults ?? 50,
-                UseAi: true
-            );
-
-            var result = await _searchService.SearchWithAiAsync(searchRequest);
-
-            if (!string.IsNullOrEmpty(result.Error))
-            {
-                return StatusCode(500, new { error = result.Error });
-            }
+            // Use LangChain intelligent search service
+            var result = await _intelligentSearchService.SearchWithIntelligenceAsync(request.Query, request.MaxResults ?? 50);
 
             var response = new
             {
-                results = result.Results.Select(c => new
+                results = result.SearchResults.Select(c => new
                 {
                     id = c.Id,
                     name = c.Name,
@@ -106,8 +98,15 @@ public class SearchController : ControllerBase
                     chorusText = c.ChorusText,
                     createdAt = c.CreatedAt
                 }),
-                totalCount = result.TotalCount,
-                metadata = result.Metadata
+                totalCount = result.SearchResults.Count,
+                metadata = new
+                {
+                    query = request.Query,
+                    aiSearch = true,
+                    searchType = "ai",
+                    aiAnalysis = result.AiAnalysis,
+                    queryUnderstanding = result.QueryUnderstanding
+                }
             };
 
             return Ok(response);
