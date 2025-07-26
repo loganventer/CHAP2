@@ -166,11 +166,22 @@ function Install-NvidiaContainerToolkit {
         
         # Get WSL distributions list
         Write-Host "   Getting WSL distributions list..." -ForegroundColor Gray
-        $distributions = wsl --list --verbose 2>$null
+        $distributions = wsl --list --verbose 2>&1
         Write-Host "   wsl output length: $($distributions.Length)" -ForegroundColor Gray
+        Write-Host "   wsl exit code: $LASTEXITCODE" -ForegroundColor Gray
         
         Write-Host "Available WSL distributions:" -ForegroundColor Gray
         Write-Host $distributions -ForegroundColor Gray
+        
+        # Try alternative commands if the first one fails
+        if ($distributions.Length -eq 0 -or $LASTEXITCODE -ne 0) {
+            Write-Host "   First command failed, trying wsl --list..." -ForegroundColor Yellow
+            $distributions = wsl --list 2>&1
+            Write-Host "   wsl --list output length: $($distributions.Length)" -ForegroundColor Gray
+            Write-Host "   wsl --list exit code: $LASTEXITCODE" -ForegroundColor Gray
+            Write-Host "   wsl --list output:" -ForegroundColor Gray
+            Write-Host $distributions -ForegroundColor Gray
+        }
         
         # Check for any Ubuntu-like distribution (Ubuntu, Ubuntu-20.04, Ubuntu-22.04, etc.)
         Write-Host "   Checking for Ubuntu distributions..." -ForegroundColor Gray
@@ -183,6 +194,17 @@ function Install-NvidiaContainerToolkit {
         foreach ($line in $allLines) {
             Write-Host "   Line: '$line'" -ForegroundColor Gray
         }
+        
+        # Try to manually test if Ubuntu is accessible
+        Write-Host "   Testing direct Ubuntu access..." -ForegroundColor Gray
+        $testResult = wsl -d Ubuntu -e echo "Ubuntu is accessible" 2>&1
+        Write-Host "   Direct Ubuntu test result: $testResult" -ForegroundColor Gray
+        Write-Host "   Direct Ubuntu test exit code: $LASTEXITCODE" -ForegroundColor Gray
+        
+        # Try with Ubuntu-22.04 as well
+        $testResult2 = wsl -d Ubuntu-22.04 -e echo "Ubuntu-22.04 is accessible" 2>&1
+        Write-Host "   Direct Ubuntu-22.04 test result: $testResult2" -ForegroundColor Gray
+        Write-Host "   Direct Ubuntu-22.04 test exit code: $LASTEXITCODE" -ForegroundColor Gray
         
         Write-Host "   Debug: Testing string matching with multiple whitespace handling..." -ForegroundColor Gray
         foreach ($line in $allLines) {
