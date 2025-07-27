@@ -234,7 +234,7 @@ Here are the most relevant choruses found:
 
 {context}
 
-Please provide a detailed, insightful analysis that includes:
+IMPORTANT: Provide a detailed, insightful analysis that includes ALL of the following sections:
 
 1. **Summary**: What specific choruses were found and why they match this query? Mention specific titles and key themes.
 
@@ -246,7 +246,9 @@ Please provide a detailed, insightful analysis that includes:
 
 5. **Notable Patterns**: Are there recurring musical patterns, lyrical themes, or spiritual messages across these choruses?
 
-Focus on providing concrete, actionable insights that help the user understand why these choruses are relevant and valuable for their search. Be specific about musical details, lyrical content, and spiritual significance.
+DO NOT give generic responses like "This chorus was selected based on relevance to your search query." Instead, provide concrete, actionable insights that help the user understand why these choruses are relevant and valuable for their search. Be specific about musical details, lyrical content, and spiritual significance.
+
+Your response should be comprehensive and detailed, covering all the sections above.
 """
     
     # Use LLM directly with enhanced prompt for better analysis
@@ -315,7 +317,7 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
                 
                 context = "\n".join(context_parts)
                 
-                # Enhanced analysis prompt
+                # Enhanced analysis prompt with more explicit instructions
                 analysis_prompt = f"""
 You are an expert musicologist and religious scholar helping someone find meaningful choruses. The user searched for: "{request.query}"
 
@@ -323,7 +325,7 @@ Here are the most relevant choruses found:
 
 {context}
 
-Please provide a detailed, insightful analysis that includes:
+IMPORTANT: Provide a detailed, insightful analysis that includes ALL of the following sections:
 
 1. **Summary**: What specific choruses were found and why they match this query? Mention specific titles and key themes.
 
@@ -335,12 +337,17 @@ Please provide a detailed, insightful analysis that includes:
 
 5. **Notable Patterns**: Are there recurring musical patterns, lyrical themes, or spiritual messages across these choruses?
 
-Focus on providing concrete, actionable insights that help the user understand why these choruses are relevant and valuable for their search. Be specific about musical details, lyrical content, and spiritual significance.
+DO NOT give generic responses like "This chorus was selected based on relevance to your search query." Instead, provide concrete, actionable insights that help the user understand why these choruses are relevant and valuable for their search. Be specific about musical details, lyrical content, and spiritual significance.
+
+Your response should be comprehensive and detailed, covering all the sections above.
 """
                 
                 # Generate analysis
                 answer = llm.invoke(analysis_prompt)
                 logger.info("Step 3: AI analysis completed")
+                logger.info(f"Analysis prompt length: {len(analysis_prompt)}")
+                logger.info(f"Analysis response length: {len(answer)}")
+                logger.info(f"Analysis response preview: {answer[:200]}...")
                 yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': answer})}\n\n"
             else:
                 yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': 'No choruses found matching your query. Please try different search terms.'})}\n\n"
