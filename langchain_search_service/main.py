@@ -208,36 +208,53 @@ async def search_intelligent(request: IntelligentSearchRequest):
     # Get more documents for better context (k=12 instead of 8)
     docs = vector_store.similarity_search_with_score(request.query, k=12)
     
-    # Create a more detailed context for analysis
+    # Deduplicate results based on chorus ID before analysis
+    unique_docs = []
+    seen_ids = set()
+    for doc, score in docs:
+        chorus_id = doc.metadata.get('id', '')
+        if chorus_id not in seen_ids:
+            unique_docs.append((doc, score))
+            seen_ids.add(chorus_id)
+    
+    logger.info(f"Found {len(docs)} total results, {len(unique_docs)} unique choruses")
+    
+    # Create a more detailed context for analysis using unique results
     context_parts = []
-    for i, (doc, score) in enumerate(docs[:8]):  # Use top 8 for analysis
+    for i, (doc, score) in enumerate(unique_docs[:8]):  # Use top 8 unique results for analysis
         context_parts.append(f"Chorus {i+1} (Score: {score:.3f}):\nTitle: {doc.metadata.get('name', 'Unknown')}\nText: {doc.page_content}\n")
     
     context = "\n".join(context_parts)
     
     # Create an enhanced prompt for better analysis
     analysis_prompt = f"""
-You are a helpful assistant for religious chorus search. Analyze the following choruses for someone searching for: "{request.query}"
+You are an expert musicologist and religious scholar helping someone find meaningful choruses. The user searched for: "{request.query}"
 
-Context (choruses found):
+Here are the most relevant choruses found:
+
 {context}
 
-Please provide a thoughtful analysis that includes:
-1. A summary of the choruses that match the query
-2. Key themes or messages found in these choruses
-3. How these choruses relate to the user's search query
-4. Any notable patterns or insights about the music or lyrics
+Please provide a detailed, insightful analysis that includes:
 
-Keep your analysis concise but insightful. Focus on providing value to someone searching for religious choruses.
+1. **Summary**: What specific choruses were found and why they match this query? Mention specific titles and key themes.
+
+2. **Musical & Spiritual Insights**: What musical elements (key, tempo, style) and spiritual themes are prominent in these choruses?
+
+3. **Relevance to Query**: How do these choruses specifically address what the user is looking for? Be specific about lyrics, themes, or musical characteristics.
+
+4. **Practical Value**: What makes these choruses particularly suitable for someone searching with this query? Consider worship context, emotional impact, or theological depth.
+
+5. **Notable Patterns**: Are there recurring musical patterns, lyrical themes, or spiritual messages across these choruses?
+
+Focus on providing concrete, actionable insights that help the user understand why these choruses are relevant and valuable for their search. Be specific about musical details, lyrical content, and spiritual significance.
 """
     
     # Use LLM directly with enhanced prompt for better analysis
     answer = llm.invoke(analysis_prompt)
     
-    # Also return the top docs for transparency (use original k)
-    search_docs = vector_store.similarity_search_with_score(request.query, k=request.k)
+    # Return the deduplicated search results
     search_results = []
-    for doc, score in search_docs:
+    for doc, score in unique_docs[:request.k]:  # Limit to requested k
         search_results.append(SearchResult(
             id=doc.metadata.get("id", ""),
             text=doc.page_content,
