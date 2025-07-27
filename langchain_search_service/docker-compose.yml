@@ -38,7 +38,7 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - OLLAMA_URL=http://ollama:11434
     volumes:
-      - ./data:/app/data:ro  # Mount data directory for migration
+      - ./data:/app/data  # Mount data directory for migration
     restart: unless-stopped
 
   # CHAP2 API Service
@@ -55,7 +55,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5001
     volumes:
-      - ../CHAP2.Chorus.Api/data:/app/data:ro  # Mount chorus data
+      - ../CHAP2.Chorus.Api/data:/app/data  # Mount chorus data
     restart: unless-stopped
 
   # CHAP2 Web Portal
