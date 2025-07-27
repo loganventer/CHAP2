@@ -322,6 +322,33 @@
                         window.aiSearch.cancelCurrentSearch();
                     }
                     
+                    // Clear all results when switching tabs
+                    console.log('Tab switching: Clearing all results');
+                    const regularResults = document.getElementById('searchResults');
+                    const aiResults = document.getElementById('aiSearchResults');
+                    const aiAnalysis = document.getElementById('aiAnalysis');
+                    
+                    if (regularResults) {
+                        regularResults.innerHTML = '';
+                        regularResults.style.display = 'none';
+                    }
+                    
+                    if (aiResults) {
+                        aiResults.innerHTML = '';
+                        aiResults.style.display = 'none';
+                    }
+                    
+                    if (aiAnalysis) {
+                        aiAnalysis.innerHTML = '';
+                        aiAnalysis.style.display = 'none';
+                    }
+                    
+                    // Hide results sections
+                    const resultsSections = document.querySelectorAll('.results-section');
+                    resultsSections.forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
                     // Update active tab button
                     tabButtons.forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
