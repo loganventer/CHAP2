@@ -512,6 +512,9 @@ class AiSearch {
             console.log('AI Search: Parent container display set to block');
         }
         
+        // Ensure all AI search containers are visible
+        this.ensureAiContainersVisible();
+        
         // Add sparkle effect
         this.addSparkleEffect(understandingSection);
     }
@@ -849,10 +852,12 @@ class AiSearch {
         console.log('AI Search: aiTab active:', aiTab?.classList.contains('active'));
         console.log('AI Search: regularTab active:', regularTab?.classList.contains('active'));
         
-        // Only proceed if AI tab is active
-        if (!aiTab || !aiTab.classList.contains('active')) {
-            console.log('AI Search: AI tab is not active, skipping AI search');
-            return;
+        // If we're not on the AI tab, switch to it first
+        if (aiTab && !aiTab.classList.contains('active')) {
+            console.log('AI Search: Switching to AI tab before search');
+            aiTab.click(); // This will trigger the tab switching logic
+            // Wait a moment for the tab switch to complete
+            await new Promise(resolve => setTimeout(resolve, 150));
         }
         
         // Cancel any existing search
@@ -903,6 +908,9 @@ class AiSearch {
         // Show AI status
         this.updateAiStatus('🤖 Initializing AI search...', 'thinking');
         console.log('AI Search: Status updated to initializing');
+        
+        // Ensure AI search containers are visible
+        this.ensureAiContainersVisible();
 
         try {
             // Get filter values
@@ -1154,6 +1162,47 @@ class AiSearch {
         
         // Keep overflow hidden since we're growing to fit content
         textarea.style.overflowY = 'hidden';
+    }
+
+    ensureAiContainersVisible() {
+        console.log('AI Search: Ensuring AI containers are visible...');
+        
+        // Ensure the AI search input is visible
+        const aiSearchInput = document.getElementById('aiSearchInput');
+        if (aiSearchInput) {
+            aiSearchInput.style.display = 'block';
+            console.log('AI Search: AI search input made visible');
+        }
+
+        // Ensure the AI search button is visible
+        const aiSearchBtn = document.getElementById('aiSearchButton');
+        if (aiSearchBtn) {
+            aiSearchBtn.style.display = 'inline-block';
+            console.log('AI Search: AI search button made visible');
+        }
+
+        // Ensure the AI search results container is visible
+        const aiSearchResults = document.getElementById('aiSearchResults');
+        if (aiSearchResults) {
+            aiSearchResults.style.display = 'block';
+            console.log('AI Search: AI search results container made visible');
+        }
+
+        // Ensure the AI analysis container is visible
+        const aiAnalysis = document.getElementById('aiAnalysis');
+        if (aiAnalysis) {
+            aiAnalysis.style.display = 'block';
+            console.log('AI Search: AI analysis container made visible');
+        }
+
+        // Ensure the AI status indicator is visible
+        const aiStatusIndicator = document.getElementById('aiStatusIndicator');
+        if (aiStatusIndicator) {
+            aiStatusIndicator.style.display = 'block';
+            console.log('AI Search: AI status indicator made visible');
+        }
+        
+        console.log('AI Search: All AI containers visibility ensured');
     }
 }
 
