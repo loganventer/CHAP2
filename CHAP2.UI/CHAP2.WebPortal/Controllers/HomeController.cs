@@ -627,6 +627,80 @@ Please provide a helpful and accurate response based on the chorus information p
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> IntelligentSearchStream([FromBody] IntelligentSearchRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("IntelligentSearchStream called with query: {Query}, maxResults: {MaxResults}", 
+                request.Query, request.MaxResults);
+
+            // Set up streaming response
+            Response.Headers.Add("Content-Type", "text/event-stream");
+            Response.Headers.Add("Cache-Control", "no-cache");
+            Response.Headers.Add("Connection", "keep-alive");
+            Response.Headers.Add("Access-Control-Allow-Origin", "*");
+
+            // Step 1: Send query understanding
+            var queryUnderstandingEvent = $"data: {{\"type\":\"queryUnderstanding\",\"queryUnderstanding\":\"{request.Query}\"}}\n\n";
+            await Response.WriteAsync(queryUnderstandingEvent);
+            await Response.Body.FlushAsync();
+
+            // Step 2: Get search results from LangChain service
+            var searchResults = await _intelligentSearchService.SearchAsync(request.Query, request.MaxResults, HttpContext.RequestAborted);
+            
+            var searchResultsJson = System.Text.Json.JsonSerializer.Serialize(searchResults.Select(r => new
+            {
+                id = r.Id,
+                text = r.ChorusText,
+                score = r.Score,
+                metadata = new
+                {
+                    name = r.Name,
+                    key = r.Key,
+                    type = r.Type,
+                    timeSignature = r.TimeSignature
+                }
+            }));
+
+            var searchResultsEvent = $"data: {{\"type\":\"searchResults\",\"searchResults\":{searchResultsJson}}}\n\n";
+            await Response.WriteAsync(searchResultsEvent);
+            await Response.Body.FlushAsync();
+
+            // Step 3: Generate AI analysis in background
+            if (searchResults.Any())
+            {
+                var analysis = await _intelligentSearchService.GenerateAnalysisAsync(request.Query, searchResults, HttpContext.RequestAborted);
+                var analysisEvent = $"data: {{\"type\":\"aiAnalysis\",\"analysis\":\"{analysis.Replace("\"", "\\\"")}\"}}\n\n";
+                await Response.WriteAsync(analysisEvent);
+                await Response.Body.FlushAsync();
+            }
+            else
+            {
+                var noResultsEvent = $"data: {{\"type\":\"aiAnalysis\",\"analysis\":\"No choruses found matching your query. Please try different search terms.\"}}\n\n";
+                await Response.WriteAsync(noResultsEvent);
+                await Response.Body.FlushAsync();
+            }
+
+            // Step 4: Send completion
+            var completeEvent = $"data: {{\"type\":\"complete\",\"status\":\"completed\"}}\n\n";
+            await Response.WriteAsync(completeEvent);
+            await Response.Body.FlushAsync();
+
+            return new EmptyResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in IntelligentSearchStream for query: {Query}", request.Query);
+            
+            var errorEvent = $"data: {{\"type\":\"error\",\"error\":\"{ex.Message.Replace("\"", "\\\"")}\"}}\n\n";
+            await Response.WriteAsync(errorEvent);
+            await Response.Body.FlushAsync();
+            
+            return new EmptyResult();
+        }
+    }
+
 
 
     [HttpPost]

@@ -8,6 +8,8 @@ public interface IIntelligentSearchService
 {
     Task<IntelligentSearchResult> SearchWithIntelligenceAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
     IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
+    Task<List<ChorusSearchResult>> SearchAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
+    Task<string> GenerateAnalysisAsync(string query, List<ChorusSearchResult> results, CancellationToken cancellationToken = default);
 }
 
 public class IntelligentSearchResult
@@ -98,14 +100,28 @@ public class IntelligentSearchService : IIntelligentSearchService
             catch (Exception fallbackEx)
         {
                 _logger.LogError(fallbackEx, "Fallback search also failed for query: {Query}", query);
-            return new IntelligentSearchResult
-            {
-                SearchResults = new List<ChorusSearchResult>(),
-                AiAnalysis = "Sorry, I encountered an error while searching. Please try again.",
-                HasAiAnalysis = false,
-                QueryUnderstanding = "Error occurred"
-            };
+                throw;
             }
+        }
+    }
+
+    public async Task<List<ChorusSearchResult>> SearchAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Performing basic search for query: {Query}", query);
+            
+            // Use LangChain service for basic search
+            var results = await _langChainSearchService.SearchAsync(query, maxResults, cancellationToken);
+            
+            _logger.LogInformation("Basic search returned {Count} results", results.Count);
+            
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during basic search for query: {Query}", query);
+            throw;
         }
     }
 
@@ -303,7 +319,7 @@ Generate focused single-word search terms that will find the most relevant choru
         return string.Join(", ", terms);
     }
 
-    private async Task<string> GenerateAnalysisAsync(string query, List<ChorusSearchResult> results, CancellationToken cancellationToken = default)
+    public async Task<string> GenerateAnalysisAsync(string query, List<ChorusSearchResult> results, CancellationToken cancellationToken = default)
     {
         var prompt = CreateAnalysisPrompt(query, results);
         return await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);

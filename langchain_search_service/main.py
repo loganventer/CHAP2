@@ -275,30 +275,83 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
     async def generate_stream():
         try:
             logger.info(f"Starting streaming intelligent search for query: {request.query}")
+            
             # Step 1: Send query understanding
+            logger.info("Step 1: Sending query understanding")
             yield f"data: {json.dumps({'type': 'queryUnderstanding', 'queryUnderstanding': request.query})}\n\n"
-            # Step 2: Perform RAG search
-            logger.info("Performing RAG search...")
+            
+            # Step 2: Perform search and send results immediately
+            logger.info("Step 2: Performing search...")
             docs = vector_store.similarity_search_with_score(request.query, k=request.k)
-            search_results = []
+            
+            # Deduplicate results
+            unique_docs = []
+            seen_ids = set()
             for doc, score in docs:
-                result = SearchResult(
-                    id=doc.metadata.get("id", ""),
-                    text=doc.page_content,
-                    score=float(score),
-                    metadata=doc.metadata
-                )
-                search_results.append(result)
-            yield f"data: {json.dumps({'type': 'searchResults', 'searchResults': [r.dict() for r in search_results]})}\n\n"
-            # Step 3: Generate AI analysis
-            logger.info("Generating AI analysis...")
-            answer = qa_chain.run(request.query)
-            yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': answer})}\n\n"
+                chorus_id = doc.metadata.get('id', '')
+                if chorus_id not in seen_ids:
+                    unique_docs.append((doc, score))
+                    seen_ids.add(chorus_id)
+            
+            search_results = []
+            for doc, score in unique_docs:
+                search_results.append({
+                    "id": doc.metadata.get("id", ""),
+                    "text": doc.page_content,
+                    "score": float(score),
+                    "metadata": doc.metadata
+                })
+            
+            logger.info(f"Step 2: Found {len(search_results)} unique results")
+            yield f"data: {json.dumps({'type': 'searchResults', 'searchResults': search_results})}\n\n"
+            
+            # Step 3: Generate AI analysis in background
+            logger.info("Step 3: Generating AI analysis...")
+            if unique_docs:
+                # Create context for analysis
+                context_parts = []
+                for i, (doc, score) in enumerate(unique_docs[:8]):
+                    context_parts.append(f"Chorus {i+1} (Score: {score:.3f}):\nTitle: {doc.metadata.get('name', 'Unknown')}\nText: {doc.page_content}\n")
+                
+                context = "\n".join(context_parts)
+                
+                # Enhanced analysis prompt
+                analysis_prompt = f"""
+You are an expert musicologist and religious scholar helping someone find meaningful choruses. The user searched for: "{request.query}"
+
+Here are the most relevant choruses found:
+
+{context}
+
+Please provide a detailed, insightful analysis that includes:
+
+1. **Summary**: What specific choruses were found and why they match this query? Mention specific titles and key themes.
+
+2. **Musical & Spiritual Insights**: What musical elements (key, tempo, style) and spiritual themes are prominent in these choruses?
+
+3. **Relevance to Query**: How do these choruses specifically address what the user is looking for? Be specific about lyrics, themes, or musical characteristics.
+
+4. **Practical Value**: What makes these choruses particularly suitable for someone searching with this query? Consider worship context, emotional impact, or theological depth.
+
+5. **Notable Patterns**: Are there recurring musical patterns, lyrical themes, or spiritual messages across these choruses?
+
+Focus on providing concrete, actionable insights that help the user understand why these choruses are relevant and valuable for their search. Be specific about musical details, lyrical content, and spiritual significance.
+"""
+                
+                # Generate analysis
+                answer = llm.invoke(analysis_prompt)
+                logger.info("Step 3: AI analysis completed")
+                yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': answer})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': 'No choruses found matching your query. Please try different search terms.'})}\n\n"
+            
             # Step 4: Send completion
             yield f"data: {json.dumps({'type': 'complete', 'status': 'completed'})}\n\n"
+            
         except Exception as e:
             logger.error(f"Error in streaming search: {e}")
             yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+    
     return EventSourceResponse(generate_stream())
 
 @app.post("/clear_cache")

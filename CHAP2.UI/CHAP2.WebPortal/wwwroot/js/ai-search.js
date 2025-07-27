@@ -878,8 +878,9 @@ class AiSearch {
             const enhancedQuery = this.buildEnhancedQuery(query, filters);
             console.log('AI Search: Enhanced query:', enhancedQuery);
 
-            console.log('AI Search: Making fetch request to /Home/IntelligentSearch');
-            const response = await fetch('/Home/IntelligentSearch', {
+            // Use streaming endpoint for proper flow
+            console.log('AI Search: Using streaming endpoint for proper flow');
+            const response = await fetch('/Home/IntelligentSearchStream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -888,7 +889,7 @@ class AiSearch {
                     query: enhancedQuery,
                     maxResults: parseInt(document.getElementById('maxResults')?.value || '10')
                 }),
-                signal: this.currentSearchController.signal // Add abort signal
+                signal: this.currentSearchController.signal
             });
 
             console.log('AI Search: Response status:', response.status);
@@ -896,70 +897,72 @@ class AiSearch {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            console.log('AI Search: Processing response...');
+            // Handle streaming response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
             
-            // Get the JSON response
-            const data = await response.json();
-            console.log('AI Search: Received data:', data);
-            
-            // Process the results
-            if (data.searchResults && data.searchResults.length > 0) {
-                this.displaySearchResultsWithAnimation(data.searchResults);
-                if (data.aiAnalysis) {
-                    this.displayAiAnalysis(data.aiAnalysis);
-                }
-            } else {
-                this.displaySearchResultsWithAnimation([]);
-            }
-
-            // Update status to success and stop rotating animation
-            this.stopRotatingMessages();
-            this.updateAiStatus('✅ Search completed!', 'success');
-
-            // Show final success message briefly, then fade out status bar
-            setTimeout(() => {
-                this.updateAiStatus('🎉 Search completed successfully!', 'success');
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
                 
-                // Fade out status bar after 5 seconds
-                setTimeout(() => {
-                    const statusIndicator = document.getElementById('aiStatusIndicator');
-                    if (statusIndicator) {
-                        statusIndicator.style.transition = 'opacity 1s ease-out';
-                        statusIndicator.style.opacity = '0';
-                        setTimeout(() => {
-                            statusIndicator.style.display = 'none';
-                        }, 1000);
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            console.log('AI Search: Received streaming data:', data);
+                            
+                            switch (data.type) {
+                                case 'queryUnderstanding':
+                                    console.log('AI Search: Displaying query understanding');
+                                    this.displayQueryUnderstanding(data.queryUnderstanding);
+                                    this.updateAiStatus('🔍 Understanding your search...', 'thinking');
+                                    break;
+                                    
+                                case 'searchResults':
+                                    console.log('AI Search: Displaying search results');
+                                    this.displaySearchResultsWithAnimation(data.searchResults);
+                                    this.updateAiStatus('📚 Found choruses, analyzing...', 'thinking');
+                                    break;
+                                    
+                                case 'aiAnalysis':
+                                    console.log('AI Search: Displaying AI analysis');
+                                    this.displayAiAnalysis(data.analysis);
+                                    this.updateAiStatus('✅ Analysis complete!', 'success');
+                                    break;
+                                    
+                                case 'complete':
+                                    console.log('AI Search: Search completed');
+                                    this.celebrateAndFadeStatus();
+                                    break;
+                                    
+                                case 'error':
+                                    console.error('AI Search: Error from server:', data.error);
+                                    this.updateAiStatus('❌ Search failed: ' + data.error, 'error');
+                                    break;
+                            }
+                        } catch (parseError) {
+                            console.error('AI Search: Error parsing streaming data:', parseError);
+                        }
                     }
-                }, 5000);
-            }, 1000);
+                }
+            }
 
         } catch (error) {
-            console.error('Search error:', error);
+            console.error('AI Search: Error during search:', error);
             
-            // Check if the error is due to cancellation
             if (error.name === 'AbortError') {
-                console.log('AI Search: Search was cancelled by user');
-                return; // Don't show error message for cancelled searches
-            }
-            
-            this.updateAiStatus('❌ Search failed', 'error');
-            
-            // Stop rotating messages on error
-            setTimeout(() => {
-                this.stopRotatingMessages();
-                this.updateAiStatus('⚠️ Search encountered an error', 'error');
-            }, 2000);
-        } finally {
-            // Reset button state immediately when search completes
-            if (btnText && btnLoading) {
-                btnText.style.display = 'inline-block';
-                btnLoading.style.display = 'none';
+                console.log('AI Search: Search was cancelled');
+                this.updateAiStatus('⏹️ Search cancelled', 'error');
             } else {
-                this.searchBtn.disabled = false;
-                this.searchBtn.innerHTML = '<i class="fas fa-robot"></i> AI Search';
+                this.updateAiStatus('❌ Search failed: ' + error.message, 'error');
             }
+        } finally {
             this.searchInProgress = false;
-            this.currentSearchController = null;
+            this.resetButtonState();
+            console.log('AI Search: Search completed, resetting state');
         }
     }
 
