@@ -360,6 +360,9 @@ class AiSearch {
             console.log('AI Search: Parent container display set to block');
         }
         
+        // Ensure the aiResults container is specifically visible
+        this.ensureAiResultsVisible();
+        
         this.animateResultRows();
     }
 
@@ -459,6 +462,9 @@ class AiSearch {
 
     displayQueryUnderstanding(queryUnderstanding) {
         console.log('AI Search: displayQueryUnderstanding called with:', queryUnderstanding);
+        console.log('AI Search: resultsContainer exists:', !!this.resultsContainer);
+        console.log('AI Search: resultsContainer display style:', this.resultsContainer?.style.display);
+        
         if (!this.resultsContainer) {
             console.error('AI Search: resultsContainer is null in displayQueryUnderstanding');
             return;
@@ -495,6 +501,7 @@ class AiSearch {
         const existingSection = this.resultsContainer.querySelector('.query-understanding-section');
         if (existingSection) {
             existingSection.remove();
+            console.log('AI Search: Removed existing query understanding section');
         }
         
         // Insert at the top of the results container
@@ -515,8 +522,13 @@ class AiSearch {
         // Ensure all AI search containers are visible
         this.ensureAiContainersVisible();
         
+        // Ensure the aiResults container is specifically visible
+        this.ensureAiResultsVisible();
+        
         // Add sparkle effect
         this.addSparkleEffect(understandingSection);
+        
+        console.log('AI Search: displayQueryUnderstanding completed successfully');
     }
 
     updateResultsWithExplanations(results) {
@@ -911,6 +923,9 @@ class AiSearch {
         
         // Ensure AI search containers are visible
         this.ensureAiContainersVisible();
+        
+        // Ensure the aiResults container is specifically visible for new searches
+        this.ensureAiResultsVisible();
 
         try {
             // Get filter values
@@ -1202,7 +1217,23 @@ class AiSearch {
             console.log('AI Search: AI status indicator made visible');
         }
         
+        // Ensure the aiResults container (which contains the chorus list) is visible
+        const aiResults = document.getElementById('aiResults');
+        if (aiResults) {
+            aiResults.style.display = 'block';
+            console.log('AI Search: AI results container made visible');
+        }
+        
         console.log('AI Search: All AI containers visibility ensured');
+    }
+
+    ensureAiResultsVisible() {
+        console.log('AI Search: Ensuring aiResults container is visible...');
+        const aiResults = document.getElementById('aiResults');
+        if (aiResults) {
+            aiResults.style.display = 'block';
+            console.log('AI Search: aiResults container made visible');
+        }
     }
 }
 
