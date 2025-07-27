@@ -1842,6 +1842,9 @@
     box-sizing: border-box;
     width: 100%;
     outline: none;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
 }
 
 .search-input.auto-resize:focus {
@@ -1859,7 +1862,7 @@
     resize: none;
     overflow: hidden;
     min-height: 40px;
-    max-height: 120px;
+    /* Removed max-height to allow continuous growth */
 }
 
 /* When content exceeds max height */

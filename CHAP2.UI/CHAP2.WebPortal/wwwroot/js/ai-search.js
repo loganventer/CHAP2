@@ -98,6 +98,14 @@ class AiSearch {
                     this.autoResizeTextarea(this.searchInput);
                 }
             });
+            
+            // Add keyup event listener for better auto-resize responsiveness
+            this.searchInput.addEventListener('keyup', (event) => {
+                // Auto-resize functionality for textarea
+                if (this.searchInput.tagName === 'TEXTAREA') {
+                    this.autoResizeTextarea(this.searchInput);
+                }
+            });
         }
         
         // Add Clear Filters button event listener
@@ -1141,16 +1149,11 @@ class AiSearch {
         // Reset height to auto to get the correct scrollHeight
         textarea.style.height = 'auto';
         
-        // Calculate new height based on content
-        const newHeight = Math.min(textarea.scrollHeight, 120); // Max height of 120px
-        textarea.style.height = newHeight + 'px';
+        // Set height to match the content height (no max limit)
+        textarea.style.height = textarea.scrollHeight + 'px';
         
-        // If content exceeds max height, show scrollbar
-        if (textarea.scrollHeight > 120) {
-            textarea.style.overflowY = 'auto';
-        } else {
-            textarea.style.overflowY = 'hidden';
-        }
+        // Keep overflow hidden since we're growing to fit content
+        textarea.style.overflowY = 'hidden';
     }
 }
 
