@@ -1821,3 +1821,41 @@
     font-size: 0.85rem;
     margin-top: 0.5rem;
 } 
+
+/* Auto-resize textarea styles */
+.search-input.auto-resize {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    width: 100%;
+    outline: none;
+}
+
+.search-input.auto-resize:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.search-input.auto-resize::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+/* Ensure textarea looks like input */
+.search-input.auto-resize {
+    resize: none;
+    overflow: hidden;
+    min-height: 40px;
+    max-height: 120px;
+}
+
+/* When content exceeds max height */
+.search-input.auto-resize.overflow {
+    overflow-y: auto;
+} 

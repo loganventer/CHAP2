@@ -92,6 +92,11 @@ class AiSearch {
             this.searchInput.addEventListener('input', (event) => {
                 console.log('AI Search input detected, cancelling current search if any');
                 this.cancelCurrentSearch();
+                
+                // Auto-resize functionality for textarea
+                if (this.searchInput.tagName === 'TEXTAREA') {
+                    this.autoResizeTextarea(this.searchInput);
+                }
             });
         }
         
@@ -843,8 +848,8 @@ class AiSearch {
         }
 
         // Validate query length
-        if (query.length > 200) {
-            alert('Search query is too long. Please keep it under 200 characters.');
+        if (query.length > 400) {
+            alert('Search query is too long. Please keep it under 400 characters.');
             this.searchInProgress = false;
             return;
         }
@@ -1107,6 +1112,22 @@ class AiSearch {
                 this.searchBtn.disabled = false;
                 this.searchBtn.innerHTML = '<span class="btn-text">Search with AI Analysis</span>';
             }
+        }
+    }
+
+    autoResizeTextarea(textarea) {
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        
+        // Calculate new height based on content
+        const newHeight = Math.min(textarea.scrollHeight, 120); // Max height of 120px
+        textarea.style.height = newHeight + 'px';
+        
+        // If content exceeds max height, show scrollbar
+        if (textarea.scrollHeight > 120) {
+            textarea.style.overflowY = 'auto';
+        } else {
+            textarea.style.overflowY = 'hidden';
         }
     }
 }

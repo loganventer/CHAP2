@@ -54,11 +54,13 @@
         <div class="search-section" id="aiSearch" style="display: none;">
             <div class="search-box">
                 <i class="fas fa-robot search-icon"></i>
-                <input type="text" 
+                <textarea 
                        id="aiSearchInput" 
-                       class="search-input" 
+                       class="search-input auto-resize" 
                        placeholder="Ask about choruses using natural language..."
-                       autocomplete="off">
+                       rows="1"
+                       maxlength="400"
+                       style="resize: none; overflow: hidden; min-height: 40px; max-height: 120px;"></textarea>
                 <div class="search-actions">
                     <button class="search-btn" id="aiSearchButton">
                         <i class="fas fa-robot"></i> AI Search
