@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Understanding Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .query-understanding-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .query-understanding-header h3 {
+            color: #333;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .query-understanding-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .query-understanding-content span {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        #aiSearchResults {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>AI Understanding Box Test</h1>
+        
+        <div id="aiSearchResults" style="display: none;">
+            <!-- AI understanding box will be added here -->
+        </div>
+        
+        <button class="test-button" onclick="testQueryUnderstanding()">Test Query Understanding</button>
+        <button class="test-button" onclick="testStreaming()">Test Streaming</button>
+        <button class="test-button" onclick="clearResults()">Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function testQueryUnderstanding() {
+            const resultsContainer = document.getElementById('aiSearchResults');
+            resultsContainer.style.display = 'block';
+            
+            // Simulate the displayQueryUnderstanding method
+            const understandingSection = document.createElement('div');
+            understandingSection.className = 'query-understanding-section';
+            
+            const terms = ['choruses', 'about', 'love', 'and', 'worship'];
+            const formattedTerms = terms.map(term => 
+                `<span>${term}</span>`
+            ).join('');
+            
+            understandingSection.innerHTML = `
+                <div class="query-understanding-header">
+                    <h3>
+                        <i class="fas fa-brain"></i> AI Query Understanding
+                    </h3>
+                    <p>
+                        Based on your search, I'm looking for choruses that match these terms:
+                    </p>
+                </div>
+                <div class="query-understanding-content">
+                    ${formattedTerms}
+                </div>
+            `;
+            
+            // Clear any existing query understanding section
+            const existingSection = resultsContainer.querySelector('.query-understanding-section');
+            if (existingSection) {
+                existingSection.remove();
+            }
+            
+            // Insert at the top of the results container
+            resultsContainer.insertBefore(understandingSection, resultsContainer.firstChild);
+            
+            document.getElementById('results').innerHTML = '<p>✅ Query understanding box displayed successfully!</p>';
+        }
+        
+        async function testStreaming() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing streaming endpoint...</p>';
+            
+            try {
+                const response = await fetch('/Home/IntelligentSearchStream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: 'choruses about love',
+                        maxResults: 3
+                    })
+                });
+                
+                if (response.ok) {
+                    results.innerHTML = '<p>✅ Streaming endpoint is working!</p>';
+                } else {
+                    results.innerHTML = `<p>❌ Streaming endpoint failed: ${response.status}</p>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('aiSearchResults').innerHTML = '';
+            document.getElementById('aiSearchResults').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html> 

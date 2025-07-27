@@ -293,7 +293,18 @@ class AiSearch {
             return;
         }
 
+        // Preserve the query understanding section if it exists
+        const queryUnderstandingSection = this.resultsContainer.querySelector('.query-understanding-section');
+        console.log('AI Search: Found existing query understanding section:', !!queryUnderstandingSection);
+        
+        // Clear everything except the query understanding section
         this.resultsContainer.innerHTML = '';
+        
+        // Restore the query understanding section if it existed
+        if (queryUnderstandingSection) {
+            this.resultsContainer.appendChild(queryUnderstandingSection);
+            console.log('AI Search: Restored query understanding section');
+        }
         
         if (!results || results.length === 0) {
             console.log('AI Search: No results to display');
@@ -466,7 +477,7 @@ class AiSearch {
                 <p>
                     Based on your search, I'm looking for choruses that match these terms:
                 </p>
-                </div>
+            </div>
             <div class="query-understanding-content">
                 ${formattedTerms}
             </div>
@@ -481,6 +492,17 @@ class AiSearch {
         // Insert at the top of the results container
         this.resultsContainer.insertBefore(understandingSection, this.resultsContainer.firstChild);
         console.log('AI Search: Query understanding section added to DOM');
+        
+        // Ensure the results container is visible
+        this.resultsContainer.style.display = 'block';
+        console.log('AI Search: Results container display set to block');
+        
+        // Also show the parent container if it exists
+        const parentContainer = document.getElementById('aiResults');
+        if (parentContainer) {
+            parentContainer.style.display = 'block';
+            console.log('AI Search: Parent container display set to block');
+        }
         
         // Add sparkle effect
         this.addSparkleEffect(understandingSection);
