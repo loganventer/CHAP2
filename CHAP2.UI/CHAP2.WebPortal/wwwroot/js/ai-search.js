@@ -466,7 +466,7 @@ class AiSearch {
         
         // Format the terms with better styling
         const formattedTerms = terms.map(term => 
-            `<span style="display: inline-block; background: rgba(255,255,255,0.25); color: white; padding: 0.3rem 0.6rem; margin: 0.2rem; border-radius: 6px; font-size: 0.9rem; font-weight: 500; border: 1px solid rgba(255,255,255,0.3); text-shadow: 0 1px 1px rgba(0,0,0,0.2);"> ${term}</span>`
+            `<span>${term}</span>`
         ).join('');
         
         understandingSection.innerHTML = `

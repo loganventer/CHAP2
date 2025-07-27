@@ -824,6 +824,13 @@
     letter-spacing: 0.5px;
     position: relative;
     z-index: 1;
+    line-height: 1.2;
+}
+
+.query-understanding-header h3 i {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-right: 0.5rem;
 }
 
 .query-understanding-content {
