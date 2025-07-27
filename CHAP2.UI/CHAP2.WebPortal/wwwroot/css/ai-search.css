@@ -1458,12 +1458,23 @@
     color: #333;
     margin-bottom: 8px;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    line-height: 1.2;
 }
 
 .query-understanding-content {
     color: #666;
     line-height: 1.6;
     font-weight: 500;
+}
+
+.query-understanding-header h3 i {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+    vertical-align: middle;
 }
 
 /* AI Analysis Section */
