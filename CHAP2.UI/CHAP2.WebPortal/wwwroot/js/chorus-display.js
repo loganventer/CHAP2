@@ -191,8 +191,9 @@ class ChorusDisplay {
     }
     
     getKeyDisplay(keyValue) {
-        const keys = ['Not Set', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        return keys[keyValue] || 'Not Set';
+        const keys = ['Not Set', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C♭', 'D♭', 'E♭', 'F♭', 'G♭', 'A♭', 'B♭'];
+        const numValue = parseInt(keyValue);
+        return keys[numValue] || 'Not Set';
     }
     
     updateDisplay(chorusData) {

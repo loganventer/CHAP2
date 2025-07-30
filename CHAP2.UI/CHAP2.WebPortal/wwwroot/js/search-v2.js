@@ -344,15 +344,18 @@ const TimeSignatures = {
 };
 
 function getKeyDisplay(keyValue) {
-    return MusicalKeys[keyValue] || 'Unknown';
+    const numValue = parseInt(keyValue);
+    return MusicalKeys[numValue] || 'Unknown';
 }
 
 function getTypeDisplay(typeValue) {
-    return ChorusTypes[typeValue] || 'Unknown';
+    const numValue = parseInt(typeValue);
+    return ChorusTypes[numValue] || 'Unknown';
 }
 
 function getTimeSignatureDisplay(timeValue) {
-    return TimeSignatures[timeValue] || 'Unknown';
+    const numValue = parseInt(timeValue);
+    return TimeSignatures[numValue] || 'Unknown';
 }
 
 // Create result row

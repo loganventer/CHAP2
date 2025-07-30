@@ -436,25 +436,28 @@ class AiSearch {
         // Helper functions for enum conversion
         const getKeyDisplay = (keyValue) => {
             const keys = ['Not Set', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C♭', 'D♭', 'E♭', 'F♭', 'G♭', 'A♭', 'B♭'];
-            return keys[keyValue] || 'Unknown';
+            const numValue = parseInt(keyValue);
+            return keys[numValue] || 'Unknown';
         };
         
         const getTypeDisplay = (typeValue) => {
             const types = ['Not Set', 'Praise', 'Worship'];
-            return types[typeValue] || 'Unknown';
+            const numValue = parseInt(typeValue);
+            return types[numValue] || 'Unknown';
         };
         
         const getTimeSignatureDisplay = (timeValue) => {
-            const times = ['Not Set', '4/4', '3/4', '6/8', '2/4', '4/8', '3/8', '2/2', '5/4', '6/4', '9/8', '12/8', '7/4', '8/4', '5/8', '7/8', '8/8'];
-            return times[timeValue] || 'Unknown';
+            const times = ['Not Set', '4/4', '3/4', '6/8', '2/4', '4/8', '3/8', '2/2', '5/4', '6/4', '9/8', '12/8', '7/4', '8/4', '5/8', '7/8', '8/8', '2/16', '3/16', '4/16', '5/16', '6/16', '7/16', '8/16', '9/16', '12/16'];
+            const numValue = parseInt(timeValue);
+            return times[numValue] || 'Unknown';
         };
         
-        // Extract metadata properties
+        // Extract metadata properties - handle both direct properties and nested metadata
         const metadata = result.metadata || {};
-        const chorusName = metadata.name || result.name || 'Untitled Chorus';
-        const chorusKey = metadata.key || result.key || result.Key;
-        const chorusType = metadata.type || result.type || result.Type;
-        const chorusTimeSignature = metadata.timeSignature || result.timeSignature || result.TimeSignature;
+        const chorusName = result.name || metadata.name || 'Untitled Chorus';
+        const chorusKey = result.key || metadata.key || result.Key;
+        const chorusType = result.type || metadata.type || result.Type;
+        const chorusTimeSignature = result.timeSignature || metadata.timeSignature || result.TimeSignature;
         
         console.log('AI Search: Extracted metadata:', { chorusName, chorusKey, chorusType, chorusTimeSignature });
         
@@ -710,17 +713,20 @@ class AiSearch {
         // Helper functions for enum conversion
         const getKeyDisplay = (keyValue) => {
             const keys = ['Not Set', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C♭', 'D♭', 'E♭', 'F♭', 'G♭', 'A♭', 'B♭'];
-            return keys[keyValue] || 'Unknown';
+            const numValue = parseInt(keyValue);
+            return keys[numValue] || 'Unknown';
         };
         
         const getTypeDisplay = (typeValue) => {
             const types = ['Not Set', 'Praise', 'Worship'];
-            return types[typeValue] || 'Unknown';
+            const numValue = parseInt(typeValue);
+            return types[numValue] || 'Unknown';
         };
         
         const getTimeSignatureDisplay = (timeValue) => {
-            const times = ['Not Set', '4/4', '3/4', '6/8', '2/4', '4/8', '3/8', '2/2', '5/4', '6/4', '9/8', '12/8', '7/4', '8/4', '5/8', '7/8', '8/8'];
-            return times[timeValue] || 'Unknown';
+            const times = ['Not Set', '4/4', '3/4', '6/8', '2/4', '4/8', '3/8', '2/2', '5/4', '6/4', '9/8', '12/8', '7/4', '8/4', '5/8', '7/8', '8/8', '2/16', '3/16', '4/16', '5/16', '6/16', '7/16', '8/16', '9/16', '12/16'];
+            const numValue = parseInt(timeValue);
+            return times[numValue] || 'Unknown';
         };
         
         row.innerHTML = `
