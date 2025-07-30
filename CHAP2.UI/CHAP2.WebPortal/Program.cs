@@ -19,10 +19,12 @@ builder.Services.AddCHAP2ApiClient(builder.Configuration);
 // Configure settings
 builder.Services.Configure<QdrantSettings>(builder.Configuration.GetSection("Qdrant"));
 builder.Services.Configure<OllamaSettings>(builder.Configuration.GetSection("Ollama"));
+builder.Services.Configure<LangChainSettings>(builder.Configuration.GetSection("LangChainService"));
 
 // Register settings as singleton
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<QdrantSettings>>().Value);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<OllamaSettings>>().Value);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<LangChainSettings>>().Value);
 
 // Register services
 builder.Services.AddScoped<IChorusApiService, ChorusApiService>();
@@ -45,10 +47,20 @@ builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
 // Register AI services
 builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
-builder.Services.AddHttpClient<IOllamaService, OllamaService>();
+builder.Services.AddHttpClient<IOllamaService, OllamaService>(client =>
+{
+    var ollamaSettings = builder.Configuration.GetSection("Ollama").Get<OllamaSettings>();
+    var timeoutSeconds = ollamaSettings?.TimeoutSeconds ?? 300;
+    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+});
 
 // Register LangChain service
-builder.Services.AddHttpClient<ILangChainSearchService, LangChainSearchService>();
+builder.Services.AddHttpClient<ILangChainSearchService, LangChainSearchService>(client =>
+{
+    var langChainSettings = builder.Configuration.GetSection("LangChainService").Get<LangChainSettings>();
+    var timeoutSeconds = langChainSettings?.TimeoutSeconds ?? 600;
+    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+});
 
 // Configure CORS
 builder.Services.AddCors(options =>

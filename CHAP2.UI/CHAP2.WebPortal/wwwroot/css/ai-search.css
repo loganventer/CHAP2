@@ -1605,6 +1605,38 @@
     animation: sparkle 1s ease-in-out;
 }
 
+/* Retry Button Styles */
+.retry-button {
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 8px !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    cursor: pointer !important;
+    margin-left: 1rem !important;
+    font-size: 0.9rem !important;
+    transition: all 0.3s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    font-weight: 500 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.retry-button:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.retry-button i {
+    font-size: 0.8rem !important;
+    animation: spin 1s linear infinite !important;
+}
+
 /* Responsive animations */
 @media (max-width: 768px) {
     .ai-status-indicator {
@@ -1656,6 +1688,12 @@
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
         line-height: 1.3;
+    }
+
+    .retry-button {
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.8rem !important;
+        margin-left: 0.5rem !important;
     }
 } 
 

@@ -285,13 +285,14 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/chorus-display.js"></script>
-    <script src="~/js/search.js"></script>
-    <script src="~/js/ai-search.js"></script>
+    <script src="~/js/chorus-display.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/ai-search.js?v=@DateTime.Now.Ticks"></script>
     <script>
         // Initialize both search modes when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing search modes...');
+            console.log('AiSearch class available:', typeof AiSearch);
+            console.log('window.aiSearch before init:', !!window.aiSearch);
             
             // Initialize traditional search
             if (typeof initializeSearch === 'function') {
@@ -299,8 +300,23 @@
             }
             
             // Initialize AI search
-            if (typeof window.aiSearch !== 'undefined') {
-                window.aiSearch.init();
+            if (typeof AiSearch === 'function') {
+                window.aiSearch = new AiSearch();
+                console.log('AI Search initialized:', !!window.aiSearch);
+                console.log('cancelCurrentSearch available:', typeof window.aiSearch.cancelCurrentSearch);
+                console.log('All AI Search methods:', Object.getOwnPropertyNames(window.aiSearch));
+            } else {
+                console.log('AiSearch class not found, trying alternative initialization...');
+                // Try to initialize after a short delay
+                setTimeout(() => {
+                    if (typeof AiSearch === 'function') {
+                        window.aiSearch = new AiSearch();
+                        console.log('AI Search initialized (delayed):', !!window.aiSearch);
+                        console.log('cancelCurrentSearch available (delayed):', typeof window.aiSearch.cancelCurrentSearch);
+                    } else {
+                        console.log('AiSearch class still not found after delay');
+                    }
+                }, 100);
             }
             
             // Set up tab switching
@@ -319,37 +335,59 @@
                     console.log('Tab switched to:', targetTab);
                     
                     // Cancel AI search if it's running
-                    if (window.aiSearch) {
+                    if (window.aiSearch && typeof window.aiSearch.cancelCurrentSearch === 'function') {
                         console.log('Tab switching: Cancelling AI search');
                         window.aiSearch.cancelCurrentSearch();
+                    } else {
+                        console.log('Tab switching: AI search not available or cancelCurrentSearch not found');
+                        console.log('window.aiSearch exists:', !!window.aiSearch);
+                        if (window.aiSearch) {
+                            console.log('Available methods:', Object.getOwnPropertyNames(window.aiSearch));
+                        }
                     }
                     
                     // Clear all results when switching tabs
                     console.log('Tab switching: Clearing all results');
-                    const regularResults = document.getElementById('searchResults');
-                    const aiResults = document.getElementById('aiSearchResults');
+                    
+                    // Clear regular search results
+                    const resultsTable = document.getElementById('resultsTable');
+                    const resultsBody = document.getElementById('resultsBody');
+                    const resultsHeader = document.getElementById('resultsHeader');
+                    const resultsCount = document.getElementById('resultsCount');
+                    const noResults = document.getElementById('noResults');
+                    const loading = document.getElementById('loading');
+                    
+                    if (resultsBody) resultsBody.innerHTML = '';
+                    if (resultsHeader) resultsHeader.style.display = 'none';
+                    if (resultsCount) resultsCount.textContent = '';
+                    if (noResults) noResults.style.display = 'none';
+                    if (loading) loading.style.display = 'none';
+                    if (resultsTable) resultsTable.style.display = 'none';
+                    
+                    // Clear AI search results
+                    const aiSearchResults = document.getElementById('aiSearchResults');
+                    const aiResults = document.getElementById('aiResults');
                     const aiAnalysis = document.getElementById('aiAnalysis');
                     
-                    if (regularResults) {
-                        regularResults.innerHTML = '';
-                        regularResults.style.display = 'none';
+                    if (aiSearchResults) {
+                        aiSearchResults.innerHTML = '';
+                        aiSearchResults.style.display = 'none';
                     }
                     
                     if (aiResults) {
-                        aiResults.innerHTML = '';
                         aiResults.style.display = 'none';
                     }
                     
                     if (aiAnalysis) {
-                        aiAnalysis.innerHTML = '';
                         aiAnalysis.style.display = 'none';
                     }
                     
                     // Hide results sections
-                    const resultsSections = document.querySelectorAll('.results-section');
-                    resultsSections.forEach(section => {
-                        section.style.display = 'none';
-                    });
+                    const regularResults = document.getElementById('regularResults');
+                    const aiResultsSection = document.getElementById('aiResults');
+                    
+                    if (regularResults) regularResults.style.display = 'none';
+                    if (aiResultsSection) aiResultsSection.style.display = 'none';
                     
                     // Update active tab button
                     tabButtons.forEach(btn => btn.classList.remove('active'));
@@ -365,6 +403,15 @@
                     if (targetSection) {
                         targetSection.classList.add('active');
                         targetSection.style.display = 'block';
+                    }
+                    
+                    // Show appropriate results section
+                    if (targetTab === 'regular') {
+                        const regularResults = document.getElementById('regularResults');
+                        if (regularResults) regularResults.style.display = 'block';
+                    } else if (targetTab === 'ai') {
+                        const aiResults = document.getElementById('aiResults');
+                        if (aiResults) aiResults.style.display = 'block';
                     }
                     
                     // Re-initialize search if switching to regular search

@@ -66,10 +66,12 @@ async def lifespan(app: FastAPI):
         model="nomic-embed-text",  # Use original model which generates 768-dimensional embeddings
         base_url=ollama_url
     )
-    # Initialize Ollama LLM
+    # Initialize Ollama LLM with increased timeout
     llm = Ollama(
         model="mistral",
-        base_url=ollama_url
+        base_url=ollama_url,
+        timeout=300,  # 5 minutes timeout
+        temperature=0.7
     )
     # Initialize Qdrant client with retry
     qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")

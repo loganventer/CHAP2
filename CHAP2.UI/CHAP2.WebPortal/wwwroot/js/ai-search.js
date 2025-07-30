@@ -1,6 +1,12 @@
 // AI Search JavaScript with Enhanced Animations and Whizzbang Effects
 class AiSearch {
     constructor() {
+        // Guard against multiple initializations
+        if (window.aiSearchInitialized) {
+            console.log('AiSearch: Already initialized, skipping...');
+            return;
+        }
+        
         this.searchInput = null;
         this.searchBtn = null;
         this.resultsContainer = null;
@@ -13,6 +19,8 @@ class AiSearch {
         this.currentSearchController = null; // For cancelling ongoing requests
         this.messageInterval = null;
         this.currentMessageIndex = 0;
+        this.initRetryCount = 0;
+        this.maxInitRetries = 10;
         this.statusMessages = {
             thinking: [
                 '🤖 Analyzing your query...',
@@ -64,7 +72,14 @@ class AiSearch {
         
         // Only initialize if we're on a page with AI search elements
         if (!this.searchInput || !this.searchBtn) {
-            console.log('AiSearch: No AI search elements found, skipping initialization');
+            this.initRetryCount++;
+            if (this.initRetryCount >= this.maxInitRetries) {
+                console.log('AiSearch: Max retries reached, giving up initialization');
+                return;
+            }
+            console.log(`AiSearch: No AI search elements found, retry ${this.initRetryCount}/${this.maxInitRetries}, waiting for container initialization...`);
+            // Wait for the container to be initialized by search-integration.js
+            setTimeout(() => this.init(), 500);
             return;
         }
         
@@ -121,6 +136,9 @@ class AiSearch {
         this.setupTabSwitching();
         
         this.createStatusIndicator();
+        
+        // Mark as initialized to prevent duplicate initialization
+        window.aiSearchInitialized = true;
     }
     
     setupTabSwitching() {
@@ -190,6 +208,13 @@ class AiSearch {
         const statusText = statusIndicator.querySelector('.ai-status-text');
         if (statusText) {
             statusText.textContent = message;
+        }
+
+        // Add retry button for timeout errors
+        if (type === 'error' && (message.includes('timeout') || message.includes('timed out'))) {
+            this.addRetryButton();
+        } else {
+            this.removeRetryButton();
         }
 
         // Start rotating messages
@@ -1004,7 +1029,11 @@ class AiSearch {
                                     
                                 case 'error':
                                     console.error('AI Search: Error from server:', data.error);
-                                    this.updateAiStatus('❌ Search failed: ' + data.error, 'error');
+                                    if (data.error.includes('timeout') || data.error.includes('timed out')) {
+                                        this.updateAiStatus('⏰ Request timed out. The AI is taking longer than expected. Please try again with a simpler query.', 'error');
+                                    } else {
+                                        this.updateAiStatus('❌ Search failed: ' + data.error, 'error');
+                                    }
                                     break;
                             }
                         } catch (parseError) {
@@ -1020,6 +1049,9 @@ class AiSearch {
             if (error.name === 'AbortError') {
                 console.log('AI Search: Search was cancelled');
                 this.updateAiStatus('⏹️ Search cancelled', 'error');
+            } else if (error.message.includes('timeout') || error.message.includes('timed out')) {
+                console.log('AI Search: Request timed out');
+                this.updateAiStatus('⏰ Request timed out. The AI is taking longer than expected. Please try again with a simpler query.', 'error');
             } else {
                 this.updateAiStatus('❌ Search failed: ' + error.message, 'error');
             }
@@ -1285,11 +1317,54 @@ class AiSearch {
             }
         });
     }
+
+    addRetryButton() {
+        const statusIndicator = document.getElementById('aiStatusIndicator');
+        if (!statusIndicator) return;
+
+        // Remove existing retry button
+        this.removeRetryButton();
+
+        // Create retry button
+        const retryButton = document.createElement('button');
+        retryButton.className = 'retry-button';
+        retryButton.innerHTML = '<i class="fas fa-redo"></i> Retry';
+        retryButton.style.cssText = `
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 1rem;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        `;
+
+        retryButton.addEventListener('click', () => {
+            this.performSearch();
+        });
+
+        statusIndicator.appendChild(retryButton);
+    }
+
+    removeRetryButton() {
+        const statusIndicator = document.getElementById('aiStatusIndicator');
+        if (!statusIndicator) return;
+
+        const retryButton = statusIndicator.querySelector('.retry-button');
+        if (retryButton) {
+            retryButton.remove();
+        }
+    }
 }
 
 // Initialize AI Search when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.aiSearch = new AiSearch();
+    // Only create if not already created
+    if (!window.aiSearch) {
+        window.aiSearch = new AiSearch();
+    }
 });
 
 // Global function for button click

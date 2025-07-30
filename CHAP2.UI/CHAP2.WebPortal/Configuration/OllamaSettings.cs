@@ -10,4 +10,5 @@ public class OllamaSettings
     public double TopP { get; set; } = 0.9;
     public int TopK { get; set; } = 40;
     public double RepeatPenalty { get; set; } = 1.1;
+    public int TimeoutSeconds { get; set; } = 300;
 } 
