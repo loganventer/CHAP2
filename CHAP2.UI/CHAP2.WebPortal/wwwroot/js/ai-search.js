@@ -207,7 +207,24 @@ class AiSearch {
         
         const statusText = statusIndicator.querySelector('.ai-status-text');
         if (statusText) {
-            statusText.textContent = message;
+            // Add timestamp for better tracking
+            const timestamp = new Date().toLocaleTimeString();
+            const messageWithTimestamp = `${message} (${timestamp})`;
+            
+            // Fade out current message
+            statusText.style.opacity = '0';
+            
+            setTimeout(() => {
+                statusText.innerHTML = `<h3>${messageWithTimestamp}</h3>`;
+                statusText.style.opacity = '1';
+                
+                // Add subtle animation for thinking state
+                if (type === 'thinking') {
+                    statusIndicator.style.animation = 'pulse 2s infinite';
+                } else {
+                    statusIndicator.style.animation = '';
+                }
+            }, 150);
         }
 
         // Add retry button for timeout errors
@@ -217,8 +234,14 @@ class AiSearch {
             this.removeRetryButton();
         }
 
-        // Start rotating messages
-        this.startRotatingMessages(type);
+        // Start rotating messages only for thinking state
+        if (type === 'thinking') {
+            this.startRotatingMessages(type);
+        } else {
+            this.stopRotatingMessages();
+        }
+        
+        console.log(`AI Search: Status updated - ${type}: ${message}`);
     }
 
     startRotatingMessages(type) {
@@ -1005,24 +1028,41 @@ class AiSearch {
                                 case 'queryUnderstanding':
                                     console.log('AI Search: Displaying query understanding');
                                     this.displayQueryUnderstanding(data.queryUnderstanding);
-                                    this.updateAiStatus('🔍 Understanding your search...', 'thinking');
+                                    this.updateAiStatus('🔍 Understanding your search query...', 'thinking');
                                     break;
                                     
                                 case 'searchResults':
                                     console.log('AI Search: Displaying search results');
                                     this.displaySearchResultsWithAnimation(data.searchResults);
-                                    this.updateAiStatus('📚 Found choruses, analyzing...', 'thinking');
+                                    this.updateAiStatus(`📚 Found ${data.searchResults.length} choruses, analyzing relevance...`, 'thinking');
                                     break;
                                     
                                 case 'chorusReason':
                                     console.log('AI Search: Received chorus reason:', data.chorusId);
                                     this.updateChorusReason(data.chorusId, data.reason);
+                                    this.updateAiStatus('💭 Analyzing why each chorus matches...', 'thinking');
                                     break;
                                     
                                 case 'aiAnalysis':
                                     console.log('AI Search: Displaying AI analysis');
                                     this.displayAiAnalysis(data.analysis);
-                                    this.updateAiStatus('✅ Analysis complete!', 'success');
+                                    this.updateAiStatus('✅ AI analysis complete!', 'success');
+                                    break;
+                                    
+                                case 'progress':
+                                    console.log('AI Search: Progress update:', data.message);
+                                    this.updateAiStatus(data.message, 'thinking');
+                                    break;
+                                    
+                                case 'ollamaCall':
+                                    console.log('AI Search: Ollama service call:', data.service);
+                                    this.updateAiStatus(`🤖 Calling ${data.service} service...`, 'thinking');
+                                    break;
+                                    
+                                case 'step':
+                                    console.log('AI Search: Step update:', data.step, data.total);
+                                    const progress = Math.round((data.step / data.total) * 100);
+                                    this.updateAiStatus(`⚡ Step ${data.step}/${data.total} (${progress}%) - ${data.message}`, 'thinking');
                                     break;
                                     
                                 case 'complete':
