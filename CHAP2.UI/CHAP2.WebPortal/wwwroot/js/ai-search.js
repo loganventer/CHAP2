@@ -369,6 +369,7 @@ class AiSearch {
     createAnimatedResultRow(result, index) {
         const row = document.createElement('div');
         row.className = 'search-result-item';
+        row.dataset.chorusId = result.id || result.Id || '';
         row.style.cssText = `
             background: white;
             border: 1px solid #e0e0e0;
@@ -486,7 +487,7 @@ class AiSearch {
         understandingSection.innerHTML = `
             <div class="query-understanding-header">
                 <h3>
-                    <i class="fas fa-brain"></i> AI Query Understanding
+                    <i class="fas fa-brain"></i> <span>AI Query Understanding</span>
                 </h3>
                 <p>
                     Based on your search, I'm looking for choruses that match these terms:
@@ -985,6 +986,11 @@ class AiSearch {
                                     this.updateAiStatus('📚 Found choruses, analyzing...', 'thinking');
                                     break;
                                     
+                                case 'chorusReason':
+                                    console.log('AI Search: Received chorus reason:', data.chorusId);
+                                    this.updateChorusReason(data.chorusId, data.reason);
+                                    break;
+                                    
                                 case 'aiAnalysis':
                                     console.log('AI Search: Displaying AI analysis');
                                     this.displayAiAnalysis(data.analysis);
@@ -1234,6 +1240,50 @@ class AiSearch {
             aiResults.style.display = 'block';
             console.log('AI Search: aiResults container made visible');
         }
+    }
+
+    updateChorusReason(chorusId, reason) {
+        console.log('AI Search: Updating chorus reason for ID:', chorusId, 'Reason:', reason);
+        const resultRows = this.resultsContainer.querySelectorAll('.search-result-item');
+        
+        resultRows.forEach(row => {
+            const rowChorusId = row.dataset.chorusId;
+            if (rowChorusId === chorusId) {
+                console.log('AI Search: Found matching row for chorus ID:', chorusId);
+                
+                // Find or create the reason element
+                let reasonElement = row.querySelector('.chorus-reason');
+                if (!reasonElement) {
+                    reasonElement = document.createElement('div');
+                    reasonElement.className = 'chorus-reason';
+                    reasonElement.style.cssText = `
+                        margin-top: 0.5rem;
+                        padding: 0.5rem;
+                        background: rgba(0, 123, 255, 0.1);
+                        border-left: 3px solid #007bff;
+                        border-radius: 4px;
+                        font-style: italic;
+                        color: #495057;
+                        font-size: 0.85rem;
+                        line-height: 1.4;
+                        animation: fadeIn 0.5s ease-in;
+                    `;
+                    row.appendChild(reasonElement);
+                }
+                
+                // Update the reason text with animation
+                reasonElement.style.opacity = '0';
+                reasonElement.textContent = reason;
+                
+                // Fade in the updated reason
+                setTimeout(() => {
+                    reasonElement.style.opacity = '1';
+                    reasonElement.style.transition = 'opacity 0.3s ease-in';
+                }, 100);
+                
+                console.log('AI Search: Updated reason for chorus:', chorusId);
+            }
+        });
     }
 }
 

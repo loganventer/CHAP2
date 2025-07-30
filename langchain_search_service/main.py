@@ -278,13 +278,35 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
         try:
             logger.info(f"Starting streaming intelligent search for query: {request.query}")
             
-            # Step 1: Send query understanding
-            logger.info("Step 1: Sending query understanding")
-            yield f"data: {json.dumps({'type': 'queryUnderstanding', 'queryUnderstanding': request.query})}\n\n"
+            # Step 1: Generate search terms from user's query using Ollama
+            logger.info("Step 1: Generating search terms from user query...")
+            search_terms_prompt = f"""
+You are an expert musicologist helping someone find choruses. The user has entered this query: "{request.query}"
+
+Based on this query, generate 3-5 specific search terms that would help find relevant choruses. 
+Focus on key themes, emotions, musical elements, or spiritual concepts mentioned in the query.
+
+IMPORTANT: Return ONLY the search terms separated by commas, no explanations or additional text.
+Example format: "love, Jesus, worship, praise, salvation"
+
+Search terms:"""
             
-            # Step 2: Perform search and send results immediately
-            logger.info("Step 2: Performing search...")
-            docs = vector_store.similarity_search_with_score(request.query, k=request.k)
+            search_terms_response = llm.invoke(search_terms_prompt)
+            search_terms = search_terms_response.strip()
+            
+            # Clean up the response to ensure it's just the search terms
+            if search_terms.startswith('"') and search_terms.endswith('"'):
+                search_terms = search_terms[1:-1]
+            
+            logger.info(f"Generated search terms: {search_terms}")
+            
+            # Step 2: Send query understanding (the generated search terms)
+            logger.info("Step 2: Sending query understanding")
+            yield f"data: {json.dumps({'type': 'queryUnderstanding', 'queryUnderstanding': search_terms})}\n\n"
+            
+            # Step 3: Use the generated search terms to search the vector database
+            logger.info("Step 3: Performing search with generated terms...")
+            docs = vector_store.similarity_search_with_score(search_terms, k=request.k)
             
             # Deduplicate results
             unique_docs = []
@@ -304,11 +326,34 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
                     "metadata": doc.metadata
                 })
             
-            logger.info(f"Step 2: Found {len(search_results)} unique results")
+            logger.info(f"Step 3: Found {len(search_results)} unique results")
             yield f"data: {json.dumps({'type': 'searchResults', 'searchResults': search_results})}\n\n"
             
-            # Step 3: Generate AI analysis in background
-            logger.info("Step 3: Generating AI analysis...")
+            # Step 4: Generate individual reasons for each chorus asynchronously
+            logger.info("Step 4: Generating individual reasons for each chorus...")
+            for i, (doc, score) in enumerate(unique_docs):
+                reason_prompt = f"""
+You are an expert musicologist explaining why a specific chorus is relevant to a user's search.
+
+User's original query: "{request.query}"
+
+Chorus Title: {doc.metadata.get('name', 'Unknown')}
+Chorus Lyrics: {doc.page_content}
+
+Based on the actual lyrics and content of this chorus, explain in 1-2 sentences why it's relevant to the user's search.
+Focus on specific phrases, themes, or musical elements in the lyrics that match what the user is looking for.
+Be specific about what in the chorus content makes it relevant.
+
+Reason:"""
+                
+                reason = llm.invoke(reason_prompt)
+                logger.info(f"Generated reason for chorus {i+1}: {reason[:100]}...")
+                
+                # Send individual reason update
+                yield f"data: {json.dumps({'type': 'chorusReason', 'chorusId': doc.metadata.get('id', ''), 'reason': reason.strip()})}\n\n"
+            
+            # Step 5: Generate overall analysis
+            logger.info("Step 5: Generating overall analysis...")
             if unique_docs:
                 # Create context for analysis
                 context_parts = []
@@ -317,42 +362,30 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
                 
                 context = "\n".join(context_parts)
                 
-                # Enhanced analysis prompt with more explicit instructions
+                # Enhanced analysis prompt
                 analysis_prompt = f"""
-You are an expert musicologist and religious scholar helping someone find meaningful choruses. The user searched for: "{request.query}"
+You are an expert musicologist and religious scholar helping someone find meaningful choruses. 
+
+User's original query: "{request.query}"
+Search terms used: "{search_terms}"
 
 Here are the most relevant choruses found:
 
 {context}
 
-IMPORTANT: Provide a detailed, insightful analysis that includes ALL of the following sections:
+Provide a brief summary (2-3 sentences) of what was found and why these choruses are relevant to the user's search.
+Focus on the connection between the user's query and the search results.
 
-1. **Summary**: What specific choruses were found and why they match this query? Mention specific titles and key themes.
-
-2. **Musical & Spiritual Insights**: What musical elements (key, tempo, style) and spiritual themes are prominent in these choruses?
-
-3. **Relevance to Query**: How do these choruses specifically address what the user is looking for? Be specific about lyrics, themes, or musical characteristics.
-
-4. **Practical Value**: What makes these choruses particularly suitable for someone searching with this query? Consider worship context, emotional impact, or theological depth.
-
-5. **Notable Patterns**: Are there recurring musical patterns, lyrical themes, or spiritual messages across these choruses?
-
-DO NOT give generic responses like "This chorus was selected based on relevance to your search query." Instead, provide concrete, actionable insights that help the user understand why these choruses are relevant and valuable for their search. Be specific about musical details, lyrical content, and spiritual significance.
-
-Your response should be comprehensive and detailed, covering all the sections above.
-"""
+Summary:"""
                 
                 # Generate analysis
                 answer = llm.invoke(analysis_prompt)
-                logger.info("Step 3: AI analysis completed")
-                logger.info(f"Analysis prompt length: {len(analysis_prompt)}")
-                logger.info(f"Analysis response length: {len(answer)}")
-                logger.info(f"Analysis response preview: {answer[:200]}...")
-                yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': answer})}\n\n"
+                logger.info("Step 5: Overall analysis completed")
+                yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': answer.strip()})}\n\n"
             else:
                 yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': 'No choruses found matching your query. Please try different search terms.'})}\n\n"
             
-            # Step 4: Send completion
+            # Step 6: Send completion
             yield f"data: {json.dumps({'type': 'complete', 'status': 'completed'})}\n\n"
             
         except Exception as e:

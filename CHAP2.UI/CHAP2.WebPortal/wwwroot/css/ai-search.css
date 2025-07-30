@@ -1462,12 +1462,9 @@
     align-items: center;
     gap: 0.75rem;
     line-height: 1.2;
-}
-
-.query-understanding-content {
-    color: #666;
-    line-height: 1.6;
-    font-weight: 500;
+    text-align: left;
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 .query-understanding-header h3 i {
@@ -1475,6 +1472,21 @@
     flex-shrink: 0;
     margin-right: 0.5rem;
     vertical-align: middle;
+    display: inline-block;
+    line-height: 1;
+}
+
+.query-understanding-header h3 span {
+    display: inline;
+    white-space: normal;
+    vertical-align: baseline;
+    line-height: inherit;
+}
+
+.query-understanding-content {
+    color: #666;
+    line-height: 1.6;
+    font-weight: 500;
 }
 
 /* AI Analysis Section */
