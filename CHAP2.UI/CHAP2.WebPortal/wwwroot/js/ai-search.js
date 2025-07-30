@@ -1021,6 +1021,10 @@ class AiSearch {
                             const jsonData = line.slice(6).trim();
                             if (!jsonData) continue; // Skip empty data lines
                             
+                            // Skip lines that are just "data: " without any JSON
+                            if (jsonData === '') continue;
+                            
+                            console.log('AI Search: Processing JSON data:', jsonData.substring(0, 100) + '...');
                             const data = JSON.parse(jsonData);
                             console.log('AI Search: Received streaming data:', data);
                             
@@ -1081,7 +1085,8 @@ class AiSearch {
                             }
                         } catch (parseError) {
                             console.error('AI Search: Error parsing streaming data:', parseError);
-                            console.error('AI Search: Raw data was:', line.slice(6));
+                            console.error('AI Search: Raw line was:', line);
+                            console.error('AI Search: Extracted JSON was:', line.slice(6));
                         }
                     }
                 }
