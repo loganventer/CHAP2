@@ -415,6 +415,8 @@ class AiSearch {
     }
 
     createAnimatedResultRow(result, index) {
+        console.log('AI Search: Creating result row with data:', result);
+        
         const row = document.createElement('div');
         row.className = 'search-result-item';
         row.dataset.chorusId = result.id || result.Id || '';
@@ -447,16 +449,25 @@ class AiSearch {
             return times[timeValue] || 'Unknown';
         };
         
+        // Extract metadata properties
+        const metadata = result.metadata || {};
+        const chorusName = metadata.name || result.name || 'Untitled Chorus';
+        const chorusKey = metadata.key || result.key || result.Key;
+        const chorusType = metadata.type || result.type || result.Type;
+        const chorusTimeSignature = metadata.timeSignature || result.timeSignature || result.TimeSignature;
+        
+        console.log('AI Search: Extracted metadata:', { chorusName, chorusKey, chorusType, chorusTimeSignature });
+        
         row.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;">
                     <h5 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.1rem;">
-                        ${index + 1}. ${result.name || 'Untitled Chorus'}
+                        ${index + 1}. ${chorusName}
                     </h5>
                     <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666;">
-                        <span><i class="fas fa-music"></i> ${getKeyDisplay(result.key || result.Key)}</span>
-                        <span><i class="fas fa-tag"></i> ${getTypeDisplay(result.type || result.Type)}</span>
-                        <span><i class="fas fa-clock"></i> ${getTimeSignatureDisplay(result.timeSignature || result.TimeSignature)}</span>
+                        <span><i class="fas fa-music"></i> ${getKeyDisplay(chorusKey)}</span>
+                        <span><i class="fas fa-tag"></i> ${getTypeDisplay(chorusType)}</span>
+                        <span><i class="fas fa-clock"></i> ${getTimeSignatureDisplay(chorusTimeSignature)}</span>
                     </div>
                     <div style="margin-top: 0.5rem; font-style: italic; color: #666; font-size: 0.85rem; line-height: 1.3;">
                         ${result.explanation || ''}
@@ -472,7 +483,7 @@ class AiSearch {
                     <button class="action-btn" onclick="copyChorusText('${result.id}')" data-tooltip="Copy Lyrics" style="padding: 0.5rem; border: none; background: #ffc107; color: #212529; border-radius: 4px; cursor: pointer;">
                         <i class="fas fa-copy"></i>
                     </button>
-                    <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${(result.name || '').replace(/'/g, "\\'")}')" data-tooltip="Delete Chorus" style="padding: 0.5rem; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
+                    <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${(chorusName).replace(/'/g, "\\'")}')" data-tooltip="Delete Chorus" style="padding: 0.5rem; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
