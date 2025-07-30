@@ -27,12 +27,29 @@ public class ChorusApiService : IChorusApiService
     {
         try
         {
+            _logger.LogInformation("=== API CONNECTIVITY TEST START ===");
+            _logger.LogInformation("HTTP Client Base Address: {BaseAddress}", _httpClient.BaseAddress);
+            
             var response = await _httpClient.GetAsync("/api/health/ping", cancellationToken);
+            _logger.LogInformation("Connectivity test response status: {StatusCode}", response.StatusCode);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogInformation("Connectivity test response content: {Content}", content);
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Connectivity test failed: {Error}", errorContent);
+            }
+            
+            _logger.LogInformation("=== API CONNECTIVITY TEST END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to test API connectivity");
+            _logger.LogError(ex, "Failed to test API connectivity. Exception: {ExceptionType}", ex.GetType().Name);
             return false;
         }
     }
@@ -451,6 +468,7 @@ public class ChorusApiService : IChorusApiService
             _logger.LogInformation("Creating chorus via API: {Name} (ID: {Id})", chorus.Name, chorus.Id);
             _logger.LogInformation("Chorus details - Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", 
                 chorus.Key, chorus.Type, chorus.TimeSignature);
+            _logger.LogInformation("HTTP Client Base Address: {BaseAddress}", _httpClient.BaseAddress);
             
             var dto = new ApiChorusDto
             {
@@ -472,7 +490,8 @@ public class ChorusApiService : IChorusApiService
             _logger.LogInformation("Content created with Content-Type: {ContentType}", content.Headers.ContentType);
             
             var url = "/api/choruses";
-            _logger.LogInformation("Making POST request to: {Url}", url);
+            var fullUrl = $"{_httpClient.BaseAddress}{url}";
+            _logger.LogInformation("Making POST request to: {FullUrl}", fullUrl);
             
             var response = await _httpClient.PostAsync(url, content, cancellationToken);
             _logger.LogInformation("API response status: {StatusCode}", response.StatusCode);
@@ -486,7 +505,8 @@ public class ChorusApiService : IChorusApiService
             }
             else
             {
-                _logger.LogInformation("Chorus created successfully via API");
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogInformation("API success response: {Response}", responseContent);
             }
             
             _logger.LogInformation("=== CREATE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
@@ -494,7 +514,7 @@ public class ChorusApiService : IChorusApiService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create chorus");
+            _logger.LogError(ex, "Failed to create chorus. Exception: {ExceptionType}", ex.GetType().Name);
             return false;
         }
     }
@@ -506,6 +526,7 @@ public class ChorusApiService : IChorusApiService
             _logger.LogInformation("=== UPDATE CHORUS API CALL START ===");
             _logger.LogInformation("Updating chorus via API - ID: {Id}, Name: {Name}", id, name);
             _logger.LogInformation("Update parameters - Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}", key, type, timeSignature);
+            _logger.LogInformation("HTTP Client Base Address: {BaseAddress}", _httpClient.BaseAddress);
             
             var dto = new ApiChorusDto
             {
@@ -527,7 +548,8 @@ public class ChorusApiService : IChorusApiService
             _logger.LogInformation("Content created with Content-Type: {ContentType}", content.Headers.ContentType);
             
             var url = $"/api/choruses/{id}";
-            _logger.LogInformation("Making PUT request to: {Url}", url);
+            var fullUrl = $"{_httpClient.BaseAddress}{url}";
+            _logger.LogInformation("Making PUT request to: {FullUrl}", fullUrl);
             
             var response = await _httpClient.PutAsync(url, content, cancellationToken);
             _logger.LogInformation("API response status: {StatusCode}", response.StatusCode);
@@ -541,7 +563,8 @@ public class ChorusApiService : IChorusApiService
             }
             else
             {
-                _logger.LogInformation("Chorus updated successfully via API");
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogInformation("API success response: {Response}", responseContent);
             }
             
             _logger.LogInformation("=== UPDATE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
@@ -549,7 +572,7 @@ public class ChorusApiService : IChorusApiService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update chorus with ID: {Id}", id);
+            _logger.LogError(ex, "Failed to update chorus with ID: {Id}. Exception: {ExceptionType}", id, ex.GetType().Name);
             return false;
         }
     }
@@ -558,12 +581,35 @@ public class ChorusApiService : IChorusApiService
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"/api/choruses/{id}", cancellationToken);
+            _logger.LogInformation("=== DELETE CHORUS API CALL START ===");
+            _logger.LogInformation("Deleting chorus via API - ID: {Id}", id);
+            _logger.LogInformation("HTTP Client Base Address: {BaseAddress}", _httpClient.BaseAddress);
+            
+            var url = $"/api/choruses/{id}";
+            var fullUrl = $"{_httpClient.BaseAddress}{url}";
+            _logger.LogInformation("Making DELETE request to: {FullUrl}", fullUrl);
+            
+            var response = await _httpClient.DeleteAsync(url, cancellationToken);
+            _logger.LogInformation("API response status: {StatusCode}", response.StatusCode);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("API error response: {Error}", errorContent);
+                var headers = string.Join(", ", response.Headers.Select(h => $"{h.Key}: {string.Join(", ", h.Value)}"));
+                _logger.LogError("Response headers: {Headers}", headers);
+            }
+            else
+            {
+                _logger.LogInformation("Chorus deleted successfully via API");
+            }
+            
+            _logger.LogInformation("=== DELETE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete chorus with ID: {Id}", id);
+            _logger.LogError(ex, "Failed to delete chorus with ID: {Id}. Exception: {ExceptionType}", id, ex.GetType().Name);
             return false;
         }
     }

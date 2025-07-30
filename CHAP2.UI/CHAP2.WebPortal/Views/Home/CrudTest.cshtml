@@ -1,0 +1,188 @@
+@{
+    ViewData["Title"] = "CRUD Test";
+}
+
+<div class="container mt-4">
+    <h1>CRUD Operations Test</h1>
+    <p>This page helps debug CRUD operations in the deployed environment.</p>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>API Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div id="apiConfig">
+                        <p><strong>API Base URL:</strong> <span id="apiBaseUrl">Loading...</span></p>
+                        <p><strong>Environment:</strong> <span id="environment">@Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")</span></p>
+                        <p><strong>Current URL:</strong> <span id="currentUrl">@Context.Request.Scheme://@Context.Request.Host</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Test Controls</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="testConnectivity()">Test Connectivity</button>
+                    <button class="btn btn-success" onclick="testCreate()">Test Create</button>
+                    <button class="btn btn-info" onclick="testRead()">Test Read</button>
+                    <button class="btn btn-warning" onclick="testUpdate()">Test Update</button>
+                    <button class="btn btn-danger" onclick="testDelete()">Test Delete</button>
+                    <button class="btn btn-secondary" onclick="runFullTest()">Run Full Test</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Test Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="testResults">
+                        <p>No tests run yet. Click a test button above to start.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get API base URL from configuration
+async function getApiBaseUrl() {
+    try {
+        const response = await fetch('/Home/TestConnectivity');
+        const data = await response.json();
+        return data.connected ? 'API is connected' : 'API is not connected';
+    } catch (error) {
+        return 'Error getting API URL';
+    }
+}
+
+// Update the API base URL display
+document.addEventListener('DOMContentLoaded', async () => {
+    const apiBaseUrlSpan = document.getElementById('apiBaseUrl');
+    apiBaseUrlSpan.textContent = await getApiBaseUrl();
+});
+
+// Test functions
+function testConnectivity() {
+    if (window.CrudDebugger) {
+        const debugger = new window.CrudDebugger();
+        debugger.testConnectivity().then(result => {
+            displayResult('Connectivity Test', result);
+        });
+    } else {
+        displayResult('Connectivity Test', { success: false, error: 'CrudDebugger not loaded' });
+    }
+}
+
+function testCreate() {
+    if (window.CrudDebugger) {
+        const debugger = new window.CrudDebugger();
+        debugger.testCreate().then(result => {
+            displayResult('Create Test', result);
+        });
+    } else {
+        displayResult('Create Test', { success: false, error: 'CrudDebugger not loaded' });
+    }
+}
+
+function testRead() {
+    const testId = prompt('Enter chorus ID to test read:');
+    if (!testId) return;
+    
+    if (window.CrudDebugger) {
+        const debugger = new window.CrudDebugger();
+        debugger.testRead(testId).then(result => {
+            displayResult('Read Test', result);
+        });
+    } else {
+        displayResult('Read Test', { success: false, error: 'CrudDebugger not loaded' });
+    }
+}
+
+function testUpdate() {
+    const testId = prompt('Enter chorus ID to test update:');
+    if (!testId) return;
+    
+    if (window.CrudDebugger) {
+        const debugger = new window.CrudDebugger();
+        debugger.testUpdate(testId).then(result => {
+            displayResult('Update Test', result);
+        });
+    } else {
+        displayResult('Update Test', { success: false, error: 'CrudDebugger not loaded' });
+    }
+}
+
+function testDelete() {
+    const testId = prompt('Enter chorus ID to test delete:');
+    if (!testId) return;
+    
+    if (window.CrudDebugger) {
+        const debugger = new window.CrudDebugger();
+        debugger.testDelete(testId).then(result => {
+            displayResult('Delete Test', result);
+        });
+    } else {
+        displayResult('Delete Test', { success: false, error: 'CrudDebugger not loaded' });
+    }
+}
+
+function runFullTest() {
+    if (window.CrudDebugger) {
+        const debugger = new window.CrudDebugger();
+        debugger.runFullTest().then(results => {
+            displayResults('Full CRUD Test', results);
+        });
+    } else {
+        displayResult('Full Test', { success: false, error: 'CrudDebugger not loaded' });
+    }
+}
+
+function displayResult(testName, result) {
+    const resultsDiv = document.getElementById('testResults');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const resultHtml = `
+        <div class="alert alert-${result.success ? 'success' : 'danger'}">
+            <h6>${testName} - ${timestamp}</h6>
+            <p><strong>Success:</strong> ${result.success}</p>
+            <p><strong>Status:</strong> ${result.status || 'N/A'}</p>
+            <p><strong>URL:</strong> ${result.url || 'N/A'}</p>
+            ${result.error ? `<p><strong>Error:</strong> ${result.error}</p>` : ''}
+            ${result.data ? `<p><strong>Data:</strong> <pre>${JSON.stringify(result.data, null, 2)}</pre></p>` : ''}
+        </div>
+    `;
+    
+    resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+}
+
+function displayResults(testName, results) {
+    const resultsDiv = document.getElementById('testResults');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    let resultHtml = `<div class="alert alert-info"><h6>${testName} - ${timestamp}</h6>`;
+    
+    results.forEach(test => {
+        resultHtml += `
+            <div class="mb-2">
+                <strong>${test.test}:</strong> ${test.result.success ? '✅ PASS' : '❌ FAIL'}
+                ${test.result.error ? `<br><small class="text-danger">${test.result.error}</small>` : ''}
+            </div>
+        `;
+    });
+    
+    resultHtml += '</div>';
+    resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+}
+</script> 
