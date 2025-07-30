@@ -335,16 +335,14 @@ Search terms:"""
             logger.info("Step 4: Generating individual reasons for each chorus...")
             for i, (doc, score) in enumerate(unique_docs):
                 reason_prompt = f"""
-You are an expert musicologist explaining why a specific chorus is relevant to a user's search.
-
-User's original query: "{request.query}"
+You are an expert musicologist explaining why a specific chorus is relevant.
 
 Chorus Title: {doc.metadata.get('name', 'Unknown')}
 Chorus Lyrics: {doc.page_content}
 
-Based on the actual lyrics and content of this chorus, explain in 1-2 sentences why it's relevant to the user's search.
-Focus on specific phrases, themes, or musical elements in the lyrics that match what the user is looking for.
-Be specific about what in the chorus content makes it relevant.
+Based on the actual lyrics and content of this chorus, explain in 1-2 sentences why it's relevant.
+Focus on specific phrases, themes, or musical elements in the lyrics that make it relevant.
+Be concise and direct.
 
 Reason:"""
                 

@@ -459,7 +459,7 @@ class AiSearch {
                         <span><i class="fas fa-clock"></i> ${getTimeSignatureDisplay(result.timeSignature || result.TimeSignature)}</span>
                     </div>
                     <div style="margin-top: 0.5rem; font-style: italic; color: #666; font-size: 0.85rem; line-height: 1.3;">
-                        ${result.explanation || 'This chorus was selected based on relevance to your search query.'}
+                        ${result.explanation || ''}
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem; margin-left: 1rem;">
@@ -1043,7 +1043,7 @@ class AiSearch {
                                 case 'searchResults':
                                     console.log('AI Search: Displaying search results');
                                     this.displaySearchResultsWithAnimation(data.searchResults);
-                                    this.updateAiStatus(`📚 Found ${data.searchResults.length} choruses, analyzing relevance...`, 'thinking');
+                                    this.updateAiStatus(`📚 Found ${data.searchResults.length} choruses, analyzing why each matches...`, 'thinking');
                                     break;
                                     
                                 case 'chorusReason':
