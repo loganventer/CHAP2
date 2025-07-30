@@ -1018,11 +1018,16 @@ class AiSearch {
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         try {
-                            const jsonData = line.slice(6).trim();
+                            let jsonData = line.slice(6).trim();
                             if (!jsonData) continue; // Skip empty data lines
                             
                             // Skip lines that are just "data: " without any JSON
                             if (jsonData === '') continue;
+                            
+                            // Handle double "data: " prefix if present
+                            if (jsonData.startsWith('data: ')) {
+                                jsonData = jsonData.slice(6).trim();
+                            }
                             
                             console.log('AI Search: Processing JSON data:', jsonData.substring(0, 100) + '...');
                             const data = JSON.parse(jsonData);
