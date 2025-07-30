@@ -995,7 +995,10 @@ class AiSearch {
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         try {
-                            const data = JSON.parse(line.slice(6));
+                            const jsonData = line.slice(6).trim();
+                            if (!jsonData) continue; // Skip empty data lines
+                            
+                            const data = JSON.parse(jsonData);
                             console.log('AI Search: Received streaming data:', data);
                             
                             switch (data.type) {
@@ -1038,6 +1041,7 @@ class AiSearch {
                             }
                         } catch (parseError) {
                             console.error('AI Search: Error parsing streaming data:', parseError);
+                            console.error('AI Search: Raw data was:', line.slice(6));
                         }
                     }
                 }
