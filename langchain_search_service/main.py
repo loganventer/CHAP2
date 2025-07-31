@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing LangChain services...")
 
     # Get Ollama URL from environment variable
-    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    ollama_url = os.getenv("OLLAMA_URL", "http://host.docker.internal:11435")
     
     # Initialize Ollama embeddings
     embeddings = OllamaEmbeddings(
