@@ -13,25 +13,6 @@ services:
     restart: unless-stopped
 
 
-  # Ollama for LLM and Embeddings (with persistent model storage)
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_models:/root/.ollama  # Persistent model storage
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    restart: unless-stopped
-
-
   # LangChain Search Service
   langchain-service:
     build: .
@@ -39,10 +20,9 @@ services:
       - "8000:8000"
     depends_on:
       - qdrant
-      - ollama
     environment:
       - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_URL=http://host.docker.internal:11434
     volumes:
       - ./data:/app/data  # Mount data directory for migration
     restart: unless-stopped
@@ -56,7 +36,6 @@ services:
       - "5001:5001"
     depends_on:
       - qdrant
-      - ollama
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5001
@@ -81,11 +60,10 @@ services:
       - ApiService__BaseUrl=http://chap2-api:5001
       - Qdrant__Host=qdrant
       - Qdrant__Port=6333
-      - Ollama__Host=ollama
+      - Ollama__Host=host.docker.internal
       - Ollama__Port=11434
     restart: unless-stopped
 
 
 volumes:
-  qdrant_data:
-  ollama_models:  # Persistent volume for Ollama models 
+  qdrant_data: 
