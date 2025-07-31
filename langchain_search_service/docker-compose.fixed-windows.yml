@@ -30,15 +30,10 @@ services:
     build:
       context: ..
       dockerfile: langchain_search_service/Dockerfile.api.simple
-    ports:
-      - "5001:5001"
-    depends_on:
-      - qdrant
+    network_mode: host
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5001
-    networks:
-      - chap2-network
     volumes:
       - ../CHAP2.Chorus.Api/data:/app/data
     restart: unless-stopped
