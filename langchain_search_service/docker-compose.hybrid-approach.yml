@@ -14,13 +14,20 @@ services:
       - chap2-network
     restart: unless-stopped
 
-  # LangChain Search Service - Using host network to access Ollama
+  # LangChain Search Service - Using Docker network with host Ollama access
   langchain-service:
     build: .
-    network_mode: host
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
     environment:
-      - QDRANT_URL=http://localhost:6333
-      - OLLAMA_URL=http://localhost:11434
+      - QDRANT_URL=http://qdrant:6333
+      - OLLAMA_URL=http://host.docker.internal:11434
+    networks:
+      - chap2-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -56,7 +63,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
-      - LangChainService__BaseUrl=http://host.docker.internal:8000
+      - LangChainService__BaseUrl=http://langchain-service:8000
       - ApiService__BaseUrl=http://chap2-api:5001
       - Qdrant__Host=qdrant
       - Qdrant__Port=6333
