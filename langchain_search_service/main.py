@@ -67,14 +67,25 @@ async def lifespan(app: FastAPI):
         base_url=ollama_url
     )
     # Initialize Ollama LLM with GPU acceleration and optimized settings
-    llm = Ollama(
-        model="mistral",
-        base_url=ollama_url,
-        timeout=300,  # 5 minutes timeout
-        temperature=0.7,
-        num_gpu=1,  # Use GPU acceleration
-        num_thread=4  # Limit CPU threads to reduce CPU usage
-    )
+    logger.info(f"Initializing Ollama LLM with URL: {ollama_url}")
+    try:
+        llm = Ollama(
+            model="mistral",
+            base_url=ollama_url,
+            timeout=300,  # 5 minutes timeout
+            temperature=0.7,
+            num_gpu=1,  # Use GPU acceleration
+            num_thread=4  # Limit CPU threads to reduce CPU usage
+        )
+        # Test the connection
+        logger.info("Testing Ollama connection...")
+        test_response = llm.invoke("Hello")
+        logger.info(f"Ollama connection test successful: {test_response[:50]}...")
+    except Exception as e:
+        logger.error(f"Failed to initialize Ollama LLM: {type(e).__name__}: {e}")
+        logger.error(f"Ollama URL being used: {ollama_url}")
+        logger.error("Please ensure Ollama is running on the host machine")
+        raise
     # Initialize Qdrant client with retry
     qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
     logger.info(f"Connecting to Qdrant at: {qdrant_url}")
@@ -351,12 +362,15 @@ Example format: "love, Jesus, worship, praise, salvation"
 Search terms:"""
             
             try:
+                logger.info(f"Sending prompt to Ollama: {search_terms_prompt[:100]}...")
                 search_terms_response = llm.invoke(search_terms_prompt)
                 search_terms = search_terms_response.strip()
                 logger.info(f"Generated search terms: {search_terms}")
             except Exception as e:
-                logger.error(f"Error generating search terms: {e}")
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to generate search terms. Please try again.'})}\n\n"
+                logger.error(f"Error generating search terms: {type(e).__name__}: {e}")
+                logger.error(f"Ollama URL: {os.getenv('OLLAMA_URL', 'http://localhost:11434')}")
+                error_message = f"Failed to generate search terms: {str(e)}. Please ensure Ollama is running and accessible."
+                yield f"data: {json.dumps({'type': 'error', 'message': error_message})}\n\n"
                 return
             
             # Clean up the response to ensure it's just the search terms
