@@ -376,18 +376,28 @@ Search terms:"""
                 logger.info(f"Vector search returned {len(docs)} documents")
             except Exception as e:
                 logger.error(f"Error during vector search: {e}")
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Vector search failed. Please try again.'})}\n\n"
+                logger.error(f"Error type: {type(e).__name__}")
+                logger.error(f"Error details: {str(e)}")
+                # Check if it's a Qdrant-specific error
+                if "duplicate" in str(e).lower() or "key" in str(e).lower():
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Database contains duplicate entries. Please contact support.'})}\n\n"
+                else:
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Vector search failed. Please try again.'})}\n\n"
                 return
             
             # Deduplicate results with better error handling
             unique_docs = []
             seen_ids = set()
-            for doc, score in docs:
+            logger.info(f"Processing {len(docs)} documents for deduplication")
+            
+            for i, (doc, score) in enumerate(docs):
                 try:
                     chorus_id = doc.metadata.get('id', '')
+                    logger.debug(f"Processing document {i+1}/{len(docs)}, ID: {chorus_id}")
+                    
                     # Handle empty or None IDs
                     if not chorus_id:
-                        chorus_id = f"unknown_{len(unique_docs)}"
+                        chorus_id = f"unknown_{i}"
                         logger.warning(f"Found document with empty ID, using generated ID: {chorus_id}")
                     
                     if chorus_id not in seen_ids:
@@ -397,12 +407,15 @@ Search terms:"""
                     else:
                         logger.debug(f"Skipping duplicate document with ID: {chorus_id}")
                 except Exception as e:
-                    logger.error(f"Error processing document during deduplication: {e}")
+                    logger.error(f"Error processing document {i+1} during deduplication: {e}")
+                    logger.error(f"Document metadata: {doc.metadata if hasattr(doc, 'metadata') else 'No metadata'}")
                     # Add with a generated ID to avoid crashes
-                    generated_id = f"error_{len(unique_docs)}"
+                    generated_id = f"error_{i}"
                     unique_docs.append((doc, score))
                     seen_ids.add(generated_id)
                     logger.warning(f"Added document with generated ID due to error: {generated_id}")
+            
+            logger.info(f"Deduplication complete: {len(unique_docs)} unique documents from {len(docs)} total")
             
             search_results = []
             for i, (doc, score) in enumerate(unique_docs):
