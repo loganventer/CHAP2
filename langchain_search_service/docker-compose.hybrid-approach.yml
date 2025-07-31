@@ -62,6 +62,7 @@ services:
       - Qdrant__Port=6333
       - Ollama__Host=host.docker.internal
       - Ollama__Port=11434
+
     networks:
       - chap2-network
     extra_hosts:
