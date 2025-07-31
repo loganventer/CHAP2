@@ -640,14 +640,15 @@ Please provide a helpful and accurate response based on the chorus information p
             _logger.LogInformation("IntelligentSearchStream called with query: {Query}, maxResults: {MaxResults}", 
                 request.Query, request.MaxResults);
 
-                            // Set up streaming response headers FIRST (before any response starts)
-                Response.Headers.Add("Content-Type", "text/event-stream");
-                Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
-                Response.Headers.Add("Pragma", "no-cache");
-                Response.Headers.Add("Expires", "0");
-                Response.Headers.Add("Connection", "keep-alive");
-                Response.Headers.Add("Access-Control-Allow-Origin", "*");
-                Response.Headers.Add("X-Accel-Buffering", "no"); // Disable nginx buffering if present
+                                        // Set up streaming response headers FIRST (before any response starts)
+            // Use TryAdd to avoid duplicate key exceptions
+            Response.Headers.TryAdd("Content-Type", "text/event-stream");
+            Response.Headers.TryAdd("Cache-Control", "no-cache, no-store, must-revalidate");
+            Response.Headers.TryAdd("Pragma", "no-cache");
+            Response.Headers.TryAdd("Expires", "0");
+            Response.Headers.TryAdd("Connection", "keep-alive");
+            Response.Headers.TryAdd("Access-Control-Allow-Origin", "*");
+            Response.Headers.TryAdd("X-Accel-Buffering", "no"); // Disable nginx buffering if present
 
                 // Force immediate flush of headers
                 await Response.Body.FlushAsync();
