@@ -1050,60 +1050,86 @@ class AiSearch {
                             const data = JSON.parse(jsonData);
                             console.log('AI Search: Received streaming data:', data);
                             
-                            switch (data.type) {
-                                case 'queryUnderstanding':
-                                    console.log('AI Search: Displaying query understanding');
-                                    this.displayQueryUnderstanding(data.queryUnderstanding);
-                                    this.updateAiStatus('🔍 Understanding your search query...', 'thinking');
-                                    break;
-                                    
-                                case 'searchResults':
-                                    console.log('AI Search: Displaying search results');
-                                    this.displaySearchResultsWithAnimation(data.searchResults);
-                                    this.updateAiStatus(`📚 Found ${data.searchResults.length} choruses, analyzing why each matches...`, 'thinking');
-                                    break;
-                                    
-                                case 'chorusReason':
-                                    console.log('AI Search: Received chorus reason:', data.chorusId);
-                                    this.updateChorusReason(data.chorusId, data.reason);
-                                    this.updateAiStatus('💭 Analyzing why each chorus matches...', 'thinking');
-                                    break;
-                                    
-                                case 'aiAnalysis':
-                                    console.log('AI Search: Displaying AI analysis');
-                                    this.displayAiAnalysis(data.analysis);
-                                    this.updateAiStatus('✅ AI analysis complete!', 'success');
-                                    break;
-                                    
-                                case 'progress':
-                                    console.log('AI Search: Progress update:', data.message);
-                                    this.updateAiStatus(data.message, 'thinking');
-                                    break;
-                                    
-                                case 'ollamaCall':
-                                    console.log('AI Search: Ollama service call:', data.service);
-                                    this.updateAiStatus(`🤖 Calling ${data.service} service...`, 'thinking');
-                                    break;
-                                    
-                                case 'step':
-                                    console.log('AI Search: Step update:', data.step, data.total);
-                                    const progress = Math.round((data.step / data.total) * 100);
-                                    this.updateAiStatus(`⚡ Step ${data.step}/${data.total} (${progress}%) - ${data.message}`, 'thinking');
-                                    break;
-                                    
-                                case 'complete':
-                                    console.log('AI Search: Search completed');
-                                    this.celebrateAndFadeStatus();
-                                    break;
-                                    
-                                case 'error':
-                                    console.error('AI Search: Error from server:', data.error);
-                                    if (data.error.includes('timeout') || data.error.includes('timed out')) {
-                                        this.updateAiStatus('⏰ Request timed out. The AI is taking longer than expected. Please try again with a simpler query.', 'error');
-                                    } else {
-                                        this.updateAiStatus('❌ Search failed: ' + data.error, 'error');
-                                    }
-                                    break;
+                            // Check for duplicate IDs in search results
+                            if (data.type === 'searchResults' && data.searchResults) {
+                                const ids = data.searchResults.map(r => r.id || r.Id || '');
+                                const uniqueIds = [...new Set(ids)];
+                                if (ids.length !== uniqueIds.length) {
+                                    console.warn('AI Search: Found duplicate IDs in search results, deduplicating...');
+                                    // Remove duplicates by keeping only the first occurrence
+                                    const seen = new Set();
+                                    data.searchResults = data.searchResults.filter(result => {
+                                        const id = result.id || result.Id || '';
+                                        if (seen.has(id)) {
+                                            return false;
+                                        }
+                                        seen.add(id);
+                                        return true;
+                                    });
+                                    console.log('AI Search: Deduplicated results, now have', data.searchResults.length, 'unique results');
+                                }
+                            }
+                            
+                            try {
+                                switch (data.type) {
+                                    case 'queryUnderstanding':
+                                        console.log('AI Search: Displaying query understanding');
+                                        this.displayQueryUnderstanding(data.queryUnderstanding);
+                                        this.updateAiStatus('🔍 Understanding your search query...', 'thinking');
+                                        break;
+                                        
+                                    case 'searchResults':
+                                        console.log('AI Search: Displaying search results');
+                                        this.displaySearchResultsWithAnimation(data.searchResults);
+                                        this.updateAiStatus(`📚 Found ${data.searchResults.length} choruses, analyzing why each matches...`, 'thinking');
+                                        break;
+                                        
+                                    case 'chorusReason':
+                                        console.log('AI Search: Received chorus reason:', data.chorusId);
+                                        this.updateChorusReason(data.chorusId, data.reason);
+                                        this.updateAiStatus('💭 Analyzing why each chorus matches...', 'thinking');
+                                        break;
+                                        
+                                    case 'aiAnalysis':
+                                        console.log('AI Search: Displaying AI analysis');
+                                        this.displayAiAnalysis(data.analysis);
+                                        this.updateAiStatus('✅ AI analysis complete!', 'success');
+                                        break;
+                                        
+                                    case 'progress':
+                                        console.log('AI Search: Progress update:', data.message);
+                                        this.updateAiStatus(data.message, 'thinking');
+                                        break;
+                                        
+                                    case 'ollamaCall':
+                                        console.log('AI Search: Ollama service call:', data.service);
+                                        this.updateAiStatus(`🤖 Calling ${data.service} service...`, 'thinking');
+                                        break;
+                                        
+                                    case 'step':
+                                        console.log('AI Search: Step update:', data.step, data.total);
+                                        const progress = Math.round((data.step / data.total) * 100);
+                                        this.updateAiStatus(`⚡ Step ${data.step}/${data.total} (${progress}%) - ${data.message}`, 'thinking');
+                                        break;
+                                        
+                                    case 'complete':
+                                        console.log('AI Search: Search completed');
+                                        this.celebrateAndFadeStatus();
+                                        break;
+                                        
+                                    case 'error':
+                                        console.error('AI Search: Error from server:', data.error);
+                                        if (data.error.includes('timeout') || data.error.includes('timed out')) {
+                                            this.updateAiStatus('⏰ Request timed out. The AI is taking longer than expected. Please try again with a simpler query.', 'error');
+                                        } else {
+                                            this.updateAiStatus('❌ Search failed: ' + data.error, 'error');
+                                        }
+                                        break;
+                                }
+                            } catch (switchError) {
+                                console.error('AI Search: Error processing streaming data:', switchError);
+                                console.error('AI Search: Data type was:', data.type);
+                                this.updateAiStatus('❌ Error processing search results. Please try again.', 'error');
                             }
                         } catch (parseError) {
                             console.error('AI Search: Error parsing streaming data:', parseError);
