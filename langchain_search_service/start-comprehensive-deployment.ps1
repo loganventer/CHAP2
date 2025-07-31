@@ -182,7 +182,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServe
     }
 
     # Add middleware for streaming endpoints
-    $middlewarePattern = 'app\.UseExceptionHandler\("/Home/Error"\);'
+    $middlewarePattern = 'app\.UseExceptionHandler\("/Home/Error"\);\r?\napp\.UseHsts\(\);'
     $middlewareReplacement = @'
 app.UseExceptionHandler("/Home/Error");
 app.UseHsts();

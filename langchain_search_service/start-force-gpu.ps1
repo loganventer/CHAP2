@@ -127,9 +127,9 @@ if ($programContent -match $kestrelPattern) {
     Write-Host "     WARNING: Could not find AddControllersWithViews in Program.cs" -ForegroundColor Yellow
 }
 
-# Add middleware for streaming endpoints
-$middlewarePattern = 'app\.UseExceptionHandler\("/Home/Error"\);'
-$middlewareReplacement = @'
+    # Add middleware for streaming endpoints
+    $middlewarePattern = 'app\.UseExceptionHandler\("/Home/Error"\);\r?\napp\.UseHsts\(\);'
+    $middlewareReplacement = @'
 app.UseExceptionHandler("/Home/Error");
 app.UseHsts();
 }
