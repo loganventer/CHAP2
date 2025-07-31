@@ -312,23 +312,58 @@ Search terms:"""
             logger.info("Step 3: Performing search with generated terms...")
             docs = vector_store.similarity_search_with_score(search_terms, k=request.k)
             
-            # Deduplicate results
+            # Deduplicate results with better error handling
             unique_docs = []
             seen_ids = set()
             for doc, score in docs:
-                chorus_id = doc.metadata.get('id', '')
-                if chorus_id not in seen_ids:
+                try:
+                    chorus_id = doc.metadata.get('id', '')
+                    # Handle empty or None IDs
+                    if not chorus_id:
+                        chorus_id = f"unknown_{len(unique_docs)}"
+                        logger.warning(f"Found document with empty ID, using generated ID: {chorus_id}")
+                    
+                    if chorus_id not in seen_ids:
+                        unique_docs.append((doc, score))
+                        seen_ids.add(chorus_id)
+                        logger.debug(f"Added unique document with ID: {chorus_id}")
+                    else:
+                        logger.debug(f"Skipping duplicate document with ID: {chorus_id}")
+                except Exception as e:
+                    logger.error(f"Error processing document during deduplication: {e}")
+                    # Add with a generated ID to avoid crashes
+                    generated_id = f"error_{len(unique_docs)}"
                     unique_docs.append((doc, score))
-                    seen_ids.add(chorus_id)
+                    seen_ids.add(generated_id)
+                    logger.warning(f"Added document with generated ID due to error: {generated_id}")
             
             search_results = []
-            for doc, score in unique_docs:
-                search_results.append({
-                    "id": doc.metadata.get("id", ""),
-                    "text": doc.page_content,
-                    "score": float(score),
-                    "metadata": doc.metadata
-                })
+            for i, (doc, score) in enumerate(unique_docs):
+                try:
+                    chorus_id = doc.metadata.get("id", "")
+                    # Handle empty IDs
+                    if not chorus_id:
+                        chorus_id = f"unknown_{i}"
+                        logger.warning(f"Found document with empty ID in search results, using generated ID: {chorus_id}")
+                    
+                    search_results.append({
+                        "id": chorus_id,
+                        "text": doc.page_content,
+                        "score": float(score),
+                        "metadata": doc.metadata
+                    })
+                    logger.debug(f"Added search result with ID: {chorus_id}")
+                except Exception as e:
+                    logger.error(f"Error creating search result for document {i}: {e}")
+                    # Create a fallback result
+                    fallback_id = f"error_{i}"
+                    search_results.append({
+                        "id": fallback_id,
+                        "text": doc.page_content if hasattr(doc, 'page_content') else "Error loading content",
+                        "score": float(score) if score is not None else 0.0,
+                        "metadata": doc.metadata if hasattr(doc, 'metadata') else {}
+                    })
+                    logger.warning(f"Created fallback search result with ID: {fallback_id}")
             
             logger.info(f"Step 3: Found {len(search_results)} unique results")
             yield f"data: {json.dumps({'type': 'searchResults', 'searchResults': search_results})}\n\n"
@@ -336,7 +371,14 @@ Search terms:"""
             # Step 4: Generate individual reasons for each chorus asynchronously
             logger.info("Step 4: Generating individual reasons for each chorus...")
             for i, (doc, score) in enumerate(unique_docs):
-                reason_prompt = f"""
+                try:
+                    chorus_id = doc.metadata.get('id', '')
+                    # Handle empty IDs
+                    if not chorus_id:
+                        chorus_id = f"unknown_{i}"
+                        logger.warning(f"Found document with empty ID in reason generation, using generated ID: {chorus_id}")
+                    
+                    reason_prompt = f"""
 You are an expert musicologist explaining why a specific chorus is relevant.
 
 Chorus Title: {doc.metadata.get('name', 'Unknown')}
@@ -347,12 +389,18 @@ Focus on specific phrases, themes, or musical elements in the lyrics that make i
 Be concise and direct.
 
 Reason:"""
-                
-                reason = llm.invoke(reason_prompt)
-                logger.info(f"Generated reason for chorus {i+1}: {reason[:100]}...")
-                
-                # Send individual reason update
-                yield f"data: {json.dumps({'type': 'chorusReason', 'chorusId': doc.metadata.get('id', ''), 'reason': reason.strip()})}\n\n"
+                    
+                    reason = llm.invoke(reason_prompt)
+                    logger.info(f"Generated reason for chorus {i+1}: {reason[:100]}...")
+                    
+                    # Send individual reason update
+                    yield f"data: {json.dumps({'type': 'chorusReason', 'chorusId': chorus_id, 'reason': reason.strip()})}\n\n"
+                except Exception as e:
+                    logger.error(f"Error generating reason for chorus {i+1}: {e}")
+                    # Send a fallback reason
+                    fallback_id = f"error_{i}"
+                    fallback_reason = "This chorus appears to be relevant based on the search criteria."
+                    yield f"data: {json.dumps({'type': 'chorusReason', 'chorusId': fallback_id, 'reason': fallback_reason})}\n\n"
             
             # Step 5: Generate overall analysis
             logger.info("Step 5: Generating overall analysis...")
