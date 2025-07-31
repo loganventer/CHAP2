@@ -42,7 +42,7 @@ services:
     network_mode: host
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:5000
+      - ASPNETCORE_URLS=http://0.0.0.0:5000
       - LangChainService__BaseUrl=http://localhost:8000
       - ApiService__BaseUrl=http://localhost:5001
       - Qdrant__Host=localhost
