@@ -419,7 +419,17 @@ class AiSearch {
         
         const row = document.createElement('div');
         row.className = 'search-result-item';
-        row.dataset.chorusId = result.id || result.Id || '';
+        
+        // Ensure we have a unique ID for each row
+        const chorusId = result.id || result.Id || `unknown_${index}`;
+        row.dataset.chorusId = chorusId;
+        
+        // Check if this ID already exists in the DOM
+        const existingRow = document.querySelector(`[data-chorus-id="${chorusId}"]`);
+        if (existingRow) {
+            console.warn('AI Search: Duplicate chorus ID found:', chorusId, 'Using index-based ID instead');
+            row.dataset.chorusId = `duplicate_${index}_${Date.now()}`;
+        }
         row.style.cssText = `
             background: white;
             border: 1px solid #e0e0e0;
@@ -1047,8 +1057,16 @@ class AiSearch {
                             }
                             
                             console.log('AI Search: Processing JSON data:', jsonData.substring(0, 100) + '...');
-                            const data = JSON.parse(jsonData);
-                            console.log('AI Search: Received streaming data:', data);
+                            
+                            let data;
+                            try {
+                                data = JSON.parse(jsonData);
+                                console.log('AI Search: Received streaming data:', data);
+                            } catch (parseError) {
+                                console.error('AI Search: Error parsing JSON:', parseError);
+                                console.error('AI Search: Raw JSON data:', jsonData);
+                                continue; // Skip this line and continue with the next one
+                            }
                             
                             // Check for duplicate IDs in search results
                             if (data.type === 'searchResults' && data.searchResults) {
@@ -1373,46 +1391,61 @@ class AiSearch {
 
     updateChorusReason(chorusId, reason) {
         console.log('AI Search: Updating chorus reason for ID:', chorusId, 'Reason:', reason);
-        const resultRows = this.resultsContainer.querySelectorAll('.search-result-item');
         
-        resultRows.forEach(row => {
-            const rowChorusId = row.dataset.chorusId;
-            if (rowChorusId === chorusId) {
-                console.log('AI Search: Found matching row for chorus ID:', chorusId);
-                
-                // Find or create the reason element
-                let reasonElement = row.querySelector('.chorus-reason');
-                if (!reasonElement) {
-                    reasonElement = document.createElement('div');
-                    reasonElement.className = 'chorus-reason';
-                    reasonElement.style.cssText = `
-                        margin-top: 0.5rem;
-                        padding: 0.5rem;
-                        background: rgba(0, 123, 255, 0.1);
-                        border-left: 3px solid #007bff;
-                        border-radius: 4px;
-                        font-style: italic;
-                        color: #495057;
-                        font-size: 0.85rem;
-                        line-height: 1.4;
-                        animation: fadeIn 0.5s ease-in;
-                    `;
-                    row.appendChild(reasonElement);
+        try {
+            const resultRows = this.resultsContainer.querySelectorAll('.search-result-item');
+            let found = false;
+            
+            resultRows.forEach((row, index) => {
+                try {
+                    const rowChorusId = row.dataset.chorusId;
+                    if (rowChorusId === chorusId) {
+                        console.log('AI Search: Found matching row for chorus ID:', chorusId);
+                        found = true;
+                        
+                        // Find or create the reason element
+                        let reasonElement = row.querySelector('.chorus-reason');
+                        if (!reasonElement) {
+                            reasonElement = document.createElement('div');
+                            reasonElement.className = 'chorus-reason';
+                            reasonElement.style.cssText = `
+                                margin-top: 0.5rem;
+                                padding: 0.5rem;
+                                background: rgba(0, 123, 255, 0.1);
+                                border-left: 3px solid #007bff;
+                                border-radius: 4px;
+                                font-style: italic;
+                                color: #495057;
+                                font-size: 0.85rem;
+                                line-height: 1.4;
+                                animation: fadeIn 0.5s ease-in;
+                            `;
+                            row.appendChild(reasonElement);
+                        }
+                        
+                        // Update the reason text with animation
+                        reasonElement.style.opacity = '0';
+                        reasonElement.textContent = reason;
+                        
+                        // Fade in the updated reason
+                        setTimeout(() => {
+                            reasonElement.style.opacity = '1';
+                            reasonElement.style.transition = 'opacity 0.3s ease-in';
+                        }, 100);
+                        
+                        console.log('AI Search: Updated reason for chorus:', chorusId);
+                    }
+                } catch (rowError) {
+                    console.error('AI Search: Error processing row', index, ':', rowError);
                 }
-                
-                // Update the reason text with animation
-                reasonElement.style.opacity = '0';
-                reasonElement.textContent = reason;
-                
-                // Fade in the updated reason
-                setTimeout(() => {
-                    reasonElement.style.opacity = '1';
-                    reasonElement.style.transition = 'opacity 0.3s ease-in';
-                }, 100);
-                
-                console.log('AI Search: Updated reason for chorus:', chorusId);
+            });
+            
+            if (!found) {
+                console.warn('AI Search: No matching row found for chorus ID:', chorusId);
             }
-        });
+        } catch (error) {
+            console.error('AI Search: Error in updateChorusReason:', error);
+        }
     }
 
     addRetryButton() {
