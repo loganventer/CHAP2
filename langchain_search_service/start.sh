@@ -52,17 +52,17 @@ sleep 10
 echo "🤖 Checking local Ollama instance..."
 
 # Check for nomic-embed-text model
-if ! curl -s http://127.0.0.1:11434/api/tags | grep -q "nomic-embed-text"; then
+if ! curl -s http://127.0.0.1:11435/api/tags | grep -q "nomic-embed-text"; then
     echo "📥 Pulling nomic-embed-text model..."
-    curl -X POST http://127.0.0.1:11434/api/pull -d '{"name": "nomic-embed-text"}'
+    curl -X POST http://127.0.0.1:11435/api/pull -d '{"name": "nomic-embed-text"}'
 else
     echo "✅ nomic-embed-text model found"
 fi
 
 # Check for mistral model
-if ! curl -s http://127.0.0.1:11434/api/tags | grep -q "mistral"; then
+if ! curl -s http://127.0.0.1:11435/api/tags | grep -q "mistral"; then
     echo "📥 Pulling mistral model..."
-    curl -X POST http://127.0.0.1:11434/api/pull -d '{"name": "mistral"}'
+    curl -X POST http://127.0.0.1:11435/api/pull -d '{"name": "mistral"}'
 else
     echo "✅ mistral model found"
 fi
@@ -85,7 +85,7 @@ if curl -f http://localhost:8000/health > /dev/null 2>&1; then
     echo ""
     echo "🎉 Setup complete! Your services are running:"
     echo "   - Qdrant: http://localhost:6333"
-    echo "   - Ollama: http://127.0.0.1:11434 (local)"
+    echo "   - Ollama: http://127.0.0.1:11435 (local)"
     echo "   - LangChain Service: http://localhost:8000"
     echo ""
     echo "📊 To view logs:"
