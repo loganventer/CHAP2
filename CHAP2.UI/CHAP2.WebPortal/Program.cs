@@ -6,12 +6,19 @@ using CHAP2.Application.Services;
 using CHAP2.Infrastructure.Repositories;
 using CHAP2.WebPortal.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
+
+// Configure response buffering for streaming
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.AllowSynchronousIO = true;
+});
 
 // Configure HttpClient for API communication using shared configuration
 builder.Services.AddCHAP2ApiClient(builder.Configuration);
@@ -81,6 +88,19 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
+// Add middleware to disable response buffering for streaming endpoints
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/Home/IntelligentSearchStream"))
+    {
+        context.Response.Headers.Add("X-Accel-Buffering", "no");
+        context.Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
+        context.Response.Headers.Add("Pragma", "no-cache");
+        context.Response.Headers.Add("Expires", "0");
+    }
+    await next();
+});
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
