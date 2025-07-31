@@ -16,6 +16,8 @@ services:
   langchain-service:
     build: .
     network_mode: host
+    ports:
+      - "8000:8000"
     environment:
       - QDRANT_URL=http://localhost:6333
       - OLLAMA_URL=http://localhost:11434
@@ -29,6 +31,8 @@ services:
       context: ..
       dockerfile: langchain_search_service/Dockerfile.api.simple
     network_mode: host
+    ports:
+      - "5001:5001"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5001
@@ -42,6 +46,8 @@ services:
       context: ..
       dockerfile: langchain_search_service/Dockerfile.webportal.simple
     network_mode: host
+    ports:
+      - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
