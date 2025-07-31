@@ -189,14 +189,34 @@ async def search(request: SearchRequest):
     # Retrieve from Qdrant
     docs = vector_store.similarity_search_with_score(request.query, k=request.k)
     results = []
-    for doc, score in docs:
-        result = SearchResult(
-            id=doc.metadata.get("id", ""),
-            text=doc.page_content,
-            score=float(score),
-            metadata=doc.metadata
-        )
-        results.append(result)
+    for i, (doc, score) in enumerate(docs):
+        try:
+            chorus_id = doc.metadata.get("id", "")
+            # Handle empty IDs
+            if not chorus_id:
+                chorus_id = f"unknown_{i}"
+                logger.warning(f"Found document with empty ID in regular search, using generated ID: {chorus_id}")
+            
+            result = SearchResult(
+                id=chorus_id,
+                text=doc.page_content,
+                score=float(score),
+                metadata=doc.metadata
+            )
+            results.append(result)
+            logger.debug(f"Added search result with ID: {chorus_id}")
+        except Exception as e:
+            logger.error(f"Error creating search result for document {i}: {e}")
+            # Create a fallback result
+            fallback_id = f"error_{i}"
+            result = SearchResult(
+                id=fallback_id,
+                text=doc.page_content if hasattr(doc, 'page_content') else "Error loading content",
+                score=float(score) if score is not None else 0.0,
+                metadata=doc.metadata if hasattr(doc, 'metadata') else {}
+            )
+            results.append(result)
+            logger.warning(f"Created fallback search result with ID: {fallback_id}")
     search_cache[cache_key] = results
     return results
 
@@ -212,14 +232,30 @@ async def search_intelligent(request: IntelligentSearchRequest):
     # Get more documents for better context (k=12 instead of 8)
     docs = vector_store.similarity_search_with_score(request.query, k=12)
     
-    # Deduplicate results based on chorus ID before analysis
+    # Deduplicate results based on chorus ID before analysis with better error handling
     unique_docs = []
     seen_ids = set()
-    for doc, score in docs:
-        chorus_id = doc.metadata.get('id', '')
-        if chorus_id not in seen_ids:
+    for i, (doc, score) in enumerate(docs):
+        try:
+            chorus_id = doc.metadata.get('id', '')
+            # Handle empty or None IDs
+            if not chorus_id:
+                chorus_id = f"unknown_{i}"
+                logger.warning(f"Found document with empty ID in non-streaming search, using generated ID: {chorus_id}")
+            
+            if chorus_id not in seen_ids:
+                unique_docs.append((doc, score))
+                seen_ids.add(chorus_id)
+                logger.debug(f"Added unique document with ID: {chorus_id}")
+            else:
+                logger.debug(f"Skipping duplicate document with ID: {chorus_id}")
+        except Exception as e:
+            logger.error(f"Error processing document during non-streaming deduplication: {e}")
+            # Add with a generated ID to avoid crashes
+            generated_id = f"error_{i}"
             unique_docs.append((doc, score))
-            seen_ids.add(chorus_id)
+            seen_ids.add(generated_id)
+            logger.warning(f"Added document with generated ID due to error: {generated_id}")
     
     logger.info(f"Found {len(docs)} total results, {len(unique_docs)} unique choruses")
     
@@ -258,15 +294,34 @@ Your response should be comprehensive and detailed, covering all the sections ab
     # Use LLM directly with enhanced prompt for better analysis
     answer = llm.invoke(analysis_prompt)
     
-    # Return the deduplicated search results
+    # Return the deduplicated search results with better error handling
     search_results = []
-    for doc, score in unique_docs[:request.k]:  # Limit to requested k
-        search_results.append(SearchResult(
-            id=doc.metadata.get("id", ""),
-            text=doc.page_content,
-            score=float(score),
-            metadata=doc.metadata
-        ))
+    for i, (doc, score) in enumerate(unique_docs[:request.k]):  # Limit to requested k
+        try:
+            chorus_id = doc.metadata.get("id", "")
+            # Handle empty IDs
+            if not chorus_id:
+                chorus_id = f"unknown_{i}"
+                logger.warning(f"Found document with empty ID in non-streaming search results, using generated ID: {chorus_id}")
+            
+            search_results.append(SearchResult(
+                id=chorus_id,
+                text=doc.page_content,
+                score=float(score),
+                metadata=doc.metadata
+            ))
+            logger.debug(f"Added search result with ID: {chorus_id}")
+        except Exception as e:
+            logger.error(f"Error creating search result for document {i}: {e}")
+            # Create a fallback result
+            fallback_id = f"error_{i}"
+            search_results.append(SearchResult(
+                id=fallback_id,
+                text=doc.page_content if hasattr(doc, 'page_content') else "Error loading content",
+                score=float(score) if score is not None else 0.0,
+                metadata=doc.metadata if hasattr(doc, 'metadata') else {}
+            ))
+            logger.warning(f"Created fallback search result with ID: {fallback_id}")
     
     result = IntelligentSearchResult(
         search_results=search_results,
@@ -295,8 +350,14 @@ Example format: "love, Jesus, worship, praise, salvation"
 
 Search terms:"""
             
-            search_terms_response = llm.invoke(search_terms_prompt)
-            search_terms = search_terms_response.strip()
+            try:
+                search_terms_response = llm.invoke(search_terms_prompt)
+                search_terms = search_terms_response.strip()
+                logger.info(f"Generated search terms: {search_terms}")
+            except Exception as e:
+                logger.error(f"Error generating search terms: {e}")
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to generate search terms. Please try again.'})}\n\n"
+                return
             
             # Clean up the response to ensure it's just the search terms
             if search_terms.startswith('"') and search_terms.endswith('"'):
@@ -310,7 +371,13 @@ Search terms:"""
             
             # Step 3: Use the generated search terms to search the vector database
             logger.info("Step 3: Performing search with generated terms...")
-            docs = vector_store.similarity_search_with_score(search_terms, k=request.k)
+            try:
+                docs = vector_store.similarity_search_with_score(search_terms, k=request.k)
+                logger.info(f"Vector search returned {len(docs)} documents")
+            except Exception as e:
+                logger.error(f"Error during vector search: {e}")
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Vector search failed. Please try again.'})}\n\n"
+                return
             
             # Deduplicate results with better error handling
             unique_docs = []
@@ -390,8 +457,12 @@ Be concise and direct.
 
 Reason:"""
                     
-                    reason = llm.invoke(reason_prompt)
-                    logger.info(f"Generated reason for chorus {i+1}: {reason[:100]}...")
+                    try:
+                        reason = llm.invoke(reason_prompt)
+                        logger.info(f"Generated reason for chorus {i+1}: {reason[:100]}...")
+                    except Exception as e:
+                        logger.error(f"Error generating reason for chorus {i+1}: {e}")
+                        reason = "This chorus appears to be relevant based on the search criteria."
                     
                     # Send individual reason update
                     yield f"data: {json.dumps({'type': 'chorusReason', 'chorusId': chorus_id, 'reason': reason.strip()})}\n\n"
