@@ -10,6 +10,8 @@ services:
     environment:
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - chap2-network
     restart: unless-stopped
 
   # LangChain Search Service - Using host network to access Ollama
@@ -35,30 +37,27 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5001
+    networks:
+      - chap2-network
     volumes:
       - ../CHAP2.Chorus.Api/data:/app/data
     restart: unless-stopped
 
-  # CHAP2 Web Portal
+  # CHAP2 Web Portal - Also using host network to access Ollama
   chap2-webportal:
     build:
       context: ..
       dockerfile: langchain_search_service/Dockerfile.webportal.simple
-    ports:
-      - "5000:5000"
-    depends_on:
-      - chap2-api
-      - langchain-service
+    network_mode: host
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
       - LangChainService__BaseUrl=http://localhost:8000
-      - ApiService__BaseUrl=http://chap2-api:5001
-      - Qdrant__Host=qdrant
+      - ApiService__BaseUrl=http://localhost:5001
+      - Qdrant__Host=localhost
       - Qdrant__Port=6333
       - Ollama__Host=localhost
       - Ollama__Port=11434
-    network_mode: host
     restart: unless-stopped
 
 volumes:

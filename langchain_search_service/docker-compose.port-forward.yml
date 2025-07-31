@@ -10,17 +10,27 @@ services:
     environment:
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - chap2-network
     restart: unless-stopped
 
-  # LangChain Search Service - Using host network to access Ollama
+  # LangChain Search Service with Ollama port forwarding
   langchain-service:
     build: .
-    network_mode: host
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
     environment:
-      - QDRANT_URL=http://localhost:6333
+      - QDRANT_URL=http://qdrant:6333
       - OLLAMA_URL=http://localhost:11434
+    networks:
+      - chap2-network
     volumes:
       - ./data:/app/data
+    # Port forwarding to expose host Ollama
+    extra_hosts:
+      - "ollama-host:127.0.0.1"
     restart: unless-stopped
 
   # CHAP2 API Service
@@ -35,6 +45,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5001
+    networks:
+      - chap2-network
     volumes:
       - ../CHAP2.Chorus.Api/data:/app/data
     restart: unless-stopped
@@ -52,14 +64,19 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
-      - LangChainService__BaseUrl=http://localhost:8000
+      - LangChainService__BaseUrl=http://langchain-service:8000
       - ApiService__BaseUrl=http://chap2-api:5001
       - Qdrant__Host=qdrant
       - Qdrant__Port=6333
       - Ollama__Host=localhost
       - Ollama__Port=11434
-    network_mode: host
+    networks:
+      - chap2-network
     restart: unless-stopped
+
+networks:
+  chap2-network:
+    driver: bridge
 
 volumes:
   qdrant_data: 
