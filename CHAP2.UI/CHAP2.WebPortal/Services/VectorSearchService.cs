@@ -280,7 +280,10 @@ public class VectorSearchService : IVectorSearchService
                 
                 if (point.Payload != null)
                 {
-                    var payloadDict = point.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    // Handle potential duplicate keys in payload
+                    var payloadDict = point.Payload
+                        .GroupBy(kvp => kvp.Key)
+                        .ToDictionary(g => g.Key, g => g.First().Value);
                     var result = new ChorusSearchResult
                     {
                         Id = point.Id.Uuid, // Get ID from PointId, not payload
@@ -302,11 +305,16 @@ public class VectorSearchService : IVectorSearchService
                 }
             }
 
-            // Sort by score and take top results
-            var sortedResults = results.OrderByDescending(r => r.Score).Take(maxResults).ToList();
+            // Remove duplicates by ID and sort by score
+            var uniqueResults = results
+                .GroupBy(r => r.Id)
+                .Select(g => g.OrderByDescending(r => r.Score).First())
+                .OrderByDescending(r => r.Score)
+                .Take(maxResults)
+                .ToList();
             
-            _logger.LogInformation("Returning {Count} sorted results for query: {Query}", sortedResults.Count, query);
-            return sortedResults;
+            _logger.LogInformation("Returning {Count} unique sorted results for query: {Query}", uniqueResults.Count, query);
+            return uniqueResults;
         }
         catch (OperationCanceledException)
         {
@@ -540,7 +548,10 @@ public class VectorSearchService : IVectorSearchService
             foreach (var point in scrollResponse.Result)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var payloadDict = point.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                // Handle potential duplicate keys in payload
+                var payloadDict = point.Payload
+                    .GroupBy(kvp => kvp.Key)
+                    .ToDictionary(g => g.Key, g => g.First().Value);
                 
                 var chorusResult = new ChorusSearchResult
                 {
