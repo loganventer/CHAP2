@@ -23,8 +23,9 @@ echo Choose a configuration option:
 echo 1. Standard host.docker.internal (recommended for Windows)
 echo 2. Network mode host (alternative approach)
 echo 3. Use extra_hosts configuration
+echo 4. Custom network with host gateway (recommended if others fail)
 echo.
-set /p choice="Enter your choice (1-3): "
+set /p choice="Enter your choice (1-4): "
 
 if "%choice%"=="1" (
     echo Using standard host.docker.internal configuration...
@@ -35,6 +36,9 @@ if "%choice%"=="1" (
 ) else if "%choice%"=="3" (
     echo Using extra_hosts configuration...
     set compose_file=docker-compose.host-ollama-windows.yml
+) else if "%choice%"=="4" (
+    echo Using custom network with host gateway...
+    set compose_file=docker-compose.host-ollama-custom-network.yml
 ) else (
     echo Invalid choice. Using default configuration...
     set compose_file=docker-compose.host-ollama.yml
