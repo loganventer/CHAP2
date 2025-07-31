@@ -43,30 +43,21 @@ services:
       - ../CHAP2.Chorus.Api/data:/app/data
     restart: unless-stopped
 
-  # CHAP2 Web Portal - Using Docker network with port mapping
+  # CHAP2 Web Portal - Using host network to access LangChain and Ollama
   chap2-webportal:
     build:
       context: ..
       dockerfile: langchain_search_service/Dockerfile.webportal.simple
-    ports:
-      - "5000:5000"
-    depends_on:
-      - chap2-api
-      - langchain-service
+    network_mode: host
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
       - LangChainService__BaseUrl=http://localhost:8000
-      - ApiService__BaseUrl=http://chap2-api:5001
-      - Qdrant__Host=qdrant
+      - ApiService__BaseUrl=http://localhost:5001
+      - Qdrant__Host=localhost
       - Qdrant__Port=6333
-      - Ollama__Host=host.docker.internal
+      - Ollama__Host=localhost
       - Ollama__Port=11434
-
-    networks:
-      - chap2-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
 networks:
