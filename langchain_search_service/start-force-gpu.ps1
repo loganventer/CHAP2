@@ -39,8 +39,125 @@ Write-Host "Step 2: Using FORCED GPU configuration..." -ForegroundColor Yellow
 Write-Host "   Using GPU-enabled Docker Compose configuration..." -ForegroundColor Green
 $composeFile = "docker-compose.gpu.yml"
 
-# Step 3: Fix API Routes Configuration
-Write-Host "Step 3: Fixing API routes configuration..." -ForegroundColor Yellow
+# Step 3: Fix API Routes Configuration and Windows Buffering Issues
+Write-Host "Step 3: Fixing API routes configuration and Windows buffering issues..." -ForegroundColor Yellow
+
+# Fix Windows buffering issues in HomeController.cs
+Write-Host "   Fix 1: Applying Windows buffering fixes to HomeController.cs..." -ForegroundColor Gray
+$homeControllerPath = "../CHAP2.UI/CHAP2.WebPortal/Controllers/HomeController.cs"
+$homeControllerContent = Get-Content -Path $homeControllerPath -Raw
+
+# Add the Windows buffering fixes to IntelligentSearchStream method
+$intelligentSearchStreamPattern = '(?s)public async Task<IActionResult> IntelligentSearchStream\([^)]*\)\s*\{[^}]*Response\.Headers\.Add\("Content-Type", "text/event-stream"\);'
+$intelligentSearchStreamReplacement = @'
+        public async Task<IActionResult> IntelligentSearchStream([FromBody] IntelligentSearchRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("IntelligentSearchStream called with query: {Query}, maxResults: {MaxResults}",
+                    request.Query, request.MaxResults);
+
+                // Disable response buffering for immediate streaming
+                Response.Body.Flush();
+
+                // Set up streaming response headers
+                Response.Headers.Add("Content-Type", "text/event-stream");
+                Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
+                Response.Headers.Add("Pragma", "no-cache");
+                Response.Headers.Add("Expires", "0");
+                Response.Headers.Add("Connection", "keep-alive");
+                Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                Response.Headers.Add("X-Accel-Buffering", "no"); // Disable nginx buffering if present
+
+                // Force immediate flush of headers
+                await Response.Body.FlushAsync();
+
+                // Use the streaming intelligent search service
+                await foreach (var streamEvent in _intelligentSearchService.SearchWithIntelligenceStreamingAsync(
+                    request.Query, request.MaxResults, HttpContext.RequestAborted))
+                {
+                    var eventData = $"data: {streamEvent}\n\n";
+                    await Response.WriteAsync(eventData);
+
+                    // Force immediate flush after each event
+                    await Response.Body.FlushAsync();
+
+                    // Add a small delay to ensure the event is sent before the next one
+                    await Task.Delay(10);
+                }
+
+                return new EmptyResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in IntelligentSearchStream");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+'@
+
+if ($homeControllerContent -match $intelligentSearchStreamPattern) {
+    $homeControllerContent = $homeControllerContent -replace $intelligentSearchStreamPattern, $intelligentSearchStreamReplacement
+    Set-Content -Path $homeControllerPath -Value $homeControllerContent
+    Write-Host "     PASS: Applied Windows buffering fixes to HomeController.cs" -ForegroundColor Green
+} else {
+    Write-Host "     WARNING: Could not find IntelligentSearchStream method in HomeController.cs" -ForegroundColor Yellow
+}
+
+# Fix Windows buffering issues in Program.cs
+Write-Host "   Fix 2: Applying Windows buffering fixes to Program.cs..." -ForegroundColor Gray
+$programPath = "../CHAP2.UI/CHAP2.WebPortal/Program.cs"
+$programContent = Get-Content -Path $programPath -Raw
+
+# Add Kestrel configuration for streaming
+$kestrelPattern = 'builder\.Services\.AddControllersWithViews\(\);'
+$kestrelReplacement = @'
+builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
+
+// Configure response buffering for streaming
+builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+{
+    options.AllowSynchronousIO = true;
+});
+'@
+
+if ($programContent -match $kestrelPattern) {
+    $programContent = $programContent -replace $kestrelPattern, $kestrelReplacement
+    Set-Content -Path $programPath -Value $programContent
+    Write-Host "     PASS: Applied Kestrel streaming configuration to Program.cs" -ForegroundColor Green
+} else {
+    Write-Host "     WARNING: Could not find AddControllersWithViews in Program.cs" -ForegroundColor Yellow
+}
+
+# Add middleware for streaming endpoints
+$middlewarePattern = 'app\.UseExceptionHandler\("/Home/Error"\);'
+$middlewareReplacement = @'
+app.UseExceptionHandler("/Home/Error");
+app.UseHsts();
+}
+
+// Add middleware to disable response buffering for streaming endpoints
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/Home/IntelligentSearchStream"))
+    {
+        context.Response.Headers.Add("X-Accel-Buffering", "no");
+        context.Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
+        context.Response.Headers.Add("Pragma", "no-cache");
+        context.Response.Headers.Add("Expires", "0");
+    }
+    await next();
+});
+'@
+
+if ($programContent -match $middlewarePattern) {
+    $programContent = $programContent -replace $middlewarePattern, $middlewareReplacement
+    Set-Content -Path $programPath -Value $programContent
+    Write-Host "     PASS: Applied streaming middleware to Program.cs" -ForegroundColor Green
+} else {
+    Write-Host "     WARNING: Could not find UseExceptionHandler in Program.cs" -ForegroundColor Yellow
+}
 
 # Update Web Portal appsettings.json
 $webPortalAppSettings = @"
