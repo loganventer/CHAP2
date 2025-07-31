@@ -19,13 +19,34 @@ if %errorlevel% neq 0 (
 echo Ollama is running on host - proceeding with Docker startup...
 echo.
 
+echo Choose a configuration option:
+echo 1. Standard host.docker.internal (recommended for Windows)
+echo 2. Network mode host (alternative approach)
+echo 3. Use extra_hosts configuration
+echo.
+set /p choice="Enter your choice (1-3): "
+
+if "%choice%"=="1" (
+    echo Using standard host.docker.internal configuration...
+    set compose_file=docker-compose.host-ollama.yml
+) else if "%choice%"=="2" (
+    echo Using network_mode host configuration...
+    set compose_file=docker-compose.host-ollama-network.yml
+) else if "%choice%"=="3" (
+    echo Using extra_hosts configuration...
+    set compose_file=docker-compose.host-ollama-windows.yml
+) else (
+    echo Invalid choice. Using default configuration...
+    set compose_file=docker-compose.host-ollama.yml
+)
+
 REM Stop any existing containers
 echo Stopping existing containers...
-docker-compose -f docker-compose.host-ollama.yml down
+docker-compose -f %compose_file% down
 
 REM Start the services
 echo Starting services with host Ollama configuration...
-docker-compose -f docker-compose.host-ollama.yml up -d
+docker-compose -f %compose_file% up -d
 
 echo.
 echo Services started successfully!
@@ -37,6 +58,11 @@ echo - CHAP2 API: http://localhost:5001
 echo - CHAP2 Web Portal: http://localhost:5002
 echo - Host Ollama: http://localhost:11434
 echo.
-echo To view logs: docker-compose -f docker-compose.host-ollama.yml logs -f
-echo To stop services: docker-compose -f docker-compose.host-ollama.yml down
+echo To view logs: docker-compose -f %compose_file% logs -f
+echo To stop services: docker-compose -f %compose_file% down
+echo.
+echo If you're still having connection issues, try:
+echo 1. Restart Docker Desktop
+echo 2. Check Windows Firewall settings
+echo 3. Try the network_mode host option (choice 2)
 pause 
