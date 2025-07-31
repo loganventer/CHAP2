@@ -640,20 +640,17 @@ Please provide a helpful and accurate response based on the chorus information p
             _logger.LogInformation("IntelligentSearchStream called with query: {Query}, maxResults: {MaxResults}", 
                 request.Query, request.MaxResults);
 
-            // Disable response buffering for immediate streaming
-            Response.Body.Flush();
-            
-            // Set up streaming response headers
-            Response.Headers.Add("Content-Type", "text/event-stream");
-            Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
-            Response.Headers.Add("Pragma", "no-cache");
-            Response.Headers.Add("Expires", "0");
-            Response.Headers.Add("Connection", "keep-alive");
-            Response.Headers.Add("Access-Control-Allow-Origin", "*");
-            Response.Headers.Add("X-Accel-Buffering", "no"); // Disable nginx buffering if present
+                            // Set up streaming response headers FIRST (before any response starts)
+                Response.Headers.Add("Content-Type", "text/event-stream");
+                Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
+                Response.Headers.Add("Pragma", "no-cache");
+                Response.Headers.Add("Expires", "0");
+                Response.Headers.Add("Connection", "keep-alive");
+                Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                Response.Headers.Add("X-Accel-Buffering", "no"); // Disable nginx buffering if present
 
-            // Force immediate flush of headers
-            await Response.Body.FlushAsync();
+                // Force immediate flush of headers
+                await Response.Body.FlushAsync();
 
             // Use the streaming intelligent search service
             await foreach (var streamEvent in _intelligentSearchService.SearchWithIntelligenceStreamingAsync(

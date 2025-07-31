@@ -111,10 +111,7 @@ if ($ApplyAllFixes -or $true) {
                 _logger.LogInformation("IntelligentSearchStream called with query: {Query}, maxResults: {MaxResults}",
                     request.Query, request.MaxResults);
 
-                // Disable response buffering for immediate streaming
-                Response.Body.Flush();
-
-                // Set up streaming response headers
+                // Set up streaming response headers FIRST (before any response starts)
                 Response.Headers.Add("Content-Type", "text/event-stream");
                 Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
                 Response.Headers.Add("Pragma", "no-cache");
