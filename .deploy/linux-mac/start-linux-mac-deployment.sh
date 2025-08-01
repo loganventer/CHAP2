@@ -48,8 +48,8 @@ echo
 echo "Testing connections:"
 echo
 
-echo "Testing Web Portal (port 5000):"
-curl -s -I http://localhost:5000
+echo "Testing Web Portal (port 8080):"
+curl -s -I http://localhost:8080
 echo
 
 echo "Testing API (port 5001):"
@@ -66,7 +66,7 @@ echo
 
 echo
 echo "Access URLs (replace SERVER_IP with your actual IP):"
-echo "- Web Portal: http://SERVER_IP:5000"
+echo "- Web Portal: http://SERVER_IP:8080"
 echo "- API: http://SERVER_IP:5001"
 echo "- LangChain: http://SERVER_IP:8000"
 echo "- Qdrant: http://SERVER_IP:6333"

@@ -79,12 +79,12 @@ The deployment includes:
 - **Qdrant Vector Database**: Port 6333
 - **LangChain Service**: Port 8000
 - **CHAP2 API**: Port 5001
-- **CHAP2 Web Portal**: Port 5000
+- **CHAP2 Web Portal**: Port 8080 (changed from 5000 to avoid macOS AirPlay conflict)
 
 ## Access URLs
 
 After deployment, access the services at:
-- **Web Portal**: http://SERVER_IP:5000
+- **Web Portal**: http://SERVER_IP:8080
 - **API**: http://SERVER_IP:5001
 - **LangChain**: http://SERVER_IP:8000
 - **Qdrant**: http://SERVER_IP:6333
