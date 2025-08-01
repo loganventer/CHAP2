@@ -32,7 +32,7 @@ def load_chorus_data(data_dir):
             with open(json_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 chorus_data.append({
-                    'id': json_file.stem,  # Use filename as ID
+                    'id': data.get('id', json_file.stem),  # Use GUID from JSON, fallback to filename
                     'data': data
                 })
         except Exception as e:
@@ -89,7 +89,8 @@ def create_documents(chorus_data):
             
             # Create metadata
             metadata = {
-                'id': chorus['id'],
+                'id': chorus['id'],  # This is now the GUID from the JSON
+                'guid': data.get('id', ''),  # Store the original GUID
                 'title': data.get('name', data.get('title', '')),
                 'composer': data.get('composer', data.get('author', '')),
                 'key': data.get('key', ''),
