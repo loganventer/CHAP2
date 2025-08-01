@@ -370,7 +370,7 @@ Search terms:"""
                 logger.error(f"Error generating search terms: {type(e).__name__}: {e}")
                 logger.error(f"Ollama URL: {os.getenv('OLLAMA_URL', 'http://localhost:11434')}")
                 error_message = f"Failed to generate search terms: {str(e)}. Please ensure Ollama is running and accessible."
-                yield f"data: {json.dumps({'type': 'error', 'message': error_message})}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'error': error_message})}\n\n"
                 return
             
             # Clean up the response to ensure it's just the search terms
@@ -394,9 +394,9 @@ Search terms:"""
                 logger.error(f"Error details: {str(e)}")
                 # Check if it's a Qdrant-specific error
                 if "duplicate" in str(e).lower() or "key" in str(e).lower():
-                    yield f"data: {json.dumps({'type': 'error', 'message': 'Database contains duplicate entries. Please contact support.'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'error', 'error': 'Database contains duplicate entries. Please contact support.'})}\n\n"
                 else:
-                    yield f"data: {json.dumps({'type': 'error', 'message': 'Vector search failed. Please try again.'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'error', 'error': 'Vector search failed. Please try again.'})}\n\n"
                 return
             
             # Deduplicate results with better error handling
