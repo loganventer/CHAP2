@@ -20,7 +20,7 @@ services:
     ports:
       - "0.0.0.0:8000:8000"
     environment:
-      - QDRANT_URL=http://localhost:6333
+      - QDRANT_URL=http://qdrant:6333
       - OLLAMA_URL=http://host.docker.internal:11434
     volumes:
       - ../../langchain_search_service/data:/app/data
