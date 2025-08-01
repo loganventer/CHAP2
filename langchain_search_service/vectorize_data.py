@@ -87,15 +87,25 @@ def create_documents(chorus_data):
             # Combine all text
             text = " ".join(text_parts)
             
-            # Create metadata
+            # Create metadata matching portal's expected structure
             metadata = {
-                'id': chorus['id'],  # This is now the GUID from the JSON
-                'guid': data.get('id', ''),  # Store the original GUID
+                'Id': chorus['id'],  # GUID as string
+                'Name': data.get('name', data.get('title', '')),
+                'ChorusText': data.get('chorusText', ''),
+                'Key': data.get('key', 0),
+                'Type': data.get('type', 0),
+                'TimeSignature': data.get('timeSignature', 0),
+                'CreatedAt': data.get('createdAt', ''),
+                'UpdatedAt': data.get('updatedAt', ''),
+                'Metadata': data.get('metadata', {}),
+                'DomainEvents': data.get('domainEvents', []),
+                # Keep original fields for backward compatibility
+                'id': chorus['id'],
                 'title': data.get('name', data.get('title', '')),
                 'composer': data.get('composer', data.get('author', '')),
-                'key': data.get('key', ''),
-                'timeSignature': data.get('timeSignature', ''),
-                'chorusType': data.get('type', data.get('chorusType', '')),
+                'key': data.get('key', 0),
+                'timeSignature': data.get('timeSignature', 0),
+                'chorusType': data.get('type', 0),
                 'source': 'json_file'
             }
             

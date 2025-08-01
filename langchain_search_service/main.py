@@ -42,11 +42,18 @@ class IntelligentSearchRequest(BaseModel):
     include_analysis: bool = True
 
 class SearchResult(BaseModel):
-    id: str
-    text: str
-    score: float
-    explanation: Optional[str] = None
-    metadata: Dict[str, Any]
+    id: str  # GUID
+    name: str  # Chorus name
+    chorusText: str  # Chorus lyrics
+    key: int  # Musical key
+    type: int  # Chorus type
+    timeSignature: int  # Time signature
+    createdAt: Optional[str] = None  # Creation date
+    updatedAt: Optional[str] = None  # Update date
+    metadata: Optional[Dict[str, Any]] = None  # Additional metadata
+    domainEvents: Optional[List[Any]] = None  # Domain events
+    score: float  # Search relevance score
+    explanation: Optional[str] = None  # AI explanation
 
 class IntelligentSearchResult(BaseModel):
     search_results: List[SearchResult]
@@ -209,10 +216,18 @@ async def search(request: SearchRequest):
                 logger.warning(f"Found document with empty ID in regular search, using generated ID: {chorus_id}")
             
             result = SearchResult(
-                id=chorus_id,
-                text=doc.page_content,
+                id=doc.metadata.get('Id', chorus_id),
+                name=doc.metadata.get('Name', ''),
+                chorusText=doc.metadata.get('ChorusText', ''),
+                key=doc.metadata.get('Key', 0),
+                type=doc.metadata.get('Type', 0),
+                timeSignature=doc.metadata.get('TimeSignature', 0),
+                createdAt=doc.metadata.get('CreatedAt', ''),
+                updatedAt=doc.metadata.get('UpdatedAt', ''),
+                metadata=doc.metadata.get('Metadata', {}),
+                domainEvents=doc.metadata.get('DomainEvents', []),
                 score=float(score),
-                metadata=doc.metadata
+                explanation=None
             )
             results.append(result)
             logger.debug(f"Added search result with ID: {chorus_id}")
@@ -441,10 +456,17 @@ Search terms:"""
                         logger.warning(f"Found document with empty ID in search results, using generated ID: {chorus_id}")
                     
                     search_results.append({
-                        "id": chorus_id,
-                        "text": doc.page_content,
-                        "score": float(score),
-                        "metadata": doc.metadata
+                        "id": doc.metadata.get('Id', chorus_id),
+                        "name": doc.metadata.get('Name', ''),
+                        "chorusText": doc.metadata.get('ChorusText', ''),
+                        "key": doc.metadata.get('Key', 0),
+                        "type": doc.metadata.get('Type', 0),
+                        "timeSignature": doc.metadata.get('TimeSignature', 0),
+                        "createdAt": doc.metadata.get('CreatedAt', ''),
+                        "updatedAt": doc.metadata.get('UpdatedAt', ''),
+                        "metadata": doc.metadata.get('Metadata', {}),
+                        "domainEvents": doc.metadata.get('DomainEvents', []),
+                        "score": float(score)
                     })
                     logger.debug(f"Added search result with ID: {chorus_id}")
                 except Exception as e:
