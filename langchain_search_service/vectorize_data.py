@@ -52,17 +52,23 @@ def create_documents(chorus_data):
             # Create text content for vectorization
             text_parts = []
             
-            # Add title if available
-            if 'title' in data:
+            # Add title/name if available
+            if 'name' in data:
+                text_parts.append(f"Title: {data['name']}")
+            elif 'title' in data:
                 text_parts.append(f"Title: {data['title']}")
             
-            # Add lyrics if available
-            if 'lyrics' in data:
+            # Add chorus text if available
+            if 'chorusText' in data:
+                text_parts.append(f"Chorus: {data['chorusText']}")
+            elif 'lyrics' in data:
                 text_parts.append(f"Lyrics: {data['lyrics']}")
             
             # Add composer if available
             if 'composer' in data:
                 text_parts.append(f"Composer: {data['composer']}")
+            elif 'author' in data:
+                text_parts.append(f"Author: {data['author']}")
             
             # Add key if available
             if 'key' in data:
@@ -73,7 +79,9 @@ def create_documents(chorus_data):
                 text_parts.append(f"Time Signature: {data['timeSignature']}")
             
             # Add chorus type if available
-            if 'chorusType' in data:
+            if 'type' in data:
+                text_parts.append(f"Type: {data['type']}")
+            elif 'chorusType' in data:
                 text_parts.append(f"Type: {data['chorusType']}")
             
             # Combine all text
@@ -82,11 +90,11 @@ def create_documents(chorus_data):
             # Create metadata
             metadata = {
                 'id': chorus['id'],
-                'title': data.get('title', ''),
-                'composer': data.get('composer', ''),
+                'title': data.get('name', data.get('title', '')),
+                'composer': data.get('composer', data.get('author', '')),
                 'key': data.get('key', ''),
                 'timeSignature': data.get('timeSignature', ''),
-                'chorusType': data.get('chorusType', ''),
+                'chorusType': data.get('type', data.get('chorusType', '')),
                 'source': 'json_file'
             }
             
