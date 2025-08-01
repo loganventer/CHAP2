@@ -160,10 +160,10 @@ def vectorize_and_store(documents, qdrant_url="http://qdrant:6333"):
             points = []
             for j, (doc, embedding) in enumerate(zip(batch, embeddings_list)):
                 point = {
-                    "id": f"{doc.metadata['id']}_{j}",
+                    "id": i + j,  # Use integer ID
                     "vector": embedding,
                     "payload": {
-                        "text": doc.page_content,
+                        "page_content": doc.page_content,  # LangChain expects this field name
                         "metadata": doc.metadata
                     }
                 }
