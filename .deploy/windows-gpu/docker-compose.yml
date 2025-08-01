@@ -2,7 +2,9 @@ services:
   # Qdrant Vector Database
   qdrant:
     image: qdrant/qdrant:latest
-    network_mode: host
+    ports:
+      - "0.0.0.0:6333:6333"
+      - "0.0.0.0:6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
     environment:
@@ -10,39 +12,53 @@ services:
       - QDRANT__SERVICE__GRPC_PORT=6334
     restart: unless-stopped
 
-  # LangChain Search Service - Using host network to access Ollama
+  # LangChain Search Service with GPU support
   langchain-service:
-    build: .
-    network_mode: host
+    build:
+      context: ../../langchain_search_service
+      dockerfile: Dockerfile
+    ports:
+      - "0.0.0.0:8000:8000"
     environment:
       - QDRANT_URL=http://localhost:6333
       - OLLAMA_URL=http://localhost:11434
     volumes:
-      - ./data:/app/data
+      - ../../langchain_search_service/data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: unless-stopped
 
   # CHAP2 API Service
   chap2-api:
     build:
-      context: ..
+      context: ../..
       dockerfile: langchain_search_service/Dockerfile.api.simple
-    network_mode: host
+    ports:
+      - "0.0.0.0:5001:5001"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:5001
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:5001
     volumes:
-      - ../CHAP2.Chorus.Api/data:/app/data
+      - ../../CHAP2.Chorus.Api/data:/app/data
     restart: unless-stopped
 
-  # CHAP2 Web Portal - Also using host network to access Ollama
+  # CHAP2 Web Portal
   chap2-webportal:
     build:
-      context: ..
+      context: ../..
       dockerfile: langchain_search_service/Dockerfile.webportal.simple
-    network_mode: host
+    ports:
+      - "0.0.0.0:5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:5000
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:5000
       - LangChainService__BaseUrl=http://localhost:8000
       - ApiService__BaseUrl=http://localhost:5001
       - Qdrant__Host=localhost

@@ -9,8 +9,8 @@ EXPOSE 5000
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy the web portal specific .dockerignore to ensure proper build context
-COPY ["langchain_search_service/.dockerignore.webportal", ".dockerignore"]
+# Copy the main .dockerignore file
+COPY ["langchain_search_service/.dockerignore", ".dockerignore"]
 
 # Copy only the necessary project files first
 COPY ["CHAP2.Domain/CHAP2.Domain.csproj", "CHAP2.Domain/"]
