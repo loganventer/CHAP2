@@ -40,6 +40,10 @@ class AiSearch {
                 '🔧 Please try again'
             ]
         };
+        this.searchInProgress = false;
+        this.currentSearchAbortController = null;
+        this.individualResultsStreaming = false; // Track if individual results are being streamed
+        this.receivedIndividualResults = new Set(); // Track which individual results we've received
         this.init();
     }
     
