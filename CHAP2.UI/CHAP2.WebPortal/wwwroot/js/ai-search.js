@@ -936,6 +936,16 @@ class AiSearch {
     async performSearch() {
         console.log('AI Search: performSearch called');
         
+        // Clear previous results
+        this.fadeOutResults();
+        
+        // Reset streaming flags
+        this.individualResultsStreaming = false;
+        this.receivedIndividualResults.clear();
+        
+        // Show AI containers
+        this.ensureAiContainersVisible();
+        
         // Check if we're on the AI search tab
         const aiTab = document.querySelector('.tab-button[data-tab="ai"]');
         const regularTab = document.querySelector('.tab-button[data-tab="regular"]');
