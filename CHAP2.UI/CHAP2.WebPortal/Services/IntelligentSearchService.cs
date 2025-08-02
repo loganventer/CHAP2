@@ -180,13 +180,16 @@ public class IntelligentSearchService : IIntelligentSearchService
 
     private async IAsyncEnumerable<string> FallbackStreamingSearchAsync(string query, int maxResults, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Step 1: Use LLM to understand the query
+        // Step 1: Use LLM to understand the query (stream immediately when ready)
         _logger.LogInformation("Step 1: Generating query understanding...");
-        var queryUnderstanding = await GenerateQueryUnderstandingAsync(query, cancellationToken);
+        var queryUnderstandingTask = GenerateQueryUnderstandingAsync(query, cancellationToken);
+        
+        // Wait for query understanding and stream it immediately
+        var queryUnderstanding = await queryUnderstandingTask;
         _logger.LogInformation("Query understanding generated: {Understanding}", queryUnderstanding);
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "queryUnderstanding", queryUnderstanding });
 
-        // Step 2: Search vector database
+        // Step 2: Search vector database (stream results immediately when ready)
         _logger.LogInformation("Step 2: Searching vector database...");
         
         List<ChorusSearchResult> searchResults;
@@ -224,20 +227,43 @@ public class IntelligentSearchService : IIntelligentSearchService
             yield break;
         }
 
-        // Step 3: Fetch detailed results
+        // Step 3: Fetch detailed results (stream as they become available)
         _logger.LogInformation("Step 3: Fetching detailed results for {Count} search results", searchResults.Count);
         var detailedResults = new List<ChorusSearchResult>();
-        for (int i = 0; i < searchResults.Count; i++)
+        
+        // Fetch details in parallel and stream as they become available
+        var detailTasks = searchResults.Select(async (result, index) =>
         {
-            _logger.LogInformation("Fetching details {Index}/{Total} for chorus: {Name}", i + 1, searchResults.Count, searchResults[i].Name);
-            var detailedResult = await FetchChorusDetailsAsync(searchResults[i].Id);
+            _logger.LogInformation("Fetching details for chorus: {Name}", result.Name);
+            var detailedResult = await FetchChorusDetailsAsync(result.Id);
             if (detailedResult != null)
             {
-                detailedResult.Score = searchResults[i].Score;
-                detailedResults.Add(detailedResult);
+                detailedResult.Score = result.Score;
+                return new { Index = index, Result = detailedResult };
+            }
+            return null;
+        }).ToList();
+
+        // Stream results as they become available
+        while (detailTasks.Any())
+        {
+            var completedTask = await Task.WhenAny(detailTasks);
+            detailTasks.Remove(completedTask);
+            
+            var result = await completedTask;
+            if (result != null)
+            {
+                detailedResults.Add(result.Result);
+                // Stream individual result immediately
+                yield return System.Text.Json.JsonSerializer.Serialize(new { 
+                    type = "searchResult", 
+                    index = result.Index, 
+                    searchResult = result.Result 
+                });
             }
         }
         
+        // Also send the complete results array for compatibility
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "searchResults", searchResults = detailedResults });
         
         if (!detailedResults.Any())
@@ -247,16 +273,32 @@ public class IntelligentSearchService : IIntelligentSearchService
             yield break;
         }
 
-        // Step 4: Generate explanations for each result individually
+        // Step 4: Generate explanations for each result in parallel (stream as they complete)
         _logger.LogInformation("Step 4: Generating explanations for {Count} results", detailedResults.Count);
-        for (int i = 0; i < detailedResults.Count; i++)
+        
+        // Start all explanation tasks in parallel
+        var explanationTasks = detailedResults.Select(async (result, index) =>
         {
-            _logger.LogInformation("Generating explanation {Index}/{Total} for chorus: {Name}", i + 1, detailedResults.Count, detailedResults[i].Name);
-            var explanation = await GenerateSingleExplanationAsync(query, detailedResults[i], cancellationToken);
-            yield return System.Text.Json.JsonSerializer.Serialize(new { type = "explanation", index = i, explanation });
+            _logger.LogInformation("Generating explanation for chorus: {Name}", result.Name);
+            var explanation = await GenerateSingleExplanationAsync(query, result, cancellationToken);
+            return new { Index = index, Explanation = explanation, ChorusId = result.Id };
+        }).ToList();
+
+        // Stream explanations as they complete
+        while (explanationTasks.Any())
+        {
+            var completedTask = await Task.WhenAny(explanationTasks);
+            explanationTasks.Remove(completedTask);
+            
+            var explanationResult = await completedTask;
+            yield return System.Text.Json.JsonSerializer.Serialize(new { 
+                type = "chorusReason", 
+                chorusId = explanationResult.ChorusId, 
+                reason = explanationResult.Explanation 
+            });
         }
 
-        // Step 5: Generate AI analysis
+        // Step 5: Generate AI analysis (stream when complete)
         _logger.LogInformation("Step 5: Generating AI analysis...");
         var aiAnalysis = await GenerateAnalysisAsync(query, detailedResults, cancellationToken);
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "aiAnalysis", analysis = aiAnalysis });

@@ -1108,6 +1108,12 @@ class AiSearch {
                                         this.updateAiStatus('🔍 Understanding your search query...', 'thinking');
                                         break;
                                         
+                                    case 'searchResult':
+                                        console.log('AI Search: Received individual search result:', data.index);
+                                        this.addSearchResult(data.index, data.searchResult);
+                                        this.updateAiStatus(`📚 Found chorus ${data.index + 1}, analyzing...`, 'thinking');
+                                        break;
+                                        
                                     case 'searchResults':
                                         console.log('AI Search: Displaying search results');
                                         this.displaySearchResultsWithAnimation(data.searchResults);
@@ -1400,6 +1406,36 @@ class AiSearch {
             aiResults.style.display = 'block';
             console.log('AI Search: aiResults container made visible');
         }
+    }
+
+    addSearchResult(index, searchResult) {
+        console.log('AI Search: Adding search result at index:', index);
+        
+        // Get the results container
+        const resultsContainer = document.getElementById('aiResults');
+        if (!resultsContainer) {
+            console.error('AI Search: Results container not found');
+            return;
+        }
+        
+        // Create the result row
+        const resultRow = this.createAnimatedResultRow(searchResult, index);
+        
+        // Add animation delay based on index
+        resultRow.style.animationDelay = `${index * 0.1}s`;
+        
+        // Add to results container
+        resultsContainer.appendChild(resultRow);
+        
+        // Trigger animation
+        setTimeout(() => {
+            resultRow.classList.add('animate-in');
+        }, 50);
+        
+        // Add sparkle effect
+        this.addSparkleEffect(resultRow);
+        
+        console.log('AI Search: Added search result for:', searchResult.name);
     }
 
     updateChorusReason(chorusId, reason) {
