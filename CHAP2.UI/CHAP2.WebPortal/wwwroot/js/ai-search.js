@@ -1124,13 +1124,20 @@ class AiSearch {
                                         
                                     case 'searchResult':
                                         console.log('AI Search: Received individual search result:', data.index);
+                                        this.individualResultsStreaming = true;
+                                        this.receivedIndividualResults.add(data.index);
                                         this.addSearchResult(data.index, data.searchResult);
                                         this.updateAiStatus(`📚 Found chorus ${data.index + 1}, analyzing...`, 'thinking');
                                         break;
                                         
                                     case 'searchResults':
-                                        console.log('AI Search: Displaying search results');
-                                        this.displaySearchResultsWithAnimation(data.searchResults);
+                                        console.log('AI Search: Received complete search results array');
+                                        // Only display if we haven't been streaming individual results
+                                        if (!this.individualResultsStreaming) {
+                                            this.displaySearchResultsWithAnimation(data.searchResults);
+                                        } else {
+                                            console.log('AI Search: Skipping searchResults display - individual results already streaming');
+                                        }
                                         this.updateAiStatus(`📚 Found ${data.searchResults.length} choruses, analyzing why each matches...`, 'thinking');
                                         break;
                                         
