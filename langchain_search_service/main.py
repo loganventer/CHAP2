@@ -482,6 +482,13 @@ Terms:"""
                     logger.warning(f"Created fallback search result with ID: {fallback_id}")
             
             logger.info(f"Step 3: Found {len(search_results)} unique results")
+            
+            # Send individual search results as they're processed
+            for i, result in enumerate(search_results):
+                logger.info(f"Sending individual search result {i+1}/{len(search_results)}: {result['name']}")
+                yield f"data: {json.dumps({'type': 'searchResult', 'index': i, 'searchResult': result})}\n\n"
+            
+            # Also send the complete results array for compatibility
             yield f"data: {json.dumps({'type': 'searchResults', 'searchResults': search_results})}\n\n"
             
             # Step 4: Generate individual reasons for each chorus asynchronously
