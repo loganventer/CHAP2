@@ -1014,7 +1014,16 @@ class AiSearch {
 
             // Use streaming endpoint for proper flow
             console.log('AI Search: Using streaming endpoint for proper flow');
-            const response = await fetch('/Home/IntelligentSearchStream', {
+            
+            // Create a timeout promise (15 minutes)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    reject(new Error('Request timed out after 15 minutes'));
+                }, 15 * 60 * 1000); // 15 minutes timeout
+            });
+            
+            // Create the fetch promise
+            const fetchPromise = fetch('/Home/IntelligentSearchStream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1025,6 +1034,9 @@ class AiSearch {
                 }),
                 signal: this.currentSearchController.signal
             });
+            
+            // Race between fetch and timeout
+            const response = await Promise.race([fetchPromise, timeoutPromise]);
 
             console.log('AI Search: Response status:', response.status);
             if (!response.ok) {
@@ -1136,11 +1148,12 @@ class AiSearch {
                                         break;
                                         
                                     case 'error':
-                                        console.error('AI Search: Error from server:', data.error);
-                                        if (data.error.includes('timeout') || data.error.includes('timed out')) {
+                                        console.error('AI Search: Error from server:', data.error || data.message);
+                                        const errorMessage = data.error || data.message || 'Unknown error occurred';
+                                        if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
                                             this.updateAiStatus('⏰ Request timed out. The AI is taking longer than expected. Please try again with a simpler query.', 'error');
                                         } else {
-                                            this.updateAiStatus('❌ Search failed: ' + data.error, 'error');
+                                            this.updateAiStatus('❌ Search failed: ' + errorMessage, 'error');
                                         }
                                         break;
                                 }
@@ -1164,7 +1177,7 @@ class AiSearch {
             if (error.name === 'AbortError') {
                 console.log('AI Search: Search was cancelled');
                 this.updateAiStatus('⏹️ Search cancelled', 'error');
-            } else if (error.message.includes('timeout') || error.message.includes('timed out')) {
+            } else if (error.message.includes('timeout') || error.message.includes('timed out') || error.name === 'TimeoutError') {
                 console.log('AI Search: Request timed out');
                 this.updateAiStatus('⏰ Request timed out. The AI is taking longer than expected. Please try again with a simpler query.', 'error');
             } else {
