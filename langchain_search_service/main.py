@@ -79,10 +79,14 @@ async def lifespan(app: FastAPI):
         llm = Ollama(
             model="mistral",
             base_url=ollama_url,
-            timeout=300,  # 5 minutes timeout
+            timeout=600,  # 10 minutes timeout
             temperature=0.7,
             num_gpu=1,  # Use GPU acceleration
-            num_thread=4  # Limit CPU threads to reduce CPU usage
+            num_thread=4,  # Limit CPU threads to reduce CPU usage
+            num_ctx=2048,  # Limit context window for faster processing
+            repeat_penalty=1.1,  # Reduce repetition for faster generation
+            top_k=40,  # Limit top-k for faster generation
+            top_p=0.9  # Use nucleus sampling for faster generation
         )
         # Test the connection
         logger.info("Testing Ollama connection...")
@@ -365,16 +369,12 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
             
             # Step 1: Generate search terms from user's query using Ollama
             logger.info("Step 1: Generating search terms from user query...")
-            search_terms_prompt = f"""
-You are an expert musicologist helping someone find choruses. The user has entered this query: "{request.query}"
+            search_terms_prompt = f"""Query: "{request.query}"
 
-Based on this query, generate 3-5 specific search terms that would help find relevant choruses. 
-Focus on key themes, emotions, musical elements, or spiritual concepts mentioned in the query.
+Generate 3-5 search terms for finding relevant choruses. Return only comma-separated terms.
+Example: "love, Jesus, worship, praise, salvation"
 
-IMPORTANT: Return ONLY the search terms separated by commas, no explanations or additional text.
-Example format: "love, Jesus, worship, praise, salvation"
-
-Search terms:"""
+Terms:"""
             
             try:
                 logger.info(f"Sending prompt to Ollama: {search_terms_prompt[:100]}...")
