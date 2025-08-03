@@ -124,7 +124,7 @@ class ChorusDisplay {
     async navigate(direction) {
         if (this.choruses.length === 0) return;
         
-        // Only navigate between pages of the current chorus
+        // Navigate between pages of the current chorus
         if (this.totalPages > 1) {
             let newPage = this.currentPage + direction;
             
