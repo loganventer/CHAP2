@@ -464,13 +464,10 @@ class ChorusDisplay {
         console.log(`Optimized font size for multiple pages: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}`);
     }
     
+    // Display the current page
     displayCurrentPage() {
-        const chorusText = document.getElementById('chorusText');
-        
-        // Check if we're on a chorus display page
-        if (!chorusText) {
-            return; // Not on a chorus display page, exit early
-        }
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
         
         // Ensure current page is within bounds
         if (this.currentPage >= this.totalPages) {
@@ -706,11 +703,25 @@ class ChorusDisplay {
     
     // Apply font size to the text
     applyFontSize() {
-        const chorusText = document.getElementById('chorusText');
+        const chorusText = document.querySelector('.chorus-text');
         if (!chorusText) return;
         
+        // Apply font size to the chorus text container
         chorusText.style.fontSize = `${this.currentFontSize}px`;
         chorusText.style.lineHeight = `${this.currentFontSize * 1.5}px`;
+        chorusText.style.color = 'white'; // Ensure white color
+        chorusText.style.textAlign = 'center'; // Ensure centering
+        
+        // Also apply to individual text lines for consistency
+        const textLines = document.querySelectorAll('.text-line');
+        textLines.forEach(line => {
+            line.style.fontSize = `${this.currentFontSize}px`;
+            line.style.lineHeight = `${this.currentFontSize * 1.5}px`;
+            line.style.color = 'white'; // Ensure white color
+            line.style.textAlign = 'center'; // Ensure centering
+        });
+        
+        console.log(`Applied font size: ${this.currentFontSize}px with white color and centering`);
     }
     
     // Handle window resize
