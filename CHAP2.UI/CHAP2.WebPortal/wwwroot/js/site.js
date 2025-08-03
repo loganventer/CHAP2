@@ -79,7 +79,7 @@ function initializeKeyboardShortcuts() {
             event.preventDefault();
             const searchInput = event.target;
             if (searchInput.value.trim().length >= minSearchLength) {
-                performSearch(searchInput.value.trim());
+                performSearch();
             }
         }
     });
