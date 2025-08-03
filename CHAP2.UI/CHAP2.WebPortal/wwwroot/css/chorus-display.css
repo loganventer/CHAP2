@@ -422,6 +422,8 @@
     gap: 1rem;
     flex: 1;
     min-height: 0;
+    max-height: 60vh; /* Fixed maximum height */
+    height: 60vh; /* Fixed height */
     padding: 0 60px; /* Add horizontal padding to keep text away from navigation buttons */
 }
 

@@ -758,10 +758,17 @@ class ChorusDisplay {
     
     // Calculate how many lines fit per page with current font size
     calculateLinesPerPage() {
-        const container = document.querySelector('.chorus-content');
-        if (!container) return;
+        console.log('=== CALCULATE LINES PER PAGE ===');
         
-        const containerHeight = container.clientHeight;
+        const container = document.querySelector('.chorus-content');
+        if (!container) {
+            console.log('Container not found!');
+            return;
+        }
+        
+        // Get the parent container (chorus-content-wrapper) for fixed height
+        const parentContainer = container.parentElement;
+        const containerHeight = parentContainer ? parentContainer.clientHeight : container.clientHeight;
         const lineHeight = this.currentFontSize * 1.5; // 1.5 line height ratio
         
         // Account for padding and margins
