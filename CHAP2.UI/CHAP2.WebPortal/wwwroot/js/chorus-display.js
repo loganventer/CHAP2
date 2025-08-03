@@ -231,8 +231,8 @@ class ChorusDisplay {
         
         console.log(`Container size: ${containerWidth}x${containerHeight}`);
         
-        // Start with a reasonable font size
-        this.currentFontSize = Math.min(containerHeight / 20, containerWidth / 30);
+        // Start with a much larger font size to fill screen more aggressively
+        this.currentFontSize = Math.min(containerHeight / 12, containerWidth / 20); // More aggressive starting point
         this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, this.currentFontSize));
         
         // Apply font size and calculate lines per page
@@ -246,6 +246,8 @@ class ChorusDisplay {
         this.currentPage = 0;
         this.displayCurrentPage();
         this.updateNavigationButtons();
+        
+        console.log(`Auto-fit complete. Font size: ${this.currentFontSize}px, Pages: ${this.totalPages}`);
     }
     
     // Calculate how many lines can fit on one page
