@@ -792,6 +792,14 @@ class ChorusDisplay {
             }
         }
         
+        // When font size is smaller, be more aggressive about fitting lines
+        if (this.currentFontSize <= 24) {
+            // For smaller fonts, try to fit as many lines as possible
+            const maxPossibleLines = Math.floor(availableHeight / (this.currentFontSize * 1.3)); // Even tighter spacing
+            this.linesPerPage = Math.max(this.linesPerPage, Math.min(maxPossibleLines, this.currentChorusLines.length));
+            console.log(`Small font size (${this.currentFontSize}px), trying to fit up to ${this.linesPerPage} lines`);
+        }
+        
         // Force splitting for testing - if font size is large, force fewer lines per page
         if (this.currentFontSize > 30) {
             this.linesPerPage = Math.min(this.linesPerPage, 4); // Allow up to 4 lines per page for large fonts
