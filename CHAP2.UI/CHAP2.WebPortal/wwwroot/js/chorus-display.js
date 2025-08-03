@@ -299,7 +299,7 @@ class ChorusDisplay {
         document.body.appendChild(tempElement);
         
         let totalWrappedLines = 0;
-        const linesPerPage = this.linesPerPage;
+        const wrappedLinesPerOriginalLine = [];
         
         // Calculate wrapped lines for each original line
         for (let i = 0; i < this.currentChorusLines.length; i++) {
@@ -310,11 +310,16 @@ class ChorusDisplay {
             const wrappedHeight = tempElement.scrollHeight;
             const wrappedLines = Math.ceil(wrappedHeight / lineHeight);
             
+            wrappedLinesPerOriginalLine.push(wrappedLines);
             totalWrappedLines += wrappedLines;
         }
         
         // Clean up
         document.body.removeChild(tempElement);
+        
+        // Store the wrapped lines data for pagination
+        this.wrappedLinesPerOriginalLine = wrappedLinesPerOriginalLine;
+        this.totalWrappedLines = totalWrappedLines;
         
         // Update total pages based on wrapped lines
         this.totalPages = Math.ceil(totalWrappedLines / this.linesPerPage);
