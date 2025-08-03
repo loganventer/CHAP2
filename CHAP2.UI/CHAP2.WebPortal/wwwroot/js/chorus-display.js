@@ -480,102 +480,99 @@ class ChorusDisplay {
             this.currentPage = 0;
         }
         
-        // Calculate which original lines to show based on current page
-        const startWrappedLine = this.currentPage * this.linesPerPage;
-        const endWrappedLine = startWrappedLine + this.linesPerPage;
+        // Get lines for current page
+        const linesForPage = this.getLinesForPage(this.currentPage);
         
-        // Find which original lines correspond to this page
-        const linesToShow = this.getLinesForPage(startWrappedLine, endWrappedLine);
+        console.log(`Displaying page ${this.currentPage + 1}/${this.totalPages} with ${linesForPage.length} lines:`, linesForPage);
         
-        console.log(`Displaying page ${this.currentPage + 1} of ${this.totalPages}:`);
-        console.log(`Wrapped line range: ${startWrappedLine} to ${endWrappedLine}`);
-        console.log(`Original lines to show: ${linesToShow.length}`);
+        // Clear container
+        container.innerHTML = '';
         
-        // If no lines to show, try the next page
-        if (linesToShow.length === 0 && this.currentPage < this.totalPages - 1) {
-            this.currentPage++;
-            this.displayCurrentPage();
-            return;
-        }
+        // Create and display lines
+        linesForPage.forEach(line => {
+            const lineElement = document.createElement('div');
+            lineElement.className = 'text-line';
+            lineElement.textContent = line;
+            // Apply current font size and color to the new element
+            lineElement.style.fontSize = `${this.currentFontSize}px`;
+            lineElement.style.lineHeight = `${this.currentFontSize * 1.5}px`;
+            lineElement.style.color = 'white'; // Ensure white color is applied
+            lineElement.style.textAlign = 'center'; // Ensure centering
+            container.appendChild(lineElement);
+        });
         
-        chorusText.innerHTML = linesToShow.map(line => {
-            return `<div class="text-line">${line}</div>`;
-        }).join('');
+        // Update page indicator
+        this.updatePageIndicator();
         
-        // Apply current font size
-        this.applyFontSize();
-        
-        // Update navigation buttons after displaying the page
-        this.updateNavigationButtons();
+        console.log(`Displayed ${linesForPage.length} lines on page ${this.currentPage + 1}/${this.totalPages}`);
     }
     
-    // Get the original lines that should be displayed for a given wrapped line range
-    getLinesForPage(startWrappedLine, endWrappedLine) {
-        if (!this.wrappedLinesPerOriginalLine) {
-            return this.currentChorusLines;
+    // Get lines for a specific page
+    getLinesForPage(pageIndex) {
+        if (pageIndex < 0 || pageIndex >= this.totalPages) {
+            console.log(`Invalid page index: ${pageIndex}, total pages: ${this.totalPages}`);
+            return [];
         }
         
-        const linesToShow = [];
-        let currentWrappedLine = 0;
+        // Calculate which original lines should be on this page
+        const startLineIndex = pageIndex * this.linesPerPage;
+        const endLineIndex = Math.min(startLineIndex + this.linesPerPage, this.currentChorusLines.length);
         
-        // Find which original lines correspond to the requested wrapped line range
-        for (let i = 0; i < this.currentChorusLines.length; i++) {
-            const wrappedLines = this.wrappedLinesPerOriginalLine[i];
-            
-            // Check if this line's wrapped lines overlap with our target range
-            const lineStartWrapped = currentWrappedLine;
-            const lineEndWrapped = currentWrappedLine + wrappedLines;
-            
-            if (lineStartWrapped < endWrappedLine && lineEndWrapped > startWrappedLine) {
-                linesToShow.push(this.currentChorusLines[i]);
-            }
-            
-            currentWrappedLine += wrappedLines;
-            
-            // If we've gone past our target range, we can stop
-            if (currentWrappedLine >= endWrappedLine) {
-                break;
+        // Get the original lines for this page
+        const pageLines = [];
+        for (let i = startLineIndex; i < endLineIndex; i++) {
+            if (this.currentChorusLines[i]) {
+                pageLines.push(this.currentChorusLines[i]);
             }
         }
         
-        return linesToShow;
+        console.log(`Page ${pageIndex + 1}: Original lines ${startLineIndex + 1}-${endLineIndex} of ${this.currentChorusLines.length} total lines`);
+        console.log(`Page ${pageIndex + 1}: Returning ${pageLines.length} lines:`, pageLines);
+        return pageLines;
     }
     
+    // Update navigation buttons
     updateNavigationButtons() {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
-        const pageIndicator = document.getElementById('pageIndicator');
         
-        // If elements don't exist, return early
         if (!prevBtn || !nextBtn) {
+            console.log('Navigation buttons not found');
             return;
         }
         
-        // Show navigation buttons if there are multiple pages
-        const shouldShowNav = this.totalPages > 1;
-        
-        if (shouldShowNav) {
+        // Show navigation buttons if we have multiple choruses
+        if (this.choruses && this.choruses.length > 1) {
             prevBtn.style.display = 'flex';
             nextBtn.style.display = 'flex';
             
-            // Update tooltips
-            prevBtn.title = 'Previous Page (←)';
-            nextBtn.title = 'Next Page (→)';
+            // Enable/disable based on current position
+            prevBtn.disabled = this.currentChorusIndex <= 0;
+            nextBtn.disabled = this.currentChorusIndex >= this.choruses.length - 1;
+            
+            // Update button styles based on disabled state
+            if (prevBtn.disabled) {
+                prevBtn.style.opacity = '0.5';
+                prevBtn.style.cursor = 'not-allowed';
+            } else {
+                prevBtn.style.opacity = '1';
+                prevBtn.style.cursor = 'pointer';
+            }
+            
+            if (nextBtn.disabled) {
+                nextBtn.style.opacity = '0.5';
+                nextBtn.style.cursor = 'not-allowed';
+            } else {
+                nextBtn.style.opacity = '1';
+                nextBtn.style.cursor = 'pointer';
+            }
         } else {
-            // Hide navigation buttons if there's only one page
+            // Hide navigation buttons if only one chorus
             prevBtn.style.display = 'none';
             nextBtn.style.display = 'none';
         }
         
-        // Update page indicator
-        if (pageIndicator) {
-            if (this.totalPages > 1) {
-                pageIndicator.style.display = 'block';
-                pageIndicator.textContent = `Page ${this.currentPage + 1} of ${this.totalPages}`;
-            } else {
-                pageIndicator.style.display = 'none';
-            }
-        }
+        console.log(`Navigation buttons updated: ${this.choruses ? this.choruses.length : 0} choruses, current index: ${this.currentChorusIndex}`);
     }
     
     print() {
