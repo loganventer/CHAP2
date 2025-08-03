@@ -551,6 +551,8 @@ class ChorusDisplay {
             lineElement.style.lineHeight = `${lineHeight}px`;
             lineElement.style.color = 'white'; // Ensure white color is applied
             lineElement.style.textAlign = 'center'; // Ensure centering
+            lineElement.style.zIndex = '25'; // Ensure text stays above other elements
+            lineElement.style.position = 'relative'; // Required for z-index to work
             container.appendChild(lineElement);
         });
         

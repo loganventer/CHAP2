@@ -425,6 +425,8 @@
     max-height: 60vh; /* Fixed maximum height */
     height: 60vh; /* Fixed height */
     padding: 0 60px; /* Add horizontal padding to keep text away from navigation buttons */
+    position: relative;
+    z-index: 10; /* Higher than header */
 }
 
 /* Chorus Content */
@@ -437,7 +439,7 @@
     text-align: center;
     overflow: hidden; /* Changed from overflow-y: auto */
     position: relative;
-    z-index: 1;
+    z-index: 15; /* Higher than wrapper */
     padding: 0 60px; /* Add horizontal padding to keep text away from navigation buttons */
     margin: 0 20px; /* Add margin to keep text away from edges */
 }
@@ -449,7 +451,7 @@
     margin: 0;
     padding: 20px 0; /* Add vertical padding to keep text away from header and bottom */
     box-sizing: border-box;
-    z-index: 1;
+    z-index: 20; /* Higher than content */
     position: relative;
     font-size: 24px; /* Default font size */
     line-height: 1.5;
@@ -469,13 +471,15 @@
     word-break: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
+    z-index: 25; /* Highest z-index for text lines */
+    position: relative;
 }
 
 /* Header */
 .chorus-header {
     text-align: center;
     margin-bottom: 2rem; /* Increased from 1rem */
-    z-index: 5;
+    z-index: 5; /* Lower than content */
     position: relative;
 }
 
@@ -485,7 +489,7 @@
     font-weight: 600;
     color: white;
     margin-bottom: 1rem; /* Increased from 0.5rem */
-    z-index: 5;
+    z-index: 5; /* Lower than content */
     position: relative;
 }
 
@@ -499,7 +503,7 @@
     font-size: 1rem; /* Reduced from 1.2rem */
     font-weight: 500;
     margin-bottom: 1rem; /* Added margin bottom */
-    z-index: 15;
+    z-index: 5; /* Lower than content */
     position: relative;
 }
 
