@@ -432,6 +432,14 @@ class ChorusDisplay {
             return; // Not on a chorus display page, exit early
         }
         
+        // Ensure current page is within bounds
+        if (this.currentPage >= this.totalPages) {
+            this.currentPage = this.totalPages - 1;
+        }
+        if (this.currentPage < 0) {
+            this.currentPage = 0;
+        }
+        
         // Calculate which original lines to show based on current page
         const startWrappedLine = this.currentPage * this.linesPerPage;
         const endWrappedLine = startWrappedLine + this.linesPerPage;
@@ -439,7 +447,7 @@ class ChorusDisplay {
         // Find which original lines correspond to this page
         const linesToShow = this.getLinesForPage(startWrappedLine, endWrappedLine);
         
-        console.log(`Displaying page ${this.currentPage + 1}:`);
+        console.log(`Displaying page ${this.currentPage + 1} of ${this.totalPages}:`);
         console.log(`Wrapped line range: ${startWrappedLine} to ${endWrappedLine}`);
         console.log(`Original lines to show: ${linesToShow.length}`);
         
