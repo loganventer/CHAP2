@@ -213,20 +213,51 @@ class ChorusDisplay {
     }
     
     getKeyDisplay(keyValue) {
-        const keys = ['Not Set', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C♭', 'D♭', 'E♭', 'F♭', 'G♭', 'A♭', 'B♭'];
-        const numValue = parseInt(keyValue);
-        return keys[numValue] || 'Not Set';
+        console.log('getKeyDisplay called with:', keyValue);
+        console.log('keyValue type:', typeof keyValue);
+        
+        // Handle different key formats
+        if (keyValue === null || keyValue === undefined || keyValue === '') {
+            console.log('Key value is null/undefined/empty, returning "Not Set"');
+            return 'Not Set';
+        }
+        
+        // If it's already a string and looks like a key, return it
+        if (typeof keyValue === 'string' && keyValue.trim() !== '') {
+            console.log('Key value is string:', keyValue);
+            return keyValue.trim();
+        }
+        
+        // If it's a number, convert to key
+        if (typeof keyValue === 'number' || !isNaN(parseInt(keyValue))) {
+            const numValue = parseInt(keyValue);
+            console.log('Key value as number:', numValue);
+            const keys = ['Not Set', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C♭', 'D♭', 'E♭', 'F♭', 'G♭', 'A♭', 'B♭'];
+            const result = keys[numValue] || 'Not Set';
+            console.log('Converted number to key:', result);
+            return result;
+        }
+        
+        console.log('Could not process key value, returning "Not Set"');
+        return 'Not Set';
     }
     
     updateDisplay(chorusData) {
         console.log('Updating display with chorus data:', chorusData);
+        console.log('Key value received:', chorusData.key);
+        console.log('Key type:', typeof chorusData.key);
         
         // Update title and key
         const titleElement = document.getElementById('chorusTitle');
         const keyElement = document.getElementById('chorusKey');
         
         if (titleElement) titleElement.textContent = chorusData.name;
-        if (keyElement) keyElement.textContent = this.getKeyDisplay(chorusData.key);
+        
+        // Debug the key display
+        const keyDisplay = this.getKeyDisplay(chorusData.key);
+        console.log('Key display result:', keyDisplay);
+        
+        if (keyElement) keyElement.textContent = keyDisplay;
         
         // Parse chorus text into lines
         this.currentChorusLines = chorusData.text.split('\n').filter(line => line.trim() !== '');
