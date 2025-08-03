@@ -254,15 +254,71 @@ class ChorusDisplay {
         if (!container) return;
         
         const containerHeight = container.clientHeight;
+        const containerWidth = container.clientWidth;
         const lineHeight = this.currentFontSize * 1.5; // 1.5 line height
         const padding = 40; // Account for padding
         
-        this.linesPerPage = Math.floor((containerHeight - padding) / lineHeight);
-        this.linesPerPage = Math.max(1, this.linesPerPage); // At least 1 line
+        // Calculate how many lines can fit vertically
+        const maxLinesVertically = Math.floor((containerHeight - padding) / lineHeight);
+        this.linesPerPage = Math.max(1, maxLinesVertically); // At least 1 line
         
-        this.totalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
+        // Now calculate how many actual text lines will fit after wrapping
+        this.calculateWrappedLines();
         
         console.log(`Font size: ${this.currentFontSize}px, Line height: ${lineHeight}px`);
+        console.log(`Container width: ${containerWidth}px, Container height: ${containerHeight}px`);
+        console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
+    }
+    
+    // Calculate how many actual lines will be displayed after wrapping
+    calculateWrappedLines() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        const containerWidth = container.clientWidth - 40; // Account for padding
+        const fontSize = this.currentFontSize;
+        const lineHeight = fontSize * 1.5;
+        
+        // Create a temporary element to measure text wrapping
+        const tempElement = document.createElement('div');
+        tempElement.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: ${containerWidth}px;
+            font-size: ${fontSize}px;
+            line-height: ${lineHeight}px;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            font-family: 'Inter', sans-serif;
+        `;
+        document.body.appendChild(tempElement);
+        
+        let totalWrappedLines = 0;
+        const linesPerPage = this.linesPerPage;
+        
+        // Calculate wrapped lines for each original line
+        for (let i = 0; i < this.currentChorusLines.length; i++) {
+            const line = this.currentChorusLines[i];
+            tempElement.textContent = line;
+            
+            // Get the actual height of the wrapped text
+            const wrappedHeight = tempElement.scrollHeight;
+            const wrappedLines = Math.ceil(wrappedHeight / lineHeight);
+            
+            totalWrappedLines += wrappedLines;
+        }
+        
+        // Clean up
+        document.body.removeChild(tempElement);
+        
+        // Update total pages based on wrapped lines
+        this.totalPages = Math.ceil(totalWrappedLines / this.linesPerPage);
+        
+        console.log(`Total original lines: ${this.currentChorusLines.length}`);
+        console.log(`Total wrapped lines: ${totalWrappedLines}`);
         console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
     }
     
