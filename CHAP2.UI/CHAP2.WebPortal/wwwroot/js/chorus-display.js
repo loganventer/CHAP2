@@ -667,6 +667,19 @@ class ChorusDisplay {
             // Force recalculation of lines per page
             this.calculateLinesPerPage();
             
+            // Check if we can now fit more lines and reduce pages
+            const oldTotalPages = this.totalPages;
+            const newTotalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
+            
+            // If we have fewer pages now, adjust current page
+            if (newTotalPages < oldTotalPages) {
+                // Calculate which page the current content should be on
+                const currentLineStart = this.currentPage * this.linesPerPage;
+                this.currentPage = Math.floor(currentLineStart / this.linesPerPage);
+                this.currentPage = Math.min(this.currentPage, newTotalPages - 1);
+                console.log(`Reduced pages from ${oldTotalPages} to ${newTotalPages}, adjusted to page ${this.currentPage + 1}`);
+            }
+            
             // Force redisplay with new calculations
             this.displayCurrentPage();
             
