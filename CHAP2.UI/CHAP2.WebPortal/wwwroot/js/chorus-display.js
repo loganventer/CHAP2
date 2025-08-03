@@ -485,6 +485,12 @@ class ChorusDisplay {
         // Clear container
         container.innerHTML = '';
         
+        // Calculate line height - use tighter spacing if we have multiple pages
+        let lineHeight = this.currentFontSize * 1.5; // Default 1.5 line height ratio
+        if (this.currentChorusLines.length > this.linesPerPage && this.totalPages > 1) {
+            lineHeight = this.currentFontSize * 1.4; // Tighter spacing for better space utilization
+        }
+        
         // Create and display lines
         linesForPage.forEach(line => {
             const lineElement = document.createElement('div');
@@ -492,7 +498,7 @@ class ChorusDisplay {
             lineElement.textContent = line;
             // Apply current font size and color to the new element
             lineElement.style.fontSize = `${this.currentFontSize}px`;
-            lineElement.style.lineHeight = `${this.currentFontSize * 1.5}px`;
+            lineElement.style.lineHeight = `${lineHeight}px`;
             lineElement.style.color = 'white'; // Ensure white color is applied
             lineElement.style.textAlign = 'center'; // Ensure centering
             container.appendChild(lineElement);
@@ -800,9 +806,15 @@ class ChorusDisplay {
         const chorusText = document.querySelector('.chorus-text');
         if (!chorusText) return;
         
+        // Calculate line height - use tighter spacing if we have multiple pages
+        let lineHeight = this.currentFontSize * 1.5; // Default 1.5 line height ratio
+        if (this.currentChorusLines.length > this.linesPerPage && this.totalPages > 1) {
+            lineHeight = this.currentFontSize * 1.4; // Tighter spacing for better space utilization
+        }
+        
         // Apply font size to the chorus text container
         chorusText.style.fontSize = `${this.currentFontSize}px`;
-        chorusText.style.lineHeight = `${this.currentFontSize * 1.5}px`;
+        chorusText.style.lineHeight = `${lineHeight}px`;
         chorusText.style.color = 'white'; // Ensure white color
         chorusText.style.textAlign = 'center'; // Ensure centering
         
@@ -810,12 +822,12 @@ class ChorusDisplay {
         const textLines = document.querySelectorAll('.text-line');
         textLines.forEach(line => {
             line.style.fontSize = `${this.currentFontSize}px`;
-            line.style.lineHeight = `${this.currentFontSize * 1.5}px`;
+            line.style.lineHeight = `${lineHeight}px`;
             line.style.color = 'white'; // Ensure white color
             line.style.textAlign = 'center'; // Ensure centering
         });
         
-        console.log(`Applied font size: ${this.currentFontSize}px with white color and centering`);
+        console.log(`Applied font size: ${this.currentFontSize}px with line height: ${lineHeight}px`);
     }
     
     // Handle window resize
