@@ -3,7 +3,7 @@ class ChorusDisplay {
     constructor() {
         this.currentChorusIndex = 0;
         this.choruses = [];
-        this.currentFontSize = 96; // Changed from 84 to 96
+        this.currentFontSize = 86; // Changed from 96 to 86
         this.minFontSize = 12;
         this.maxFontSize = 96; // Increased from 72 to 96
         this.fontSizeStep = 2;
