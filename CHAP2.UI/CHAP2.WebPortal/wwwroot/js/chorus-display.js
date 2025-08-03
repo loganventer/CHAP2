@@ -5,12 +5,14 @@ class ChorusDisplay {
         this.choruses = [];
         
         // Dynamic display settings
-        this.currentFontSize = 'medium'; // small, medium, large, xlarge, xxlarge
-        this.fontSizes = ['small', 'medium', 'large', 'xlarge', 'xxlarge'];
-        this.maxDisplayLines = this.calculateMaxLines(); // Dynamic based on screen size
+        this.currentFontSize = 24; // Start with 24px
+        this.minFontSize = 12;
+        this.maxFontSize = 72;
+        this.fontSizeStep = 2;
         this.currentPage = 0;
         this.totalPages = 0;
         this.currentChorusLines = [];
+        this.linesPerPage = 0;
         
         this.init();
     }
@@ -210,16 +212,93 @@ class ChorusDisplay {
         
         // Split text into lines and store for pagination
         this.currentChorusLines = chorusData.text.split('\n').filter(line => line.trim() !== '');
-        this.maxDisplayLines = this.calculateMaxLines(); // Recalculate for current screen size
-        this.totalPages = Math.ceil(this.currentChorusLines.length / this.maxDisplayLines);
-        this.currentPage = 0;
         
         console.log(`Chorus: ${chorusData.name}`);
         console.log(`Total lines: ${this.currentChorusLines.length}`);
-        console.log(`Max display lines: ${this.maxDisplayLines}`);
-        console.log(`Total pages: ${this.totalPages}`);
         
+        // Auto-fit the text to fill the screen
+        this.autoFitText();
+    }
+    
+    // Auto-fit text to fill the screen optimally
+    autoFitText() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        // Get available space
+        const containerHeight = container.clientHeight;
+        const containerWidth = container.clientWidth;
+        
+        console.log(`Container size: ${containerWidth}x${containerHeight}`);
+        
+        // Start with a reasonable font size
+        this.currentFontSize = Math.min(containerHeight / 20, containerWidth / 30);
+        this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, this.currentFontSize));
+        
+        // Apply font size and calculate lines per page
+        this.applyFontSize();
+        this.calculateLinesPerPage();
+        
+        // Adjust font size to fill screen optimally
+        this.optimizeFontSize();
+        
+        // Display the first page
+        this.currentPage = 0;
         this.displayCurrentPage();
+        this.updateNavigationButtons();
+    }
+    
+    // Calculate how many lines can fit on one page
+    calculateLinesPerPage() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        const containerHeight = container.clientHeight;
+        const lineHeight = this.currentFontSize * 1.5; // 1.5 line height
+        const padding = 40; // Account for padding
+        
+        this.linesPerPage = Math.floor((containerHeight - padding) / lineHeight);
+        this.linesPerPage = Math.max(1, this.linesPerPage); // At least 1 line
+        
+        this.totalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
+        
+        console.log(`Font size: ${this.currentFontSize}px, Line height: ${lineHeight}px`);
+        console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
+    }
+    
+    // Optimize font size to fill screen better
+    optimizeFontSize() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        const containerHeight = container.clientHeight;
+        const containerWidth = container.clientWidth;
+        
+        // Try to fit all text on one page if possible
+        if (this.currentChorusLines.length <= this.linesPerPage) {
+            // We can fit all text, try to make it larger
+            while (this.currentFontSize < this.maxFontSize) {
+                this.currentFontSize += this.fontSizeStep;
+                this.applyFontSize();
+                this.calculateLinesPerPage();
+                
+                if (this.linesPerPage < this.currentChorusLines.length) {
+                    // Too big, revert
+                    this.currentFontSize -= this.fontSizeStep;
+                    this.applyFontSize();
+                    this.calculateLinesPerPage();
+                    break;
+                }
+            }
+        } else {
+            // Multiple pages needed, optimize for readability
+            const optimalLinesPerPage = Math.min(8, this.currentChorusLines.length);
+            const targetFontSize = (containerHeight - 40) / (optimalLinesPerPage * 1.5);
+            
+            this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, targetFontSize));
+            this.applyFontSize();
+            this.calculateLinesPerPage();
+        }
     }
     
     displayCurrentPage() {
@@ -230,14 +309,13 @@ class ChorusDisplay {
             return; // Not on a chorus display page, exit early
         }
         
-        const startIndex = this.currentPage * this.maxDisplayLines;
-        const endIndex = Math.min(startIndex + this.maxDisplayLines, this.currentChorusLines.length);
+        const startIndex = this.currentPage * this.linesPerPage;
+        const endIndex = Math.min(startIndex + this.linesPerPage, this.currentChorusLines.length);
         const pageLines = this.currentChorusLines.slice(startIndex, endIndex);
         
         console.log(`Displaying page ${this.currentPage + 1}:`);
         console.log(`Start index: ${startIndex}, End index: ${endIndex}`);
         console.log(`Lines to display: ${pageLines.length}`);
-        console.log(`Page lines:`, pageLines);
         
         chorusText.innerHTML = pageLines.map(line => {
             return `<div class="text-line">${line}</div>`;
@@ -378,11 +456,8 @@ class ChorusDisplay {
         const chorusText = document.getElementById('chorusText');
         if (!chorusText) return;
         
-        // Remove all font size classes
-        chorusText.classList.remove('font-small', 'font-medium', 'font-large', 'font-xlarge', 'font-xxlarge');
-        
-        // Add current font size class
-        chorusText.classList.add(`font-${this.currentFontSize}`);
+        chorusText.style.fontSize = `${this.currentFontSize}px`;
+        chorusText.style.lineHeight = `${this.currentFontSize * 1.5}px`;
     }
     
     // Handle window resize
@@ -390,24 +465,10 @@ class ChorusDisplay {
         // Debounce resize events
         clearTimeout(this.resizeTimeout);
         this.resizeTimeout = setTimeout(() => {
-            this.recalculateAndRedisplay();
-        }, 250);
-    }
-    
-    // Recalculate lines and redisplay
-    recalculateAndRedisplay() {
-        if (this.currentChorusLines.length > 0) {
-            this.maxDisplayLines = this.calculateMaxLines();
-            this.totalPages = Math.ceil(this.currentChorusLines.length / this.maxDisplayLines);
-            
-            // Adjust current page if it's now out of bounds
-            if (this.currentPage >= this.totalPages) {
-                this.currentPage = Math.max(0, this.totalPages - 1);
+            if (this.currentChorusLines.length > 0) {
+                this.autoFitText();
             }
-            
-            this.displayCurrentPage();
-            this.updateNavigationButtons();
-        }
+        }, 250);
     }
 }
 
