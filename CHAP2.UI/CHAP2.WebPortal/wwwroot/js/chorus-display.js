@@ -7,7 +7,7 @@ class ChorusDisplay {
         // Dynamic display settings
         this.currentFontSize = 24; // Start with 24px
         this.minFontSize = 12;
-        this.maxFontSize = 72;
+        this.maxFontSize = 96; // Increased from 72 to 96
         this.fontSizeStep = 2;
         this.currentPage = 0;
         this.totalPages = 0;
