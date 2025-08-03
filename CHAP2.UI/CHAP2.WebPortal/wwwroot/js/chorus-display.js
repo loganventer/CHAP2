@@ -348,74 +348,26 @@ class ChorusDisplay {
         }
     }
     
-    // Dynamic line calculation based on screen size
-    calculateMaxLines() {
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-        
-        // Calculate available space for text (subtract header, padding, controls)
-        const headerHeight = 120; // Approximate header height
-        const controlsHeight = 80; // Approximate controls height
-        const padding = 80; // Total padding
-        const availableHeight = viewportHeight - headerHeight - controlsHeight - padding;
-        
-        // Calculate line height based on current font size
-        const lineHeights = {
-            'small': 1.6,
-            'medium': 1.8,
-            'large': 2.0,
-            'xlarge': 2.2,
-            'xxlarge': 2.4
-        };
-        
-        const fontSize = this.getFontSizeInPixels();
-        const lineHeight = fontSize * lineHeights[this.currentFontSize];
-        
-        // Calculate max lines that can fit
-        const maxLines = Math.floor(availableHeight / lineHeight);
-        
-        // Ensure minimum and maximum bounds
-        const minLines = 3;
-        const maxLinesBound = Math.max(minLines, Math.min(maxLines, 15));
-        
-        console.log(`Screen: ${viewportWidth}x${viewportHeight}, Available height: ${availableHeight}px`);
-        console.log(`Font size: ${fontSize}px, Line height: ${lineHeight}px, Max lines: ${maxLinesBound}`);
-        
-        return maxLinesBound;
-    }
-    
-    // Get current font size in pixels
-    getFontSizeInPixels() {
-        const fontSizeMap = {
-            'small': 19.2, // 1.2rem
-            'medium': 24,  // 1.5rem
-            'large': 28.8, // 1.8rem
-            'xlarge': 33.6, // 2.1rem
-            'xxlarge': 38.4 // 2.4rem
-        };
-        return fontSizeMap[this.currentFontSize] || 24;
-    }
-    
     // Font size controls
     increaseFontSize() {
-        const currentIndex = this.fontSizes.indexOf(this.currentFontSize);
-        if (currentIndex < this.fontSizes.length - 1) {
-            this.currentFontSize = this.fontSizes[currentIndex + 1];
+        if (this.currentFontSize < this.maxFontSize) {
+            this.currentFontSize += this.fontSizeStep;
             this.applyFontSize();
-            this.recalculateAndRedisplay();
-            this.showNotification(`Font size: ${this.currentFontSize}`, 'info');
+            this.calculateLinesPerPage();
+            this.displayCurrentPage();
+            this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
         } else {
             this.showNotification('Maximum font size reached', 'warning');
         }
     }
     
     decreaseFontSize() {
-        const currentIndex = this.fontSizes.indexOf(this.currentFontSize);
-        if (currentIndex > 0) {
-            this.currentFontSize = this.fontSizes[currentIndex - 1];
+        if (this.currentFontSize > this.minFontSize) {
+            this.currentFontSize -= this.fontSizeStep;
             this.applyFontSize();
-            this.recalculateAndRedisplay();
-            this.showNotification(`Font size: ${this.currentFontSize}`, 'info');
+            this.calculateLinesPerPage();
+            this.displayCurrentPage();
+            this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
         } else {
             this.showNotification('Minimum font size reached', 'warning');
         }

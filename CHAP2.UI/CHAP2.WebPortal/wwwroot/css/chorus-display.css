@@ -524,60 +524,47 @@
 /* Content */
 .chorus-content {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden; /* Changed from overflow-y: auto to prevent scrolling */
     padding: 1rem 0;
     order: 2;
     display: flex;
     flex-direction: column;
     justify-content: center;
     min-height: 0;
+    position: relative;
 }
 
 .chorus-text {
-    font-size: 1.5rem;
-    line-height: 1.8;
+    font-size: 24px; /* Default font size */
+    line-height: 1.5;
     color: white;
     text-align: center;
     max-width: 100%;
     word-wrap: break-word;
     font-family: 'Inter', sans-serif;
-    transition: font-size 0.3s ease;
+    transition: font-size 0.3s ease, line-height 0.3s ease;
     display: flex;
     flex-direction: column;
     justify-content: center;
     flex: 1;
+    margin: 0;
+    padding: 0;
 }
 
-/* Font size classes for dynamic scaling */
-.chorus-text.font-small {
-    font-size: 1.2rem;
-    line-height: 1.6;
-}
-
-.chorus-text.font-medium {
-    font-size: 1.5rem;
-    line-height: 1.8;
-}
-
-.chorus-text.font-large {
-    font-size: 1.8rem;
-    line-height: 2.0;
-}
-
-.chorus-text.font-xlarge {
-    font-size: 2.1rem;
-    line-height: 2.2;
-}
-
+/* Remove the old font size classes since we're using dynamic sizing */
+/* .chorus-text.font-small,
+.chorus-text.font-medium,
+.chorus-text.font-large,
+.chorus-text.font-xlarge,
 .chorus-text.font-xxlarge {
-    font-size: 2.4rem;
-    line-height: 2.4;
-}
+    // These are now handled by JavaScript
+} */
 
 .text-line {
     margin-bottom: 0.5rem;
     padding: 0.25rem 0;
     transition: all 0.3s ease;
+    white-space: pre-wrap; /* Preserve line breaks and spaces */
 }
 
 .text-line:hover {
