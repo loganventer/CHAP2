@@ -283,6 +283,11 @@ class ChorusDisplay {
         
         // Apply initial font size
         this.applyFontSize();
+        console.log('Applied font size:', this.currentFontSize, 'px');
+        
+        // Trigger resize event to ensure proper font size application
+        console.log('Triggering resize event to ensure proper font size application');
+        this.handleResize();
         
         console.log(`Display initialized: ${this.totalPages} pages, ${this.linesPerPage} lines per page`);
     }
