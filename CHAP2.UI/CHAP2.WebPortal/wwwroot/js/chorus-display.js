@@ -3,18 +3,16 @@ class ChorusDisplay {
     constructor() {
         this.currentChorusIndex = 0;
         this.choruses = [];
-        
-        // Dynamic display settings
-        this.currentFontSize = 24; // Start with 24px
+        this.currentFontSize = 84; // Changed from 24 to 84
         this.minFontSize = 12;
         this.maxFontSize = 96; // Increased from 72 to 96
         this.fontSizeStep = 2;
         this.currentPage = 0;
-        this.totalPages = 0;
+        this.totalPages = 1;
+        this.linesPerPage = 10;
         this.currentChorusLines = [];
-        this.linesPerPage = 0;
-        
-        this.init();
+        this.wrappedLinesPerOriginalLine = [];
+        this.totalWrappedLines = 0;
     }
     
     init() {
