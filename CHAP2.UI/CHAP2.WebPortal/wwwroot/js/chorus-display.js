@@ -962,4 +962,4 @@ if (window.chorusData || window.location.pathname.includes('/Detail/')) {
 // Remove loading state after initialization
 window.addEventListener('load', () => {
     document.body.classList.remove('loading');
-}); 
+});
