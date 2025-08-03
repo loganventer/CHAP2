@@ -337,30 +337,86 @@ class ChorusDisplay {
         
         // Try to fit all text on one page if possible
         if (this.currentChorusLines.length <= maxLines) {
-            // We can fit all text, try to make it larger
-            while (this.currentFontSize < this.maxFontSize) {
-                this.currentFontSize += this.fontSizeStep;
-                this.applyFontSize();
-                this.calculateLinesPerPage();
-                
-                // Check if we still fit after wrapping
-                if (this.totalPages > 1) {
-                    // Too big, revert
-                    this.currentFontSize -= this.fontSizeStep;
-                    this.applyFontSize();
-                    this.calculateLinesPerPage();
-                    break;
-                }
-            }
+            // We can fit all text, maximize font size to fill screen
+            this.maximizeFontSizeForSinglePage();
         } else {
-            // Multiple pages needed, optimize for readability
-            const optimalLinesPerPage = Math.min(8, this.currentChorusLines.length);
-            const targetFontSize = (containerHeight - 40) / (optimalLinesPerPage * 1.5);
-            
-            this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, targetFontSize));
+            // Multiple pages needed, optimize for maximum readability while filling screen
+            this.optimizeFontSizeForMultiplePages();
+        }
+    }
+    
+    // Maximize font size when all text fits on one page
+    maximizeFontSizeForSinglePage() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        const containerHeight = container.clientHeight;
+        const containerWidth = container.clientWidth;
+        
+        // Start with a very large font size and work down
+        this.currentFontSize = Math.min(containerHeight / 8, containerWidth / 15); // Much larger starting point
+        this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, this.currentFontSize));
+        
+        // Apply and test
+        this.applyFontSize();
+        this.calculateLinesPerPage();
+        
+        // If we still fit, keep increasing until we don't
+        while (this.currentFontSize < this.maxFontSize && this.totalPages <= 1) {
+            this.currentFontSize += this.fontSizeStep;
             this.applyFontSize();
             this.calculateLinesPerPage();
+            
+            if (this.totalPages > 1) {
+                // Too big, revert
+                this.currentFontSize -= this.fontSizeStep;
+                this.applyFontSize();
+                this.calculateLinesPerPage();
+                break;
+            }
         }
+        
+        console.log(`Maximized font size for single page: ${this.currentFontSize}px`);
+    }
+    
+    // Optimize font size for multiple pages while maximizing screen usage
+    optimizeFontSizeForMultiplePages() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        const containerHeight = container.clientHeight;
+        const containerWidth = container.clientWidth;
+        
+        // Calculate optimal lines per page (aim for 6-8 lines for readability)
+        const targetLinesPerPage = Math.min(8, Math.max(6, Math.floor(this.currentChorusLines.length / 2)));
+        
+        // Calculate font size that would give us the target lines per page
+        const targetFontSize = (containerHeight - 40) / (targetLinesPerPage * 1.5);
+        
+        // Start with the target font size
+        this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, targetFontSize));
+        
+        // Apply and test
+        this.applyFontSize();
+        this.calculateLinesPerPage();
+        
+        // Fine-tune: try to increase font size while maintaining good page distribution
+        while (this.currentFontSize < this.maxFontSize) {
+            const testFontSize = this.currentFontSize + this.fontSizeStep;
+            const testLineHeight = testFontSize * 1.5;
+            const testLinesPerPage = Math.floor((containerHeight - 40) / testLineHeight);
+            
+            // Only increase if we maintain reasonable page distribution
+            if (testLinesPerPage >= 4 && testLinesPerPage <= 10) {
+                this.currentFontSize = testFontSize;
+                this.applyFontSize();
+                this.calculateLinesPerPage();
+            } else {
+                break;
+            }
+        }
+        
+        console.log(`Optimized font size for multiple pages: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}`);
     }
     
     displayCurrentPage() {
