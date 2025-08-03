@@ -369,15 +369,18 @@ class ChorusDisplay {
             return; // Not on a chorus display page, exit early
         }
         
-        const startIndex = this.currentPage * this.linesPerPage;
-        const endIndex = Math.min(startIndex + this.linesPerPage, this.currentChorusLines.length);
-        const pageLines = this.currentChorusLines.slice(startIndex, endIndex);
+        // Calculate which original lines to show based on current page
+        const startWrappedLine = this.currentPage * this.linesPerPage;
+        const endWrappedLine = startWrappedLine + this.linesPerPage;
+        
+        // Find which original lines correspond to this page
+        const linesToShow = this.getLinesForPage(startWrappedLine, endWrappedLine);
         
         console.log(`Displaying page ${this.currentPage + 1}:`);
-        console.log(`Start index: ${startIndex}, End index: ${endIndex}`);
-        console.log(`Lines to display: ${pageLines.length}`);
+        console.log(`Wrapped line range: ${startWrappedLine} to ${endWrappedLine}`);
+        console.log(`Original lines to show: ${linesToShow.length}`);
         
-        chorusText.innerHTML = pageLines.map(line => {
+        chorusText.innerHTML = linesToShow.map(line => {
             return `<div class="text-line">${line}</div>`;
         }).join('');
         
@@ -386,6 +389,65 @@ class ChorusDisplay {
         
         // Update navigation buttons after displaying the page
         this.updateNavigationButtons();
+    }
+    
+    // Get the original lines that should be displayed for a given wrapped line range
+    getLinesForPage(startWrappedLine, endWrappedLine) {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return [];
+        
+        const containerWidth = container.clientWidth - 40;
+        const fontSize = this.currentFontSize;
+        const lineHeight = fontSize * 1.5;
+        
+        // Create a temporary element to measure text wrapping
+        const tempElement = document.createElement('div');
+        tempElement.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: ${containerWidth}px;
+            font-size: ${fontSize}px;
+            line-height: ${lineHeight}px;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            font-family: 'Inter', sans-serif;
+        `;
+        document.body.appendChild(tempElement);
+        
+        let currentWrappedLine = 0;
+        const linesToShow = [];
+        
+        // Find which original lines correspond to the requested wrapped line range
+        for (let i = 0; i < this.currentChorusLines.length; i++) {
+            const line = this.currentChorusLines[i];
+            tempElement.textContent = line;
+            
+            const wrappedHeight = tempElement.scrollHeight;
+            const wrappedLines = Math.ceil(wrappedHeight / lineHeight);
+            
+            // Check if this line's wrapped lines overlap with our target range
+            const lineStartWrapped = currentWrappedLine;
+            const lineEndWrapped = currentWrappedLine + wrappedLines;
+            
+            if (lineStartWrapped < endWrappedLine && lineEndWrapped > startWrappedLine) {
+                linesToShow.push(line);
+            }
+            
+            currentWrappedLine += wrappedLines;
+            
+            // If we've gone past our target range, we can stop
+            if (currentWrappedLine >= endWrappedLine) {
+                break;
+            }
+        }
+        
+        // Clean up
+        document.body.removeChild(tempElement);
+        
+        return linesToShow;
     }
     
     updateNavigationButtons() {
