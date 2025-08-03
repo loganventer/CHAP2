@@ -491,76 +491,11 @@ Terms:"""
             # Also send the complete results array for compatibility
             yield f"data: {json.dumps({'type': 'searchResults', 'searchResults': search_results})}\n\n"
             
-            # Step 4: Generate individual reasons for each chorus asynchronously
-            logger.info("Step 4: Generating individual reasons for each chorus...")
-            for i, (doc, score) in enumerate(unique_docs):
-                try:
-                    chorus_id = doc.metadata.get('id', '')
-                    # Handle empty IDs
-                    if not chorus_id:
-                        chorus_id = f"unknown_{i}"
-                        logger.warning(f"Found document with empty ID in reason generation, using generated ID: {chorus_id}")
-                    
-                    reason_prompt = f"""
-You are an expert musicologist explaining why a specific chorus is relevant.
-
-Chorus Title: {doc.metadata.get('name', 'Unknown')}
-Chorus Lyrics: {doc.page_content}
-
-Based on the actual lyrics and content of this chorus, explain in 1-2 sentences why it's relevant.
-Focus on specific phrases, themes, or musical elements in the lyrics that make it relevant.
-Be concise and direct.
-
-Reason:"""
-                    
-                    try:
-                        reason = llm.invoke(reason_prompt)
-                        logger.info(f"Generated reason for chorus {i+1}: {reason[:100]}...")
-                    except Exception as e:
-                        logger.error(f"Error generating reason for chorus {i+1}: {e}")
-                        reason = "This chorus appears to be relevant based on the search criteria."
-                    
-                    # Send individual reason update
-                    yield f"data: {json.dumps({'type': 'chorusReason', 'chorusId': chorus_id, 'reason': reason.strip()})}\n\n"
-                except Exception as e:
-                    logger.error(f"Error generating reason for chorus {i+1}: {e}")
-                    # Send a fallback reason
-                    fallback_id = f"error_{i}"
-                    fallback_reason = "This chorus appears to be relevant based on the search criteria."
-                    yield f"data: {json.dumps({'type': 'chorusReason', 'chorusId': fallback_id, 'reason': fallback_reason})}\n\n"
+            # Step 4: Skipping individual reasons generation for performance
+            logger.info("Step 4: Skipping individual reasons generation for performance")
             
-            # Step 5: Generate overall analysis
-            logger.info("Step 5: Generating overall analysis...")
-            if unique_docs:
-                # Create context for analysis
-                context_parts = []
-                for i, (doc, score) in enumerate(unique_docs[:8]):
-                    context_parts.append(f"Chorus {i+1} (Score: {score:.3f}):\nTitle: {doc.metadata.get('name', 'Unknown')}\nText: {doc.page_content}\n")
-                
-                context = "\n".join(context_parts)
-                
-                # Enhanced analysis prompt
-                analysis_prompt = f"""
-You are an expert musicologist and religious scholar helping someone find meaningful choruses. 
-
-User's original query: "{request.query}"
-Search terms used: "{search_terms}"
-
-Here are the most relevant choruses found:
-
-{context}
-
-Provide a brief summary (2-3 sentences) of what was found and why these choruses are relevant to the user's search.
-Focus on the connection between the user's query and the search results.
-
-Summary:"""
-                
-                # Generate analysis
-                answer = llm.invoke(analysis_prompt)
-                logger.info("Step 5: Overall analysis completed")
-                yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': answer.strip()})}\n\n"
-            else:
-                yield f"data: {json.dumps({'type': 'aiAnalysis', 'analysis': 'No choruses found matching your query. Please try different search terms.'})}\n\n"
+            # Step 5: Skipping overall analysis generation for performance
+            logger.info("Step 5: Skipping overall analysis generation for performance")
             
             # Step 6: Send completion
             yield f"data: {json.dumps({'type': 'complete', 'status': 'completed'})}\n\n"
