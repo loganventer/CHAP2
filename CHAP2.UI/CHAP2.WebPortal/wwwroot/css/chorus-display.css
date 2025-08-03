@@ -442,6 +442,8 @@
     justify-content: center;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     flex-shrink: 0;
+    z-index: 10; /* Ensure navigation buttons are above text */
+    position: relative;
 }
 
 .nav-btn:hover {
@@ -473,7 +475,7 @@
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 500;
-    z-index: 100;
+    z-index: 15; /* Ensure page indicator is above everything */
     display: none;
 }
 
@@ -500,6 +502,8 @@
     text-align: center;
     padding-bottom: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 5; /* Ensure header is above text */
+    position: relative;
 }
 
 .chorus-title {
@@ -509,6 +513,8 @@
     margin: 0 0 0.5rem 0;
     line-height: 1.2;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 5;
+    position: relative;
 }
 
 .chorus-key {
@@ -520,6 +526,8 @@
     border-radius: 25px;
     display: inline-block;
     backdrop-filter: blur(5px);
+    z-index: 15; /* Ensure key label is above text */
+    position: relative;
 }
 
 /* Content */
@@ -602,7 +610,7 @@
     transform: translateX(-50%);
     display: flex;
     gap: 0.5rem;
-    z-index: 100;
+    z-index: 20; /* Ensure controls are above everything */
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border-radius: 25px;
@@ -625,6 +633,8 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 20; /* Ensure control buttons are above everything */
+    position: relative;
 }
 
 .control-btn:hover {
