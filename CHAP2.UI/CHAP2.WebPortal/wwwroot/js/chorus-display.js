@@ -327,6 +327,11 @@ class ChorusDisplay {
         console.log(`Total original lines: ${this.currentChorusLines.length}`);
         console.log(`Total wrapped lines: ${totalWrappedLines}`);
         console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
+        
+        // If we have more pages than before, adjust current page
+        if (this.currentPage >= this.totalPages) {
+            this.currentPage = Math.max(0, this.totalPages - 1);
+        }
     }
     
     // Optimize font size to fill screen better
@@ -450,6 +455,13 @@ class ChorusDisplay {
         console.log(`Displaying page ${this.currentPage + 1} of ${this.totalPages}:`);
         console.log(`Wrapped line range: ${startWrappedLine} to ${endWrappedLine}`);
         console.log(`Original lines to show: ${linesToShow.length}`);
+        
+        // If no lines to show, try the next page
+        if (linesToShow.length === 0 && this.currentPage < this.totalPages - 1) {
+            this.currentPage++;
+            this.displayCurrentPage();
+            return;
+        }
         
         chorusText.innerHTML = linesToShow.map(line => {
             return `<div class="text-line">${line}</div>`;
@@ -612,6 +624,9 @@ class ChorusDisplay {
                 this.currentPage = this.totalPages - 1;
             }
             
+            // If text is now too large for current page, move to next page
+            this.adjustPageIfNeeded();
+            
             this.displayCurrentPage();
             this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
         } else {
@@ -630,10 +645,30 @@ class ChorusDisplay {
                 this.currentPage = this.totalPages - 1;
             }
             
+            // If text is now too large for current page, move to next page
+            this.adjustPageIfNeeded();
+            
             this.displayCurrentPage();
             this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
         } else {
             this.showNotification('Minimum font size reached', 'warning');
+        }
+    }
+    
+    // Adjust current page if text is too large for the current page
+    adjustPageIfNeeded() {
+        if (!this.wrappedLinesPerOriginalLine) return;
+        
+        const startWrappedLine = this.currentPage * this.linesPerPage;
+        const endWrappedLine = startWrappedLine + this.linesPerPage;
+        
+        // Check if current page has any content
+        const linesToShow = this.getLinesForPage(startWrappedLine, endWrappedLine);
+        
+        // If no lines to show and we're not on the last page, move to next page
+        if (linesToShow.length === 0 && this.currentPage < this.totalPages - 1) {
+            this.currentPage++;
+            console.log(`Adjusted to page ${this.currentPage + 1} due to font size change`);
         }
     }
     
