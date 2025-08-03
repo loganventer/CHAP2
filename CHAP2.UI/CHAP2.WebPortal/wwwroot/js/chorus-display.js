@@ -766,9 +766,22 @@ class ChorusDisplay {
         // Ensure minimum of 1 line per page
         this.linesPerPage = Math.max(1, this.linesPerPage);
         
+        // More aggressive space filling - if we have multiple pages, try to fit more lines
+        if (this.currentChorusLines.length > this.linesPerPage) {
+            // Try to fit more lines by reducing line spacing slightly
+            const tighterLineHeight = this.currentFontSize * 1.4; // Slightly tighter spacing
+            const moreLinesPerPage = Math.floor(availableHeight / tighterLineHeight);
+            
+            // Use the tighter spacing if it gives us more lines without going over
+            if (moreLinesPerPage > this.linesPerPage && moreLinesPerPage <= this.currentChorusLines.length) {
+                this.linesPerPage = moreLinesPerPage;
+                console.log(`Using tighter line spacing to fit ${this.linesPerPage} lines instead of ${Math.floor(availableHeight / lineHeight)}`);
+            }
+        }
+        
         // Force splitting for testing - if font size is large, force fewer lines per page
         if (this.currentFontSize > 30) {
-            this.linesPerPage = Math.min(this.linesPerPage, 3); // Force max 3 lines per page for large fonts
+            this.linesPerPage = Math.min(this.linesPerPage, 4); // Allow up to 4 lines per page for large fonts
         }
         
         // Calculate total pages needed based on original lines
