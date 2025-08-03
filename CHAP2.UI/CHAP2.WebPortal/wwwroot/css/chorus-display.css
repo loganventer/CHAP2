@@ -422,6 +422,7 @@
     gap: 1rem;
     flex: 1;
     min-height: 0;
+    padding: 0 60px; /* Add horizontal padding to keep text away from navigation buttons */
 }
 
 /* Navigation */
@@ -532,6 +533,8 @@
     justify-content: center;
     min-height: 0;
     position: relative;
+    z-index: 1; /* Ensure content is above background but below controls */
+    margin: 0 20px; /* Add margin to keep text away from navigation buttons */
 }
 
 .chorus-text {
@@ -551,8 +554,9 @@
     justify-content: center;
     flex: 1;
     margin: 0;
-    padding: 0;
+    padding: 20px 0; /* Add vertical padding to keep text away from header and bottom */
     box-sizing: border-box;
+    z-index: 1; /* Ensure text stays above background */
 }
 
 /* Remove the old font size classes since we're using dynamic sizing */
