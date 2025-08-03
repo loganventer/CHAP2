@@ -270,8 +270,15 @@ class ChorusDisplay {
         // Adjust font size to fill screen optimally
         this.optimizeFontSize();
         
-        // Display the first page
-        this.currentPage = 0;
+        // Ensure current page is valid after resize
+        if (this.currentPage >= this.totalPages) {
+            this.currentPage = this.totalPages - 1;
+        }
+        if (this.currentPage < 0) {
+            this.currentPage = 0;
+        }
+        
+        // Display the current page
         this.displayCurrentPage();
         this.updateNavigationButtons();
         
