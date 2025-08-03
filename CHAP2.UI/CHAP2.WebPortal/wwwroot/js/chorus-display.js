@@ -257,16 +257,10 @@ class ChorusDisplay {
         
         console.log(`Container size: ${containerWidth}x${containerHeight}`);
         
-        // Start with a much larger font size to fill screen more aggressively
-        this.currentFontSize = Math.min(containerHeight / 12, containerWidth / 20); // More aggressive starting point
-        this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, this.currentFontSize));
-        
-        // Apply font size and calculate lines per page
+        // Only auto-fit font size if it hasn't been manually set
+        // For now, just recalculate lines per page with current font size
         this.applyFontSize();
         this.calculateLinesPerPage();
-        
-        // Adjust font size to fill screen optimally
-        this.optimizeFontSize();
         
         // Ensure current page is valid after resize
         if (this.currentPage >= this.totalPages) {
