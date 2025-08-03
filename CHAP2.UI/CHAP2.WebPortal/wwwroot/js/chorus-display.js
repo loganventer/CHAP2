@@ -456,47 +456,23 @@ class ChorusDisplay {
     
     // Get the original lines that should be displayed for a given wrapped line range
     getLinesForPage(startWrappedLine, endWrappedLine) {
-        const container = document.querySelector('.chorus-content');
-        if (!container) return [];
+        if (!this.wrappedLinesPerOriginalLine) {
+            return this.currentChorusLines;
+        }
         
-        const containerWidth = container.clientWidth - 40;
-        const fontSize = this.currentFontSize;
-        const lineHeight = fontSize * 1.5;
-        
-        // Create a temporary element to measure text wrapping
-        const tempElement = document.createElement('div');
-        tempElement.style.cssText = `
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-            width: ${containerWidth}px;
-            font-size: ${fontSize}px;
-            line-height: ${lineHeight}px;
-            word-wrap: break-word;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            white-space: pre-wrap;
-            font-family: 'Inter', sans-serif;
-        `;
-        document.body.appendChild(tempElement);
-        
-        let currentWrappedLine = 0;
         const linesToShow = [];
+        let currentWrappedLine = 0;
         
         // Find which original lines correspond to the requested wrapped line range
         for (let i = 0; i < this.currentChorusLines.length; i++) {
-            const line = this.currentChorusLines[i];
-            tempElement.textContent = line;
-            
-            const wrappedHeight = tempElement.scrollHeight;
-            const wrappedLines = Math.ceil(wrappedHeight / lineHeight);
+            const wrappedLines = this.wrappedLinesPerOriginalLine[i];
             
             // Check if this line's wrapped lines overlap with our target range
             const lineStartWrapped = currentWrappedLine;
             const lineEndWrapped = currentWrappedLine + wrappedLines;
             
             if (lineStartWrapped < endWrappedLine && lineEndWrapped > startWrappedLine) {
-                linesToShow.push(line);
+                linesToShow.push(this.currentChorusLines[i]);
             }
             
             currentWrappedLine += wrappedLines;
@@ -506,9 +482,6 @@ class ChorusDisplay {
                 break;
             }
         }
-        
-        // Clean up
-        document.body.removeChild(tempElement);
         
         return linesToShow;
     }
