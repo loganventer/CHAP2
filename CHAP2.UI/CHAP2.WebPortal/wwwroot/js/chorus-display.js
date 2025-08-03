@@ -338,24 +338,18 @@ class ChorusDisplay {
             return;
         }
         
-        // Show navigation buttons if there are multiple choruses or multiple pages
-        const shouldShowNav = this.choruses.length > 1 || this.totalPages > 1;
+        // Show navigation buttons if there are multiple pages
+        const shouldShowNav = this.totalPages > 1;
         
         if (shouldShowNav) {
             prevBtn.style.display = 'flex';
             nextBtn.style.display = 'flex';
             
-            // Update tooltips based on navigation state
-            if (this.totalPages > 1) {
-                prevBtn.title = 'Previous Page';
-                nextBtn.title = 'Next Page';
-            } else {
-                // Hide navigation buttons if there's only one page
-                prevBtn.style.display = 'none';
-                nextBtn.style.display = 'none';
-                return;
-            }
+            // Update tooltips
+            prevBtn.title = 'Previous Page (←)';
+            nextBtn.title = 'Next Page (→)';
         } else {
+            // Hide navigation buttons if there's only one page
             prevBtn.style.display = 'none';
             nextBtn.style.display = 'none';
         }
@@ -370,10 +364,6 @@ class ChorusDisplay {
             }
         }
     }
-    
-    // Removed autoFitText method
-    
-    // Removed zoom-related methods
     
     print() {
         window.print();
