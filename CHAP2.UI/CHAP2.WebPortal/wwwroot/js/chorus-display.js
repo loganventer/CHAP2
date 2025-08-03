@@ -607,6 +607,11 @@ class ChorusDisplay {
                 }
             }
             
+            // Ensure current page is valid after font size change
+            if (this.currentPage >= this.totalPages) {
+                this.currentPage = this.totalPages - 1;
+            }
+            
             this.displayCurrentPage();
             this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
         } else {
@@ -619,6 +624,12 @@ class ChorusDisplay {
             this.currentFontSize -= this.fontSizeStep;
             this.applyFontSize();
             this.calculateLinesPerPage();
+            
+            // Ensure current page is valid after font size change
+            if (this.currentPage >= this.totalPages) {
+                this.currentPage = this.totalPages - 1;
+            }
+            
             this.displayCurrentPage();
             this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
         } else {
