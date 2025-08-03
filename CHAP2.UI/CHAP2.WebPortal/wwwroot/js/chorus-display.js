@@ -3,7 +3,7 @@ class ChorusDisplay {
     constructor() {
         this.currentChorusIndex = 0;
         this.choruses = [];
-        this.currentFontSize = 84; // Changed from 24 to 84
+        this.currentFontSize = 96; // Changed from 84 to 96
         this.minFontSize = 12;
         this.maxFontSize = 96; // Increased from 72 to 96
         this.fontSizeStep = 2;
@@ -13,6 +13,9 @@ class ChorusDisplay {
         this.currentChorusLines = [];
         this.wrappedLinesPerOriginalLine = [];
         this.totalWrappedLines = 0;
+        
+        // Initialize the display
+        this.init();
     }
     
     init() {
@@ -62,6 +65,11 @@ class ChorusDisplay {
     }
     
     setupEventListeners() {
+        console.log('Setting up event listeners...');
+        console.log('window.chorusData:', window.chorusData);
+        console.log('window.location.pathname:', window.location.pathname);
+        console.log('Includes /Detail/:', window.location.pathname.includes('/Detail/'));
+        
         // Navigation buttons
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
@@ -69,6 +77,8 @@ class ChorusDisplay {
         const closeBtn = document.getElementById('closeBtn');
         const increaseFontBtn = document.getElementById('increaseFontBtn');
         const decreaseFontBtn = document.getElementById('decreaseFontBtn');
+        
+        console.log('Navigation buttons found:', { prevBtn, nextBtn, printBtn, closeBtn, increaseFontBtn, decreaseFontBtn });
         
         // Only add event listeners if the elements exist (they won't on the search page)
         if (prevBtn) prevBtn.addEventListener('click', () => this.navigate(-1));
@@ -78,17 +88,27 @@ class ChorusDisplay {
         if (increaseFontBtn) increaseFontBtn.addEventListener('click', () => this.increaseFontSize());
         if (decreaseFontBtn) decreaseFontBtn.addEventListener('click', () => this.decreaseFontSize());
         
-        // Keyboard shortcuts (only if we're on a chorus display page)
-        if ((window.chorusData || window.location.pathname.includes('/Detail/')) && 
-            (prevBtn || nextBtn || printBtn || closeBtn)) {
-            document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+        // Always add resize listener if we're on a chorus display page
+        if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+            console.log('Setting up resize listener for chorus display page');
+            window.addEventListener('resize', () => {
+                console.log('Resize event fired!');
+                this.handleResize();
+            });
             
-            // Window resize
-            window.addEventListener('resize', () => this.handleResize());
+            // Also add keyboard shortcuts
+            console.log('Setting up keyboard listener for chorus display page');
+            document.addEventListener('keydown', (e) => {
+                console.log('Keyboard event captured:', e.key);
+                this.handleKeyboard(e);
+            });
+        } else {
+            console.log('Not on chorus display page, skipping resize listener');
         }
     }
     
     handleKeyboard(e) {
+        console.log('Keyboard event:', e.key);
         switch (e.key) {
             case 'ArrowLeft':
                 e.preventDefault();
@@ -109,10 +129,12 @@ class ChorusDisplay {
                 break;
             case '+':
             case '=':
+                console.log('Plus/Equals key pressed!');
                 e.preventDefault();
                 this.increaseFontSize();
                 break;
             case '-':
+                console.log('Minus key pressed!');
                 e.preventDefault();
                 this.decreaseFontSize();
                 break;
@@ -634,10 +656,7 @@ class ChorusDisplay {
             
             console.log(`Increasing font size to ${this.currentFontSize}px`);
             
-            // Apply font size first
-            this.applyFontSize();
-            
-            // Recalculate lines per page
+            // Recalculate lines per page first
             this.calculateLinesPerPage();
             
             // Ensure current page is valid
@@ -645,8 +664,11 @@ class ChorusDisplay {
                 this.currentPage = this.totalPages - 1;
             }
             
-            // Display the current page
+            // Display the current page (this creates new elements)
             this.displayCurrentPage();
+            
+            // Apply font size to the newly created elements
+            this.applyFontSize();
             
             // Update UI elements
             this.updateNavigationButtons();
@@ -675,10 +697,7 @@ class ChorusDisplay {
             
             console.log(`Decreasing font size to ${this.currentFontSize}px`);
             
-            // Apply font size first
-            this.applyFontSize();
-            
-            // Recalculate lines per page
+            // Recalculate lines per page first
             this.calculateLinesPerPage();
             
             // Ensure current page is valid
@@ -686,8 +705,11 @@ class ChorusDisplay {
                 this.currentPage = this.totalPages - 1;
             }
             
-            // Display the current page
+            // Display the current page (this creates new elements)
             this.displayCurrentPage();
+            
+            // Apply font size to the newly created elements
+            this.applyFontSize();
             
             // Update UI elements
             this.updateNavigationButtons();
@@ -863,9 +885,11 @@ class ChorusDisplay {
     
     // Handle window resize
     handleResize() {
+        console.log('handleResize called!');
         // Debounce resize events
         clearTimeout(this.resizeTimeout);
         this.resizeTimeout = setTimeout(() => {
+            console.log('Resize timeout fired, calling autoFitText');
             if (this.currentChorusLines.length > 0) {
                 // Recalculate optimal font size to fill the screen
                 this.autoFitText();
@@ -876,10 +900,19 @@ class ChorusDisplay {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded event fired');
+    console.log('window.chorusData:', window.chorusData);
+    console.log('window.location.pathname:', window.location.pathname);
+    console.log('Includes /Detail/:', window.location.pathname.includes('/Detail/'));
+    
     // Only initialize ChorusDisplay if we're on a chorus display page
     // Check if we have chorus data or if we're on a detail page
     if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+        console.log('Creating ChorusDisplay instance...');
         new ChorusDisplay();
+        console.log('ChorusDisplay instance created');
+    } else {
+        console.log('Not on chorus display page, skipping ChorusDisplay initialization');
     }
 });
 
