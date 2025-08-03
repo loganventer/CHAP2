@@ -277,7 +277,7 @@ class ChorusDisplay {
         const container = document.querySelector('.chorus-content');
         if (!container) return;
         
-        const containerWidth = container.clientWidth - 40; // Account for padding
+        const containerWidth = container.clientWidth - 40;
         const fontSize = this.currentFontSize;
         const lineHeight = fontSize * 1.5;
         
