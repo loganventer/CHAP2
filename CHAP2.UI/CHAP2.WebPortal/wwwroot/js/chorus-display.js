@@ -645,15 +645,25 @@ class ChorusDisplay {
             // Apply font size first
             this.applyFontSize();
             
-            // Force recalculation of lines per page
+            // Recalculate lines per page
             this.calculateLinesPerPage();
             
-            // Force redisplay with new calculations
+            // Ensure current page is valid
+            if (this.currentPage >= this.totalPages) {
+                this.currentPage = this.totalPages - 1;
+            }
+            
+            // Display the current page
             this.displayCurrentPage();
             
             // Update UI elements
             this.updateNavigationButtons();
             this.updatePageIndicator();
+            
+            console.log('=== AFTER INCREASE ===');
+            console.log('New font size:', this.currentFontSize);
+            console.log('New lines per page:', this.linesPerPage);
+            console.log('New total pages:', this.totalPages);
             
             this.showNotification(`Font size: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Pages: ${this.totalPages}`, 'info');
         } else {
@@ -676,28 +686,25 @@ class ChorusDisplay {
             // Apply font size first
             this.applyFontSize();
             
-            // Force recalculation of lines per page
+            // Recalculate lines per page
             this.calculateLinesPerPage();
             
-            // Check if we can now fit more lines and reduce pages
-            const oldTotalPages = this.totalPages;
-            const newTotalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
-            
-            // If we have fewer pages now, adjust current page
-            if (newTotalPages < oldTotalPages) {
-                // Calculate which page the current content should be on
-                const currentLineStart = this.currentPage * this.linesPerPage;
-                this.currentPage = Math.floor(currentLineStart / this.linesPerPage);
-                this.currentPage = Math.min(this.currentPage, newTotalPages - 1);
-                console.log(`Reduced pages from ${oldTotalPages} to ${newTotalPages}, adjusted to page ${this.currentPage + 1}`);
+            // Ensure current page is valid
+            if (this.currentPage >= this.totalPages) {
+                this.currentPage = this.totalPages - 1;
             }
             
-            // Force redisplay with new calculations
+            // Display the current page
             this.displayCurrentPage();
             
             // Update UI elements
             this.updateNavigationButtons();
             this.updatePageIndicator();
+            
+            console.log('=== AFTER DECREASE ===');
+            console.log('New font size:', this.currentFontSize);
+            console.log('New lines per page:', this.linesPerPage);
+            console.log('New total pages:', this.totalPages);
             
             this.showNotification(`Font size: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Pages: ${this.totalPages}`, 'info');
         } else {
@@ -798,40 +805,19 @@ class ChorusDisplay {
         // Ensure minimum of 1 line per page
         this.linesPerPage = Math.max(1, this.linesPerPage);
         
-        // More aggressive space filling - if we have multiple pages, try to fit more lines
-        if (this.currentChorusLines.length > this.linesPerPage) {
-            // Try to fit more lines by reducing line spacing slightly
-            const tighterLineHeight = this.currentFontSize * 1.4; // Slightly tighter spacing
-            const moreLinesPerPage = Math.floor(availableHeight / tighterLineHeight);
-            
-            // Use the tighter spacing if it gives us more lines without going over
-            if (moreLinesPerPage > this.linesPerPage && moreLinesPerPage <= this.currentChorusLines.length) {
-                this.linesPerPage = moreLinesPerPage;
-                console.log(`Using tighter line spacing to fit ${this.linesPerPage} lines instead of ${Math.floor(availableHeight / lineHeight)}`);
-            }
-        }
-        
-        // When font size is smaller, be more aggressive about fitting lines
-        if (this.currentFontSize <= 24) {
-            // For smaller fonts, try to fit as many lines as possible
-            const maxPossibleLines = Math.floor(availableHeight / (this.currentFontSize * 1.3)); // Even tighter spacing
-            this.linesPerPage = Math.max(this.linesPerPage, Math.min(maxPossibleLines, this.currentChorusLines.length));
-            console.log(`Small font size (${this.currentFontSize}px), trying to fit up to ${this.linesPerPage} lines`);
-        }
-        
-        // Force splitting for testing - if font size is large, force fewer lines per page
-        if (this.currentFontSize > 30) {
-            this.linesPerPage = Math.min(this.linesPerPage, 4); // Allow up to 4 lines per page for large fonts
-        }
-        
         // Calculate total pages needed based on original lines
         this.totalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
         
         // Ensure at least 1 page
         this.totalPages = Math.max(1, this.totalPages);
         
-        console.log(`Font size: ${this.currentFontSize}px, Container height: ${containerHeight}px, Available height: ${availableHeight}px, Line height: ${lineHeight}px`);
-        console.log(`Lines per page: ${this.linesPerPage}, Total original lines: ${this.currentChorusLines.length}, Total pages: ${this.totalPages}`);
+        console.log(`Parent container height: ${containerHeight}px`);
+        console.log(`Available height: ${availableHeight}px`);
+        console.log(`Line height: ${lineHeight}px`);
+        console.log(`Font size: ${this.currentFontSize}px`);
+        console.log(`Lines per page: ${this.linesPerPage}`);
+        console.log(`Total original lines: ${this.currentChorusLines.length}`);
+        console.log(`Total pages: ${this.totalPages}`);
         
         // Update page indicator immediately
         this.updatePageIndicator();
