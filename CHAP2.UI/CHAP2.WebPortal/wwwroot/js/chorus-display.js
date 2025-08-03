@@ -265,7 +265,8 @@ class ChorusDisplay {
         
         // Initialize display
         this.currentPage = 0;
-        this.currentFontSize = 24; // Start with default font size
+        this.currentFontSize = 86; // Start with 86px font size
+        console.log('Setting initial font size to 86px');
         
         // Calculate initial layout
         this.calculateWrappedLines();
