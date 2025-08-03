@@ -1,11 +1,12 @@
 {
   "id": "0ed65ee9-e553-4d89-9bc0-6e8f64431ebd",
   "name": "Ek Hoor Die Waterstrome Val",
-  "chorusText": "So wonder skoon, so wonderskoon\nEenssalek van blydskaphuppel\nAan die einde van my reis\nHalleluJaH, halleluJaH\nJesus koms is voor die deur \tx2",
+  "chorusText": "So wonder skoon, so wonderskoon\r\nDan sal ek van blydskap huppel\r\nAan die einde van my reis\r\n\r\nHalleluJaH, halleluJaH\r\nJesus koms is voor die deur \tx2",
   "key": 1,
-  "type": 0,
-  "timeSignature": 0,
+  "type": 1,
+  "timeSignature": 1,
   "createdAt": "2025-07-18T14:25:31.253536Z",
+  "updatedAt": "2025-08-03T09:28:06.6710442Z",
   "metadata": {},
   "domainEvents": []
 }
