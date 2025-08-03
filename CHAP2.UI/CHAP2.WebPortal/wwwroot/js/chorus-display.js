@@ -330,15 +330,19 @@ class ChorusDisplay {
         const containerHeight = container.clientHeight;
         const containerWidth = container.clientWidth;
         
+        // Calculate how many lines we can fit
+        const maxLines = Math.floor((containerHeight - 40) / (this.currentFontSize * 1.5));
+        
         // Try to fit all text on one page if possible
-        if (this.currentChorusLines.length <= this.linesPerPage) {
+        if (this.currentChorusLines.length <= maxLines) {
             // We can fit all text, try to make it larger
             while (this.currentFontSize < this.maxFontSize) {
                 this.currentFontSize += this.fontSizeStep;
                 this.applyFontSize();
                 this.calculateLinesPerPage();
                 
-                if (this.linesPerPage < this.currentChorusLines.length) {
+                // Check if we still fit after wrapping
+                if (this.totalPages > 1) {
                     // Too big, revert
                     this.currentFontSize -= this.fontSizeStep;
                     this.applyFontSize();
