@@ -316,8 +316,7 @@ class ChorusDisplay {
         
         console.log(`Container size: ${containerWidth}x${containerHeight}`);
         
-        // Only auto-fit font size if it hasn't been manually set
-        // For now, just recalculate lines per page with current font size
+        // Don't change font size - just recalculate pagination with current font size
         this.applyFontSize();
         this.calculateLinesPerPage();
         
