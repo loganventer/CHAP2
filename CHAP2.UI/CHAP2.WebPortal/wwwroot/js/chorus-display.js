@@ -627,37 +627,23 @@ class ChorusDisplay {
     increaseFontSize() {
         if (this.currentFontSize < this.maxFontSize) {
             this.currentFontSize += this.fontSizeStep;
+            
+            console.log(`Increasing font size to ${this.currentFontSize}px`);
+            
+            // Apply font size first
             this.applyFontSize();
+            
+            // Force recalculation of lines per page
             this.calculateLinesPerPage();
             
-            // If we can fit more text on screen, try to increase further
-            if (this.totalPages <= 1 && this.currentChorusLines.length > 1) {
-                // Try to maximize font size while keeping everything on one page
-                while (this.currentFontSize < this.maxFontSize && this.totalPages <= 1) {
-                    this.currentFontSize += this.fontSizeStep;
-                    this.applyFontSize();
-                    this.calculateLinesPerPage();
-                    
-                    if (this.totalPages > 1) {
-                        // Too big, revert
-                        this.currentFontSize -= this.fontSizeStep;
-                        this.applyFontSize();
-                        this.calculateLinesPerPage();
-                        break;
-                    }
-                }
-            }
-            
-            // Ensure current page is valid after font size change
-            if (this.currentPage >= this.totalPages) {
-                this.currentPage = this.totalPages - 1;
-            }
-            
-            // If text is now too large for current page, move to next page
-            this.adjustPageIfNeeded();
-            
+            // Force redisplay with new calculations
             this.displayCurrentPage();
-            this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
+            
+            // Update UI elements
+            this.updateNavigationButtons();
+            this.updatePageIndicator();
+            
+            this.showNotification(`Font size: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Pages: ${this.totalPages}`, 'info');
         } else {
             this.showNotification('Maximum font size reached', 'warning');
         }
@@ -666,22 +652,130 @@ class ChorusDisplay {
     decreaseFontSize() {
         if (this.currentFontSize > this.minFontSize) {
             this.currentFontSize -= this.fontSizeStep;
+            
+            console.log(`Decreasing font size to ${this.currentFontSize}px`);
+            
+            // Apply font size first
             this.applyFontSize();
+            
+            // Force recalculation of lines per page
             this.calculateLinesPerPage();
             
-            // Ensure current page is valid after font size change
-            if (this.currentPage >= this.totalPages) {
-                this.currentPage = this.totalPages - 1;
-            }
-            
-            // If text is now too large for current page, move to next page
-            this.adjustPageIfNeeded();
-            
+            // Force redisplay with new calculations
             this.displayCurrentPage();
-            this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
+            
+            // Update UI elements
+            this.updateNavigationButtons();
+            this.updatePageIndicator();
+            
+            this.showNotification(`Font size: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Pages: ${this.totalPages}`, 'info');
         } else {
             this.showNotification('Minimum font size reached', 'warning');
         }
+    }
+    
+    // Recalculate everything and redisplay optimally
+    recalculateAndRedisplay() {
+        // Recalculate wrapped lines with new font size
+        this.calculateWrappedLines();
+        
+        // Recalculate lines per page
+        this.calculateLinesPerPage();
+        
+        // Update navigation buttons
+        this.updateNavigationButtons();
+        
+        console.log(`Recalculated: Font size ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
+    }
+    
+    // Optimize font size to fill screen with current font size
+    optimizeFontSizeForCurrentFont() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        const containerHeight = container.clientHeight;
+        const containerWidth = container.clientWidth;
+        
+        // Calculate how many lines we can fit with current font size
+        const maxLines = Math.floor((containerHeight - 40) / (this.currentFontSize * 1.5));
+        
+        // If we can fit all text on one page, maximize font size to fill screen
+        if (this.currentChorusLines.length <= maxLines) {
+            // Try to increase font size while keeping everything on one page
+            while (this.currentFontSize < this.maxFontSize && this.totalPages <= 1) {
+                this.currentFontSize += this.fontSizeStep;
+                this.applyFontSize();
+                this.calculateLinesPerPage();
+                
+                if (this.totalPages > 1) {
+                    // Too big, revert
+                    this.currentFontSize -= this.fontSizeStep;
+                    this.applyFontSize();
+                    this.calculateLinesPerPage();
+                    break;
+                }
+            }
+        } else {
+            // Multiple pages needed, optimize font size for best screen usage
+            // Try to increase font size while maintaining reasonable page distribution
+            while (this.currentFontSize < this.maxFontSize) {
+                const testFontSize = this.currentFontSize + this.fontSizeStep;
+                const testLineHeight = testFontSize * 1.5;
+                const testLinesPerPage = Math.floor((containerHeight - 40) / testLineHeight);
+                
+                // Only increase if we maintain reasonable page distribution (4-12 lines per page)
+                if (testLinesPerPage >= 4 && testLinesPerPage <= 12) {
+                    this.currentFontSize = testFontSize;
+                    this.applyFontSize();
+                    this.calculateLinesPerPage();
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        console.log(`Optimized font size: ${this.currentFontSize}px, Pages: ${this.totalPages}, Lines per page: ${this.linesPerPage}`);
+    }
+    
+    // Calculate how many lines fit per page with current font size
+    calculateLinesPerPage() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) return;
+        
+        const containerHeight = container.clientHeight;
+        const lineHeight = this.currentFontSize * 1.5; // 1.5 line height ratio
+        
+        // Account for padding and margins
+        const computedStyle = window.getComputedStyle(container);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        const paddingBottom = parseFloat(computedStyle.paddingBottom);
+        const marginTop = parseFloat(computedStyle.marginTop);
+        const marginBottom = parseFloat(computedStyle.marginBottom);
+        
+        const availableHeight = containerHeight - paddingTop - paddingBottom - marginTop - marginBottom;
+        
+        // Calculate how many lines can fit
+        this.linesPerPage = Math.floor(availableHeight / lineHeight);
+        
+        // Ensure minimum of 1 line per page
+        this.linesPerPage = Math.max(1, this.linesPerPage);
+        
+        // Force splitting for testing - if font size is large, force fewer lines per page
+        if (this.currentFontSize > 30) {
+            this.linesPerPage = Math.min(this.linesPerPage, 3); // Force max 3 lines per page for large fonts
+        }
+        
+        // Calculate total pages needed based on original lines
+        this.totalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
+        
+        // Ensure at least 1 page
+        this.totalPages = Math.max(1, this.totalPages);
+        
+        console.log(`Font size: ${this.currentFontSize}px, Container height: ${containerHeight}px, Available height: ${availableHeight}px, Line height: ${lineHeight}px`);
+        console.log(`Lines per page: ${this.linesPerPage}, Total original lines: ${this.currentChorusLines.length}, Total pages: ${this.totalPages}`);
+        
+        // Update page indicator immediately
+        this.updatePageIndicator();
     }
     
     // Adjust current page if text is too large for the current page
@@ -692,7 +786,7 @@ class ChorusDisplay {
         const endWrappedLine = startWrappedLine + this.linesPerPage;
         
         // Check if current page has any content
-        const linesToShow = this.getLinesForPage(startWrappedLine, endWrappedLine);
+        const linesToShow = this.getLinesForPage(this.currentPage);
         
         // If no lines to show and we're not on the last page, move to next page
         if (linesToShow.length === 0 && this.currentPage < this.totalPages - 1) {
@@ -730,6 +824,7 @@ class ChorusDisplay {
         clearTimeout(this.resizeTimeout);
         this.resizeTimeout = setTimeout(() => {
             if (this.currentChorusLines.length > 0) {
+                // Recalculate optimal font size to fill the screen
                 this.autoFitText();
             }
         }, 250);
