@@ -631,6 +631,12 @@ class ChorusDisplay {
     
     // Font size controls
     increaseFontSize() {
+        console.log('=== INCREASE FONT SIZE CALLED ===');
+        console.log('Current font size:', this.currentFontSize);
+        console.log('Current lines per page:', this.linesPerPage);
+        console.log('Current total pages:', this.totalPages);
+        console.log('Total chorus lines:', this.currentChorusLines.length);
+        
         if (this.currentFontSize < this.maxFontSize) {
             this.currentFontSize += this.fontSizeStep;
             
@@ -656,6 +662,12 @@ class ChorusDisplay {
     }
     
     decreaseFontSize() {
+        console.log('=== DECREASE FONT SIZE CALLED ===');
+        console.log('Current font size:', this.currentFontSize);
+        console.log('Current lines per page:', this.linesPerPage);
+        console.log('Current total pages:', this.totalPages);
+        console.log('Total chorus lines:', this.currentChorusLines.length);
+        
         if (this.currentFontSize > this.minFontSize) {
             this.currentFontSize -= this.fontSizeStep;
             
