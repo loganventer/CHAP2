@@ -547,7 +547,7 @@
 .chorus-text {
     font-size: 24px; /* Default font size */
     line-height: 1.5;
-    color: white;
+    color: white !important; /* Force white color */
     text-align: center;
     max-width: 100%;
     word-wrap: break-word;
@@ -588,6 +588,7 @@
     /* Ensure text wraps within the container */
     display: block;
     width: 100%;
+    color: white !important; /* Force white color */
 }
 
 .text-line:hover {
