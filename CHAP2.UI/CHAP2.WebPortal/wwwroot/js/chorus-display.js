@@ -199,25 +199,53 @@ class ChorusDisplay {
     }
     
     updateDisplay(chorusData) {
-        const chorusTitle = document.getElementById('chorusTitle');
-        const chorusKey = document.getElementById('chorusKey');
+        console.log('Updating display with chorus data:', chorusData);
         
-        // Check if we're on a chorus display page
-        if (!chorusTitle || !chorusKey) {
-            return; // Not on a chorus display page, exit early
-        }
+        // Update title and key
+        const titleElement = document.getElementById('chorusTitle');
+        const keyElement = document.getElementById('chorusKey');
         
-        chorusTitle.textContent = chorusData.name;
-        chorusKey.textContent = chorusData.key;
+        if (titleElement) titleElement.textContent = chorusData.name;
+        if (keyElement) keyElement.textContent = this.getKeyDisplay(chorusData.key);
         
-        // Split text into lines and store for pagination
+        // Parse chorus text into lines
         this.currentChorusLines = chorusData.text.split('\n').filter(line => line.trim() !== '');
+        console.log(`Parsed ${this.currentChorusLines.length} lines from chorus text`);
         
-        console.log(`Chorus: ${chorusData.name}`);
-        console.log(`Total lines: ${this.currentChorusLines.length}`);
+        // Initialize display
+        this.currentPage = 0;
+        this.currentFontSize = 24; // Start with default font size
         
-        // Auto-fit the text to fill the screen
-        this.autoFitText();
+        // Calculate initial layout
+        this.calculateWrappedLines();
+        this.calculateLinesPerPage();
+        
+        // Show page indicator if multiple pages
+        this.updatePageIndicator();
+        
+        // Display the first page
+        this.displayCurrentPage();
+        
+        // Update navigation buttons
+        this.updateNavigationButtons();
+        
+        // Apply initial font size
+        this.applyFontSize();
+        
+        console.log(`Display initialized: ${this.totalPages} pages, ${this.linesPerPage} lines per page`);
+    }
+    
+    // Update page indicator
+    updatePageIndicator() {
+        const pageIndicator = document.getElementById('pageIndicator');
+        if (!pageIndicator) return;
+        
+        if (this.totalPages > 1) {
+            pageIndicator.textContent = `Page ${this.currentPage + 1} of ${this.totalPages}`;
+            pageIndicator.style.display = 'block';
+        } else {
+            pageIndicator.style.display = 'none';
+        }
     }
     
     // Auto-fit text to fill the screen optimally
