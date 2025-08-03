@@ -602,6 +602,25 @@ class ChorusDisplay {
             this.currentFontSize += this.fontSizeStep;
             this.applyFontSize();
             this.calculateLinesPerPage();
+            
+            // If we can fit more text on screen, try to increase further
+            if (this.totalPages <= 1 && this.currentChorusLines.length > 1) {
+                // Try to maximize font size while keeping everything on one page
+                while (this.currentFontSize < this.maxFontSize && this.totalPages <= 1) {
+                    this.currentFontSize += this.fontSizeStep;
+                    this.applyFontSize();
+                    this.calculateLinesPerPage();
+                    
+                    if (this.totalPages > 1) {
+                        // Too big, revert
+                        this.currentFontSize -= this.fontSizeStep;
+                        this.applyFontSize();
+                        this.calculateLinesPerPage();
+                        break;
+                    }
+                }
+            }
+            
             this.displayCurrentPage();
             this.showNotification(`Font size: ${this.currentFontSize}px`, 'info');
         } else {
