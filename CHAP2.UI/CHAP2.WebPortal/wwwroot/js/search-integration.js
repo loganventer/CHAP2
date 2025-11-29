@@ -394,8 +394,18 @@ function clearAllSearchResults() {
     console.log('All search results cleared');
 }
 
+// Global variable to store current search results for chorus navigation
+window.currentChorusList = [];
+
 // Global functions for chorus actions
 function viewChorus(id) {
+    // Store the current chorus list in sessionStorage for navigation
+    if (window.currentChorusList && window.currentChorusList.length > 0) {
+        sessionStorage.setItem('chorusList', JSON.stringify(window.currentChorusList));
+        sessionStorage.setItem('currentChorusId', id);
+        console.log(`Stored ${window.currentChorusList.length} choruses in sessionStorage for navigation`);
+    }
+
     window.open(`/Home/Detail/${id}`, '_blank');
 }
 

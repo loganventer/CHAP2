@@ -1,4 +1,49 @@
 // Chorus Display JavaScript
+/**
+ * ChorusDisplay - Advanced chorus display and navigation system
+ *
+ * CHORUS LIST NAVIGATION FEATURE:
+ * -------------------------------
+ * This system allows users to navigate between multiple choruses without returning to the search page.
+ *
+ * HOW IT WORKS:
+ * 1. When a user views a chorus from the search results, the current search results are stored in sessionStorage
+ * 2. The detail view loads the chorus list from sessionStorage
+ * 3. Users can navigate between choruses using:
+ *    - Arrow Up/Down keys (navigate between choruses)
+ *    - Ctrl/Cmd + Arrow Left/Right keys (navigate between choruses)
+ *    - Arrow Left/Right keys alone (navigate between pages of the current chorus)
+ *    - Navigation buttons in the UI (if available)
+ *
+ * USAGE FROM THE UI:
+ * ------------------
+ * Option 1: Automatic (from search results)
+ * - The search-integration.js automatically stores the chorus list when viewChorus() is called
+ *
+ * Option 2: Manual (from custom code)
+ * - Call window.setChorusList(chorusList, currentChorusId) to set the navigation list
+ * - Example:
+ *   ```javascript
+ *   const searchResults = [...]; // Array of chorus objects
+ *   const currentId = '403b775e-9e53-40dd-8b4d-90a357be8fb6';
+ *   window.setChorusList(searchResults, currentId);
+ *   ```
+ *
+ * Option 3: Via sessionStorage
+ * - Store chorus list: sessionStorage.setItem('chorusList', JSON.stringify(chorusList));
+ * - Store current ID: sessionStorage.setItem('currentChorusId', chorusId);
+ * - The detail view will automatically load it on initialization
+ *
+ * KEYBOARD SHORTCUTS:
+ * -------------------
+ * - Arrow Up/Down: Navigate to previous/next chorus
+ * - Ctrl/Cmd + Arrow Left/Right: Navigate to previous/next chorus
+ * - Arrow Left/Right: Navigate between pages (if chorus has multiple pages)
+ * - +/=: Increase font size
+ * - -: Decrease font size
+ * - Escape: Close detail view
+ * - Ctrl/Cmd + P: Print
+ */
 class ChorusDisplay {
     constructor() {
         this.currentChorusIndex = 0;
@@ -40,14 +85,41 @@ class ChorusDisplay {
                 console.log('Not on chorus display page, skipping chorus loading');
                 return; // Not on a chorus display page, exit early
             }
-            
+
             console.log('Loading choruses for display page');
-            
-            // Get all choruses for navigation
+
+            // First, try to load from sessionStorage
+            const storedChorusList = sessionStorage.getItem('chorusList');
+            const storedCurrentChorusId = sessionStorage.getItem('currentChorusId');
+
+            if (storedChorusList) {
+                try {
+                    this.choruses = JSON.parse(storedChorusList);
+                    console.log(`Loaded ${this.choruses.length} choruses from sessionStorage`);
+
+                    // Find current chorus index
+                    const currentId = window.chorusData?.id || storedCurrentChorusId;
+                    if (currentId) {
+                        this.currentChorusIndex = this.choruses.findIndex(c => c && c.id === currentId);
+                        if (this.currentChorusIndex === -1) {
+                            this.currentChorusIndex = 0;
+                        }
+                    }
+
+                    this.updateNavigationButtons();
+                    return;
+                } catch (e) {
+                    console.error('Error parsing stored chorus list:', e);
+                    // Fall through to fetch from server
+                }
+            }
+
+            // If no stored list, get all choruses for navigation
             const response = await fetch('/Home/Search?q=*');
             const data = await response.json();
             this.choruses = data.results || [];
-            
+            console.log(`Loaded ${this.choruses.length} choruses from server`);
+
             // Find current chorus index - add null check for window.chorusData
             if (window.chorusData && window.chorusData.id) {
                 this.currentChorusIndex = this.choruses.findIndex(c => c && c.id === window.chorusData.id);
@@ -57,7 +129,7 @@ class ChorusDisplay {
             } else {
                 this.currentChorusIndex = 0;
             }
-            
+
             this.updateNavigationButtons();
         } catch (error) {
             console.error('Error loading choruses:', error);
@@ -69,25 +141,43 @@ class ChorusDisplay {
         console.log('window.chorusData:', window.chorusData);
         console.log('window.location.pathname:', window.location.pathname);
         console.log('Includes /Detail/:', window.location.pathname.includes('/Detail/'));
-        
-        // Navigation buttons
+
+        // Navigation buttons for pages
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+
+        // Backward compatibility: check for old button IDs
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+
         const printBtn = document.getElementById('printBtn');
         const closeBtn = document.getElementById('closeBtn');
         const increaseFontBtn = document.getElementById('increaseFontBtn');
         const decreaseFontBtn = document.getElementById('decreaseFontBtn');
-        
-        console.log('Navigation buttons found:', { prevBtn, nextBtn, printBtn, closeBtn, increaseFontBtn, decreaseFontBtn });
-        
+
+        // Navigation buttons for choruses
+        const prevChorusBtn = document.getElementById('prevChorusBtn');
+        const nextChorusBtn = document.getElementById('nextChorusBtn');
+
+        console.log('Navigation buttons found:', { prevPageBtn, nextPageBtn, prevBtn, nextBtn, prevChorusBtn, nextChorusBtn, printBtn, closeBtn, increaseFontBtn, decreaseFontBtn });
+
         // Only add event listeners if the elements exist (they won't on the search page)
-        if (prevBtn) prevBtn.addEventListener('click', () => this.navigate(-1));
-        if (nextBtn) nextBtn.addEventListener('click', () => this.navigate(1));
+        // Page navigation
+        if (prevPageBtn) prevPageBtn.addEventListener('click', () => this.navigate(-1));
+        if (nextPageBtn) nextPageBtn.addEventListener('click', () => this.navigate(1));
+
+        // Backward compatibility with old button IDs (if new buttons don't exist)
+        if (prevBtn && !prevPageBtn) prevBtn.addEventListener('click', () => this.navigate(-1));
+        if (nextBtn && !nextPageBtn) nextBtn.addEventListener('click', () => this.navigate(1));
+
+        // Chorus navigation
+        if (prevChorusBtn) prevChorusBtn.addEventListener('click', () => this.navigateChorus(-1));
+        if (nextChorusBtn) nextChorusBtn.addEventListener('click', () => this.navigateChorus(1));
         if (printBtn) printBtn.addEventListener('click', () => this.print());
         if (closeBtn) closeBtn.addEventListener('click', () => this.close());
         if (increaseFontBtn) increaseFontBtn.addEventListener('click', () => this.increaseFontSize());
         if (decreaseFontBtn) decreaseFontBtn.addEventListener('click', () => this.decreaseFontSize());
-        
+
         // Always add resize listener if we're on a chorus display page
         if (window.chorusData || window.location.pathname.includes('/Detail/')) {
             console.log('Setting up resize listener for chorus display page');
@@ -95,7 +185,7 @@ class ChorusDisplay {
                 console.log('Resize event fired!');
                 this.handleResize();
             });
-            
+
             // Also add keyboard shortcuts
             console.log('Setting up keyboard listener for chorus display page');
             document.addEventListener('keydown', (e) => {
@@ -112,11 +202,29 @@ class ChorusDisplay {
         switch (e.key) {
             case 'ArrowLeft':
                 e.preventDefault();
-                this.navigate(-1);
+                // If holding Ctrl/Cmd, navigate between choruses, otherwise between pages
+                if (e.ctrlKey || e.metaKey) {
+                    this.navigateChorus(-1);
+                } else {
+                    this.navigate(-1);
+                }
                 break;
             case 'ArrowRight':
                 e.preventDefault();
-                this.navigate(1);
+                // If holding Ctrl/Cmd, navigate between choruses, otherwise between pages
+                if (e.ctrlKey || e.metaKey) {
+                    this.navigateChorus(1);
+                } else {
+                    this.navigate(1);
+                }
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                this.navigateChorus(-1);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                this.navigateChorus(1);
                 break;
             case 'p':
                 if (e.ctrlKey || e.metaKey) {
@@ -143,18 +251,18 @@ class ChorusDisplay {
     
     async navigate(direction) {
         if (this.choruses.length === 0) return;
-        
+
         // Navigate between pages of the current chorus
         if (this.totalPages > 1) {
             let newPage = this.currentPage + direction;
-            
+
             // Loop around pages within the current chorus
             if (newPage < 0) {
                 newPage = this.totalPages - 1;
             } else if (newPage >= this.totalPages) {
                 newPage = 0;
             }
-            
+
             this.currentPage = newPage;
             this.displayCurrentPage();
             this.updateNavigationButtons();
@@ -163,6 +271,76 @@ class ChorusDisplay {
             // If there's only one page, show a notification that there are no more pages
             this.showNotification('This chorus has only one page', 'info');
         }
+    }
+
+    async navigateChorus(direction) {
+        if (!this.choruses || this.choruses.length <= 1) {
+            this.showNotification('No other choruses available', 'info');
+            return;
+        }
+
+        // Calculate new index
+        let newIndex = this.currentChorusIndex + direction;
+
+        // Wrap around if necessary
+        if (newIndex < 0) {
+            newIndex = this.choruses.length - 1;
+        } else if (newIndex >= this.choruses.length) {
+            newIndex = 0;
+        }
+
+        // Load the new chorus
+        this.currentChorusIndex = newIndex;
+        const chorus = this.choruses[newIndex];
+
+        if (!chorus) {
+            console.error('Chorus not found at index:', newIndex);
+            return;
+        }
+
+        this.showLoading();
+
+        try {
+            // Update URL without reloading the page
+            const newUrl = `/Home/Detail/${chorus.id}`;
+            window.history.pushState({ chorusId: chorus.id }, chorus.name, newUrl);
+
+            // Load and display the new chorus
+            await this.loadChorus(chorus.id);
+
+            this.showNotification(`${direction > 0 ? 'Next' : 'Previous'}: ${chorus.name} (${this.currentChorusIndex + 1}/${this.choruses.length})`, 'success');
+        } catch (error) {
+            console.error('Error navigating to chorus:', error);
+            this.showNotification('Error loading chorus', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    // Set the chorus list for navigation (can be called from UI)
+    setChorusList(chorusList, currentChorusId = null) {
+        this.choruses = chorusList || [];
+
+        // Find current chorus index if ID provided
+        if (currentChorusId) {
+            this.currentChorusIndex = this.choruses.findIndex(c => c && c.id === currentChorusId);
+            if (this.currentChorusIndex === -1) {
+                this.currentChorusIndex = 0;
+            }
+        }
+
+        this.updateNavigationButtons();
+        console.log(`Chorus list set: ${this.choruses.length} choruses, current index: ${this.currentChorusIndex}`);
+    }
+
+    // Get the current chorus list
+    getChorusList() {
+        return this.choruses;
+    }
+
+    // Get the current chorus index
+    getCurrentChorusIndex() {
+        return this.currentChorusIndex;
     }
     
     async loadChorus(chorusId) {
@@ -588,46 +766,70 @@ class ChorusDisplay {
     
     // Update navigation buttons
     updateNavigationButtons() {
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        
-        if (!prevBtn || !nextBtn) {
-            console.log('Navigation buttons not found');
-            return;
-        }
-        
-        // Show navigation buttons if we have multiple choruses
-        if (this.choruses && this.choruses.length > 1) {
-            prevBtn.style.display = 'flex';
-            nextBtn.style.display = 'flex';
-            
-            // Enable/disable based on current position
-            prevBtn.disabled = this.currentChorusIndex <= 0;
-            nextBtn.disabled = this.currentChorusIndex >= this.choruses.length - 1;
-            
-            // Update button styles based on disabled state
-            if (prevBtn.disabled) {
-                prevBtn.style.opacity = '0.5';
-                prevBtn.style.cursor = 'not-allowed';
+        // Update chorus navigation buttons
+        const prevChorusBtn = document.getElementById('prevChorusBtn');
+        const nextChorusBtn = document.getElementById('nextChorusBtn');
+
+        if (prevChorusBtn && nextChorusBtn) {
+            // Show chorus navigation buttons if we have multiple choruses
+            if (this.choruses && this.choruses.length > 1) {
+                prevChorusBtn.style.display = 'flex';
+                nextChorusBtn.style.display = 'flex';
+
+                // Enable/disable based on current position (no wrapping for buttons)
+                prevChorusBtn.disabled = this.currentChorusIndex <= 0;
+                nextChorusBtn.disabled = this.currentChorusIndex >= this.choruses.length - 1;
+
+                // Update button styles based on disabled state
+                if (prevChorusBtn.disabled) {
+                    prevChorusBtn.style.opacity = '0.5';
+                    prevChorusBtn.style.cursor = 'not-allowed';
+                } else {
+                    prevChorusBtn.style.opacity = '1';
+                    prevChorusBtn.style.cursor = 'pointer';
+                }
+
+                if (nextChorusBtn.disabled) {
+                    nextChorusBtn.style.opacity = '0.5';
+                    nextChorusBtn.style.cursor = 'not-allowed';
+                } else {
+                    nextChorusBtn.style.opacity = '1';
+                    nextChorusBtn.style.cursor = 'pointer';
+                }
             } else {
-                prevBtn.style.opacity = '1';
-                prevBtn.style.cursor = 'pointer';
+                // Hide chorus navigation buttons if only one chorus
+                prevChorusBtn.style.display = 'none';
+                nextChorusBtn.style.display = 'none';
             }
-            
-            if (nextBtn.disabled) {
-                nextBtn.style.opacity = '0.5';
-                nextBtn.style.cursor = 'not-allowed';
-            } else {
-                nextBtn.style.opacity = '1';
-                nextBtn.style.cursor = 'pointer';
-            }
-        } else {
-            // Hide navigation buttons if only one chorus
-            prevBtn.style.display = 'none';
-            nextBtn.style.display = 'none';
+
+            console.log(`Chorus navigation buttons updated: ${this.choruses ? this.choruses.length : 0} choruses, current index: ${this.currentChorusIndex}`);
         }
-        
-        console.log(`Navigation buttons updated: ${this.choruses ? this.choruses.length : 0} choruses, current index: ${this.currentChorusIndex}`);
+
+        // Update page navigation buttons
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+
+        if (prevPageBtn && nextPageBtn) {
+            // Show page navigation buttons if we have multiple pages
+            if (this.totalPages > 1) {
+                prevPageBtn.style.display = 'flex';
+                nextPageBtn.style.display = 'flex';
+
+                // Page navigation wraps around, so buttons are always enabled
+                prevPageBtn.disabled = false;
+                nextPageBtn.disabled = false;
+                prevPageBtn.style.opacity = '1';
+                prevPageBtn.style.cursor = 'pointer';
+                nextPageBtn.style.opacity = '1';
+                nextPageBtn.style.cursor = 'pointer';
+            } else {
+                // Hide page navigation buttons if only one page
+                prevPageBtn.style.display = 'none';
+                nextPageBtn.style.display = 'none';
+            }
+
+            console.log(`Page navigation buttons updated: ${this.totalPages} pages, current page: ${this.currentPage + 1}`);
+        }
     }
     
     print() {
@@ -942,13 +1144,13 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('window.chorusData:', window.chorusData);
     console.log('window.location.pathname:', window.location.pathname);
     console.log('Includes /Detail/:', window.location.pathname.includes('/Detail/'));
-    
+
     // Only initialize ChorusDisplay if we're on a chorus display page
     // Check if we have chorus data or if we're on a detail page
     if (window.chorusData || window.location.pathname.includes('/Detail/')) {
         console.log('Creating ChorusDisplay instance...');
-        new ChorusDisplay();
-        console.log('ChorusDisplay instance created');
+        window.chorusDisplay = new ChorusDisplay();
+        console.log('ChorusDisplay instance created and stored in window.chorusDisplay');
     } else {
         console.log('Not on chorus display page, skipping ChorusDisplay initialization');
     }
@@ -963,3 +1165,13 @@ if (window.chorusData || window.location.pathname.includes('/Detail/')) {
 window.addEventListener('load', () => {
     document.body.classList.remove('loading');
 });
+
+// Global helper function to set the chorus list from the UI
+window.setChorusList = function(chorusList, currentChorusId = null) {
+    if (window.chorusDisplay) {
+        window.chorusDisplay.setChorusList(chorusList, currentChorusId);
+        console.log('Chorus list set via global function');
+    } else {
+        console.warn('ChorusDisplay instance not available. Make sure you are on a chorus display page.');
+    }
+};

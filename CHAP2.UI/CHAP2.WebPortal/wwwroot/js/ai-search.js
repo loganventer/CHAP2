@@ -331,7 +331,15 @@ class AiSearch {
             setTimeout(() => {
                 this.resultsContainer.style.display = 'none';
                 this.resultsContainer.style.opacity = '1';
+                // Clear the content when hiding
+                this.resultsContainer.innerHTML = '';
             }, 300);
+        }
+        
+        // Also clear the aiResults container used for streaming results
+        const aiResultsContainer = document.getElementById('aiResults');
+        if (aiResultsContainer) {
+            aiResultsContainer.innerHTML = '';
         }
     }
 
@@ -594,6 +602,11 @@ class AiSearch {
         if (parentContainer) {
             parentContainer.style.display = 'block';
             console.log('AI Search: Parent container display set to block');
+            
+            // Also add the query understanding to the aiResults container
+            const aiResultsUnderstandingSection = understandingSection.cloneNode(true);
+            parentContainer.appendChild(aiResultsUnderstandingSection);
+            console.log('AI Search: Query understanding added to aiResults container');
         }
         
         // Ensure all AI search containers are visible
@@ -601,6 +614,11 @@ class AiSearch {
         
         // Ensure the aiResults container is specifically visible
         this.ensureAiResultsVisible();
+        
+        // Force the query understanding section to be visible
+        understandingSection.style.display = 'block';
+        understandingSection.style.visibility = 'visible';
+        understandingSection.style.opacity = '1';
         
         // Add sparkle effect
         this.addSparkleEffect(understandingSection);

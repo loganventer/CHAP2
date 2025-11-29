@@ -371,8 +371,8 @@ async def search_intelligent_stream(request: IntelligentSearchRequest):
             logger.info("Step 1: Generating search terms from user query...")
             search_terms_prompt = f"""Query: "{request.query}"
 
-Generate 3-5 search terms for finding relevant choruses. Return only comma-separated terms.
-Example: "love, Jesus, worship, praise, salvation"
+Generate 3-5 single-word search terms in Afrikaans and English. Return only comma-separated terms.
+Example: "liefde,love, aanbidding,worship, lof,praise"
 
 Terms:"""
             

@@ -9,9 +9,6 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy the main .dockerignore file
-COPY ["langchain_search_service/.dockerignore", ".dockerignore"]
-
 # Copy only the necessary project files first
 COPY ["CHAP2.Domain/CHAP2.Domain.csproj", "CHAP2.Domain/"]
 COPY ["CHAP2.Shared/CHAP2.Shared.csproj", "CHAP2.Shared/"]

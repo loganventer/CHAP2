@@ -110,15 +110,63 @@ cleanup_containers() {
 }
 
 ###############################################################################
+# Check if rebuild is needed
+###############################################################################
+needs_rebuild() {
+    local service=$1
+    local dockerfile=$2
+    local context=$3
+
+    # Check if image exists
+    local image_name="linux-mac-${service}"
+    if ! docker images -q "$image_name" 2>/dev/null | grep -q .; then
+        log_info "$service: Image not found, will build"
+        return 0  # True - needs rebuild
+    fi
+
+    # Check if Dockerfile changed
+    local dockerfile_path="$PROJECT_DIR/$dockerfile"
+    local image_created=$(docker inspect -f '{{ .Created }}' "$image_name" 2>/dev/null)
+    local dockerfile_modified=$(stat -f %m "$dockerfile_path" 2>/dev/null || echo 0)
+
+    if [ "$dockerfile_modified" -gt "$(date -j -f "%Y-%m-%dT%H:%M:%S" "${image_created%.*}" +%s 2>/dev/null || echo 0)" ]; then
+        log_info "$service: Dockerfile changed, will rebuild"
+        return 0  # True - needs rebuild
+    fi
+
+    log_info "$service: Image up to date, will reuse"
+    return 1  # False - no rebuild needed
+}
+
+###############################################################################
 # Deploy containers
 ###############################################################################
 deploy_containers() {
     log_info "Deploying CHAP2 containers..."
     cd "$DOCKER_COMPOSE_DIR"
 
-    # Pull latest images and build
-    log_info "Building and starting services (this may take a few minutes)..."
-    docker-compose up -d --build
+    # Check each service for changes
+    log_info "Checking if services need rebuilding..."
+
+    local build_needed=false
+
+    # Check if any images are missing
+    if ! docker images -q linux-mac-chap2-api 2>/dev/null | grep -q . || \
+       ! docker images -q linux-mac-chap2-webportal 2>/dev/null | grep -q . || \
+       ! docker images -q linux-mac-langchain-service 2>/dev/null | grep -q .; then
+        log_warn "One or more images missing, will build"
+        build_needed=true
+    fi
+
+    # Start services (will auto-build if needed thanks to docker-compose)
+    if [ "$build_needed" = true ]; then
+        log_info "Building and starting services (this may take a few minutes)..."
+        docker-compose up -d --build
+    else
+        log_info "Starting services (reusing existing images)..."
+        # Docker Compose will automatically detect if rebuild is needed
+        docker-compose up -d
+    fi
 
     log_success "Containers deployed"
 }
