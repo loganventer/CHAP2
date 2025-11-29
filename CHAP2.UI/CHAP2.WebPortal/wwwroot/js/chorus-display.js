@@ -174,10 +174,10 @@ class ChorusDisplay {
         if (prevPageBtn) prevPageBtn.addEventListener('click', () => this.navigate(-1));
         if (nextPageBtn) nextPageBtn.addEventListener('click', () => this.navigate(1));
 
-        // Main navigation buttons (prevBtn/nextBtn) - use for chorus navigation
+        // Main navigation buttons (prevBtn/nextBtn) - use for page navigation
         // These are the primary left/right arrow buttons in ChorusDisplay
-        if (prevBtn) prevBtn.addEventListener('click', () => this.navigateChorus(-1));
-        if (nextBtn) nextBtn.addEventListener('click', () => this.navigateChorus(1));
+        if (prevBtn) prevBtn.addEventListener('click', () => this.navigate(-1));
+        if (nextBtn) nextBtn.addEventListener('click', () => this.navigate(1));
 
         // Chorus navigation (separate chorus buttons if they exist)
         if (prevChorusBtn) prevChorusBtn.addEventListener('click', () => this.navigateChorus(-1));
@@ -259,8 +259,6 @@ class ChorusDisplay {
     }
     
     async navigate(direction) {
-        if (this.choruses.length === 0) return;
-
         // Navigate between pages of the current chorus
         if (this.totalPages > 1) {
             let newPage = this.currentPage + direction;
@@ -277,8 +275,13 @@ class ChorusDisplay {
             this.updateNavigationButtons();
             this.showNotification(`Page ${this.currentPage + 1} of ${this.totalPages}`, 'info');
         } else {
-            // If there's only one page, show a notification that there are no more pages
-            this.showNotification('This chorus has only one page', 'info');
+            // If there's only one page and we have multiple choruses, navigate to next/previous chorus
+            if (this.choruses && this.choruses.length > 1) {
+                await this.navigateChorus(direction);
+            } else {
+                // Single page, single chorus - no navigation possible
+                this.showNotification('This chorus has only one page', 'info');
+            }
         }
     }
 
