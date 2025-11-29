@@ -1,6 +1,67 @@
 #!/bin/bash
 
 ###############################################################################
+# CHAP2 Desktop Installer
+#
+# This script will:
+# 1. Detect the CHAP2 project directory location
+# 2. Create a startup script with the correct paths
+# 3. Copy it to the Desktop as a .command file
+###############################################################################
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Print colored messages
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+###############################################################################
+# Detect CHAP2 project directory
+###############################################################################
+detect_project_dir() {
+    # Get the directory where this script is located
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+    # Check if we're in the CHAP2 directory by looking for key files
+    if [ -d "$SCRIPT_DIR/.deploy/linux-mac" ] && [ -f "$SCRIPT_DIR/.deploy/linux-mac/docker-compose.yml" ]; then
+        PROJECT_DIR="$SCRIPT_DIR"
+        log_success "Found CHAP2 project at: $PROJECT_DIR"
+        return 0
+    fi
+
+    log_error "Could not find CHAP2 project directory"
+    log_error "Please run this script from the CHAP2 project root"
+    exit 1
+}
+
+###############################################################################
+# Create startup script with detected path
+###############################################################################
+create_startup_script() {
+    local output_file="$1"
+
+    log_info "Creating startup script with project path: $PROJECT_DIR"
+
+    cat > "$output_file" << 'SCRIPT_EOF'
+#!/bin/bash
+
+###############################################################################
 # CHAP2 Startup Script for macOS
 #
 # This script will:
@@ -22,7 +83,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 # Always use the CHAP2 project directory, regardless of where the script is located
-PROJECT_DIR="/Users/logan/Documents/dev/CHAP2"
+PROJECT_DIR="__PROJECT_DIR_PLACEHOLDER__"
 DOCKER_COMPOSE_DIR="$PROJECT_DIR/.deploy/linux-mac"
 DOCKER_COMPOSE_FILE="$DOCKER_COMPOSE_DIR/docker-compose.yml"
 WEB_UI_URL="http://localhost:8080"
@@ -230,6 +291,69 @@ main() {
     echo ""
     log_info "To stop all services, run:"
     log_info "  cd $DOCKER_COMPOSE_DIR && docker-compose down"
+    echo ""
+}
+
+# Run main function
+main
+SCRIPT_EOF
+
+    # Replace the placeholder with the actual project directory
+    sed -i '' "s|__PROJECT_DIR_PLACEHOLDER__|$PROJECT_DIR|g" "$output_file"
+
+    # Make it executable
+    chmod +x "$output_file"
+
+    log_success "Startup script created at: $output_file"
+}
+
+###############################################################################
+# Copy to Desktop
+###############################################################################
+copy_to_desktop() {
+    local desktop_file="$HOME/Desktop/start-chap2.command"
+
+    log_info "Copying startup script to Desktop..."
+
+    # Create a temporary file
+    local temp_file=$(mktemp)
+
+    # Create the script with the detected path
+    create_startup_script "$temp_file"
+
+    # Copy to Desktop
+    cp "$temp_file" "$desktop_file"
+    chmod +x "$desktop_file"
+
+    # Clean up temp file
+    rm "$temp_file"
+
+    log_success "Installed to: $desktop_file"
+}
+
+###############################################################################
+# Main execution
+###############################################################################
+main() {
+    echo ""
+    log_info "========================================="
+    log_info "CHAP2 Desktop Installer"
+    log_info "========================================="
+    echo ""
+
+    # Detect project directory
+    detect_project_dir
+
+    # Copy to Desktop
+    copy_to_desktop
+
+    echo ""
+    log_success "========================================="
+    log_success "Installation complete!"
+    log_success "========================================="
+    echo ""
+    log_info "You can now double-click 'start-chap2.command' on your Desktop"
+    log_info "to start CHAP2 with all required services."
     echo ""
 }
 
