@@ -311,7 +311,6 @@ class ChorusDisplay {
         console.log('New index:', newIndex);
 
         // Load the new chorus
-        this.currentChorusIndex = newIndex;
         const chorus = this.choruses[newIndex];
 
         console.log('Chorus to load:', chorus);
@@ -321,25 +320,12 @@ class ChorusDisplay {
             return;
         }
 
-        this.showLoading();
+        // Update sessionStorage with new current chorus ID before navigating
+        sessionStorage.setItem('currentChorusId', chorus.id);
 
-        try {
-            // Update URL without reloading the page
-            const newUrl = `/Home/ChorusDisplay/${chorus.id}`;
-            console.log('Updating URL to:', newUrl);
-            window.history.pushState({ chorusId: chorus.id }, chorus.name, newUrl);
-
-            // Load and display the new chorus
-            console.log('Loading chorus data...');
-            await this.loadChorus(chorus.id);
-
-            this.showNotification(`${direction > 0 ? 'Next' : 'Previous'}: ${chorus.name} (${this.currentChorusIndex + 1}/${this.choruses.length})`, 'success');
-        } catch (error) {
-            console.error('Error navigating to chorus:', error);
-            this.showNotification('Error loading chorus', 'error');
-        } finally {
-            this.hideLoading();
-        }
+        // Navigate to the new chorus URL (full page load)
+        // This is necessary because the chorus data comes from the server render
+        window.location.href = `/Home/ChorusDisplay/${chorus.id}`;
     }
 
     // Set the chorus list for navigation (can be called from UI)
