@@ -286,7 +286,14 @@ class ChorusDisplay {
     }
 
     async navigateChorus(direction) {
+        console.log('=== NAVIGATE CHORUS CALLED ===');
+        console.log('Direction:', direction);
+        console.log('Current choruses array:', this.choruses);
+        console.log('Choruses length:', this.choruses ? this.choruses.length : 'null');
+        console.log('Current chorus index:', this.currentChorusIndex);
+
         if (!this.choruses || this.choruses.length <= 1) {
+            console.log('Not enough choruses to navigate');
             this.showNotification('No other choruses available', 'info');
             return;
         }
@@ -301,9 +308,13 @@ class ChorusDisplay {
             newIndex = 0;
         }
 
+        console.log('New index:', newIndex);
+
         // Load the new chorus
         this.currentChorusIndex = newIndex;
         const chorus = this.choruses[newIndex];
+
+        console.log('Chorus to load:', chorus);
 
         if (!chorus) {
             console.error('Chorus not found at index:', newIndex);
@@ -315,9 +326,11 @@ class ChorusDisplay {
         try {
             // Update URL without reloading the page
             const newUrl = `/Home/ChorusDisplay/${chorus.id}`;
+            console.log('Updating URL to:', newUrl);
             window.history.pushState({ chorusId: chorus.id }, chorus.name, newUrl);
 
             // Load and display the new chorus
+            console.log('Loading chorus data...');
             await this.loadChorus(chorus.id);
 
             this.showNotification(`${direction > 0 ? 'Next' : 'Previous'}: ${chorus.name} (${this.currentChorusIndex + 1}/${this.choruses.length})`, 'success');
