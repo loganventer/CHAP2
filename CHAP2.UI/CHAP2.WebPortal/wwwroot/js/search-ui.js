@@ -236,6 +236,9 @@ class SearchUI {
                     <div class="context-text">${this.highlightSearchTerm(contextText, this.currentQuery)}</div>
                 </td>
                 <td class="col-actions">
+                    <button class="btn-action add-to-setlist-btn" onclick="addToSetlist('${chorus.id}')" title="Add to Setlist">
+                        <i class="fas fa-plus"></i>
+                    </button>
                     <button class="btn-action view-btn" onclick="viewChorus('${chorus.id}')" title="View Details">
                         <i class="fas fa-eye"></i>
                     </button>

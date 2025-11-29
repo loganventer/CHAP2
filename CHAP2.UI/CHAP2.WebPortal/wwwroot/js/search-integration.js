@@ -406,7 +406,7 @@ function viewChorus(id) {
         console.log(`Stored ${window.currentChorusList.length} choruses in sessionStorage for navigation`);
     }
 
-    window.open(`/Home/Detail/${id}`, '_blank');
+    window.open(`/Home/ChorusDisplay/${id}`, '_blank');
 }
 
 function editChorus(id) {

@@ -1,0 +1,192 @@
+/* Setlist Styles */
+
+.setlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.setlist-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.setlist-container {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 300px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.setlist-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.setlist-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+    cursor: move;
+}
+
+.setlist-item:hover {
+    background: #e3f2fd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.setlist-item.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+}
+
+.setlist-item-drag {
+    color: #999;
+    cursor: grab;
+    font-size: 18px;
+}
+
+.setlist-item-drag:active {
+    cursor: grabbing;
+}
+
+.setlist-item-number {
+    font-weight: bold;
+    font-size: 18px;
+    color: #666;
+    min-width: 30px;
+    text-align: center;
+}
+
+.setlist-item-content {
+    flex: 1;
+}
+
+.setlist-item-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.setlist-item-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 13px;
+    color: #666;
+}
+
+.setlist-item-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.setlist-item-actions {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.btn-icon {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.btn-icon:hover:not(:disabled) {
+    background: #2196F3;
+    color: white;
+    border-color: #2196F3;
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
+    background: #f44336;
+    border-color: #f44336;
+}
+
+.btn-icon:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Add to Setlist Button Styling */
+.add-to-setlist-btn {
+    background: #4CAF50 !important;
+    color: white !important;
+    border-color: #4CAF50 !important;
+}
+
+.add-to-setlist-btn:hover {
+    background: #45a049 !important;
+    border-color: #45a049 !important;
+}
+
+.add-to-setlist-btn i {
+    color: white !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .setlist-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .setlist-item {
+        flex-wrap: wrap;
+    }
+
+    .setlist-item-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+}

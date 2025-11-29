@@ -401,6 +401,16 @@
     background: var(--bg-secondary);
 }
 
+.action-btn-add-setlist {
+    color: #4CAF50;
+}
+
+.action-btn-add-setlist:hover {
+    background: rgba(76, 175, 80, 0.1);
+    color: #45a049;
+    border-color: #4CAF50;
+}
+
 .action-btn-danger {
     color: #dc3545;
 }

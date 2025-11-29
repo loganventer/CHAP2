@@ -27,6 +27,9 @@
             <button class="tab-button active" data-tab="regular">
                 <i class="fas fa-search"></i> Regular Search
             </button>
+            <button class="tab-button" data-tab="setlist">
+                <i class="fas fa-list-ul"></i> My Setlist
+            </button>
             <button class="tab-button" data-tab="ai">
                 <i class="fas fa-robot"></i> AI Search
             </button>
@@ -53,13 +56,40 @@
             </div>
         </div>
         
+        <!-- Setlist -->
+        <div class="search-section" id="setlistSearch" style="display: none;">
+            <div class="setlist-header">
+                <h3 style="margin: 0; color: #333; font-size: 18px;">
+                    <i class="fas fa-list-ul"></i> My Setlist
+                    <span id="setlistCount" style="font-size: 14px; color: #666; margin-left: 10px;">(0 choruses)</span>
+                </h3>
+                <div class="setlist-actions">
+                    <button class="btn-primary" id="launchSetlistBtn" style="display: none;">
+                        <i class="fas fa-play"></i> Launch Setlist
+                    </button>
+                    <button class="btn-secondary" id="clearSetlistBtn" style="display: none;">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <div id="setlistContainer" class="setlist-container">
+                <div class="setlist-empty" id="setlistEmpty">
+                    <i class="fas fa-list-ul" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                    <p style="color: #666; font-size: 16px;">Your setlist is empty</p>
+                    <p style="color: #999; font-size: 14px;">Search for choruses and click "Add to Setlist" to build your list</p>
+                </div>
+                <div id="setlistItems" style="display: none;"></div>
+            </div>
+        </div>
+
         <!-- AI Search -->
         <div class="search-section" id="aiSearch" style="display: none;">
             <div class="search-box">
                 <i class="fas fa-robot search-icon"></i>
-                <textarea 
-                       id="aiSearchInput" 
-                       class="search-input auto-resize" 
+                <textarea
+                       id="aiSearchInput"
+                       class="search-input auto-resize"
                        placeholder="Ask about choruses using natural language..."
                        rows="1"
                        maxlength="400"
@@ -73,7 +103,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- AI Search Filters -->
             <div class="search-filters" style="margin-top: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                 <div class="filter-group">
@@ -101,7 +131,7 @@
                         <option value="19">B♭</option>
                     </select>
                 </div>
-                
+
                 <div class="filter-group">
                     <label for="filterType" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Chorus Type:</label>
                     <select id="filterType" class="filter-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
@@ -110,7 +140,7 @@
                         <option value="2">Worship</option>
                     </select>
                 </div>
-                
+
                 <div class="filter-group">
                     <label for="filterTimeSignature" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Time Signature:</label>
                     <select id="filterTimeSignature" class="filter-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
@@ -133,7 +163,7 @@
                         <option value="16">8/8</option>
                     </select>
                 </div>
-                
+
                 <div class="filter-group">
                     <label for="maxResults" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Max Results:</label>
                     <select id="maxResults" class="filter-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
@@ -143,14 +173,14 @@
                         <option value="20">20</option>
                     </select>
                 </div>
-                
+
                 <div class="filter-group" style="align-self: end;">
                     <button id="aiClearFiltersBtn" class="btn-secondary" style="padding: 8px 12px; font-size: 12px; margin-top: 20px;">
                         <i class="fas fa-times"></i> Clear Filters
                     </button>
                 </div>
             </div>
-            
+
             <div class="search-info">
                 <span class="ai-search-info">Powered by AI - ask questions like "What choruses mention Jesus?"</span>
                 <span class="min-length-info">Maximum 400 characters</span>
@@ -203,7 +233,12 @@
                 <p>Searching...</p>
             </div>
         </div>
-        
+
+        <!-- Setlist Results -->
+        <div class="results-section" id="setlistResults" style="display: none;">
+            <!-- Content managed by setlist JavaScript -->
+        </div>
+
         <!-- AI Search Results -->
         <div class="results-section" id="aiResults" style="display: none;">
             <div id="aiSearchResults"></div>
@@ -289,6 +324,7 @@
 
 @section Scripts {
     <script src="~/js/chorus-display.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/setlist.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/ai-search.js?v=@DateTime.Now.Ticks"></script>
     <script>
         // Initialize both search modes when DOM is loaded
@@ -412,11 +448,18 @@
                     if (targetTab === 'regular') {
                         const regularResults = document.getElementById('regularResults');
                         if (regularResults) regularResults.style.display = 'block';
+                    } else if (targetTab === 'setlist') {
+                        const setlistResults = document.getElementById('setlistResults');
+                        if (setlistResults) setlistResults.style.display = 'block';
+                        // Refresh setlist display if needed
+                        if (typeof window.refreshSetlistDisplay === 'function') {
+                            window.refreshSetlistDisplay();
+                        }
                     } else if (targetTab === 'ai') {
                         const aiResults = document.getElementById('aiResults');
                         if (aiResults) aiResults.style.display = 'block';
                     }
-                    
+
                     // Re-initialize search if switching to regular search
                     if (targetTab === 'regular') {
                         console.log('Switching to regular search, re-initializing...');
@@ -469,7 +512,7 @@
                 document.body.removeChild(loadingNotification);
 
                 // Open first chorus in new window with full list for navigation
-                window.open(`/Home/Detail/${allChoruses[0].id}`, '_blank');
+                window.open(`/Home/ChorusDisplay/${allChoruses[0].id}`, '_blank');
 
                 console.log('Browse All: Opened first chorus with full navigation list');
             } catch (error) {

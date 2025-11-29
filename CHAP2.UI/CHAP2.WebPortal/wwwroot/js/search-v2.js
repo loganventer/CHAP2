@@ -391,6 +391,9 @@ function createResultRow(result, index) {
         <td class="result-time">${getTimeSignatureDisplay(result.timeSignature)}</td>
         <td class="result-context">${utils.truncateText(result.chorusText, 80)}</td>
         <td class="result-actions">
+            <button class="action-btn action-btn-add-setlist" onclick="addToSetlistFromSearch('${result.id}')" data-tooltip="Add to Setlist">
+                <i class="fas fa-plus"></i>
+            </button>
             <button class="action-btn" onclick="openInNewWindow('${result.id}')" data-tooltip="Open in New Window">
                 <i class="fas fa-external-link-alt"></i>
             </button>
@@ -891,6 +894,24 @@ function openEditWindow(event, chorusId) {
     window.open(url, '_blank', windowFeatures);
 }
 
+// Add to setlist from search results
+function addToSetlistFromSearch(chorusId) {
+    // Find the chorus in the current search results
+    const chorus = searchResults.find(c => c.id === chorusId);
+
+    if (!chorus) {
+        console.error('Chorus not found in search results');
+        return;
+    }
+
+    if (window.setlistManager) {
+        window.setlistManager.addChorus(chorus);
+    } else {
+        console.error('Setlist manager not initialized');
+    }
+}
+
 // Add global window functions
 window.openCreateWindow = openCreateWindow;
-window.openEditWindow = openEditWindow; 
+window.openEditWindow = openEditWindow;
+window.addToSetlistFromSearch = addToSetlistFromSearch; 

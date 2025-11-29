@@ -58,7 +58,12 @@ class ChorusDisplay {
         this.currentChorusLines = [];
         this.wrappedLinesPerOriginalLine = [];
         this.totalWrappedLines = 0;
-        
+
+        // Auto-hide buttons settings
+        this.hideButtonsTimeout = null;
+        this.hideDelay = 2000; // 2000ms of inactivity
+        this.buttonsVisible = true;
+
         // Initialize the display
         this.init();
     }
@@ -66,16 +71,19 @@ class ChorusDisplay {
     init() {
         this.loadChoruses();
         this.setupEventListeners();
-        
+
         // Process initial chorus data if available
         if (window.chorusData) {
             this.updateDisplay(window.chorusData);
         }
-        
+
         // Only update navigation buttons if we're on a chorus display page
         if (window.chorusData || window.location.pathname.includes('/Detail/')) {
             this.updateNavigationButtons();
         }
+
+        // Initialize auto-hide buttons
+        this.setupAutoHideButtons();
     }
     
     async loadChoruses() {
@@ -1135,6 +1143,110 @@ class ChorusDisplay {
                 this.autoFitText();
             }
         }, 250);
+    }
+
+    // Setup auto-hide buttons on mouse inactivity
+    setupAutoHideButtons() {
+        console.log('Setting up auto-hide buttons...');
+
+        // Get all button containers
+        this.buttonElements = {
+            navButtons: document.querySelectorAll('.nav-btn'),
+            controlsContainer: document.querySelector('.controls-container'),
+            pageIndicator: document.querySelector('.page-indicator')
+        };
+
+        // Start the hide timer
+        this.resetHideTimer();
+
+        // Listen for mouse movement
+        document.addEventListener('mousemove', () => {
+            this.showButtons();
+            this.resetHideTimer();
+        });
+
+        // Also show buttons on any interaction
+        document.addEventListener('click', () => {
+            this.showButtons();
+            this.resetHideTimer();
+        });
+
+        console.log('Auto-hide buttons initialized');
+    }
+
+    // Reset the hide timer
+    resetHideTimer() {
+        // Clear existing timeout
+        if (this.hideButtonsTimeout) {
+            clearTimeout(this.hideButtonsTimeout);
+        }
+
+        // Set new timeout to hide buttons
+        this.hideButtonsTimeout = setTimeout(() => {
+            this.hideButtons();
+        }, this.hideDelay);
+    }
+
+    // Show all buttons with fade-in
+    showButtons() {
+        if (this.buttonsVisible) return;
+
+        this.buttonsVisible = true;
+
+        // Show navigation buttons
+        if (this.buttonElements.navButtons) {
+            this.buttonElements.navButtons.forEach(btn => {
+                btn.style.opacity = '1';
+                btn.style.transition = 'opacity 0.3s ease-in';
+                btn.style.pointerEvents = 'auto';
+            });
+        }
+
+        // Show controls container
+        if (this.buttonElements.controlsContainer) {
+            this.buttonElements.controlsContainer.style.opacity = '1';
+            this.buttonElements.controlsContainer.style.transition = 'opacity 0.3s ease-in';
+            this.buttonElements.controlsContainer.style.pointerEvents = 'auto';
+        }
+
+        // Show page indicator
+        if (this.buttonElements.pageIndicator) {
+            this.buttonElements.pageIndicator.style.opacity = '1';
+            this.buttonElements.pageIndicator.style.transition = 'opacity 0.3s ease-in';
+        }
+
+        console.log('Buttons shown');
+    }
+
+    // Hide all buttons with fade-out
+    hideButtons() {
+        if (!this.buttonsVisible) return;
+
+        this.buttonsVisible = false;
+
+        // Hide navigation buttons
+        if (this.buttonElements.navButtons) {
+            this.buttonElements.navButtons.forEach(btn => {
+                btn.style.opacity = '0';
+                btn.style.transition = 'opacity 0.5s ease-out';
+                btn.style.pointerEvents = 'none';
+            });
+        }
+
+        // Hide controls container
+        if (this.buttonElements.controlsContainer) {
+            this.buttonElements.controlsContainer.style.opacity = '0';
+            this.buttonElements.controlsContainer.style.transition = 'opacity 0.5s ease-out';
+            this.buttonElements.controlsContainer.style.pointerEvents = 'none';
+        }
+
+        // Hide page indicator
+        if (this.buttonElements.pageIndicator) {
+            this.buttonElements.pageIndicator.style.opacity = '0';
+            this.buttonElements.pageIndicator.style.transition = 'opacity 0.5s ease-out';
+        }
+
+        console.log('Buttons hidden after inactivity');
     }
 }
 

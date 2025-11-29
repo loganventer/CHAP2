@@ -145,28 +145,18 @@ deploy_containers() {
     log_info "Deploying CHAP2 containers..."
     cd "$DOCKER_COMPOSE_DIR"
 
-    # Check each service for changes
-    log_info "Checking if services need rebuilding..."
+    # Remove existing images to force complete rebuild
+    log_info "Removing existing images..."
+    docker rmi -f linux-mac-chap2-webportal 2>/dev/null || true
+    docker rmi -f linux-mac-chap2-api 2>/dev/null || true
+    docker rmi -f linux-mac-langchain-service 2>/dev/null || true
 
-    local build_needed=false
+    # Force complete rebuild by using --no-cache and --pull
+    log_info "Force rebuilding all services (this may take a few minutes)..."
+    docker-compose build --no-cache --pull
 
-    # Check if any images are missing
-    if ! docker images -q linux-mac-chap2-api 2>/dev/null | grep -q . || \
-       ! docker images -q linux-mac-chap2-webportal 2>/dev/null | grep -q . || \
-       ! docker images -q linux-mac-langchain-service 2>/dev/null | grep -q .; then
-        log_warn "One or more images missing, will build"
-        build_needed=true
-    fi
-
-    # Start services (will auto-build if needed thanks to docker-compose)
-    if [ "$build_needed" = true ]; then
-        log_info "Building and starting services (this may take a few minutes)..."
-        docker-compose up -d --build
-    else
-        log_info "Starting services (reusing existing images)..."
-        # Docker Compose will automatically detect if rebuild is needed
-        docker-compose up -d
-    fi
+    log_info "Starting services..."
+    docker-compose up -d
 
     log_success "Containers deployed"
 }
