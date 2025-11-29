@@ -185,6 +185,10 @@ class SearchUI {
     }
 
     displayResults(results, totalCount, metadata) {
+        // Store results globally for chorus navigation
+        window.currentChorusList = results;
+        console.log(`Search UI: Stored ${results.length} choruses for navigation`);
+
         // Update results header
         this.elements.resultsCount.textContent = `Found ${totalCount} result${totalCount !== 1 ? 's' : ''}`;
         this.elements.resultsHeader.style.display = 'block';
@@ -204,7 +208,7 @@ class SearchUI {
 
         // Build table rows
         const tableRows = results.map((chorus, index) => this.createResultRow(chorus, index + 1));
-        
+
         this.elements.resultsTableBody.innerHTML = tableRows.join('');
         this.elements.resultsTable.style.display = 'table';
         this.elements.noResults.style.display = 'none';

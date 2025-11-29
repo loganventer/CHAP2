@@ -10,6 +10,9 @@
             <p class="app-subtitle">Musical Chorus Search</p>
         </div>
         <div class="header-actions">
+            <button class="btn-secondary" onclick="browseAllChoruses()" title="Browse all choruses with keyboard navigation">
+                <i class="fas fa-list"></i> Browse All
+            </button>
             <a href="@Url.Action("Create")" class="btn-primary" target="_blank" onclick="openCreateWindow(event)">
                 <i class="fas fa-plus"></i> Create New
             </a>
@@ -427,6 +430,56 @@
                     console.log('Tab switching completed');
                 });
             });
+        }
+
+        // Browse All Choruses function
+        async function browseAllChoruses() {
+            try {
+                console.log('Browse All: Fetching all choruses...');
+
+                // Show loading notification
+                const loadingNotification = document.createElement('div');
+                loadingNotification.id = 'browseAllLoading';
+                loadingNotification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #2196F3; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10000;';
+                loadingNotification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading all choruses...';
+                document.body.appendChild(loadingNotification);
+
+                // Fetch all choruses
+                const response = await fetch('/Home/Search?q=*');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch choruses');
+                }
+
+                const data = await response.json();
+                const allChoruses = data.results || [];
+
+                console.log(`Browse All: Found ${allChoruses.length} choruses`);
+
+                if (allChoruses.length === 0) {
+                    alert('No choruses found in the database.');
+                    document.body.removeChild(loadingNotification);
+                    return;
+                }
+
+                // Store in sessionStorage
+                sessionStorage.setItem('chorusList', JSON.stringify(allChoruses));
+                sessionStorage.setItem('currentChorusId', allChoruses[0].id);
+
+                // Remove loading notification
+                document.body.removeChild(loadingNotification);
+
+                // Open first chorus in new window with full list for navigation
+                window.open(`/Home/Detail/${allChoruses[0].id}`, '_blank');
+
+                console.log('Browse All: Opened first chorus with full navigation list');
+            } catch (error) {
+                console.error('Browse All: Error loading choruses', error);
+                alert('Error loading choruses. Please try again.');
+                const loadingNotification = document.getElementById('browseAllLoading');
+                if (loadingNotification) {
+                    document.body.removeChild(loadingNotification);
+                }
+            }
         }
     </script>
 } 
