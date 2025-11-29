@@ -78,7 +78,7 @@ class ChorusDisplay {
         }
 
         // Only update navigation buttons if we're on a chorus display page
-        if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+        if (window.chorusData || window.location.pathname.includes('/ChorusDisplay/')) {
             this.updateNavigationButtons();
         }
 
@@ -148,7 +148,7 @@ class ChorusDisplay {
         console.log('Setting up event listeners...');
         console.log('window.chorusData:', window.chorusData);
         console.log('window.location.pathname:', window.location.pathname);
-        console.log('Includes /Detail/:', window.location.pathname.includes('/Detail/'));
+        console.log('Includes /ChorusDisplay/:', window.location.pathname.includes('/ChorusDisplay/'));
 
         // Navigation buttons for pages
         const prevPageBtn = document.getElementById('prevPageBtn');
@@ -170,15 +170,16 @@ class ChorusDisplay {
         console.log('Navigation buttons found:', { prevPageBtn, nextPageBtn, prevBtn, nextBtn, prevChorusBtn, nextChorusBtn, printBtn, closeBtn, increaseFontBtn, decreaseFontBtn });
 
         // Only add event listeners if the elements exist (they won't on the search page)
-        // Page navigation
+        // Page navigation (if separate page buttons exist)
         if (prevPageBtn) prevPageBtn.addEventListener('click', () => this.navigate(-1));
         if (nextPageBtn) nextPageBtn.addEventListener('click', () => this.navigate(1));
 
-        // Backward compatibility with old button IDs (if new buttons don't exist)
-        if (prevBtn && !prevPageBtn) prevBtn.addEventListener('click', () => this.navigate(-1));
-        if (nextBtn && !nextPageBtn) nextBtn.addEventListener('click', () => this.navigate(1));
+        // Main navigation buttons (prevBtn/nextBtn) - use for chorus navigation
+        // These are the primary left/right arrow buttons in ChorusDisplay
+        if (prevBtn) prevBtn.addEventListener('click', () => this.navigateChorus(-1));
+        if (nextBtn) nextBtn.addEventListener('click', () => this.navigateChorus(1));
 
-        // Chorus navigation
+        // Chorus navigation (separate chorus buttons if they exist)
         if (prevChorusBtn) prevChorusBtn.addEventListener('click', () => this.navigateChorus(-1));
         if (nextChorusBtn) nextChorusBtn.addEventListener('click', () => this.navigateChorus(1));
         if (printBtn) printBtn.addEventListener('click', () => this.print());
@@ -187,7 +188,7 @@ class ChorusDisplay {
         if (decreaseFontBtn) decreaseFontBtn.addEventListener('click', () => this.decreaseFontSize());
 
         // Always add resize listener if we're on a chorus display page
-        if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+        if (window.chorusData || window.location.pathname.includes('/ChorusDisplay/')) {
             console.log('Setting up resize listener for chorus display page');
             window.addEventListener('resize', () => {
                 console.log('Resize event fired!');
@@ -310,7 +311,7 @@ class ChorusDisplay {
 
         try {
             // Update URL without reloading the page
-            const newUrl = `/Home/Detail/${chorus.id}`;
+            const newUrl = `/Home/ChorusDisplay/${chorus.id}`;
             window.history.pushState({ chorusId: chorus.id }, chorus.name, newUrl);
 
             // Load and display the new chorus
@@ -369,15 +370,15 @@ class ChorusDisplay {
                 }
             }
             
-            // Fallback to loading the detail page
-            const detailResponse = await fetch(`/Home/Detail/${chorusId}`);
+            // Fallback to loading the ChorusDisplay page
+            const detailResponse = await fetch(`/Home/ChorusDisplay/${chorusId}`);
             if (detailResponse.ok) {
                 const html = await detailResponse.text();
-                
+
                 // Create a temporary div to parse the HTML
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = html;
-                
+
                 // Extract the chorus data
                 const scriptTag = tempDiv.querySelector('script');
                 if (scriptTag) {
@@ -1255,11 +1256,11 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded event fired');
     console.log('window.chorusData:', window.chorusData);
     console.log('window.location.pathname:', window.location.pathname);
-    console.log('Includes /Detail/:', window.location.pathname.includes('/Detail/'));
+    console.log('Includes /ChorusDisplay/:', window.location.pathname.includes('/ChorusDisplay/'));
 
     // Only initialize ChorusDisplay if we're on a chorus display page
-    // Check if we have chorus data or if we're on a detail page
-    if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+    // Check if we have chorus data or if we're on a ChorusDisplay page
+    if (window.chorusData || window.location.pathname.includes('/ChorusDisplay/')) {
         console.log('Creating ChorusDisplay instance...');
         window.chorusDisplay = new ChorusDisplay();
         console.log('ChorusDisplay instance created and stored in window.chorusDisplay');
@@ -1269,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Show loading state while initializing (only on chorus display pages)
-if (window.chorusData || window.location.pathname.includes('/Detail/')) {
+if (window.chorusData || window.location.pathname.includes('/ChorusDisplay/')) {
     document.body.classList.add('loading');
 }
 
