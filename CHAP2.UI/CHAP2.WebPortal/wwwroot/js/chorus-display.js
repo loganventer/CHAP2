@@ -641,6 +641,20 @@ class ChorusDisplay {
             };
         };
 
+        // Create stars for nighttime (only create once)
+        const stars = [];
+        const starCount = 150;
+        for (let i = 0; i < starCount; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height * 0.7, // Keep stars in upper 70% of sky
+                size: Math.random() * 2 + 0.5, // 0.5-2.5px
+                opacity: Math.random(),
+                twinkleSpeed: Math.random() * 0.02 + 0.01, // Random twinkle speed
+                twinkleOffset: Math.random() * Math.PI * 2 // Random starting phase
+            });
+        }
+
         const drawColorShift = () => {
             // Create multiple cycles for more dynamic color transitions
             const mainCycle = (Math.sin(time * 0.001) + 1) / 2; // Primary dusk/dawn cycle - faster
@@ -711,6 +725,113 @@ class ChorusDisplay {
 
                 ctx.fillStyle = linearGradient;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Draw stars during nighttime (when mainCycle is near 0, which is dusk/night)
+            // Stars fade in during dusk (0-0.3) and fade out during dawn (0.7-1.0)
+            const starOpacity = mainCycle < 0.3 ? (1 - mainCycle / 0.3) :
+                               mainCycle > 0.7 ? ((1 - mainCycle) / 0.3) :
+                               mainCycle < 0.5 ? 1 : 1; // Full opacity during night (0.3-0.7)
+
+            if (starOpacity > 0) {
+                stars.forEach(star => {
+                    // Twinkling effect
+                    const twinkle = (Math.sin(time * star.twinkleSpeed + star.twinkleOffset) + 1) / 2;
+                    const finalOpacity = star.opacity * starOpacity * twinkle;
+
+                    ctx.fillStyle = `rgba(255, 255, 255, ${finalOpacity})`;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Add glow for larger stars
+                    if (star.size > 1.5) {
+                        ctx.shadowBlur = 3;
+                        ctx.shadowColor = `rgba(255, 255, 255, ${finalOpacity * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                });
+            }
+
+            // Draw sun/moon following an arc across the sky
+            // mainCycle: 0 = dusk (red/orange), 0.5 = night (dark blue), 1.0 = dawn (peachy/blue)
+            // Sun appears during dawn (0.7-1.0) and sets during dusk (0-0.3)
+            // Moon appears during night (0.3-0.7)
+
+            // Arc angle: 0 = right (sunrise/moonrise), PI = left (sunset/moonset)
+            const arcAngle = mainCycle * Math.PI; // 0 to PI
+
+            // Calculate position along arc (parabolic arc)
+            const celestialX = canvas.width - (mainCycle * canvas.width); // Right to left
+            const celestialY = canvas.height - Math.sin(arcAngle) * (canvas.height * 0.6) - canvas.height * 0.15; // Arc from bottom to top
+
+            // Sun appears during dawn colors (mainCycle 0.7-1.0, which is peachy/blue dawn colors)
+            const sunSize = 60;
+            if (mainCycle > 0.7) {
+                const sunOpacity = (mainCycle - 0.7) / 0.3; // Fade in from 0.7 to 1.0
+
+                // Sun with warm dawn glow
+                const sunGradient = ctx.createRadialGradient(celestialX, celestialY, 0, celestialX, celestialY, sunSize);
+                sunGradient.addColorStop(0, `rgba(255, 255, 220, ${sunOpacity})`);
+                sunGradient.addColorStop(0.4, `rgba(255, 230, 120, ${sunOpacity * 0.9})`);
+                sunGradient.addColorStop(0.7, `rgba(255, 200, 80, ${sunOpacity * 0.5})`);
+                sunGradient.addColorStop(1, `rgba(255, 180, 60, 0)`);
+
+                ctx.fillStyle = sunGradient;
+                ctx.beginPath();
+                ctx.arc(celestialX, celestialY, sunSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // Sun also visible during early dusk (0-0.3, fading out as it sets)
+            else if (mainCycle < 0.3) {
+                const sunOpacity = (0.3 - mainCycle) / 0.3; // Fade out from 0.3 to 0
+
+                // Sun with warm sunset glow
+                const sunGradient = ctx.createRadialGradient(celestialX, celestialY, 0, celestialX, celestialY, sunSize);
+                sunGradient.addColorStop(0, `rgba(255, 240, 200, ${sunOpacity})`);
+                sunGradient.addColorStop(0.4, `rgba(255, 200, 80, ${sunOpacity * 0.9})`);
+                sunGradient.addColorStop(0.7, `rgba(255, 150, 40, ${sunOpacity * 0.5})`);
+                sunGradient.addColorStop(1, `rgba(255, 120, 30, 0)`);
+
+                ctx.fillStyle = sunGradient;
+                ctx.beginPath();
+                ctx.arc(celestialX, celestialY, sunSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Moon appears during nighttime (mainCycle 0.3-0.7, which is dark dusk/night colors)
+            const moonSize = 50;
+            if (mainCycle >= 0.3 && mainCycle <= 0.7) {
+                const moonOpacity = mainCycle < 0.4 ? (mainCycle - 0.3) / 0.1 : // Fade in 0.3-0.4
+                                   mainCycle > 0.6 ? (0.7 - mainCycle) / 0.1 : // Fade out 0.6-0.7
+                                   1.0; // Full opacity 0.4-0.6
+
+                // Moon with cool glow
+                const moonGradient = ctx.createRadialGradient(celestialX, celestialY, 0, celestialX, celestialY, moonSize);
+                moonGradient.addColorStop(0, `rgba(245, 245, 255, ${moonOpacity * 0.95})`);
+                moonGradient.addColorStop(0.5, `rgba(220, 220, 240, ${moonOpacity * 0.7})`);
+                moonGradient.addColorStop(0.8, `rgba(200, 200, 230, ${moonOpacity * 0.4})`);
+                moonGradient.addColorStop(1, `rgba(180, 180, 220, 0)`);
+
+                ctx.fillStyle = moonGradient;
+                ctx.beginPath();
+                ctx.arc(celestialX, celestialY, moonSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Moon craters (darker spots)
+                ctx.fillStyle = `rgba(180, 180, 200, ${moonOpacity * 0.35})`;
+                ctx.beginPath();
+                ctx.arc(celestialX - 12, celestialY - 10, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(celestialX + 14, celestialY + 6, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(celestialX - 6, celestialY + 16, 6, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             // Adapt font color based on background brightness
