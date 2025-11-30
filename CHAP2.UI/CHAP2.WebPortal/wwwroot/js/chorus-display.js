@@ -651,19 +651,25 @@ class ChorusDisplay {
             };
         };
 
-        // Create stars for nighttime (only create once)
-        const stars = [];
+        // Create stars for nighttime
+        let stars = [];
         const starCount = 150;
-        for (let i = 0; i < starCount; i++) {
-            stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height * 0.7, // Keep stars in upper 70% of sky
-                size: Math.random() * 2 + 0.5, // 0.5-2.5px
-                opacity: Math.random(),
-                twinkleSpeed: Math.random() * 0.02 + 0.01, // Random twinkle speed
-                twinkleOffset: Math.random() * Math.PI * 2 // Random starting phase
-            });
-        }
+
+        const createStars = () => {
+            stars = [];
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height, // Stars across entire screen
+                    size: Math.random() * 2 + 0.5, // 0.5-2.5px
+                    opacity: Math.random() * 0.8 + 0.2, // 0.2-1.0 opacity
+                    twinkleSpeed: Math.random() * 0.02 + 0.01, // Random twinkle speed
+                    twinkleOffset: Math.random() * Math.PI * 2 // Random starting phase
+                });
+            }
+        };
+
+        createStars(); // Initial star creation
 
         const drawColorShift = () => {
             // Create multiple cycles for more dynamic color transitions - SLOWER
@@ -825,6 +831,7 @@ class ChorusDisplay {
         const resizeCanvas = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            createStars(); // Recreate stars for new canvas size
         };
         window.addEventListener('resize', resizeCanvas);
 
