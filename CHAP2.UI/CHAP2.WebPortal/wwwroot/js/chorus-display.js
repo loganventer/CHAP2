@@ -55,6 +55,7 @@ class ChorusDisplay {
         this.currentPage = 0;
         this.totalPages = 1;
         this.linesPerPage = 10;
+        this.originalLinesPerPage = 5; // How many original text lines fit per page (accounting for wrapping)
         this.currentChorusLines = [];
         this.wrappedLinesPerOriginalLine = [];
         this.totalWrappedLines = 0;
@@ -1245,7 +1246,6 @@ class ChorusDisplay {
         console.log('Calculated optimal font size:', this.currentFontSize, 'px');
 
         // Calculate initial layout
-        this.calculateWrappedLines();
         this.calculateLinesPerPage();
 
         // Show page indicator if multiple pages
@@ -1273,7 +1273,9 @@ class ChorusDisplay {
                 page.split('\n').filter(line => line.trim() !== '')
             );
             this.hasExplicitPageBreaks = true;
-            console.log(`Found ${this.explicitPages.length} explicit pages`);
+            // Also populate currentChorusLines for functions that need all lines (like calculateOptimalFontSize)
+            this.currentChorusLines = this.explicitPages.flat();
+            console.log(`Found ${this.explicitPages.length} explicit pages with ${this.currentChorusLines.length} total lines`);
         } else {
             // No explicit page breaks, use automatic pagination
             this.currentChorusLines = text.split('\n').filter(line => line.trim() !== '');
@@ -1402,111 +1404,77 @@ class ChorusDisplay {
         console.log(`Auto-fit complete. Font size: ${this.currentFontSize}px, Pages: ${this.totalPages}`);
     }
     
-    // Calculate how many lines can fit on one page
+    // Calculate how many lines can fit on one page - simplified approach
     calculateLinesPerPage() {
-        const container = document.querySelector('.chorus-content');
-        if (!container) return;
-
-        // Get the actual available viewport height, accounting for fixed elements
-        // Header includes: title (1.3rem ~21px) + key badge (~20px) + padding (30px) + gradient overflow (~30px)
-        // Controls include: button height (~50px) + bottom positioning (20px) + safety margin
-        const headerHeight = 110; // Generous header space to prevent overlap
-        const controlsHeight = 120; // Generous controls space at bottom
-        const safetyMargin = 20; // Additional safety margin
-
-        const viewportHeight = window.innerHeight;
-        const availableHeight = viewportHeight - headerHeight - controlsHeight - safetyMargin;
-
-        const containerWidth = container.clientWidth;
-        const lineHeight = this.currentFontSize * 1.4; // Match CSS line-height of 1.4
-
-        // Calculate how many lines can fit vertically in the safe area
-        const maxLinesVertically = Math.floor(availableHeight / lineHeight);
-        this.linesPerPage = Math.max(1, maxLinesVertically); // At least 1 line
-
-        // Now calculate how many actual text lines will fit after wrapping
-        this.calculateWrappedLines();
-
-        console.log(`Viewport height: ${viewportHeight}px, Available height: ${availableHeight}px`);
-        console.log(`Header: ${headerHeight}px, Controls: ${controlsHeight}px, Safety: ${safetyMargin}px`);
-        console.log(`Font size: ${this.currentFontSize}px, Line height: ${lineHeight}px`);
-        console.log(`Container width: ${containerWidth}px`);
-        console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
-    }
-    
-    // Calculate how many actual lines will be displayed after wrapping
-    calculateWrappedLines() {
-        const container = document.querySelector('.chorus-content');
-        if (!container) return;
-
-        const containerWidth = container.clientWidth - 40;
-        const fontSize = this.currentFontSize;
-        const lineHeight = fontSize * 1.4; // Match CSS line-height of 1.4
-        
-        // Create a temporary element to measure text wrapping
-        const tempElement = document.createElement('div');
-        tempElement.style.cssText = `
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-            width: ${containerWidth}px;
-            font-size: ${fontSize}px;
-            line-height: ${lineHeight}px;
-            word-wrap: break-word;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            white-space: pre-wrap;
-            font-family: 'Inter', sans-serif;
-        `;
-        document.body.appendChild(tempElement);
-        
-        let totalWrappedLines = 0;
-        const wrappedLinesPerOriginalLine = [];
-        
-        // Calculate wrapped lines for each original line
-        for (let i = 0; i < this.currentChorusLines.length; i++) {
-            const line = this.currentChorusLines[i];
-            tempElement.textContent = line;
-            
-            // Get the actual height of the wrapped text
-            const wrappedHeight = tempElement.scrollHeight;
-            const wrappedLines = Math.ceil(wrappedHeight / lineHeight);
-            
-            wrappedLinesPerOriginalLine.push(wrappedLines);
-            totalWrappedLines += wrappedLines;
+        // If we have explicit page breaks, use them
+        if (this.hasExplicitPageBreaks) {
+            this.totalPages = this.explicitPages.length;
+            console.log(`Using explicit page breaks: ${this.totalPages} pages`);
+            this.updatePageIndicator();
+            return;
         }
-        
-        // Clean up
-        document.body.removeChild(tempElement);
-        
-        // Store the wrapped lines data for pagination
-        this.wrappedLinesPerOriginalLine = wrappedLinesPerOriginalLine;
-        this.totalWrappedLines = totalWrappedLines;
-        
-        // Update total pages based on wrapped lines
-        this.totalPages = Math.ceil(totalWrappedLines / this.linesPerPage);
-        
-        console.log(`Total original lines: ${this.currentChorusLines.length}`);
-        console.log(`Total wrapped lines: ${totalWrappedLines}`);
-        console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
-        
-        // If we have more pages than before, adjust current page
+
+        // Get the actual content container and measure available space directly
+        const contentContainer = document.querySelector('.chorus-content');
+        let availableHeight;
+
+        if (contentContainer) {
+            // Use actual container height which already accounts for CSS padding
+            availableHeight = contentContainer.clientHeight;
+            // Subtract additional safety margin for any internal padding
+            availableHeight -= 20; // Account for .chorus-content padding (10px top + 10px bottom)
+        } else {
+            // Fallback to viewport-based calculation
+            const headerHeight = 110;
+            const controlsHeight = 120;
+            const containerPadding = 20; // .chorus-content padding
+            const safetyMargin = 20;
+            availableHeight = window.innerHeight - headerHeight - controlsHeight - containerPadding - safetyMargin;
+        }
+
+        const lineHeight = this.currentFontSize * 1.4;
+
+        // Calculate how many lines can fit
+        const maxLines = Math.floor(availableHeight / lineHeight);
+
+        // Simple approach: use lines directly for pagination
+        this.linesPerPage = Math.max(1, maxLines);
+        this.originalLinesPerPage = this.linesPerPage;
+
+        // Calculate total pages based on original text lines
+        this.totalPages = Math.max(1, Math.ceil(this.currentChorusLines.length / this.linesPerPage));
+
+        // Adjust current page if needed
         if (this.currentPage >= this.totalPages) {
             this.currentPage = Math.max(0, this.totalPages - 1);
         }
+
+        console.log(`Available height: ${availableHeight}px, Line height: ${lineHeight}px`);
+        console.log(`Lines per page: ${this.linesPerPage}, Total lines: ${this.currentChorusLines.length}, Total pages: ${this.totalPages}`);
+
+        // Update page indicator
+        this.updatePageIndicator();
     }
     
     // Optimize font size to fill screen better
     optimizeFontSize() {
-        const container = document.querySelector('.chorus-content');
-        if (!container) return;
-        
-        const containerHeight = container.clientHeight;
-        const containerWidth = container.clientWidth;
-        
-        // Calculate how many lines we can fit
-        const maxLines = Math.floor((containerHeight - 40) / (this.currentFontSize * 1.5));
-        
+        // Get available height from content container
+        const contentContainer = document.querySelector('.chorus-content');
+        let availableHeight;
+
+        if (contentContainer) {
+            availableHeight = contentContainer.clientHeight - 20;
+        } else {
+            const headerHeight = 110;
+            const controlsHeight = 120;
+            const containerPadding = 20;
+            const safetyMargin = 20;
+            availableHeight = window.innerHeight - headerHeight - controlsHeight - containerPadding - safetyMargin;
+        }
+
+        // Calculate how many lines we can fit at current font size
+        const maxLines = Math.floor(availableHeight / (this.currentFontSize * 1.4));
+
         // Try to fit all text on one page if possible
         if (this.currentChorusLines.length <= maxLines) {
             // We can fit all text, maximize font size to fill screen
@@ -1519,26 +1487,35 @@ class ChorusDisplay {
     
     // Maximize font size when all text fits on one page
     maximizeFontSizeForSinglePage() {
-        const container = document.querySelector('.chorus-content');
-        if (!container) return;
-        
-        const containerHeight = container.clientHeight;
-        const containerWidth = container.clientWidth;
-        
+        // Get available height from content container
+        const contentContainer = document.querySelector('.chorus-content');
+        let availableHeight;
+
+        if (contentContainer) {
+            availableHeight = contentContainer.clientHeight - 20;
+        } else {
+            const headerHeight = 110;
+            const controlsHeight = 120;
+            const containerPadding = 20;
+            const safetyMargin = 20;
+            availableHeight = window.innerHeight - headerHeight - controlsHeight - containerPadding - safetyMargin;
+        }
+        const availableWidth = window.innerWidth - 200; // Account for side padding and nav buttons
+
         // Start with a very large font size and work down
-        this.currentFontSize = Math.min(containerHeight / 8, containerWidth / 15); // Much larger starting point
+        this.currentFontSize = Math.min(availableHeight / 8, availableWidth / 15);
         this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, this.currentFontSize));
-        
+
         // Apply and test
         this.applyFontSize();
         this.calculateLinesPerPage();
-        
+
         // If we still fit, keep increasing until we don't
         while (this.currentFontSize < this.maxFontSize && this.totalPages <= 1) {
             this.currentFontSize += this.fontSizeStep;
             this.applyFontSize();
             this.calculateLinesPerPage();
-            
+
             if (this.totalPages > 1) {
                 // Too big, revert
                 this.currentFontSize -= this.fontSizeStep;
@@ -1547,37 +1524,45 @@ class ChorusDisplay {
                 break;
             }
         }
-        
+
         console.log(`Maximized font size for single page: ${this.currentFontSize}px`);
     }
     
     // Optimize font size for multiple pages while maximizing screen usage
     optimizeFontSizeForMultiplePages() {
-        const container = document.querySelector('.chorus-content');
-        if (!container) return;
-        
-        const containerHeight = container.clientHeight;
-        const containerWidth = container.clientWidth;
-        
+        // Get available height from content container
+        const contentContainer = document.querySelector('.chorus-content');
+        let availableHeight;
+
+        if (contentContainer) {
+            availableHeight = contentContainer.clientHeight - 20;
+        } else {
+            const headerHeight = 110;
+            const controlsHeight = 120;
+            const containerPadding = 20;
+            const safetyMargin = 20;
+            availableHeight = window.innerHeight - headerHeight - controlsHeight - containerPadding - safetyMargin;
+        }
+
         // Calculate optimal lines per page (aim for 6-8 lines for readability)
         const targetLinesPerPage = Math.min(8, Math.max(6, Math.floor(this.currentChorusLines.length / 2)));
-        
+
         // Calculate font size that would give us the target lines per page
-        const targetFontSize = (containerHeight - 40) / (targetLinesPerPage * 1.5);
-        
+        const targetFontSize = availableHeight / (targetLinesPerPage * 1.4);
+
         // Start with the target font size
         this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, targetFontSize));
-        
+
         // Apply and test
         this.applyFontSize();
         this.calculateLinesPerPage();
-        
+
         // Fine-tune: try to increase font size while maintaining good page distribution
         while (this.currentFontSize < this.maxFontSize) {
             const testFontSize = this.currentFontSize + this.fontSizeStep;
-            const testLineHeight = testFontSize * 1.5;
-            const testLinesPerPage = Math.floor((containerHeight - 40) / testLineHeight);
-            
+            const testLineHeight = testFontSize * 1.4;
+            const testLinesPerPage = Math.floor(availableHeight / testLineHeight);
+
             // Only increase if we maintain reasonable page distribution
             if (testLinesPerPage >= 4 && testLinesPerPage <= 10) {
                 this.currentFontSize = testFontSize;
@@ -1587,7 +1572,7 @@ class ChorusDisplay {
                 break;
             }
         }
-        
+
         console.log(`Optimized font size for multiple pages: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}`);
     }
     
@@ -1612,11 +1597,8 @@ class ChorusDisplay {
         // Clear container
         container.innerHTML = '';
         
-        // Calculate line height - use tighter spacing if we have multiple pages
-        let lineHeight = this.currentFontSize * 1.5; // Default 1.5 line height ratio
-        if (this.currentChorusLines.length > this.linesPerPage && this.totalPages > 1) {
-            lineHeight = this.currentFontSize * 1.4; // Tighter spacing for better space utilization
-        }
+        // Calculate line height - use consistent spacing that matches calculateLinesPerPage
+        const lineHeight = this.currentFontSize * 1.4;
         
         // Get font from settings
         const chorusFont = sessionStorage.getItem('chorusFont') || 'Inter';
@@ -1723,11 +1705,10 @@ class ChorusDisplay {
             return pageLines;
         }
 
-        // Calculate which original lines should be on this page
-        const startLineIndex = pageIndex * this.linesPerPage;
-        const endLineIndex = Math.min(startLineIndex + this.linesPerPage, this.currentChorusLines.length);
+        // Simple approach: use originalLinesPerPage which accounts for average wrapping
+        const startLineIndex = pageIndex * this.originalLinesPerPage;
+        const endLineIndex = Math.min(startLineIndex + this.originalLinesPerPage, this.currentChorusLines.length);
 
-        // Get the original lines for this page
         const pageLines = [];
         for (let i = startLineIndex; i < endLineIndex; i++) {
             if (this.currentChorusLines[i]) {
@@ -1735,8 +1716,7 @@ class ChorusDisplay {
             }
         }
 
-        console.log(`Page ${pageIndex + 1}: Original lines ${startLineIndex + 1}-${endLineIndex} of ${this.currentChorusLines.length} total lines`);
-        console.log(`Page ${pageIndex + 1}: Returning ${pageLines.length} lines:`, pageLines);
+        console.log(`Page ${pageIndex + 1}: Lines ${startLineIndex + 1}-${endLineIndex} of ${this.currentChorusLines.length}`);
         return pageLines;
     }
     
@@ -1944,9 +1924,6 @@ class ChorusDisplay {
     
     // Recalculate everything and redisplay optimally
     recalculateAndRedisplay() {
-        // Recalculate wrapped lines with new font size
-        this.calculateWrappedLines();
-        
         // Recalculate lines per page
         this.calculateLinesPerPage();
         
@@ -2005,61 +1982,6 @@ class ChorusDisplay {
         console.log(`Optimized font size: ${this.currentFontSize}px, Pages: ${this.totalPages}, Lines per page: ${this.linesPerPage}`);
     }
     
-    // Calculate how many lines fit per page with current font size
-    calculateLinesPerPage() {
-        console.log('=== CALCULATE LINES PER PAGE ===');
-
-        const container = document.querySelector('.chorus-content');
-        if (!container) {
-            console.log('Container not found!');
-            return;
-        }
-
-        // If we have explicit page breaks, use them
-        if (this.hasExplicitPageBreaks) {
-            this.totalPages = this.explicitPages.length;
-            console.log(`Using explicit page breaks: ${this.totalPages} pages`);
-            this.updatePageIndicator();
-            return;
-        }
-
-        // Get the parent container (chorus-content-wrapper) for fixed height
-        const parentContainer = container.parentElement;
-        const containerHeight = parentContainer ? parentContainer.clientHeight : container.clientHeight;
-        const lineHeight = this.currentFontSize * 1.5; // 1.5 line height ratio
-
-        // Account for padding and margins
-        const computedStyle = window.getComputedStyle(container);
-        const paddingTop = parseFloat(computedStyle.paddingTop);
-        const paddingBottom = parseFloat(computedStyle.paddingBottom);
-        const marginTop = parseFloat(computedStyle.marginTop);
-        const marginBottom = parseFloat(computedStyle.marginBottom);
-
-        const availableHeight = containerHeight - paddingTop - paddingBottom - marginTop - marginBottom;
-
-        // Calculate how many lines can fit
-        this.linesPerPage = Math.floor(availableHeight / lineHeight);
-
-        // Ensure minimum of 1 line per page
-        this.linesPerPage = Math.max(1, this.linesPerPage);
-
-        // Calculate total pages needed based on original lines
-        this.totalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
-
-        // Ensure at least 1 page
-        this.totalPages = Math.max(1, this.totalPages);
-
-        console.log(`Parent container height: ${containerHeight}px`);
-        console.log(`Available height: ${availableHeight}px`);
-        console.log(`Line height: ${lineHeight}px`);
-        console.log(`Font size: ${this.currentFontSize}px`);
-        console.log(`Lines per page: ${this.linesPerPage}`);
-        console.log(`Total original lines: ${this.currentChorusLines.length}`);
-        console.log(`Total pages: ${this.totalPages}`);
-
-        // Update page indicator immediately
-        this.updatePageIndicator();
-    }
     
     // Adjust current page if text is too large for the current page
     adjustPageIfNeeded() {
@@ -2083,11 +2005,8 @@ class ChorusDisplay {
         const chorusText = document.querySelector('.chorus-text');
         if (!chorusText) return;
         
-        // Calculate line height - use tighter spacing if we have multiple pages
-        let lineHeight = this.currentFontSize * 1.5; // Default 1.5 line height ratio
-        if (this.currentChorusLines.length > this.linesPerPage && this.totalPages > 1) {
-            lineHeight = this.currentFontSize * 1.4; // Tighter spacing for better space utilization
-        }
+        // Calculate line height - use consistent spacing that matches calculateLinesPerPage
+        const lineHeight = this.currentFontSize * 1.4;
         
         // Apply font size to the chorus text container
         chorusText.style.fontSize = `${this.currentFontSize}px`;
