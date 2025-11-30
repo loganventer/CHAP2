@@ -612,34 +612,44 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Dusk colors (realistic sunset sky - warm oranges transitioning to deep purples)
+        // Dusk colors (realistic sunset sky - deep saturated reds and oranges)
         const duskColors = [
-            { r: 255, g: 94, b: 77 },   // Coral pink horizon
-            { r: 255, g: 121, b: 63 },  // Sunset orange
-            { r: 139, g: 69, b: 137 },  // Purple twilight
-            { r: 230, g: 92, b: 0 },    // Deep orange
-            { r: 75, g: 54, b: 124 },   // Twilight purple
-            { r: 255, g: 140, b: 50 }   // Golden orange
+            { r: 220, g: 20, b: 60 },   // Deep crimson
+            { r: 255, g: 69, b: 0 },    // Deep orange red
+            { r: 178, g: 34, b: 34 },   // Firebrick red
+            { r: 255, g: 99, b: 71 },   // Tomato red
+            { r: 139, g: 0, b: 0 },     // Dark red
+            { r: 205, g: 92, b: 92 }    // Indian red
         ];
 
-        // Dawn colors (realistic sunrise sky - soft pinks, peaches, and light blues)
+        // Dawn colors (realistic sunrise sky - deep saturated warm tones)
         const dawnColors = [
-            { r: 255, g: 179, b: 167 }, // Soft peachy pink
-            { r: 255, g: 223, b: 196 }, // Cream peach
-            { r: 173, g: 216, b: 230 }, // Light sky blue
-            { r: 255, g: 218, b: 185 }, // Peach puff
-            { r: 176, g: 224, b: 230 }, // Powder blue
-            { r: 255, g: 192, b: 159 }  // Light coral
+            { r: 255, g: 127, b: 80 },  // Coral
+            { r: 250, g: 128, b: 114 }, // Salmon
+            { r: 255, g: 140, b: 0 },   // Dark orange
+            { r: 255, g: 160, b: 122 }, // Light salmon
+            { r: 255, g: 99, b: 71 },   // Tomato
+            { r: 233, g: 150, b: 122 }  // Dark salmon
         ];
 
-        // Night colors (realistic night sky - deep blues and near-black)
+        // Daytime colors (realistic bright blue sky)
+        const dayColors = [
+            { r: 135, g: 206, b: 250 }, // Light sky blue
+            { r: 135, g: 206, b: 235 }, // Sky blue
+            { r: 100, g: 149, b: 237 }, // Cornflower blue
+            { r: 70, g: 130, b: 180 },  // Steel blue
+            { r: 176, g: 224, b: 230 }, // Powder blue
+            { r: 173, g: 216, b: 230 }  // Light blue
+        ];
+
+        // Night colors (realistic night sky - deep saturated blues and purples)
         const nightColors = [
-            { r: 25, g: 25, b: 60 },    // Deep midnight blue
-            { r: 15, g: 15, b: 45 },    // Dark navy
-            { r: 10, g: 10, b: 35 },    // Near black blue
-            { r: 30, g: 30, b: 70 },    // Midnight blue
-            { r: 20, g: 20, b: 50 },    // Deep night
-            { r: 18, g: 18, b: 40 }     // Dark twilight
+            { r: 0, g: 0, b: 139 },     // Dark blue
+            { r: 0, g: 0, b: 128 },     // Navy
+            { r: 25, g: 25, b: 112 },   // Midnight blue
+            { r: 0, g: 0, b: 105 },     // Medium blue
+            { r: 72, g: 61, b: 139 },   // Dark slate blue
+            { r: 106, g: 90, b: 205 }   // Slate blue
         ];
 
         // Interpolate between two colors
@@ -678,16 +688,22 @@ class ChorusDisplay {
             const tertiaryCycle = (Math.sin(time * 0.0003 + Math.PI / 2) + 1) / 2; // Tertiary cycle
 
             // Determine which phase we're in and create color combinations
-            // mainCycle: 0.0-0.3 = dusk/sunset, 0.3-0.7 = night, 0.7-1.0 = dawn/sunrise
+            // mainCycle: 0.0-0.2 = dusk, 0.2-0.4 = night, 0.4-0.6 = dawn, 0.6-0.8 = day, 0.8-1.0 = back to dusk
             const colors = [];
 
             // Create 4 different color stops based on time of day
             for (let i = 0; i < 4; i++) {
                 let finalColor;
 
-                if (mainCycle <= 0.3) {
-                    // Dusk phase (0.0 to 0.3) - transition from dusk to night
-                    const duskToNightProgress = mainCycle / 0.3; // 0 to 1
+                if (mainCycle <= 0.2) {
+                    // Dusk phase (0.0 to 0.2) - deep reds and oranges
+                    const duskIndex1 = i % duskColors.length;
+                    const duskIndex2 = (i + 1) % duskColors.length;
+                    finalColor = lerpColor(duskColors[duskIndex1], duskColors[duskIndex2], secondaryCycle);
+
+                } else if (mainCycle > 0.2 && mainCycle <= 0.4) {
+                    // Dusk to Night transition (0.2 to 0.4)
+                    const progress = (mainCycle - 0.2) / 0.2; // 0 to 1
                     const duskIndex1 = i % duskColors.length;
                     const duskIndex2 = (i + 1) % duskColors.length;
                     const nightIndex1 = i % nightColors.length;
@@ -695,17 +711,11 @@ class ChorusDisplay {
 
                     const duskMix = lerpColor(duskColors[duskIndex1], duskColors[duskIndex2], secondaryCycle);
                     const nightMix = lerpColor(nightColors[nightIndex1], nightColors[nightIndex2], tertiaryCycle);
-                    finalColor = lerpColor(duskMix, nightMix, duskToNightProgress);
+                    finalColor = lerpColor(duskMix, nightMix, progress);
 
-                } else if (mainCycle > 0.3 && mainCycle < 0.7) {
-                    // Night phase (0.3 to 0.7) - pure night colors
-                    const nightIndex1 = i % nightColors.length;
-                    const nightIndex2 = (i + 1) % nightColors.length;
-                    finalColor = lerpColor(nightColors[nightIndex1], nightColors[nightIndex2], secondaryCycle);
-
-                } else {
-                    // Dawn phase (0.7 to 1.0) - transition from night to dawn
-                    const nightToDawnProgress = (mainCycle - 0.7) / 0.3; // 0 to 1
+                } else if (mainCycle > 0.4 && mainCycle <= 0.6) {
+                    // Night to Dawn transition (0.4 to 0.6)
+                    const progress = (mainCycle - 0.4) / 0.2; // 0 to 1
                     const nightIndex1 = i % nightColors.length;
                     const nightIndex2 = (i + 1) % nightColors.length;
                     const dawnIndex1 = i % dawnColors.length;
@@ -713,7 +723,31 @@ class ChorusDisplay {
 
                     const nightMix = lerpColor(nightColors[nightIndex1], nightColors[nightIndex2], tertiaryCycle);
                     const dawnMix = lerpColor(dawnColors[dawnIndex1], dawnColors[dawnIndex2], secondaryCycle);
-                    finalColor = lerpColor(nightMix, dawnMix, nightToDawnProgress);
+                    finalColor = lerpColor(nightMix, dawnMix, progress);
+
+                } else if (mainCycle > 0.6 && mainCycle <= 0.8) {
+                    // Dawn to Day transition (0.6 to 0.8) - bright blue sky
+                    const progress = (mainCycle - 0.6) / 0.2; // 0 to 1
+                    const dawnIndex1 = i % dawnColors.length;
+                    const dawnIndex2 = (i + 1) % dawnColors.length;
+                    const dayIndex1 = i % dayColors.length;
+                    const dayIndex2 = (i + 1) % dayColors.length;
+
+                    const dawnMix = lerpColor(dawnColors[dawnIndex1], dawnColors[dawnIndex2], secondaryCycle);
+                    const dayMix = lerpColor(dayColors[dayIndex1], dayColors[dayIndex2], tertiaryCycle);
+                    finalColor = lerpColor(dawnMix, dayMix, progress);
+
+                } else {
+                    // Day to Dusk transition (0.8 to 1.0)
+                    const progress = (mainCycle - 0.8) / 0.2; // 0 to 1
+                    const dayIndex1 = i % dayColors.length;
+                    const dayIndex2 = (i + 1) % dayColors.length;
+                    const duskIndex1 = i % duskColors.length;
+                    const duskIndex2 = (i + 1) % duskColors.length;
+
+                    const dayMix = lerpColor(dayColors[dayIndex1], dayColors[dayIndex2], tertiaryCycle);
+                    const duskMix = lerpColor(duskColors[duskIndex1], duskColors[duskIndex2], secondaryCycle);
+                    finalColor = lerpColor(dayMix, duskMix, progress);
                 }
 
                 colors.push(finalColor);
@@ -767,15 +801,15 @@ class ChorusDisplay {
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Draw stars during nighttime (mainCycle 0.3-0.7 is night)
-            // Stars fade in when sun sets (0.25-0.35) and fade out when sun rises (0.65-0.75)
+            // Draw stars during nighttime (mainCycle 0.2-0.6 is night period)
+            // Stars fade in during dusk (0.15-0.25) and fade out during dawn (0.55-0.65)
             let starOpacity = 0;
-            if (mainCycle >= 0.25 && mainCycle <= 0.35) {
-                starOpacity = (mainCycle - 0.25) / 0.1; // Fade in during sunset
-            } else if (mainCycle > 0.35 && mainCycle < 0.65) {
+            if (mainCycle >= 0.15 && mainCycle <= 0.25) {
+                starOpacity = (mainCycle - 0.15) / 0.1; // Fade in during dusk
+            } else if (mainCycle > 0.25 && mainCycle < 0.55) {
                 starOpacity = 1; // Full opacity during night
-            } else if (mainCycle >= 0.65 && mainCycle <= 0.75) {
-                starOpacity = (0.75 - mainCycle) / 0.1; // Fade out during sunrise
+            } else if (mainCycle >= 0.55 && mainCycle <= 0.65) {
+                starOpacity = (0.65 - mainCycle) / 0.1; // Fade out during dawn
             }
 
             if (starOpacity > 0) {
