@@ -72,6 +72,9 @@ class ChorusDisplay {
         this.loadChoruses();
         this.setupEventListeners();
 
+        // Apply saved font from settings
+        this.applyChorusFontFromSettings();
+
         // Process initial chorus data if available
         if (window.chorusData) {
             this.updateDisplay(window.chorusData);
@@ -84,6 +87,71 @@ class ChorusDisplay {
 
         // Initialize auto-hide buttons
         this.setupAutoHideButtons();
+
+        // Initialize flowing musical notes
+        this.initFlowingNotes();
+    }
+
+    applyChorusFontFromSettings() {
+        // Get font from sessionStorage or use default
+        const chorusFont = sessionStorage.getItem('chorusFont') || 'Inter';
+
+        // Apply font to the entire chorus display page
+        const chorusPage = document.querySelector('.chorus-display-page');
+        if (chorusPage) {
+            chorusPage.style.fontFamily = `'${chorusFont}', sans-serif`;
+        }
+
+        // Apply to chorus text specifically
+        const chorusText = document.querySelector('.chorus-text');
+        if (chorusText) {
+            chorusText.style.fontFamily = `'${chorusFont}', sans-serif`;
+        }
+
+        // Apply to title and key
+        const chorusTitle = document.getElementById('chorusTitle');
+        const chorusKey = document.getElementById('chorusKey');
+        if (chorusTitle) chorusTitle.style.fontFamily = `'${chorusFont}', sans-serif`;
+        if (chorusKey) chorusKey.style.fontFamily = `'${chorusFont}', sans-serif`;
+
+        console.log(`Applied chorus font: ${chorusFont}`);
+    }
+
+    initFlowingNotes() {
+        const container = document.getElementById('flowingNotesContainer');
+        if (!container) return;
+
+        const musicalNotes = ['♪', '♫', '♬', '♩', '♭', '♯', '𝄞'];
+        // Staff line positions matching the SVG (35%, 41%, 47%, 53%, 59% for centered staff)
+        const staffPositions = [
+            35, 41, 47, 53, 59    // Single centered staff with wider spacing
+        ];
+
+        // Create notes at intervals
+        setInterval(() => {
+            const note = document.createElement('div');
+            note.className = 'flowing-note';
+            note.textContent = musicalNotes[Math.floor(Math.random() * musicalNotes.length)];
+
+            // Position note on one of the staff lines
+            const staffY = staffPositions[Math.floor(Math.random() * staffPositions.length)];
+            note.style.top = staffY + '%';
+            note.style.left = '100vw';
+
+            // Random duration between 15-25 seconds
+            const duration = 15 + Math.random() * 10;
+            note.style.animationDuration = duration + 's';
+
+            // Random delay
+            note.style.animationDelay = Math.random() * 2 + 's';
+
+            container.appendChild(note);
+
+            // Remove note after animation completes
+            setTimeout(() => {
+                note.remove();
+            }, (duration + 2) * 1000);
+        }, 2000); // Create new note every 2 seconds
     }
     
     async loadChoruses() {
@@ -435,50 +503,67 @@ class ChorusDisplay {
         console.log('Updating display with chorus data:', chorusData);
         console.log('Key value received:', chorusData.key);
         console.log('Key type:', typeof chorusData.key);
-        
+
         // Update title and key
         const titleElement = document.getElementById('chorusTitle');
         const keyElement = document.getElementById('chorusKey');
-        
+
         if (titleElement) titleElement.textContent = chorusData.name;
-        
+
         // Debug the key display
         const keyDisplay = this.getKeyDisplay(chorusData.key);
         console.log('Key display result:', keyDisplay);
-        
+
         if (keyElement) keyElement.textContent = keyDisplay;
-        
-        // Parse chorus text into lines
-        this.currentChorusLines = chorusData.text.split('\n').filter(line => line.trim() !== '');
-        console.log(`Parsed ${this.currentChorusLines.length} lines from chorus text`);
-        
+
+        // Parse chorus text into pages based on [PAGE] markers
+        this.parseChorusPages(chorusData.text);
+
         // Initialize display
         this.currentPage = 0;
         this.currentFontSize = 86; // Start with 86px font size
         console.log('Setting initial font size to 86px');
-        
+
         // Calculate initial layout
         this.calculateWrappedLines();
         this.calculateLinesPerPage();
-        
+
         // Show page indicator if multiple pages
         this.updatePageIndicator();
-        
+
         // Display the first page
         this.displayCurrentPage();
-        
+
         // Update navigation buttons
         this.updateNavigationButtons();
-        
+
         // Apply initial font size
         this.applyFontSize();
         console.log('Applied font size:', this.currentFontSize, 'px');
-        
+
         // Trigger resize event to ensure proper font size application
         console.log('Triggering resize event to ensure proper font size application');
         this.handleResize();
-        
+
         console.log(`Display initialized: ${this.totalPages} pages, ${this.linesPerPage} lines per page`);
+    }
+
+    parseChorusPages(text) {
+        // Check if text contains explicit page breaks [PAGE]
+        if (text.includes('[PAGE]')) {
+            // Split by [PAGE] marker
+            const pages = text.split('[PAGE]');
+            this.explicitPages = pages.map(page =>
+                page.split('\n').filter(line => line.trim() !== '')
+            );
+            this.hasExplicitPageBreaks = true;
+            console.log(`Found ${this.explicitPages.length} explicit pages`);
+        } else {
+            // No explicit page breaks, use automatic pagination
+            this.currentChorusLines = text.split('\n').filter(line => line.trim() !== '');
+            this.hasExplicitPageBreaks = false;
+            console.log(`Parsed ${this.currentChorusLines.length} lines from chorus text (automatic pagination)`);
+        }
     }
     
     // Update page indicator
@@ -730,6 +815,9 @@ class ChorusDisplay {
             lineHeight = this.currentFontSize * 1.4; // Tighter spacing for better space utilization
         }
         
+        // Get font from settings
+        const chorusFont = sessionStorage.getItem('chorusFont') || 'Inter';
+
         // Create and display lines
         linesForPage.forEach(line => {
             const lineElement = document.createElement('div');
@@ -742,6 +830,7 @@ class ChorusDisplay {
             lineElement.style.textAlign = 'center'; // Ensure centering
             lineElement.style.zIndex = '25'; // Ensure text stays above other elements
             lineElement.style.position = 'relative'; // Required for z-index to work
+            lineElement.style.fontFamily = `'${chorusFont}', sans-serif`; // Apply font family
             container.appendChild(lineElement);
         });
         
@@ -757,11 +846,18 @@ class ChorusDisplay {
             console.log(`Invalid page index: ${pageIndex}, total pages: ${this.totalPages}`);
             return [];
         }
-        
+
+        // If we have explicit page breaks, return the explicit page
+        if (this.hasExplicitPageBreaks) {
+            const pageLines = this.explicitPages[pageIndex] || [];
+            console.log(`Page ${pageIndex + 1}: Explicit page with ${pageLines.length} lines`);
+            return pageLines;
+        }
+
         // Calculate which original lines should be on this page
         const startLineIndex = pageIndex * this.linesPerPage;
         const endLineIndex = Math.min(startLineIndex + this.linesPerPage, this.currentChorusLines.length);
-        
+
         // Get the original lines for this page
         const pageLines = [];
         for (let i = startLineIndex; i < endLineIndex; i++) {
@@ -769,7 +865,7 @@ class ChorusDisplay {
                 pageLines.push(this.currentChorusLines[i]);
             }
         }
-        
+
         console.log(`Page ${pageIndex + 1}: Original lines ${startLineIndex + 1}-${endLineIndex} of ${this.currentChorusLines.length} total lines`);
         console.log(`Page ${pageIndex + 1}: Returning ${pageLines.length} lines:`, pageLines);
         return pageLines;
@@ -1043,39 +1139,47 @@ class ChorusDisplay {
     // Calculate how many lines fit per page with current font size
     calculateLinesPerPage() {
         console.log('=== CALCULATE LINES PER PAGE ===');
-        
+
         const container = document.querySelector('.chorus-content');
         if (!container) {
             console.log('Container not found!');
             return;
         }
-        
+
+        // If we have explicit page breaks, use them
+        if (this.hasExplicitPageBreaks) {
+            this.totalPages = this.explicitPages.length;
+            console.log(`Using explicit page breaks: ${this.totalPages} pages`);
+            this.updatePageIndicator();
+            return;
+        }
+
         // Get the parent container (chorus-content-wrapper) for fixed height
         const parentContainer = container.parentElement;
         const containerHeight = parentContainer ? parentContainer.clientHeight : container.clientHeight;
         const lineHeight = this.currentFontSize * 1.5; // 1.5 line height ratio
-        
+
         // Account for padding and margins
         const computedStyle = window.getComputedStyle(container);
         const paddingTop = parseFloat(computedStyle.paddingTop);
         const paddingBottom = parseFloat(computedStyle.paddingBottom);
         const marginTop = parseFloat(computedStyle.marginTop);
         const marginBottom = parseFloat(computedStyle.marginBottom);
-        
+
         const availableHeight = containerHeight - paddingTop - paddingBottom - marginTop - marginBottom;
-        
+
         // Calculate how many lines can fit
         this.linesPerPage = Math.floor(availableHeight / lineHeight);
-        
+
         // Ensure minimum of 1 line per page
         this.linesPerPage = Math.max(1, this.linesPerPage);
-        
+
         // Calculate total pages needed based on original lines
         this.totalPages = Math.ceil(this.currentChorusLines.length / this.linesPerPage);
-        
+
         // Ensure at least 1 page
         this.totalPages = Math.max(1, this.totalPages);
-        
+
         console.log(`Parent container height: ${containerHeight}px`);
         console.log(`Available height: ${availableHeight}px`);
         console.log(`Line height: ${lineHeight}px`);
@@ -1083,7 +1187,7 @@ class ChorusDisplay {
         console.log(`Lines per page: ${this.linesPerPage}`);
         console.log(`Total original lines: ${this.currentChorusLines.length}`);
         console.log(`Total pages: ${this.totalPages}`);
-        
+
         // Update page indicator immediately
         this.updatePageIndicator();
     }

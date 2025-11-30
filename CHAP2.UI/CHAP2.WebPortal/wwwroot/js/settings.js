@@ -122,6 +122,38 @@ class SettingsManager {
                                 <div class="theme-preview-text">This is how your theme will look</div>
                             </div>
                         </div>
+
+                        <div class="settings-section">
+                            <div class="settings-section-title">
+                                <i class="fas fa-music"></i>
+                                Chorus Display Settings
+                            </div>
+
+                            <div class="form-group">
+                                <label for="chorusAnimation">Background Animation</label>
+                                <select id="chorusAnimation" class="form-control">
+                                    <option value="musical-staff">Musical Staff (Wave)</option>
+                                    <option value="floating-notes">Floating Notes (Classic)</option>
+                                    <option value="particle-flow">Particle Flow</option>
+                                    <option value="aurora">Aurora Wave</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="chorusFont">Font Family</label>
+                                <select id="chorusFont" class="form-control">
+                                    <option value="Inter">Inter (Default)</option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Palatino">Palatino</option>
+                                    <option value="Trebuchet MS">Trebuchet MS</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="settings-footer">
@@ -206,6 +238,23 @@ class SettingsManager {
         if (customChorusBackground) {
             customChorusBackground.addEventListener('input', () => this.updatePreview());
         }
+
+        // Auto-save on chorus settings change
+        const chorusAnimation = document.getElementById('chorusAnimation');
+        const chorusFont = document.getElementById('chorusFont');
+
+        if (chorusAnimation) {
+            chorusAnimation.addEventListener('change', () => this.autoSaveSettings());
+        }
+
+        if (chorusFont) {
+            chorusFont.addEventListener('change', () => this.autoSaveSettings());
+        }
+
+        // Auto-save on theme change
+        if (themeSelect) {
+            themeSelect.addEventListener('change', () => this.autoSaveSettings());
+        }
     }
 
     onThemeChange(themeKey) {
@@ -242,6 +291,18 @@ class SettingsManager {
         if (modal) {
             modal.classList.add('active');
             this.updatePreview();
+
+            // Set chorus animation dropdown to current value
+            const chorusAnimation = document.getElementById('chorusAnimation');
+            if (chorusAnimation && this.currentSettings.chorusAnimation) {
+                chorusAnimation.value = this.currentSettings.chorusAnimation;
+            }
+
+            // Set chorus font dropdown to current value
+            const chorusFont = document.getElementById('chorusFont');
+            if (chorusFont && this.currentSettings.chorusFont) {
+                chorusFont.value = this.currentSettings.chorusFont;
+            }
         }
     }
 
@@ -255,12 +316,16 @@ class SettingsManager {
     saveSettings() {
         const themeSelect = document.getElementById('themeSelect');
         const theme = themeSelect.value;
+        const chorusAnimation = document.getElementById('chorusAnimation').value;
+        const chorusFont = document.getElementById('chorusFont').value;
 
         const settings = {
             theme: theme,
             customBackground: document.getElementById('customBackground').value,
             customTextColor: document.getElementById('customTextColor').value,
-            customChorusBackground: document.getElementById('customChorusBackground').value
+            customChorusBackground: document.getElementById('customChorusBackground').value,
+            chorusAnimation: chorusAnimation,
+            chorusFont: chorusFont
         };
 
         localStorage.setItem('chap2Settings', JSON.stringify(settings));
@@ -270,18 +335,60 @@ class SettingsManager {
 
         // Show success notification
         this.showNotification('Settings saved successfully!', 'success');
+
+        // Store chorus settings in sessionStorage for immediate access
+        sessionStorage.setItem('chorusAnimation', chorusAnimation);
+        sessionStorage.setItem('chorusFont', chorusFont);
+    }
+
+    autoSaveSettings() {
+        const themeSelect = document.getElementById('themeSelect');
+        const theme = themeSelect.value;
+        const chorusAnimation = document.getElementById('chorusAnimation').value;
+        const chorusFont = document.getElementById('chorusFont').value;
+
+        const settings = {
+            theme: theme,
+            customBackground: document.getElementById('customBackground').value,
+            customTextColor: document.getElementById('customTextColor').value,
+            customChorusBackground: document.getElementById('customChorusBackground').value,
+            chorusAnimation: chorusAnimation,
+            chorusFont: chorusFont
+        };
+
+        localStorage.setItem('chap2Settings', JSON.stringify(settings));
+        this.currentSettings = settings;
+        this.applyTheme(settings);
+
+        // Store chorus settings in sessionStorage for immediate access
+        sessionStorage.setItem('chorusAnimation', chorusAnimation);
+        sessionStorage.setItem('chorusFont', chorusFont);
+
+        // Show brief notification
+        this.showNotification('Settings auto-saved', 'success');
     }
 
     loadSettings() {
         const saved = localStorage.getItem('chap2Settings');
         if (saved) {
-            return JSON.parse(saved);
+            const settings = JSON.parse(saved);
+            // Set default animation if not present
+            if (!settings.chorusAnimation) {
+                settings.chorusAnimation = 'musical-staff';
+            }
+            // Set default font if not present
+            if (!settings.chorusFont) {
+                settings.chorusFont = 'Inter';
+            }
+            return settings;
         }
         return {
             theme: 'default',
             customBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             customTextColor: '#ffffff',
-            customChorusBackground: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)'
+            customChorusBackground: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
+            chorusAnimation: 'musical-staff',
+            chorusFont: 'Inter'
         };
     }
 

@@ -7,6 +7,121 @@
     font-family: 'Inter', sans-serif;
 }
 
+/* Musical Staff Background */
+.musical-staff-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.35;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.staff-line {
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+/* Wave animations for staff lines using transform */
+.staff-group {
+    animation: staffWave 8s ease-in-out infinite;
+    transform-origin: center;
+}
+
+.staff-center {
+    animation-delay: 0s;
+}
+
+.wave-line-1 {
+    animation: lineWave 12s ease-in-out infinite;
+}
+
+.wave-line-2 {
+    animation: lineWave 13s ease-in-out infinite;
+    animation-delay: 0.5s;
+}
+
+.wave-line-3 {
+    animation: lineWave 14s ease-in-out infinite;
+    animation-delay: 1s;
+}
+
+.wave-line-4 {
+    animation: lineWave 15s ease-in-out infinite;
+    animation-delay: 1.5s;
+}
+
+.wave-line-5 {
+    animation: lineWave 16s ease-in-out infinite;
+    animation-delay: 2s;
+}
+
+@keyframes staffWave {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    25% {
+        transform: translateY(-8px);
+    }
+    50% {
+        transform: translateY(0);
+    }
+    75% {
+        transform: translateY(8px);
+    }
+}
+
+@keyframes lineWave {
+    0%, 100% {
+        opacity: 0.7;
+        stroke-width: 2;
+    }
+    50% {
+        opacity: 0.95;
+        stroke-width: 2.5;
+    }
+}
+
+/* Flowing Notes Container */
+.flowing-notes-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.flowing-note {
+    position: absolute;
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.4);
+    animation: flowRightToLeft linear infinite;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes flowRightToLeft {
+    0% {
+        transform: translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6;
+    }
+    90% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateX(-120vw) rotate(-20deg);
+        opacity: 0;
+    }
+}
+
 /* Animated Background */
 .animated-background {
     position: fixed;
@@ -440,15 +555,17 @@
     overflow: hidden; /* Changed from overflow-y: auto */
     position: relative;
     z-index: 15; /* Higher than wrapper */
-    padding: 0 60px; /* Add horizontal padding to keep text away from navigation buttons */
-    margin: 0 20px; /* Add margin to keep text away from edges */
+    padding: 40px 80px; /* Increased padding: 40px vertical, 80px horizontal */
+    margin: 0 auto; /* Center horizontally */
+    max-width: 90%; /* Ensure text doesn't reach edges on small screens */
+    box-sizing: border-box;
 }
 
 /* Chorus Text */
 .chorus-text {
     width: 100%;
     max-width: 100%;
-    margin: 0;
+    margin: 0 auto; /* Center horizontally */
     padding: 20px 0; /* Add vertical padding to keep text away from header and bottom */
     box-sizing: border-box;
     z-index: 20; /* Higher than content */
@@ -460,6 +577,10 @@
     word-break: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Text Lines */

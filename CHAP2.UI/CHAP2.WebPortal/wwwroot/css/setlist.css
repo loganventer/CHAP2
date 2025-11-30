@@ -236,6 +236,60 @@
     color: white !important;
 }
 
+/* Setlist Footer Actions */
+.setlist-footer-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.setlist-footer-btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.setlist-footer-btn-save {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.setlist-footer-btn-save:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+
+.setlist-footer-btn-load {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+}
+
+.setlist-footer-btn-load:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+}
+
+.setlist-footer-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.setlist-footer-btn i {
+    font-size: 16px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .setlist-header {
@@ -252,5 +306,15 @@
         width: 100%;
         justify-content: flex-end;
         margin-top: 10px;
+    }
+
+    .setlist-footer-actions {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .setlist-footer-btn {
+        width: 100%;
+        justify-content: center;
     }
 }

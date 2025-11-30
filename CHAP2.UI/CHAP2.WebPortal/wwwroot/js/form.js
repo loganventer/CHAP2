@@ -491,4 +491,34 @@ function closeWindow() {
 }
 
 // Add global function
-window.closeWindow = closeWindow; 
+window.closeWindow = closeWindow;
+
+// Insert page break function
+function insertPageBreak() {
+    const textarea = document.getElementById('chorusTextArea');
+    if (!textarea) return;
+
+    const cursorPosition = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, cursorPosition);
+    const textAfter = textarea.value.substring(cursorPosition);
+
+    // Insert [PAGE] marker at cursor position
+    const pageBreak = '[PAGE]';
+    textarea.value = textBefore + pageBreak + textAfter;
+
+    // Set cursor position after the inserted page break
+    const newCursorPosition = cursorPosition + pageBreak.length;
+    textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+
+    // Focus the textarea
+    textarea.focus();
+
+    // Trigger input event for auto-save and character counter
+    textarea.dispatchEvent(new Event('input'));
+
+    // Show notification
+    showNotification('Page break inserted', 'success', 2000);
+}
+
+// Make function globally available
+window.insertPageBreak = insertPageBreak; 

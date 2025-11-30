@@ -100,18 +100,23 @@
 
             <div class="form-section">
                 <h2><i class="fas fa-align-left"></i> Lyrics</h2>
-                
+
                 <div class="form-group">
                     <label asp-for="ChorusText" class="form-label">
                         <i class="fas fa-music"></i> Chorus Text *
                     </label>
-                    <textarea asp-for="ChorusText" name="ChorusText" class="form-textarea" rows="12" 
-                              placeholder="Enter the chorus lyrics here...&#10;&#10;Example:&#10;Amazing grace, how sweet the sound&#10;That saved a wretch like me&#10;I once was lost, but now I'm found&#10;Was blind, but now I see"
+                    <div style="margin-bottom: 10px;">
+                        <button type="button" class="btn-insert-pagebreak" onclick="insertPageBreak()">
+                            <i class="fas fa-file-alt"></i> Insert Page Break
+                        </button>
+                    </div>
+                    <textarea asp-for="ChorusText" name="ChorusText" id="chorusTextArea" class="form-textarea" rows="12"
+                              placeholder="Enter the chorus lyrics here...&#10;&#10;Example:&#10;Amazing grace, how sweet the sound&#10;That saved a wretch like me&#10;I once was lost, but now I'm found&#10;Was blind, but now I see&#10;&#10;Use the 'Insert Page Break' button to force a new page in the display."
                               required minlength="10">@Model.ChorusText</textarea>
                     <span asp-validation-for="ChorusText" class="validation-error"></span>
                     <div class="form-help">
                         <i class="fas fa-info-circle"></i>
-                        Enter each line on a new line. Empty lines will be preserved for spacing.
+                        Enter each line on a new line. Empty lines will be preserved for spacing. Use <strong>[PAGE]</strong> to force a new page.
                     </div>
                 </div>
             </div>

@@ -18,44 +18,20 @@
 <body class="chorus-display-page">
     <!-- Animated Background -->
     <div class="animated-background">
-        <div class="floating-notes">
-            <div class="note note-1">♪</div>
-            <div class="note note-2">♫</div>
-            <div class="note note-3">♬</div>
-            <div class="note note-4">♩</div>
-            <div class="note note-5">♭</div>
-            <div class="note note-6">♯</div>
-            <div class="note note-7">♪</div>
-            <div class="note note-8">♫</div>
-            <div class="note note-9">♬</div>
-            <div class="note note-10">♩</div>
-            <div class="note note-11">♭</div>
-            <div class="note note-12">♯</div>
-        </div>
-        
-        <!-- Music Bars -->
-        <div class="music-bars">
-            <div class="music-bar bar-1"></div>
-            <div class="music-bar bar-2"></div>
-            <div class="music-bar bar-3"></div>
-            <div class="music-bar bar-4"></div>
-            <div class="music-bar bar-5"></div>
-            <div class="music-bar bar-6"></div>
-            <div class="music-bar bar-7"></div>
-            <div class="music-bar bar-8"></div>
-        </div>
-        
-        <!-- Floating Notes on Bars -->
-        <div class="bar-notes">
-            <div class="bar-note bn-1">♪</div>
-            <div class="bar-note bn-2">♫</div>
-            <div class="bar-note bn-3">♬</div>
-            <div class="bar-note bn-4">♩</div>
-            <div class="bar-note bn-5">♭</div>
-            <div class="bar-note bn-6">♯</div>
-            <div class="bar-note bn-7">♪</div>
-            <div class="bar-note bn-8">♫</div>
-        </div>
+        <!-- Musical Staff Lines with Wave Effect -->
+        <svg class="musical-staff-background" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+            <!-- Single Staff (5 lines, centered and spaced farther apart) -->
+            <g class="staff-group staff-center">
+                <line class="staff-line wave-line-1" x1="0" y1="350" x2="1000" y2="350" />
+                <line class="staff-line wave-line-2" x1="0" y1="410" x2="1000" y2="410" />
+                <line class="staff-line wave-line-3" x1="0" y1="470" x2="1000" y2="470" />
+                <line class="staff-line wave-line-4" x1="0" y1="530" x2="1000" y2="530" />
+                <line class="staff-line wave-line-5" x1="0" y1="590" x2="1000" y2="590" />
+            </g>
+        </svg>
+
+        <!-- Flowing Musical Notes (Right to Left) -->
+        <div class="flowing-notes-container" id="flowingNotesContainer"></div>
     </div>
 
     <!-- Page Indicator -->

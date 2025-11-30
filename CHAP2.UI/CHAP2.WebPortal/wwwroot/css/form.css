@@ -297,6 +297,38 @@
     75% { transform: translateX(5px); }
 }
 
+/* Insert Page Break Button */
+.btn-insert-pagebreak {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.btn-insert-pagebreak:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    background: linear-gradient(135deg, #9f7aea 0%, #8b5cf6 100%);
+}
+
+.btn-insert-pagebreak:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+}
+
+.btn-insert-pagebreak i {
+    font-size: 14px;
+}
+
 /* Form Actions */
 .form-actions {
     display: flex;
