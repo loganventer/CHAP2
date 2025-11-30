@@ -160,10 +160,14 @@ class SettingsManager {
                                 <label for="textOutlineWidth">Text Outline Width</label>
                                 <select id="textOutlineWidth" class="form-control">
                                     <option value="0">None</option>
-                                    <option value="1">Thin (1px)</option>
-                                    <option value="2">Medium (2px)</option>
-                                    <option value="3">Thick (3px)</option>
-                                    <option value="4">Extra Thick (4px)</option>
+                                    <option value="1">Very Thin (1px)</option>
+                                    <option value="2">Thin (2px)</option>
+                                    <option value="3">Medium (3px)</option>
+                                    <option value="4">Thick (4px)</option>
+                                    <option value="5">Very Thick (5px)</option>
+                                    <option value="6">Extra Thick (6px)</option>
+                                    <option value="7">Ultra Thick (7px)</option>
+                                    <option value="8">Maximum (8px)</option>
                                 </select>
                             </div>
 
