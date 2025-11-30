@@ -594,13 +594,12 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    overflow: hidden; /* Prevent content overflow */
+    overflow: visible; /* Allow text to be fully visible */
     position: relative;
     z-index: 15; /* Higher than wrapper */
     padding: 20px 40px; /* Reduced padding: 20px vertical, 40px horizontal */
     margin: 0 auto; /* Center horizontally */
     max-width: 95%; /* Allow more width for text */
-    max-height: 100%; /* Respect container height */
     box-sizing: border-box;
 }
 

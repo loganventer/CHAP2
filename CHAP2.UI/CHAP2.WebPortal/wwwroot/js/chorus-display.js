@@ -1620,15 +1620,16 @@ class ChorusDisplay {
         linesForPage.forEach(line => {
             // If feathering is enabled, create a wrapper with layered outline
             if (textOutlineWidth && parseInt(textOutlineWidth) > 0 && textOutlineFeather) {
-                // Create wrapper for layered effect
+                // Create wrapper for layered effect - outline sits directly behind text
                 const wrapper = document.createElement('div');
                 wrapper.className = 'text-line-wrapper';
                 wrapper.style.position = 'relative';
-                wrapper.style.display = 'inline-block'; // Allow content to determine width
+                wrapper.style.display = 'block';
+                wrapper.style.width = '100%';
                 wrapper.style.fontSize = `${this.currentFontSize}px`;
                 wrapper.style.lineHeight = `${lineHeight}px`;
                 wrapper.style.fontFamily = `'${chorusFont}', sans-serif`;
-                wrapper.style.margin = '0 auto'; // Center the wrapper itself
+                wrapper.style.textAlign = 'center';
 
                 // Create outline layer (behind, with frosted glass effect)
                 const outlineElement = document.createElement('div');
@@ -1637,16 +1638,16 @@ class ChorusDisplay {
                 outlineElement.style.position = 'absolute';
                 outlineElement.style.top = '0';
                 outlineElement.style.left = '0';
-                outlineElement.style.right = '0';
-                outlineElement.style.bottom = '0';
+                outlineElement.style.width = '100%';
                 outlineElement.style.fontSize = `${this.currentFontSize}px`;
                 outlineElement.style.lineHeight = `${lineHeight}px`;
                 outlineElement.style.color = 'transparent';
                 outlineElement.style.fontFamily = `'${chorusFont}', sans-serif`;
+                outlineElement.style.textAlign = 'center';
                 outlineElement.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
                 outlineElement.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
                 outlineElement.style.zIndex = '1';
-                outlineElement.style.whiteSpace = 'nowrap'; // Prevent text wrapping
+                outlineElement.style.pointerEvents = 'none';
                 // Apply frosted glass effect to outline layer
                 outlineElement.style.filter = 'blur(2px) saturate(150%)';
                 outlineElement.style.opacity = '0.8';
@@ -1660,18 +1661,12 @@ class ChorusDisplay {
                 textElement.style.lineHeight = `${lineHeight}px`;
                 textElement.style.color = 'white';
                 textElement.style.fontFamily = `'${chorusFont}', sans-serif`;
+                textElement.style.textAlign = 'center';
                 textElement.style.zIndex = '2';
-                textElement.style.whiteSpace = 'nowrap'; // Prevent text wrapping
 
                 wrapper.appendChild(outlineElement);
                 wrapper.appendChild(textElement);
-
-                // Wrap the wrapper in a centering container
-                const centerContainer = document.createElement('div');
-                centerContainer.style.textAlign = 'center';
-                centerContainer.style.width = '100%';
-                centerContainer.appendChild(wrapper);
-                container.appendChild(centerContainer);
+                container.appendChild(wrapper);
             } else {
                 // Standard rendering (non-feathered)
                 const lineElement = document.createElement('div');
