@@ -598,54 +598,76 @@ class ChorusDisplay {
         };
 
         const drawColorShift = () => {
-            // Calculate smooth transition between warm and cold (0 = warm, 1 = cold)
-            const cycle = (Math.sin(time * 0.0005) + 1) / 2; // Very slow cycle
+            // Create multiple cycles for more dynamic color transitions
+            const mainCycle = (Math.sin(time * 0.0004) + 1) / 2; // Primary warm/cold cycle
+            const secondaryCycle = (Math.sin(time * 0.0003 + Math.PI / 4) + 1) / 2; // Secondary offset cycle
+            const tertiaryCycle = (Math.sin(time * 0.0002 + Math.PI / 2) + 1) / 2; // Tertiary cycle
 
-            // Lerp between warm and cold color sets
-            const numStops = 4;
+            // Determine which phase we're in and create color combinations
             const colors = [];
 
-            for (let i = 0; i < numStops; i++) {
-                const warmIndex = i % warmColors.length;
-                const coldIndex = i % coldColors.length;
+            // Create 4 different color stops with complex interpolation
+            for (let i = 0; i < 4; i++) {
+                const warmIndex1 = i % warmColors.length;
+                const warmIndex2 = (i + 1) % warmColors.length;
+                const coldIndex1 = i % coldColors.length;
+                const coldIndex2 = (i + 1) % coldColors.length;
 
-                const warmColor = warmColors[warmIndex];
-                const coldColor = coldColors[coldIndex];
+                // First interpolate within color sets
+                const warmMix = lerpColor(warmColors[warmIndex1], warmColors[warmIndex2], secondaryCycle);
+                const coldMix = lerpColor(coldColors[coldIndex1], coldColors[coldIndex2], tertiaryCycle);
 
-                // Interpolate between warm and cold
-                colors.push(lerpColor(warmColor, coldColor, cycle));
+                // Then interpolate between warm and cold
+                colors.push(lerpColor(warmMix, coldMix, mainCycle));
             }
 
-            // Create radial gradient from center
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Create animated radial gradient
+            const gradientOffsetX = Math.cos(time * 0.0003) * (canvas.width * 0.1);
+            const gradientOffsetY = Math.sin(time * 0.0003) * (canvas.height * 0.1);
+
             const gradient = ctx.createRadialGradient(
-                canvas.width / 2, canvas.height / 2, 0,
-                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8
+                canvas.width / 2 + gradientOffsetX,
+                canvas.height / 2 + gradientOffsetY,
+                0,
+                canvas.width / 2 + gradientOffsetX,
+                canvas.height / 2 + gradientOffsetY,
+                Math.max(canvas.width, canvas.height) * 0.9
             );
 
-            gradient.addColorStop(0, `rgba(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, 0.5)`);
-            gradient.addColorStop(0.33, `rgba(${colors[1].r}, ${colors[1].g}, ${colors[1].b}, 0.4)`);
-            gradient.addColorStop(0.66, `rgba(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, 0.35)`);
-            gradient.addColorStop(1, `rgba(${colors[3].r}, ${colors[3].g}, ${colors[3].b}, 0.3)`);
+            gradient.addColorStop(0, `rgba(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, 0.6)`);
+            gradient.addColorStop(0.33, `rgba(${colors[1].r}, ${colors[1].g}, ${colors[1].b}, 0.5)`);
+            gradient.addColorStop(0.66, `rgba(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, 0.4)`);
+            gradient.addColorStop(1, `rgba(${colors[3].r}, ${colors[3].g}, ${colors[3].b}, 0.35)`);
 
-            // Fill the canvas with the gradient
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Add a secondary linear gradient overlay for more depth
-            const angle = time * 0.0002; // Slowly rotating gradient
-            const x1 = canvas.width / 2 + Math.cos(angle) * canvas.width;
-            const y1 = canvas.height / 2 + Math.sin(angle) * canvas.height;
-            const x2 = canvas.width / 2 - Math.cos(angle) * canvas.width;
-            const y2 = canvas.height / 2 - Math.sin(angle) * canvas.height;
+            // Add multiple rotating linear gradient overlays for complex effects
+            for (let layer = 0; layer < 2; layer++) {
+                const angle = time * 0.0002 * (layer + 1) + (layer * Math.PI / 3);
+                const distance = Math.max(canvas.width, canvas.height) * 0.7;
 
-            const linearGradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                const x1 = canvas.width / 2 + Math.cos(angle) * distance;
+                const y1 = canvas.height / 2 + Math.sin(angle) * distance;
+                const x2 = canvas.width / 2 - Math.cos(angle) * distance;
+                const y2 = canvas.height / 2 - Math.sin(angle) * distance;
 
-            linearGradient.addColorStop(0, `rgba(${colors[1].r}, ${colors[1].g}, ${colors[1].b}, 0.2)`);
-            linearGradient.addColorStop(0.5, `rgba(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, 0.15)`);
-            linearGradient.addColorStop(1, `rgba(${colors[3].r}, ${colors[3].g}, ${colors[3].b}, 0.2)`);
+                const linearGradient = ctx.createLinearGradient(x1, y1, x2, y2);
 
-            ctx.fillStyle = linearGradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const colorIndex1 = (layer * 2) % 4;
+                const colorIndex2 = (layer * 2 + 1) % 4;
+                const colorIndex3 = (layer * 2 + 2) % 4;
+
+                linearGradient.addColorStop(0, `rgba(${colors[colorIndex1].r}, ${colors[colorIndex1].g}, ${colors[colorIndex1].b}, 0.25)`);
+                linearGradient.addColorStop(0.5, `rgba(${colors[colorIndex2].r}, ${colors[colorIndex2].g}, ${colors[colorIndex2].b}, 0.15)`);
+                linearGradient.addColorStop(1, `rgba(${colors[colorIndex3].r}, ${colors[colorIndex3].g}, ${colors[colorIndex3].b}, 0.25)`);
+
+                ctx.fillStyle = linearGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
             time += 1;
             this.colorShiftAnimationFrame = requestAnimationFrame(drawColorShift);
