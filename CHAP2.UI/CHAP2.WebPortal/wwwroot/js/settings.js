@@ -337,14 +337,15 @@ class SettingsManager {
                 btn.disabled = true;
             }
 
-            // Fetch all choruses
-            const response = await fetch('/Home/Search?q=*');
+            // Fetch all choruses (using dedicated endpoint, not search which has limits)
+            const response = await fetch('/Home/GetAllChoruses');
             if (!response.ok) {
                 throw new Error('Failed to fetch choruses');
             }
 
             const data = await response.json();
             let chorusList = data.results || [];
+            console.log(`Mass Edit: Fetched ${chorusList.length} total choruses`);
 
             if (chorusList.length === 0) {
                 alert('No choruses found to edit.');

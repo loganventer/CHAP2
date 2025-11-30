@@ -102,6 +102,36 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> GetAllChoruses()
+    {
+        try
+        {
+            _logger.LogInformation("Fetching all choruses for mass edit");
+            var choruses = await _chorusApiService.GetAllChorusesAsync();
+
+            _logger.LogInformation("Found {Count} total choruses", choruses.Count);
+
+            var response = choruses.Select(r => new
+            {
+                id = r.Id.ToString(),
+                name = r.Name,
+                key = (int)r.Key,
+                type = (int)r.Type,
+                timeSignature = (int)r.TimeSignature,
+                chorusText = r.ChorusText,
+                createdAt = r.CreatedAt
+            });
+
+            return Json(new { results = response, total = choruses.Count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching all choruses");
+            return Json(new { results = new List<object>(), error = "Failed to fetch choruses" });
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Detail(string id)
     {
         try

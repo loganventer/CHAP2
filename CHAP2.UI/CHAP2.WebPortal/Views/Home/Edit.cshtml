@@ -314,15 +314,29 @@
 
             async function saveCurrentChorus() {
                 try {
-                    const form = document.querySelector('.chorus-form');
+                    const idValue = document.querySelector('input[name="Id"]').value;
+                    const nameValue = document.querySelector('input[name="Name"]').value;
+                    const chorusTextValue = document.querySelector('textarea[name="ChorusText"]').value;
+                    const keyValue = document.querySelector('select[name="Key"]').value;
+                    const typeValue = document.querySelector('select[name="Type"]').value;
+                    const timeSignatureValue = document.querySelector('select[name="TimeSignature"]').value;
+
+                    // Validate required fields
+                    if (!idValue || !nameValue || !chorusTextValue) {
+                        console.error('Missing required fields:', { idValue, nameValue, chorusTextValue: !!chorusTextValue });
+                        return false;
+                    }
+
                     const formData = {
-                        id: document.querySelector('input[name="Id"]').value,
-                        name: document.querySelector('input[name="Name"]').value,
-                        chorusText: document.querySelector('textarea[name="ChorusText"]').value,
-                        key: parseInt(document.querySelector('select[name="Key"]').value),
-                        type: parseInt(document.querySelector('select[name="Type"]').value),
-                        timeSignature: parseInt(document.querySelector('select[name="TimeSignature"]').value)
+                        Id: idValue,
+                        Name: nameValue,
+                        ChorusText: chorusTextValue,
+                        Key: parseInt(keyValue) || 0,
+                        Type: parseInt(typeValue) || 0,
+                        TimeSignature: parseInt(timeSignatureValue) || 0
                     };
+
+                    console.log('Saving chorus:', formData);
 
                     const response = await fetch('/Home/SaveChorusJson', {
                         method: 'POST',
@@ -333,6 +347,11 @@
                     });
 
                     const result = await response.json();
+                    console.log('Save result:', result);
+
+                    if (!result.success) {
+                        console.error('Save failed:', result.error);
+                    }
                     return result.success;
                 } catch (error) {
                     console.error('Error saving chorus:', error);
