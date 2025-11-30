@@ -317,6 +317,11 @@ class ChorusDisplay {
         // Particle flow animation
         const animatedBg = document.querySelector('.animated-background');
         if (!animatedBg) return;
+        if (this.particleAnimationFrame) return; // Already initialized
+
+        // Clear any existing canvas
+        const existingCanvas = document.getElementById('particleCanvas');
+        if (existingCanvas) existingCanvas.remove();
 
         const canvas = document.createElement('canvas');
         canvas.id = 'particleCanvas';
@@ -334,36 +339,71 @@ class ChorusDisplay {
         canvas.height = window.innerHeight;
 
         const particles = [];
-        const particleCount = 50;
+        const particleCount = 150; // Increased from 50
 
+        // Create particles with various properties
         for (let i = 0; i < particleCount; i++) {
             particles.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * 2,
-                vy: (Math.random() - 0.5) * 2,
-                size: Math.random() * 3 + 1
+                vx: (Math.random() - 0.5) * 3, // Increased speed
+                vy: (Math.random() - 0.5) * 3, // Increased speed
+                size: Math.random() * 5 + 2, // Larger particles (2-7px)
+                opacity: Math.random() * 0.5 + 0.3, // Random opacity (0.3-0.8)
+                hue: Math.random() * 60 + 180 // Blue-cyan hues (180-240)
             });
         }
 
         const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            // Fade effect instead of clear
+            ctx.fillStyle = 'rgba(0, 31, 63, 0.1)'; // Dark blue background with fade
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             particles.forEach(p => {
                 p.x += p.vx;
                 p.y += p.vy;
 
+                // Bounce off edges
                 if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
                 if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                // Draw particle with glow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = `hsla(${p.hue}, 80%, 60%, ${p.opacity})`;
+                ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.opacity})`;
 
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Draw connections between nearby particles
+                particles.forEach(p2 => {
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 120) {
+                        ctx.strokeStyle = `hsla(${p.hue}, 80%, 60%, ${(1 - distance / 120) * 0.3})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                });
             });
+
+            ctx.shadowBlur = 0; // Reset shadow
 
             this.particleAnimationFrame = requestAnimationFrame(animate);
         };
+
+        // Handle window resize
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', resizeCanvas);
 
         animate();
     }
