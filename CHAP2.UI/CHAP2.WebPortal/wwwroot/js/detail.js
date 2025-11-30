@@ -300,18 +300,18 @@ function addThemeToggle() {
     themeToggle.className = 'btn-secondary theme-toggle';
     themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
     themeToggle.onclick = toggleTheme;
-    
+
     const headerActions = document.querySelector('.header-actions');
     if (headerActions) {
         headerActions.appendChild(themeToggle);
     }
 }
 
-// Toggle theme
+// Toggle theme (kept for backwards compatibility)
 function toggleTheme() {
     const body = document.body;
     const isDark = body.classList.contains('dark-theme');
-    
+
     if (isDark) {
         body.classList.remove('dark-theme');
         localStorage.setItem('theme', 'light');

@@ -125,6 +125,19 @@ class SettingsManager {
 
                         <div class="settings-section">
                             <div class="settings-section-title">
+                                <i class="fas fa-edit"></i>
+                                Mass Edit
+                            </div>
+                            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+                                Edit all choruses one by one with easy navigation between them.
+                            </p>
+                            <button class="mass-edit-btn" id="massEditBtn" style="width: 100%;">
+                                <i class="fas fa-edit"></i> Start Mass Edit
+                            </button>
+                        </div>
+
+                        <div class="settings-section">
+                            <div class="settings-section-title">
                                 <i class="fas fa-music"></i>
                                 Chorus Display Settings
                             </div>
@@ -307,6 +320,67 @@ class SettingsManager {
         // Auto-save on theme change
         if (themeSelect) {
             themeSelect.addEventListener('change', () => this.autoSaveSettings());
+        }
+
+        // Mass Edit button
+        const massEditBtn = document.getElementById('massEditBtn');
+        if (massEditBtn) {
+            massEditBtn.addEventListener('click', () => this.enterMassEditMode());
+        }
+    }
+
+    async enterMassEditMode() {
+        try {
+            const btn = document.getElementById('massEditBtn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                btn.disabled = true;
+            }
+
+            // Fetch all choruses
+            const response = await fetch('/Home/Search?q=*');
+            if (!response.ok) {
+                throw new Error('Failed to fetch choruses');
+            }
+
+            const data = await response.json();
+            const chorusList = data.results || [];
+
+            if (chorusList.length === 0) {
+                alert('No choruses found to edit.');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-edit"></i> Start Mass Edit';
+                    btn.disabled = false;
+                }
+                return;
+            }
+
+            // Store in sessionStorage for navigation
+            sessionStorage.setItem('chorusList', JSON.stringify(chorusList));
+            sessionStorage.setItem('currentChorusId', chorusList[0].id);
+
+            // Close settings modal
+            this.closeSettings();
+
+            // Open first chorus in Edit mode
+            window.open(`/Home/Edit/${chorusList[0].id}`, '_blank');
+
+            console.log(`Mass Edit: Opened first of ${chorusList.length} choruses for editing`);
+
+            // Reset button
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-edit"></i> Start Mass Edit';
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Mass Edit: Error entering mass edit mode', error);
+            alert('Error loading choruses for mass edit. Please try again.');
+
+            const btn = document.getElementById('massEditBtn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-edit"></i> Start Mass Edit';
+                btn.disabled = false;
+            }
         }
     }
 
