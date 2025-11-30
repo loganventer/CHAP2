@@ -413,11 +413,12 @@ class ChorusDisplay {
     }
 
     initAuroraBorealis() {
-        // True Aurora Borealis effect with frosted glass blur
+        // True Aurora Borealis effect with frosted glass blur overlay
         const animatedBg = document.querySelector('.animated-background');
         if (!animatedBg) return;
         if (this.auroraBorealisAnimationFrame) return; // Already initialized
 
+        // Create aurora canvas (background layer)
         const canvas = document.createElement('canvas');
         canvas.id = 'auroraBorealisCanvas';
         canvas.style.position = 'fixed';
@@ -427,10 +428,22 @@ class ChorusDisplay {
         canvas.style.height = '100%';
         canvas.style.zIndex = '0';
         canvas.style.pointerEvents = 'none';
-        // Apply frosted glass effect using CSS backdrop-filter
-        canvas.style.backdropFilter = 'blur(80px) saturate(180%)';
-        canvas.style.webkitBackdropFilter = 'blur(80px) saturate(180%)';
         animatedBg.appendChild(canvas);
+
+        // Create frosted glass overlay layer (sits on top of aurora, behind text)
+        const frostOverlay = document.createElement('div');
+        frostOverlay.id = 'frostOverlay';
+        frostOverlay.style.position = 'fixed';
+        frostOverlay.style.top = '0';
+        frostOverlay.style.left = '0';
+        frostOverlay.style.width = '100%';
+        frostOverlay.style.height = '100%';
+        frostOverlay.style.zIndex = '10';
+        frostOverlay.style.pointerEvents = 'none';
+        // Apply intense frosted glass effect using CSS backdrop-filter
+        frostOverlay.style.backdropFilter = 'blur(150px) saturate(250%) brightness(1.1)';
+        frostOverlay.style.webkitBackdropFilter = 'blur(150px) saturate(250%) brightness(1.1)';
+        document.body.appendChild(frostOverlay);
 
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
@@ -438,12 +451,12 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Aurora wave layers with realistic colors and frosted glass blur
+        // Aurora wave layers with realistic colors and intense frosted glass blur
         const waves = [
-            { color: 'rgba(0, 255, 127, 0.03)', speed: 0.015, amplitude: 100, frequency: 0.006, blur: 40 },
-            { color: 'rgba(173, 255, 47, 0.025)', speed: 0.012, amplitude: 80, frequency: 0.008, blur: 35 },
-            { color: 'rgba(0, 255, 255, 0.022)', speed: 0.018, amplitude: 90, frequency: 0.007, blur: 38 },
-            { color: 'rgba(138, 43, 226, 0.02)', speed: 0.01, amplitude: 70, frequency: 0.009, blur: 32 }
+            { color: 'rgba(0, 255, 127, 0.06)', speed: 0.015, amplitude: 100, frequency: 0.006, blur: 60 },
+            { color: 'rgba(173, 255, 47, 0.05)', speed: 0.012, amplitude: 80, frequency: 0.008, blur: 55 },
+            { color: 'rgba(0, 255, 255, 0.045)', speed: 0.018, amplitude: 90, frequency: 0.007, blur: 58 },
+            { color: 'rgba(138, 43, 226, 0.04)', speed: 0.01, amplitude: 70, frequency: 0.009, blur: 52 }
         ];
 
         const drawAurora = () => {
@@ -455,8 +468,8 @@ class ChorusDisplay {
             waves.forEach((wave, index) => {
                 ctx.save();
 
-                // Apply moderate blur (frosted glass effect is applied via CSS)
-                ctx.filter = `blur(${wave.blur}px) saturate(150%)`;
+                // Apply intense blur with frosted glass effect from CSS
+                ctx.filter = `blur(${wave.blur}px) saturate(220%) contrast(1.15)`;
 
                 // Use additive blending for realistic aurora glow
                 ctx.globalCompositeOperation = 'lighter';
