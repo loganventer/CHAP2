@@ -1239,8 +1239,10 @@ class ChorusDisplay {
 
         // Initialize display
         this.currentPage = 0;
-        this.currentFontSize = 86; // Start with 86px font size
-        console.log('Setting initial font size to 86px');
+
+        // Calculate optimal font size based on longest line width
+        this.calculateOptimalFontSize();
+        console.log('Calculated optimal font size:', this.currentFontSize, 'px');
 
         // Calculate initial layout
         this.calculateWrappedLines();
@@ -1258,10 +1260,6 @@ class ChorusDisplay {
         // Apply initial font size
         this.applyFontSize();
         console.log('Applied font size:', this.currentFontSize, 'px');
-
-        // Trigger resize event to ensure proper font size application
-        console.log('Triggering resize event to ensure proper font size application');
-        this.handleResize();
 
         console.log(`Display initialized: ${this.totalPages} pages, ${this.linesPerPage} lines per page`);
     }
@@ -1282,6 +1280,83 @@ class ChorusDisplay {
             this.hasExplicitPageBreaks = false;
             console.log(`Parsed ${this.currentChorusLines.length} lines from chorus text (automatic pagination)`);
         }
+    }
+
+    // Calculate optimal font size based on longest line to fit horizontally
+    calculateOptimalFontSize() {
+        const container = document.querySelector('.chorus-content');
+        if (!container) {
+            this.currentFontSize = 86; // Default fallback
+            return;
+        }
+
+        const containerWidth = container.clientWidth - 80; // Account for padding
+
+        // Get all lines (from explicit pages or current chorus lines)
+        let allLines = [];
+        if (this.hasExplicitPageBreaks) {
+            allLines = this.explicitPages.flat();
+        } else {
+            allLines = this.currentChorusLines;
+        }
+
+        if (allLines.length === 0) {
+            this.currentFontSize = 86; // Default fallback
+            return;
+        }
+
+        // Find the longest line
+        let longestLine = '';
+        let maxLength = 0;
+        for (const line of allLines) {
+            if (line.length > maxLength) {
+                maxLength = line.length;
+                longestLine = line;
+            }
+        }
+
+        console.log(`Longest line (${longestLine.length} chars): "${longestLine}"`);
+
+        // Create a temporary element to measure text width
+        const tempElement = document.createElement('span');
+        tempElement.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+        `;
+        document.body.appendChild(tempElement);
+
+        // Binary search for optimal font size
+        let minSize = this.minFontSize;
+        let maxSize = this.maxFontSize;
+        let optimalSize = 86;
+
+        while (maxSize - minSize > 1) {
+            const testSize = Math.floor((minSize + maxSize) / 2);
+            tempElement.style.fontSize = testSize + 'px';
+            tempElement.textContent = longestLine;
+
+            const textWidth = tempElement.offsetWidth;
+
+            if (textWidth <= containerWidth) {
+                // Text fits, try larger
+                minSize = testSize;
+                optimalSize = testSize;
+            } else {
+                // Text too wide, go smaller
+                maxSize = testSize;
+            }
+        }
+
+        // Clean up
+        document.body.removeChild(tempElement);
+
+        // Set the optimal font size
+        this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, optimalSize));
+        console.log(`Optimal font size for horizontal fit: ${this.currentFontSize}px (container width: ${containerWidth}px)`);
     }
     
     // Update page indicator

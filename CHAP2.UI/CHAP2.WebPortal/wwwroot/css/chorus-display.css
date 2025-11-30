@@ -151,6 +151,19 @@
     }
 }
 
+/* Main Container */
+.chorus-container {
+    max-width: 90vw;
+    max-height: 90vh;
+    margin: 5vh auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
 /* Animated Background */
 .animated-background {
     position: fixed;
@@ -566,8 +579,8 @@
     gap: 1rem;
     flex: 1;
     min-height: 0;
-    max-height: 60vh; /* Fixed maximum height */
-    height: 60vh; /* Fixed height */
+    max-height: 65vh; /* Fixed maximum height */
+    overflow: visible; /* Allow content to be visible but prevent scroll */
     padding: 0 60px; /* Add horizontal padding to keep text away from navigation buttons */
     position: relative;
     z-index: 10; /* Higher than header */
@@ -581,12 +594,13 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    overflow: hidden; /* Changed from overflow-y: auto */
+    overflow: hidden; /* Prevent content overflow */
     position: relative;
     z-index: 15; /* Higher than wrapper */
-    padding: 40px 80px; /* Increased padding: 40px vertical, 80px horizontal */
+    padding: 20px 40px; /* Reduced padding: 20px vertical, 40px horizontal */
     margin: 0 auto; /* Center horizontally */
-    max-width: 90%; /* Ensure text doesn't reach edges on small screens */
+    max-width: 95%; /* Allow more width for text */
+    max-height: 100%; /* Respect container height */
     box-sizing: border-box;
 }
 
@@ -595,7 +609,7 @@
     width: 100%;
     max-width: 100%;
     margin: 0 auto; /* Center horizontally */
-    padding: 20px 0; /* Add vertical padding to keep text away from header and bottom */
+    padding: 0; /* Remove extra padding to maximize space */
     box-sizing: border-box;
     z-index: 20; /* Higher than content */
     position: relative;
@@ -629,7 +643,9 @@
 .chorus-header {
     text-align: center;
     margin-bottom: 2rem; /* Increased from 1rem */
-    z-index: 5; /* Lower than content */
+    padding-bottom: 1rem; /* Add padding to ensure space below */
+    flex-shrink: 0; /* Prevent header from shrinking */
+    z-index: 15; /* Higher than content to prevent overlap */
     position: relative;
 }
 
