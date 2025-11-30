@@ -112,6 +112,7 @@ class SetlistManager {
         const setlistItems = document.getElementById('setlistItems');
         const setlistCount = document.getElementById('setlistCount');
         const launchBtn = document.getElementById('launchSetlistBtn');
+        const saveBtn = document.getElementById('saveSetlistBtn');
         const clearBtn = document.getElementById('clearSetlistBtn');
 
         // Update count
@@ -122,6 +123,9 @@ class SetlistManager {
         // Show/hide buttons
         if (launchBtn) {
             launchBtn.style.display = this.setlist.length > 0 ? 'inline-block' : 'none';
+        }
+        if (saveBtn) {
+            saveBtn.style.display = this.setlist.length > 0 ? 'inline-block' : 'none';
         }
         if (clearBtn) {
             clearBtn.style.display = this.setlist.length > 0 ? 'inline-block' : 'none';
@@ -251,11 +255,95 @@ class SetlistManager {
             launchBtn.addEventListener('click', () => this.launchSetlist());
         }
 
+        // Save setlist button
+        const saveBtn = document.getElementById('saveSetlistBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => this.exportSetlist());
+        }
+
+        // Load setlist button
+        const loadBtn = document.getElementById('loadSetlistBtn');
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => this.importSetlist());
+        }
+
         // Clear setlist button
         const clearBtn = document.getElementById('clearSetlistBtn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => this.clearAll());
         }
+    }
+
+    // Export setlist to JSON file
+    exportSetlist() {
+        if (this.setlist.length === 0) {
+            this.showNotification('Setlist is empty', 'warning');
+            return;
+        }
+
+        const dataStr = JSON.stringify(this.setlist, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `setlist-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        this.showNotification('Setlist exported successfully', 'success');
+    }
+
+    // Import setlist from JSON file
+    importSetlist() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedSetlist = JSON.parse(event.target.result);
+
+                    if (!Array.isArray(importedSetlist)) {
+                        throw new Error('Invalid setlist format');
+                    }
+
+                    // Ask user if they want to replace or append
+                    if (this.setlist.length > 0) {
+                        if (confirm('Replace current setlist or append to it?\n\nOK = Replace\nCancel = Append')) {
+                            this.setlist = importedSetlist;
+                        } else {
+                            // Append, avoiding duplicates
+                            importedSetlist.forEach(chorus => {
+                                if (!this.setlist.some(c => c.id === chorus.id)) {
+                                    this.setlist.push(chorus);
+                                }
+                            });
+                        }
+                    } else {
+                        this.setlist = importedSetlist;
+                    }
+
+                    this.saveToLocalStorage();
+                    this.refreshDisplay();
+                    this.showNotification(`Loaded ${importedSetlist.length} choruses`, 'success');
+                } catch (error) {
+                    console.error('Error importing setlist:', error);
+                    this.showNotification('Error loading setlist file', 'error');
+                }
+            };
+
+            reader.readAsText(file);
+        };
+
+        input.click();
     }
 
     // Show notification

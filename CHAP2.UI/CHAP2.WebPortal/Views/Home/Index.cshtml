@@ -10,9 +10,9 @@
             <p class="app-subtitle">Musical Chorus Search</p>
         </div>
         <div class="header-actions">
-            <a href="@Url.Action("Create")" class="btn-primary" target="_blank" onclick="openCreateWindow(event)">
-                <i class="fas fa-plus"></i> Create New
-            </a>
+            <button class="settings-button" id="settingsButton">
+                <i class="fas fa-cog"></i> Settings
+            </button>
         </div>
         <div class="search-status" id="searchStatus">
             <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
@@ -27,6 +27,9 @@
             <button class="tab-button" data-tab="setlist">
                 <i class="fas fa-list-ul"></i> My Setlist
             </button>
+            <a href="@Url.Action("Create")" class="tab-button tab-button-create" target="_blank" onclick="openCreateWindow(event)" style="text-decoration: none; margin-left: auto;">
+                <i class="fas fa-plus"></i> Create New
+            </a>
             <!-- AI Search disabled temporarily -->
             <!--<button class="tab-button" data-tab="ai">
                 <i class="fas fa-robot"></i> AI Search
@@ -64,6 +67,12 @@
                 <div class="setlist-actions">
                     <button class="btn-primary" id="launchSetlistBtn" style="display: none;">
                         <i class="fas fa-play"></i> Launch Setlist
+                    </button>
+                    <button class="btn-secondary" id="saveSetlistBtn" style="display: none;">
+                        <i class="fas fa-save"></i> Save Setlist
+                    </button>
+                    <button class="btn-secondary" id="loadSetlistBtn">
+                        <i class="fas fa-folder-open"></i> Load Setlist
                     </button>
                     <button class="btn-secondary" id="clearSetlistBtn" style="display: none;">
                         <i class="fas fa-trash"></i> Clear All
