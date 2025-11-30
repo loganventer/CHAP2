@@ -32,8 +32,19 @@
     <!-- Main Content -->
     <div class="form-container">
         <div class="form-header">
-            <h1><i class="fas fa-edit"></i> Edit Chorus</h1>
-            <p>Update the chorus information</p>
+            <div class="header-with-nav">
+                <button type="button" class="nav-arrow nav-prev" id="prevChorusBtn" title="Previous Chorus" style="display: none;">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="header-content">
+                    <h1><i class="fas fa-edit"></i> Edit Chorus</h1>
+                    <p>Update the chorus information</p>
+                    <div class="chorus-position" id="chorusPosition" style="display: none;"></div>
+                </div>
+                <button type="button" class="nav-arrow nav-next" id="nextChorusBtn" title="Next Chorus" style="display: none;">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
         </div>
 
 
@@ -157,5 +168,159 @@
     </div>
 
     <script src="~/js/form.js" asp-append-version="true"></script>
+    <script>
+        // Chorus Navigation for Edit Page
+        (function() {
+            let chorusList = [];
+            let currentIndex = -1;
+            const currentChorusId = '@Model.Id';
+
+            // Initialize navigation on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                loadChorusListFromSession();
+                setupNavigationButtons();
+            });
+
+            function loadChorusListFromSession() {
+                const storedList = sessionStorage.getItem('chorusList');
+                if (storedList) {
+                    try {
+                        chorusList = JSON.parse(storedList);
+                        currentIndex = chorusList.findIndex(c => c.id === currentChorusId);
+
+                        if (chorusList.length > 1 && currentIndex !== -1) {
+                            showNavigationButtons();
+                            updatePositionIndicator();
+                        }
+                    } catch (e) {
+                        console.error('Error parsing chorus list:', e);
+                    }
+                }
+            }
+
+            function showNavigationButtons() {
+                const prevBtn = document.getElementById('prevChorusBtn');
+                const nextBtn = document.getElementById('nextChorusBtn');
+                const positionEl = document.getElementById('chorusPosition');
+
+                if (prevBtn) prevBtn.style.display = 'flex';
+                if (nextBtn) nextBtn.style.display = 'flex';
+                if (positionEl) positionEl.style.display = 'block';
+
+                // Update button states
+                updateButtonStates();
+            }
+
+            function updateButtonStates() {
+                const prevBtn = document.getElementById('prevChorusBtn');
+                const nextBtn = document.getElementById('nextChorusBtn');
+
+                if (prevBtn) {
+                    prevBtn.disabled = currentIndex <= 0;
+                    prevBtn.style.opacity = currentIndex <= 0 ? '0.5' : '1';
+                }
+                if (nextBtn) {
+                    nextBtn.disabled = currentIndex >= chorusList.length - 1;
+                    nextBtn.style.opacity = currentIndex >= chorusList.length - 1 ? '0.5' : '1';
+                }
+            }
+
+            function updatePositionIndicator() {
+                const positionEl = document.getElementById('chorusPosition');
+                if (positionEl && chorusList.length > 1) {
+                    positionEl.textContent = `Chorus ${currentIndex + 1} of ${chorusList.length}`;
+                }
+            }
+
+            function setupNavigationButtons() {
+                const prevBtn = document.getElementById('prevChorusBtn');
+                const nextBtn = document.getElementById('nextChorusBtn');
+
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', function() {
+                        navigateChorus(-1);
+                    });
+                }
+
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', function() {
+                        navigateChorus(1);
+                    });
+                }
+
+                // Add keyboard shortcuts
+                document.addEventListener('keydown', function(e) {
+                    // Don't navigate if user is typing in an input
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                        return;
+                    }
+
+                    if (e.key === 'ArrowLeft' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        navigateChorus(-1);
+                    } else if (e.key === 'ArrowRight' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        navigateChorus(1);
+                    }
+                });
+            }
+
+            async function navigateChorus(direction) {
+                const newIndex = currentIndex + direction;
+
+                if (newIndex < 0 || newIndex >= chorusList.length) {
+                    return;
+                }
+
+                // Save current chorus data first
+                const saved = await saveCurrentChorus();
+                if (!saved) {
+                    const confirmNav = confirm('Failed to save current chorus. Navigate anyway?');
+                    if (!confirmNav) return;
+                }
+
+                // Navigate to new chorus
+                const newChorus = chorusList[newIndex];
+                sessionStorage.setItem('currentChorusId', newChorus.id);
+                window.location.href = `/Home/Edit/${newChorus.id}`;
+            }
+
+            async function saveCurrentChorus() {
+                try {
+                    const form = document.querySelector('.chorus-form');
+                    const formData = {
+                        id: document.querySelector('input[name="Id"]').value,
+                        name: document.querySelector('input[name="Name"]').value,
+                        chorusText: document.querySelector('textarea[name="ChorusText"]').value,
+                        key: parseInt(document.querySelector('select[name="Key"]').value),
+                        type: parseInt(document.querySelector('select[name="Type"]').value),
+                        timeSignature: parseInt(document.querySelector('select[name="TimeSignature"]').value)
+                    };
+
+                    const response = await fetch('/Home/SaveChorusJson', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+                    return result.success;
+                } catch (error) {
+                    console.error('Error saving chorus:', error);
+                    return false;
+                }
+            }
+
+            // Expose for external use if needed
+            window.chorusEditNav = {
+                navigateChorus,
+                saveCurrentChorus,
+                getChorusList: () => chorusList,
+                getCurrentIndex: () => currentIndex
+            };
+        })();
+    </script>
 </body>
 </html> 

@@ -213,6 +213,68 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> GetChorusJson(string id)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return BadRequest(new { error = "Invalid chorus ID" });
+            }
+
+            var chorus = await _chorusApiService.GetChorusByIdAsync(id);
+            if (chorus == null)
+            {
+                return NotFound(new { error = "Chorus not found" });
+            }
+
+            return Json(new
+            {
+                id = chorus.Id,
+                name = chorus.Name,
+                chorusText = chorus.ChorusText,
+                key = (int)chorus.Key,
+                type = (int)chorus.Type,
+                timeSignature = (int)chorus.TimeSignature
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting chorus JSON for ID: {Id}", id);
+            return StatusCode(500, new { error = "Failed to load chorus" });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SaveChorusJson([FromBody] ChorusEditViewModel model)
+    {
+        try
+        {
+            if (model == null || model.Id == Guid.Empty)
+            {
+                return BadRequest(new { success = false, error = "Invalid chorus data" });
+            }
+
+            var result = await _chorusApiService.UpdateChorusAsync(
+                model.Id, model.Name, model.ChorusText, model.Key, model.Type, model.TimeSignature);
+
+            if (result)
+            {
+                return Json(new { success = true, message = "Chorus saved successfully" });
+            }
+            else
+            {
+                return Json(new { success = false, error = "Failed to save chorus" });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving chorus JSON for ID: {Id}", model?.Id);
+            return StatusCode(500, new { success = false, error = "Failed to save chorus" });
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Edit(string id)
     {
         try

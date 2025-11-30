@@ -131,6 +131,18 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.header-with-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-lg);
+}
+
+.header-content {
+    flex: 1;
+    max-width: 600px;
+}
+
 .form-header h1 {
     font-size: var(--font-size-4xl);
     font-weight: 700;
@@ -143,6 +155,68 @@
     font-size: var(--font-size-lg);
     color: rgba(255, 255, 255, 0.8);
     margin: 0;
+}
+
+/* Navigation Arrows for Edit Page */
+.nav-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    flex-shrink: 0;
+}
+
+.nav-arrow:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-arrow:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.nav-arrow:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.nav-prev:hover:not(:disabled) i {
+    animation: bounceLeft 0.5s ease infinite;
+}
+
+.nav-next:hover:not(:disabled) i {
+    animation: bounceRight 0.5s ease infinite;
+}
+
+@keyframes bounceLeft {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-3px); }
+}
+
+@keyframes bounceRight {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
+}
+
+/* Chorus Position Indicator */
+.chorus-position {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    color: rgba(255, 255, 255, 0.9);
+    display: inline-block;
 }
 
 /* Form Sections */
