@@ -75,6 +75,9 @@ class ChorusDisplay {
         // Apply saved font from settings
         this.applyChorusFontFromSettings();
 
+        // Apply saved animation from settings
+        this.applyAnimationFromSettings();
+
         // Process initial chorus data if available
         if (window.chorusData) {
             this.updateDisplay(window.chorusData);
@@ -87,9 +90,6 @@ class ChorusDisplay {
 
         // Initialize auto-hide buttons
         this.setupAutoHideButtons();
-
-        // Initialize flowing musical notes
-        this.initFlowingNotes();
     }
 
     applyChorusFontFromSettings() {
@@ -117,9 +117,63 @@ class ChorusDisplay {
         console.log(`Applied chorus font: ${chorusFont}`);
     }
 
+    applyAnimationFromSettings() {
+        // Get animation from sessionStorage or use default
+        const chorusAnimation = sessionStorage.getItem('chorusAnimation') || 'musical-staff';
+
+        console.log(`Applying chorus animation: ${chorusAnimation}`);
+
+        // Get animation elements
+        const musicalStaff = document.querySelector('.musical-staff-background');
+        const flowingNotesContainer = document.getElementById('flowingNotesContainer');
+
+        // Hide all animations first
+        if (musicalStaff) musicalStaff.style.display = 'none';
+        if (flowingNotesContainer) flowingNotesContainer.style.display = 'none';
+
+        // Apply selected animation
+        switch (chorusAnimation) {
+            case 'musical-staff':
+                // Show musical staff with flowing notes
+                if (musicalStaff) musicalStaff.style.display = 'block';
+                if (flowingNotesContainer) flowingNotesContainer.style.display = 'block';
+                this.initFlowingNotes();
+                break;
+
+            case 'floating-notes':
+                // Show only floating notes (classic)
+                if (flowingNotesContainer) flowingNotesContainer.style.display = 'block';
+                this.initFloatingNotes();
+                break;
+
+            case 'particle-flow':
+                // Show particle flow animation
+                this.initParticleFlow();
+                break;
+
+            case 'aurora':
+                // Show aurora wave animation
+                this.initAuroraWave();
+                break;
+
+            case 'none':
+                // No animation - all already hidden
+                console.log('No animation selected');
+                break;
+
+            default:
+                // Default to musical staff
+                if (musicalStaff) musicalStaff.style.display = 'block';
+                if (flowingNotesContainer) flowingNotesContainer.style.display = 'block';
+                this.initFlowingNotes();
+                break;
+        }
+    }
+
     initFlowingNotes() {
         const container = document.getElementById('flowingNotesContainer');
         if (!container) return;
+        if (this.flowingNotesInterval) return; // Already initialized
 
         const musicalNotes = ['♪', '♫', '♬', '♩', '♭', '♯', '𝄞'];
         // Staff line positions matching the SVG (35%, 41%, 47%, 53%, 59% for centered staff)
@@ -128,7 +182,7 @@ class ChorusDisplay {
         ];
 
         // Create notes at intervals
-        setInterval(() => {
+        this.flowingNotesInterval = setInterval(() => {
             const note = document.createElement('div');
             note.className = 'flowing-note';
             note.textContent = musicalNotes[Math.floor(Math.random() * musicalNotes.length)];
@@ -153,7 +207,147 @@ class ChorusDisplay {
             }, (duration + 2) * 1000);
         }, 2000); // Create new note every 2 seconds
     }
-    
+
+    initFloatingNotes() {
+        // Classic floating notes animation (without staff lines)
+        const container = document.getElementById('flowingNotesContainer');
+        if (!container) return;
+        if (this.floatingNotesInterval) return; // Already initialized
+
+        container.innerHTML = ''; // Clear existing content
+        const musicalNotes = ['♪', '♫', '♬', '♩', '♭', '♯', '𝄞'];
+
+        // Create floating notes at random positions
+        this.floatingNotesInterval = setInterval(() => {
+            const note = document.createElement('div');
+            note.className = 'floating-note-classic';
+            note.textContent = musicalNotes[Math.floor(Math.random() * musicalNotes.length)];
+
+            // Random position
+            note.style.top = Math.random() * 100 + '%';
+            note.style.left = Math.random() * 100 + '%';
+            note.style.fontSize = (20 + Math.random() * 40) + 'px';
+            note.style.position = 'absolute';
+            note.style.color = 'rgba(255, 255, 255, 0.3)';
+            note.style.animation = 'floatClassic 8s ease-in-out infinite';
+            note.style.animationDelay = Math.random() * 4 + 's';
+
+            container.appendChild(note);
+
+            // Remove after animation
+            setTimeout(() => {
+                note.remove();
+            }, 8000);
+        }, 1000);
+    }
+
+    initParticleFlow() {
+        // Particle flow animation
+        const animatedBg = document.querySelector('.animated-background');
+        if (!animatedBg) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.id = 'particleCanvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.zIndex = '0';
+        canvas.style.pointerEvents = 'none';
+        animatedBg.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const particleCount = 50;
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                size: Math.random() * 3 + 1
+            });
+        }
+
+        const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            this.particleAnimationFrame = requestAnimationFrame(animate);
+        };
+
+        animate();
+    }
+
+    initAuroraWave() {
+        // Aurora wave animation
+        const animatedBg = document.querySelector('.animated-background');
+        if (!animatedBg) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.id = 'auroraCanvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.zIndex = '0';
+        canvas.style.pointerEvents = 'none';
+        animatedBg.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let time = 0;
+
+        const drawWave = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, 'rgba(102, 126, 234, 0.3)');
+            gradient.addColorStop(0.5, 'rgba(118, 75, 162, 0.3)');
+            gradient.addColorStop(1, 'rgba(102, 126, 234, 0.3)');
+
+            ctx.fillStyle = gradient;
+
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+
+            for (let x = 0; x < canvas.width; x++) {
+                const y = canvas.height / 2 + Math.sin(x * 0.01 + time) * 50 + Math.sin(x * 0.02 + time * 0.5) * 30;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+
+            time += 0.02;
+            this.auroraAnimationFrame = requestAnimationFrame(drawWave);
+        };
+
+        drawWave();
+    }
+
     async loadChoruses() {
         try {
             // Check if we're on a chorus display page
