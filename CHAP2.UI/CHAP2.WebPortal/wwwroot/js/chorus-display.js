@@ -612,24 +612,24 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Dusk colors (realistic sunset/twilight sky) - warmer reds, darker blues
+        // Dusk colors (realistic sunset/twilight sky) - maximum saturation, warmer reds, darker blues
         const duskColors = [
-            { r: 255, g: 50, b: 30 },   // Deep warm coral sunset
-            { r: 255, g: 90, b: 20 },   // Rich burnt orange
-            { r: 85, g: 15, b: 140 },   // Deep twilight purple (darker)
-            { r: 230, g: 30, b: 20 },   // Intense crimson red (warmer)
-            { r: 45, g: 20, b: 130 },   // Dark indigo twilight (darker)
-            { r: 255, g: 70, b: 25 }    // Vibrant warm sunset orange
+            { r: 255, g: 30, b: 0 },    // Intense warm coral sunset (maximum saturation)
+            { r: 255, g: 70, b: 0 },    // Deep burnt orange (maximum saturation)
+            { r: 70, g: 0, b: 150 },    // Deep twilight purple (darker, more saturated)
+            { r: 255, g: 0, b: 0 },     // Pure crimson red (maximum saturation)
+            { r: 30, g: 0, b: 140 },    // Dark indigo twilight (darker, more saturated)
+            { r: 255, g: 50, b: 0 }     // Vibrant warm sunset orange (maximum saturation)
         ];
 
-        // Dawn colors (realistic sunrise/early morning sky) - warmer reds, darker blues
+        // Dawn colors (realistic sunrise/early morning sky) - maximum saturation, warmer reds, darker blues
         const dawnColors = [
-            { r: 255, g: 140, b: 80 },  // Warm peachy sunrise (more saturated)
-            { r: 255, g: 200, b: 150 }, // Warm cream (more saturated)
-            { r: 100, g: 150, b: 210 }, // Sky blue (darker, more saturated)
-            { r: 255, g: 220, b: 180 }, // Papaya whip (warmer)
-            { r: 130, g: 180, b: 200 }, // Powder blue (darker, more saturated)
-            { r: 255, g: 130, b: 90 }   // Light salmon (warmer, more saturated)
+            { r: 255, g: 120, b: 50 },  // Warm peachy sunrise (maximum saturation)
+            { r: 255, g: 180, b: 120 }, // Warm cream (maximum saturation)
+            { r: 70, g: 130, b: 230 },  // Sky blue (darker, maximum saturation)
+            { r: 255, g: 200, b: 150 }, // Papaya whip (warmer, more saturated)
+            { r: 100, g: 160, b: 220 }, // Powder blue (darker, maximum saturation)
+            { r: 255, g: 110, b: 60 }   // Light salmon (warmer, maximum saturation)
         ];
 
         // Interpolate between two colors
