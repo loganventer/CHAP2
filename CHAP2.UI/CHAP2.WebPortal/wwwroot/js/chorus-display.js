@@ -1408,10 +1408,11 @@ class ChorusDisplay {
         if (!container) return;
 
         // Get the actual available viewport height, accounting for fixed elements
-        // Header is ~80px at top, controls are ~80px at bottom
-        const headerHeight = 80;
-        const controlsHeight = 100;
-        const safetyMargin = 40; // Extra margin to prevent any cutoff
+        // Header includes: title (1.3rem ~21px) + key badge (~20px) + padding (30px) + gradient overflow (~30px)
+        // Controls include: button height (~50px) + bottom positioning (20px) + safety margin
+        const headerHeight = 110; // Generous header space to prevent overlap
+        const controlsHeight = 120; // Generous controls space at bottom
+        const safetyMargin = 20; // Additional safety margin
 
         const viewportHeight = window.innerHeight;
         const availableHeight = viewportHeight - headerHeight - controlsHeight - safetyMargin;
@@ -1427,6 +1428,7 @@ class ChorusDisplay {
         this.calculateWrappedLines();
 
         console.log(`Viewport height: ${viewportHeight}px, Available height: ${availableHeight}px`);
+        console.log(`Header: ${headerHeight}px, Controls: ${controlsHeight}px, Safety: ${safetyMargin}px`);
         console.log(`Font size: ${this.currentFontSize}px, Line height: ${lineHeight}px`);
         console.log(`Container width: ${containerWidth}px`);
         console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
