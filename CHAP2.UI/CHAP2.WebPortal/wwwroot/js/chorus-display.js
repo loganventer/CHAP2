@@ -612,24 +612,24 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Dusk colors (realistic sunset/twilight sky) - maximum saturation, warmer reds, darker blues
+        // Dusk colors (realistic sunset/twilight sky) - extreme saturation, warmer reds, darker blues
         const duskColors = [
-            { r: 255, g: 30, b: 0 },    // Intense warm coral sunset (maximum saturation)
-            { r: 255, g: 70, b: 0 },    // Deep burnt orange (maximum saturation)
-            { r: 70, g: 0, b: 150 },    // Deep twilight purple (darker, more saturated)
-            { r: 255, g: 0, b: 0 },     // Pure crimson red (maximum saturation)
-            { r: 30, g: 0, b: 140 },    // Dark indigo twilight (darker, more saturated)
-            { r: 255, g: 50, b: 0 }     // Vibrant warm sunset orange (maximum saturation)
+            { r: 255, g: 20, b: 0 },    // Intense warm coral sunset (extreme saturation)
+            { r: 255, g: 60, b: 0 },    // Deep burnt orange (extreme saturation)
+            { r: 60, g: 0, b: 160 },    // Deep twilight purple (darker, extreme saturation)
+            { r: 255, g: 0, b: 0 },     // Pure crimson red (extreme saturation)
+            { r: 20, g: 0, b: 150 },    // Dark indigo twilight (darker, extreme saturation)
+            { r: 255, g: 40, b: 0 }     // Vibrant warm sunset orange (extreme saturation)
         ];
 
-        // Dawn colors (realistic sunrise/early morning sky) - maximum saturation, warmer reds, darker blues
+        // Dawn colors (realistic sunrise/early morning sky) - extreme saturation, warmer reds, darker blues
         const dawnColors = [
-            { r: 255, g: 120, b: 50 },  // Warm peachy sunrise (maximum saturation)
-            { r: 255, g: 180, b: 120 }, // Warm cream (maximum saturation)
-            { r: 70, g: 130, b: 230 },  // Sky blue (darker, maximum saturation)
-            { r: 255, g: 200, b: 150 }, // Papaya whip (warmer, more saturated)
-            { r: 100, g: 160, b: 220 }, // Powder blue (darker, maximum saturation)
-            { r: 255, g: 110, b: 60 }   // Light salmon (warmer, maximum saturation)
+            { r: 255, g: 110, b: 30 },  // Warm peachy sunrise (extreme saturation)
+            { r: 255, g: 170, b: 100 }, // Warm cream (extreme saturation)
+            { r: 50, g: 120, b: 240 },  // Sky blue (darker, extreme saturation)
+            { r: 255, g: 190, b: 130 }, // Papaya whip (warmer, extreme saturation)
+            { r: 80, g: 150, b: 230 },  // Powder blue (darker, extreme saturation)
+            { r: 255, g: 100, b: 40 }   // Light salmon (warmer, extreme saturation)
         ];
 
         // Interpolate between two colors
@@ -656,10 +656,10 @@ class ChorusDisplay {
         }
 
         const drawColorShift = () => {
-            // Create multiple cycles for more dynamic color transitions
-            const mainCycle = (Math.sin(time * 0.001) + 1) / 2; // Primary dusk/dawn cycle - faster
-            const secondaryCycle = (Math.sin(time * 0.0008 + Math.PI / 4) + 1) / 2; // Secondary offset cycle
-            const tertiaryCycle = (Math.sin(time * 0.0006 + Math.PI / 2) + 1) / 2; // Tertiary cycle
+            // Create multiple cycles for more dynamic color transitions - SLOWER
+            const mainCycle = (Math.sin(time * 0.0005) + 1) / 2; // Primary dusk/dawn cycle - slower
+            const secondaryCycle = (Math.sin(time * 0.0004 + Math.PI / 4) + 1) / 2; // Secondary offset cycle
+            const tertiaryCycle = (Math.sin(time * 0.0003 + Math.PI / 2) + 1) / 2; // Tertiary cycle
 
             // Determine which phase we're in and create color combinations
             const colors = [];
@@ -679,26 +679,52 @@ class ChorusDisplay {
                 colors.push(lerpColor(duskMix, dawnMix, mainCycle));
             }
 
+            // Calculate sun/moon position first (will be used for gradient center)
+            let celestialX = canvas.width / 2;
+            let celestialY = canvas.height / 2;
+            let hasCelestialBody = false;
+
+            // Sun position calculation (for gradient center)
+            if (mainCycle >= 0.7 || mainCycle <= 0.3) {
+                hasCelestialBody = true;
+                let sunProgress;
+                if (mainCycle >= 0.7) {
+                    sunProgress = (mainCycle - 0.7) / 0.3;
+                } else {
+                    sunProgress = 1 + (mainCycle / 0.3);
+                }
+                // Arc from bottom-right, up to top-center, down to bottom-left
+                const sunArcAngle = sunProgress * Math.PI;
+                celestialX = canvas.width * (1 - sunProgress / 2); // Right to left
+                celestialY = canvas.height * (0.85 - Math.sin(sunArcAngle) * 0.6); // Bottom-right to top to bottom-left
+            }
+            // Moon position calculation (for gradient center)
+            else if (mainCycle >= 0.2 && mainCycle <= 0.8) {
+                hasCelestialBody = true;
+                const moonProgress = (mainCycle - 0.2) / 0.6;
+                // Arc from bottom-right, up to top-center, down to bottom-left
+                const moonArcAngle = moonProgress * Math.PI;
+                celestialX = canvas.width * (1 - moonProgress);
+                celestialY = canvas.height * (0.85 - Math.sin(moonArcAngle) * 0.6);
+            }
+
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Create animated radial gradient
-            const gradientOffsetX = Math.cos(time * 0.0003) * (canvas.width * 0.1);
-            const gradientOffsetY = Math.sin(time * 0.0003) * (canvas.height * 0.1);
-
+            // Create animated radial gradient centered on sun/moon position
             const gradient = ctx.createRadialGradient(
-                canvas.width / 2 + gradientOffsetX,
-                canvas.height / 2 + gradientOffsetY,
+                celestialX,
+                celestialY,
                 0,
-                canvas.width / 2 + gradientOffsetX,
-                canvas.height / 2 + gradientOffsetY,
-                Math.max(canvas.width, canvas.height) * 0.9
+                celestialX,
+                celestialY,
+                Math.max(canvas.width, canvas.height) * 1.2
             );
 
-            gradient.addColorStop(0, `rgba(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, 0.6)`);
-            gradient.addColorStop(0.33, `rgba(${colors[1].r}, ${colors[1].g}, ${colors[1].b}, 0.5)`);
-            gradient.addColorStop(0.66, `rgba(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, 0.4)`);
-            gradient.addColorStop(1, `rgba(${colors[3].r}, ${colors[3].g}, ${colors[3].b}, 0.35)`);
+            gradient.addColorStop(0, `rgba(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, 0.7)`);
+            gradient.addColorStop(0.3, `rgba(${colors[1].r}, ${colors[1].g}, ${colors[1].b}, 0.6)`);
+            gradient.addColorStop(0.6, `rgba(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, 0.5)`);
+            gradient.addColorStop(1, `rgba(${colors[3].r}, ${colors[3].g}, ${colors[3].b}, 0.4)`);
 
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -809,10 +835,18 @@ class ChorusDisplay {
                     sunGradient.addColorStop(1, `rgba(255, 120, 30, 0)`);
                 }
 
+                // Apply frosted glass effect to sun
+                ctx.filter = 'blur(4px) saturate(120%)';
+                ctx.globalAlpha = 0.85;
+
                 ctx.fillStyle = sunGradient;
                 ctx.beginPath();
                 ctx.arc(sunX, sunY, sunSize, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Reset filters
+                ctx.filter = 'none';
+                ctx.globalAlpha = 1.0;
             }
 
             // Moon path: visible from 0.2 to 0.8 (moonrise to moonset)
@@ -842,10 +876,18 @@ class ChorusDisplay {
                 moonGradient.addColorStop(0.8, `rgba(200, 200, 230, ${moonOpacity * 0.4})`);
                 moonGradient.addColorStop(1, `rgba(180, 180, 220, 0)`);
 
+                // Apply frosted glass effect to moon
+                ctx.filter = 'blur(4px) saturate(120%)';
+                ctx.globalAlpha = 0.85;
+
                 ctx.fillStyle = moonGradient;
                 ctx.beginPath();
                 ctx.arc(moonX, moonY, moonSize, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Reset filters
+                ctx.filter = 'none';
+                ctx.globalAlpha = 1.0;
 
                 // Moon craters (darker spots)
                 ctx.fillStyle = `rgba(180, 180, 200, ${moonOpacity * 0.35})`;
