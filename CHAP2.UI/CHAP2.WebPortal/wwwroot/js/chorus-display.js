@@ -612,24 +612,34 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Dusk colors (realistic sunset/twilight sky) - extreme saturation, warmer reds, darker blues
+        // Dusk colors (realistic sunset sky - warm oranges transitioning to deep purples)
         const duskColors = [
-            { r: 255, g: 20, b: 0 },    // Intense warm coral sunset (extreme saturation)
-            { r: 255, g: 60, b: 0 },    // Deep burnt orange (extreme saturation)
-            { r: 60, g: 0, b: 160 },    // Deep twilight purple (darker, extreme saturation)
-            { r: 255, g: 0, b: 0 },     // Pure crimson red (extreme saturation)
-            { r: 20, g: 0, b: 150 },    // Dark indigo twilight (darker, extreme saturation)
-            { r: 255, g: 40, b: 0 }     // Vibrant warm sunset orange (extreme saturation)
+            { r: 255, g: 94, b: 77 },   // Coral pink horizon
+            { r: 255, g: 121, b: 63 },  // Sunset orange
+            { r: 139, g: 69, b: 137 },  // Purple twilight
+            { r: 230, g: 92, b: 0 },    // Deep orange
+            { r: 75, g: 54, b: 124 },   // Twilight purple
+            { r: 255, g: 140, b: 50 }   // Golden orange
         ];
 
-        // Dawn colors (realistic sunrise/early morning sky) - extreme saturation, warmer reds, darker blues
+        // Dawn colors (realistic sunrise sky - soft pinks, peaches, and light blues)
         const dawnColors = [
-            { r: 255, g: 110, b: 30 },  // Warm peachy sunrise (extreme saturation)
-            { r: 255, g: 170, b: 100 }, // Warm cream (extreme saturation)
-            { r: 50, g: 120, b: 240 },  // Sky blue (darker, extreme saturation)
-            { r: 255, g: 190, b: 130 }, // Papaya whip (warmer, extreme saturation)
-            { r: 80, g: 150, b: 230 },  // Powder blue (darker, extreme saturation)
-            { r: 255, g: 100, b: 40 }   // Light salmon (warmer, extreme saturation)
+            { r: 255, g: 179, b: 167 }, // Soft peachy pink
+            { r: 255, g: 223, b: 196 }, // Cream peach
+            { r: 173, g: 216, b: 230 }, // Light sky blue
+            { r: 255, g: 218, b: 185 }, // Peach puff
+            { r: 176, g: 224, b: 230 }, // Powder blue
+            { r: 255, g: 192, b: 159 }  // Light coral
+        ];
+
+        // Night colors (realistic night sky - deep blues and near-black)
+        const nightColors = [
+            { r: 25, g: 25, b: 60 },    // Deep midnight blue
+            { r: 15, g: 15, b: 45 },    // Dark navy
+            { r: 10, g: 10, b: 35 },    // Near black blue
+            { r: 30, g: 30, b: 70 },    // Midnight blue
+            { r: 20, g: 20, b: 50 },    // Deep night
+            { r: 18, g: 18, b: 40 }     // Dark twilight
         ];
 
         // Interpolate between two colors
@@ -662,21 +672,45 @@ class ChorusDisplay {
             const tertiaryCycle = (Math.sin(time * 0.0003 + Math.PI / 2) + 1) / 2; // Tertiary cycle
 
             // Determine which phase we're in and create color combinations
+            // mainCycle: 0.0-0.3 = dusk/sunset, 0.3-0.7 = night, 0.7-1.0 = dawn/sunrise
             const colors = [];
 
-            // Create 4 different color stops with complex interpolation
+            // Create 4 different color stops based on time of day
             for (let i = 0; i < 4; i++) {
-                const duskIndex1 = i % duskColors.length;
-                const duskIndex2 = (i + 1) % duskColors.length;
-                const dawnIndex1 = i % dawnColors.length;
-                const dawnIndex2 = (i + 1) % dawnColors.length;
+                let finalColor;
 
-                // First interpolate within color sets
-                const duskMix = lerpColor(duskColors[duskIndex1], duskColors[duskIndex2], secondaryCycle);
-                const dawnMix = lerpColor(dawnColors[dawnIndex1], dawnColors[dawnIndex2], tertiaryCycle);
+                if (mainCycle <= 0.3) {
+                    // Dusk phase (0.0 to 0.3) - transition from dusk to night
+                    const duskToNightProgress = mainCycle / 0.3; // 0 to 1
+                    const duskIndex1 = i % duskColors.length;
+                    const duskIndex2 = (i + 1) % duskColors.length;
+                    const nightIndex1 = i % nightColors.length;
+                    const nightIndex2 = (i + 1) % nightColors.length;
 
-                // Then interpolate between dusk and dawn
-                colors.push(lerpColor(duskMix, dawnMix, mainCycle));
+                    const duskMix = lerpColor(duskColors[duskIndex1], duskColors[duskIndex2], secondaryCycle);
+                    const nightMix = lerpColor(nightColors[nightIndex1], nightColors[nightIndex2], tertiaryCycle);
+                    finalColor = lerpColor(duskMix, nightMix, duskToNightProgress);
+
+                } else if (mainCycle > 0.3 && mainCycle < 0.7) {
+                    // Night phase (0.3 to 0.7) - pure night colors
+                    const nightIndex1 = i % nightColors.length;
+                    const nightIndex2 = (i + 1) % nightColors.length;
+                    finalColor = lerpColor(nightColors[nightIndex1], nightColors[nightIndex2], secondaryCycle);
+
+                } else {
+                    // Dawn phase (0.7 to 1.0) - transition from night to dawn
+                    const nightToDawnProgress = (mainCycle - 0.7) / 0.3; // 0 to 1
+                    const nightIndex1 = i % nightColors.length;
+                    const nightIndex2 = (i + 1) % nightColors.length;
+                    const dawnIndex1 = i % dawnColors.length;
+                    const dawnIndex2 = (i + 1) % dawnColors.length;
+
+                    const nightMix = lerpColor(nightColors[nightIndex1], nightColors[nightIndex2], tertiaryCycle);
+                    const dawnMix = lerpColor(dawnColors[dawnIndex1], dawnColors[dawnIndex2], secondaryCycle);
+                    finalColor = lerpColor(nightMix, dawnMix, nightToDawnProgress);
+                }
+
+                colors.push(finalColor);
             }
 
             // Calculate sun/moon position first (will be used for gradient center)
