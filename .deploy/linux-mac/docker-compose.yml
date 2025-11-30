@@ -12,21 +12,21 @@ services:
       - QDRANT__SERVICE__GRPC_PORT=6334
     restart: unless-stopped
 
-  # LangChain Search Service
-  langchain-service:
-    build:
-      context: ../../langchain_search_service
-      dockerfile: Dockerfile
-    ports:
-      - "0.0.0.0:8000:8000"
-    environment:
-      - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_URL=http://host.docker.internal:11434
-    volumes:
-      - ../../langchain_search_service/data:/app/data
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
+  # LangChain Search Service - Temporarily disabled
+  #langchain-service:
+  #  build:
+  #    context: ../../langchain_search_service
+  #    dockerfile: Dockerfile
+  #  ports:
+  #    - "0.0.0.0:8000:8000"
+  #  environment:
+  #    - QDRANT_URL=http://qdrant:6333
+  #    - OLLAMA_URL=http://host.docker.internal:11434
+  #  volumes:
+  #    - ../../langchain_search_service/data:/app/data
+  #  extra_hosts:
+  #    - "host.docker.internal:host-gateway"
+  #  restart: unless-stopped
 
   # CHAP2 API Service
   chap2-api:

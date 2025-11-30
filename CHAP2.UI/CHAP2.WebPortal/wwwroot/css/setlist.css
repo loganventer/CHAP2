@@ -13,7 +13,71 @@
 
 .setlist-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+}
+
+/* Beautified Launch Setlist Button */
+#launchSetlistBtn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#launchSetlistBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #7c8ff5 0%, #8b5cf6 100%);
+}
+
+#launchSetlistBtn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+#launchSetlistBtn i {
+    font-size: 16px;
+}
+
+/* Beautified Clear All Button */
+#clearSetlistBtn {
+    background: white;
+    color: #64748b;
+    padding: 12px 24px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#clearSetlistBtn:hover:not(:disabled) {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+#clearSetlistBtn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+#clearSetlistBtn i {
+    font-size: 16px;
 }
 
 .setlist-container {
