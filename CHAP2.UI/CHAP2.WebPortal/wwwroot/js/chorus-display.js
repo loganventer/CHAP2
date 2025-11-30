@@ -713,46 +713,20 @@ class ChorusDisplay {
                 colors.push(finalColor);
             }
 
-            // Calculate sun/moon position first (will be used for gradient center)
-            let celestialX = canvas.width / 2;
-            let celestialY = canvas.height / 2;
-            let hasCelestialBody = false;
-
-            // Sun position calculation (for gradient center)
-            if (mainCycle >= 0.7 || mainCycle <= 0.3) {
-                hasCelestialBody = true;
-                let sunProgress;
-                if (mainCycle >= 0.7) {
-                    sunProgress = (mainCycle - 0.7) / 0.3;
-                } else {
-                    sunProgress = 1 + (mainCycle / 0.3);
-                }
-                // Arc from bottom-right, up to top-center, down to bottom-left
-                const sunArcAngle = sunProgress * Math.PI;
-                celestialX = canvas.width * (1 - sunProgress); // Right to left (full width)
-                celestialY = canvas.height * (0.85 - Math.sin(sunArcAngle) * 0.6); // Bottom-right to top to bottom-left
-            }
-            // Moon position calculation (for gradient center)
-            else if (mainCycle >= 0.2 && mainCycle <= 0.8) {
-                hasCelestialBody = true;
-                const moonProgress = (mainCycle - 0.2) / 0.6;
-                // Arc from bottom-right, up to top-center, down to bottom-left
-                const moonArcAngle = moonProgress * Math.PI;
-                celestialX = canvas.width * (1 - moonProgress);
-                celestialY = canvas.height * (0.85 - Math.sin(moonArcAngle) * 0.6);
-            }
-
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Create animated radial gradient centered on sun/moon position
+            // Create animated radial gradient centered on screen
+            const gradientOffsetX = Math.cos(time * 0.0003) * (canvas.width * 0.1);
+            const gradientOffsetY = Math.sin(time * 0.0003) * (canvas.height * 0.1);
+
             const gradient = ctx.createRadialGradient(
-                celestialX,
-                celestialY,
+                canvas.width / 2 + gradientOffsetX,
+                canvas.height / 2 + gradientOffsetY,
                 0,
-                celestialX,
-                celestialY,
-                Math.max(canvas.width, canvas.height) * 1.2
+                canvas.width / 2 + gradientOffsetX,
+                canvas.height / 2 + gradientOffsetY,
+                Math.max(canvas.width, canvas.height) * 0.9
             );
 
             gradient.addColorStop(0, `rgba(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, 0.7)`);
@@ -822,118 +796,6 @@ class ChorusDisplay {
                         }
                     }
                 });
-            }
-
-            // Draw sun/moon following independent arcs across the sky
-            // Sun: appears at 0.7 (right), peaks at center, sets at 0.3 (left)
-            // Moon: appears at 0.2 (right), peaks at center, sets at 0.8 (left)
-            // mainCycle: 0 = dusk (red/orange), 0.5 = night (dark blue), 1.0 = dawn (peachy/blue)
-
-            const sunSize = 60;
-            const moonSize = 50;
-
-            // Sun path: visible from 0.7 to 1.0 (sunrise/dawn) and 0.0 to 0.3 (sunset/dusk)
-            // Map to arc: 0.7->1.0 becomes right to center, 0.0->0.3 becomes center to left
-            if (mainCycle >= 0.7 || mainCycle <= 0.3) {
-                let sunProgress;
-                let sunOpacity;
-
-                if (mainCycle >= 0.7) {
-                    // Sunrise phase (0.7 to 1.0) - right to center
-                    sunProgress = (mainCycle - 0.7) / 0.3; // 0 to 1
-                    sunOpacity = sunProgress; // Fade in
-                } else {
-                    // Sunset phase (0.0 to 0.3) - center to left
-                    sunProgress = 1 + (mainCycle / 0.3); // 1 to 2
-                    sunOpacity = 1 - (mainCycle / 0.3); // Fade out
-                }
-
-                // Calculate sun position (right to left across full arc)
-                const sunArcAngle = sunProgress * Math.PI; // 0 to 2*PI
-                const sunX = canvas.width * (1 - sunProgress); // Right to left (full width)
-                const sunY = canvas.height * (0.85 - Math.sin(sunArcAngle) * 0.6); // Bottom-right to top to bottom-left
-
-                // Sun with glow (dawn colors during sunrise, dusk colors during sunset)
-                const sunGradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunSize);
-                if (mainCycle >= 0.7) {
-                    // Dawn sun (peachy/yellow)
-                    sunGradient.addColorStop(0, `rgba(255, 255, 220, ${sunOpacity})`);
-                    sunGradient.addColorStop(0.4, `rgba(255, 230, 120, ${sunOpacity * 0.9})`);
-                    sunGradient.addColorStop(0.7, `rgba(255, 200, 80, ${sunOpacity * 0.5})`);
-                    sunGradient.addColorStop(1, `rgba(255, 180, 60, 0)`);
-                } else {
-                    // Dusk sun (orange/red)
-                    sunGradient.addColorStop(0, `rgba(255, 240, 200, ${sunOpacity})`);
-                    sunGradient.addColorStop(0.4, `rgba(255, 200, 80, ${sunOpacity * 0.9})`);
-                    sunGradient.addColorStop(0.7, `rgba(255, 150, 40, ${sunOpacity * 0.5})`);
-                    sunGradient.addColorStop(1, `rgba(255, 120, 30, 0)`);
-                }
-
-                // Apply frosted glass effect to sun
-                ctx.filter = 'blur(4px) saturate(120%)';
-                ctx.globalAlpha = 0.85;
-
-                ctx.fillStyle = sunGradient;
-                ctx.beginPath();
-                ctx.arc(sunX, sunY, sunSize, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Reset filters
-                ctx.filter = 'none';
-                ctx.globalAlpha = 1.0;
-            }
-
-            // Moon path: visible from 0.2 to 0.8 (moonrise to moonset)
-            if (mainCycle >= 0.2 && mainCycle <= 0.8) {
-                // Moon progress from 0 (right) to 1 (left)
-                const moonProgress = (mainCycle - 0.2) / 0.6; // 0 to 1
-
-                // Fade in/out at edges
-                let moonOpacity;
-                if (moonProgress < 0.15) {
-                    moonOpacity = moonProgress / 0.15; // Fade in
-                } else if (moonProgress > 0.85) {
-                    moonOpacity = (1 - moonProgress) / 0.15; // Fade out
-                } else {
-                    moonOpacity = 1; // Full opacity
-                }
-
-                // Calculate moon position (right to left)
-                const moonArcAngle = moonProgress * Math.PI;
-                const moonX = canvas.width - (moonProgress * canvas.width);
-                const moonY = canvas.height - Math.sin(moonArcAngle) * (canvas.height * 0.6) - canvas.height * 0.15;
-
-                // Moon with cool glow
-                const moonGradient = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonSize);
-                moonGradient.addColorStop(0, `rgba(245, 245, 255, ${moonOpacity * 0.95})`);
-                moonGradient.addColorStop(0.5, `rgba(220, 220, 240, ${moonOpacity * 0.7})`);
-                moonGradient.addColorStop(0.8, `rgba(200, 200, 230, ${moonOpacity * 0.4})`);
-                moonGradient.addColorStop(1, `rgba(180, 180, 220, 0)`);
-
-                // Apply frosted glass effect to moon
-                ctx.filter = 'blur(4px) saturate(120%)';
-                ctx.globalAlpha = 0.85;
-
-                ctx.fillStyle = moonGradient;
-                ctx.beginPath();
-                ctx.arc(moonX, moonY, moonSize, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Reset filters
-                ctx.filter = 'none';
-                ctx.globalAlpha = 1.0;
-
-                // Moon craters (darker spots)
-                ctx.fillStyle = `rgba(180, 180, 200, ${moonOpacity * 0.35})`;
-                ctx.beginPath();
-                ctx.arc(moonX - 12, moonY - 10, 9, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(moonX + 14, moonY + 6, 7, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(moonX - 6, moonY + 16, 6, 0, Math.PI * 2);
-                ctx.fill();
             }
 
             // Adapt font color based on background brightness
