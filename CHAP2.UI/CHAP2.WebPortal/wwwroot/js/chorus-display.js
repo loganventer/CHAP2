@@ -215,6 +215,12 @@ class ChorusDisplay {
             case 'aurora-borealis':
                 // Show true aurora borealis animation
                 this.initAuroraBorealis();
+                // Ensure chorus container is above the frost overlay
+                const chorusContainer = document.querySelector('.chorus-container');
+                if (chorusContainer) {
+                    chorusContainer.style.position = 'relative';
+                    chorusContainer.style.zIndex = '20';
+                }
                 break;
 
             case 'color-shift':
@@ -514,13 +520,13 @@ class ChorusDisplay {
 
                 ctx.beginPath();
 
-                // Draw smooth flowing wave
+                // Draw smooth flowing wave (centered vertically, narrower range)
                 for (let x = 0; x < canvas.width; x += 3) {
-                    // Create gentle, flowing wave pattern
-                    const y1 = canvas.height * 0.35 +
-                               Math.sin(x * wave.frequency + time * wave.speed) * wave.amplitude +
-                               Math.sin(x * wave.frequency * 1.5 + time * wave.speed * 0.8) * (wave.amplitude * 0.4) +
-                               Math.sin(time * 0.003 + index) * 30; // Slow vertical drift
+                    // Create gentle, flowing wave pattern centered at 50% of canvas height
+                    const y1 = canvas.height * 0.5 + // Center vertically at 50%
+                               Math.sin(x * wave.frequency + time * wave.speed) * (wave.amplitude * 0.5) + // Reduced amplitude by 50%
+                               Math.sin(x * wave.frequency * 1.5 + time * wave.speed * 0.8) * (wave.amplitude * 0.2) + // Reduced amplitude
+                               Math.sin(time * 0.003 + index) * 15; // Reduced drift range
 
                     if (x === 0) {
                         ctx.moveTo(x, y1);
@@ -529,13 +535,13 @@ class ChorusDisplay {
                     }
                 }
 
-                // Complete the shape
-                ctx.lineTo(canvas.width, canvas.height);
-                ctx.lineTo(0, canvas.height);
+                // Complete the shape with narrower vertical extent
+                ctx.lineTo(canvas.width, canvas.height * 0.75); // End at 75% height instead of 100%
+                ctx.lineTo(0, canvas.height * 0.75);
                 ctx.closePath();
 
-                // Create soft gradient
-                const gradient = ctx.createLinearGradient(0, canvas.height * 0.2, 0, canvas.height);
+                // Create soft gradient with narrower range
+                const gradient = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height * 0.75);
                 gradient.addColorStop(0, wave.color);
                 gradient.addColorStop(0.4, wave.color.replace(/[\d.]+\)/, '0.06)'));
                 gradient.addColorStop(0.7, wave.color.replace(/[\d.]+\)/, '0.02)'));
@@ -1381,30 +1387,80 @@ class ChorusDisplay {
         // Get text outline settings
         const textOutlineWidth = sessionStorage.getItem('textOutlineWidth') || '0';
         const textOutlineColor = sessionStorage.getItem('textOutlineColor') || '#000000';
+        const textOutlineFeather = sessionStorage.getItem('textOutlineFeather') === 'true';
 
         // Create and display lines
         linesForPage.forEach(line => {
-            const lineElement = document.createElement('div');
-            lineElement.className = 'text-line';
-            lineElement.textContent = line;
-            // Apply current font size and color to the new element
-            lineElement.style.fontSize = `${this.currentFontSize}px`;
-            lineElement.style.lineHeight = `${lineHeight}px`;
-            lineElement.style.color = 'white'; // Ensure white color is applied
-            lineElement.style.textAlign = 'center'; // Ensure centering
-            lineElement.style.zIndex = '25'; // Ensure text stays above other elements
-            lineElement.style.position = 'relative'; // Required for z-index to work
-            lineElement.style.fontFamily = `'${chorusFont}', sans-serif`; // Apply font family
+            // If feathering is enabled, create a wrapper with layered outline
+            if (textOutlineWidth && parseInt(textOutlineWidth) > 0 && textOutlineFeather) {
+                // Create wrapper for layered effect
+                const wrapper = document.createElement('div');
+                wrapper.className = 'text-line-wrapper';
+                wrapper.style.position = 'relative';
+                wrapper.style.fontSize = `${this.currentFontSize}px`;
+                wrapper.style.lineHeight = `${lineHeight}px`;
+                wrapper.style.textAlign = 'center';
+                wrapper.style.fontFamily = `'${chorusFont}', sans-serif`;
 
-            // Apply text outline if width > 0
-            if (textOutlineWidth && parseInt(textOutlineWidth) > 0) {
-                lineElement.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
-                lineElement.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
-                // Also add paint-order for better rendering
-                lineElement.style.paintOrder = 'stroke fill';
+                // Create outline layer (behind, with frosted glass effect)
+                const outlineElement = document.createElement('div');
+                outlineElement.className = 'text-line-outline';
+                outlineElement.textContent = line;
+                outlineElement.style.position = 'absolute';
+                outlineElement.style.top = '0';
+                outlineElement.style.left = '0';
+                outlineElement.style.width = '100%';
+                outlineElement.style.fontSize = `${this.currentFontSize}px`;
+                outlineElement.style.lineHeight = `${lineHeight}px`;
+                outlineElement.style.color = 'transparent';
+                outlineElement.style.textAlign = 'center';
+                outlineElement.style.fontFamily = `'${chorusFont}', sans-serif`;
+                outlineElement.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                outlineElement.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                outlineElement.style.zIndex = '1';
+                // Apply frosted glass effect to outline layer
+                outlineElement.style.filter = 'blur(2px) saturate(150%)';
+                outlineElement.style.opacity = '0.8';
+
+                // Create text layer (on top, crisp)
+                const textElement = document.createElement('div');
+                textElement.className = 'text-line';
+                textElement.textContent = line;
+                textElement.style.position = 'relative';
+                textElement.style.fontSize = `${this.currentFontSize}px`;
+                textElement.style.lineHeight = `${lineHeight}px`;
+                textElement.style.color = 'white';
+                textElement.style.textAlign = 'center';
+                textElement.style.fontFamily = `'${chorusFont}', sans-serif`;
+                textElement.style.zIndex = '2';
+
+                wrapper.appendChild(outlineElement);
+                wrapper.appendChild(textElement);
+                container.appendChild(wrapper);
+            } else {
+                // Standard rendering (non-feathered)
+                const lineElement = document.createElement('div');
+                lineElement.className = 'text-line';
+                lineElement.textContent = line;
+                // Apply current font size and color to the new element
+                lineElement.style.fontSize = `${this.currentFontSize}px`;
+                lineElement.style.lineHeight = `${lineHeight}px`;
+                lineElement.style.color = 'white'; // Ensure white color is applied
+                lineElement.style.textAlign = 'center'; // Ensure centering
+                lineElement.style.zIndex = '25'; // Ensure text stays above other elements
+                lineElement.style.position = 'relative'; // Required for z-index to work
+                lineElement.style.fontFamily = `'${chorusFont}', sans-serif`; // Apply font family
+
+                // Apply text outline if width > 0
+                if (textOutlineWidth && parseInt(textOutlineWidth) > 0) {
+                    lineElement.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                    lineElement.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                    // Also add paint-order for better rendering
+                    lineElement.style.paintOrder = 'stroke fill';
+                }
+
+                container.appendChild(lineElement);
             }
-
-            container.appendChild(lineElement);
         });
         
         // Update page indicator

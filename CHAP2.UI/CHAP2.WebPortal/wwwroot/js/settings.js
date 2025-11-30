@@ -174,6 +174,16 @@ class SettingsManager {
                                     <input type="text" id="textOutlineColorHex" value="${this.currentSettings.textOutlineColor || '#000000'}" readonly>
                                 </div>
                             </div>
+
+                            <div class="form-group">
+                                <label for="textOutlineFeather">
+                                    <input type="checkbox" id="textOutlineFeather" style="margin-right: 8px;">
+                                    Feather Text Outline (Frosted Glass Effect)
+                                </label>
+                                <div class="form-help" style="margin-top: 5px; font-size: 12px; color: #999;">
+                                    Applies a blurred, frosted glass effect to the outline while keeping text crisp
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -272,6 +282,7 @@ class SettingsManager {
         const chorusAnimation = document.getElementById('chorusAnimation');
         const chorusFont = document.getElementById('chorusFont');
         const textOutlineWidth = document.getElementById('textOutlineWidth');
+        const textOutlineFeather = document.getElementById('textOutlineFeather');
 
         if (chorusAnimation) {
             chorusAnimation.addEventListener('change', () => this.autoSaveSettings());
@@ -283,6 +294,10 @@ class SettingsManager {
 
         if (textOutlineWidth) {
             textOutlineWidth.addEventListener('change', () => this.autoSaveSettings());
+        }
+
+        if (textOutlineFeather) {
+            textOutlineFeather.addEventListener('change', () => this.autoSaveSettings());
         }
 
         // Auto-save on theme change
@@ -353,6 +368,12 @@ class SettingsManager {
                     textOutlineColorHex.value = this.currentSettings.textOutlineColor;
                 }
             }
+
+            // Set text outline feather checkbox to current value
+            const textOutlineFeather = document.getElementById('textOutlineFeather');
+            if (textOutlineFeather) {
+                textOutlineFeather.checked = this.currentSettings.textOutlineFeather || false;
+            }
         }
     }
 
@@ -370,6 +391,7 @@ class SettingsManager {
         const chorusFont = document.getElementById('chorusFont').value;
         const textOutlineWidth = document.getElementById('textOutlineWidth').value;
         const textOutlineColor = document.getElementById('textOutlineColor').value;
+        const textOutlineFeather = document.getElementById('textOutlineFeather').checked;
 
         const settings = {
             theme: theme,
@@ -379,7 +401,8 @@ class SettingsManager {
             chorusAnimation: chorusAnimation,
             chorusFont: chorusFont,
             textOutlineWidth: textOutlineWidth,
-            textOutlineColor: textOutlineColor
+            textOutlineColor: textOutlineColor,
+            textOutlineFeather: textOutlineFeather
         };
 
         localStorage.setItem('chap2Settings', JSON.stringify(settings));
@@ -395,6 +418,7 @@ class SettingsManager {
         sessionStorage.setItem('chorusFont', chorusFont);
         sessionStorage.setItem('textOutlineWidth', textOutlineWidth);
         sessionStorage.setItem('textOutlineColor', textOutlineColor);
+        sessionStorage.setItem('textOutlineFeather', textOutlineFeather);
     }
 
     autoSaveSettings() {
@@ -404,6 +428,7 @@ class SettingsManager {
         const chorusFont = document.getElementById('chorusFont').value;
         const textOutlineWidth = document.getElementById('textOutlineWidth').value;
         const textOutlineColor = document.getElementById('textOutlineColor').value;
+        const textOutlineFeather = document.getElementById('textOutlineFeather').checked;
 
         const settings = {
             theme: theme,
@@ -413,7 +438,8 @@ class SettingsManager {
             chorusAnimation: chorusAnimation,
             chorusFont: chorusFont,
             textOutlineWidth: textOutlineWidth,
-            textOutlineColor: textOutlineColor
+            textOutlineColor: textOutlineColor,
+            textOutlineFeather: textOutlineFeather
         };
 
         localStorage.setItem('chap2Settings', JSON.stringify(settings));
@@ -425,6 +451,7 @@ class SettingsManager {
         sessionStorage.setItem('chorusFont', chorusFont);
         sessionStorage.setItem('textOutlineWidth', textOutlineWidth);
         sessionStorage.setItem('textOutlineColor', textOutlineColor);
+        sessionStorage.setItem('textOutlineFeather', textOutlineFeather);
 
         // Show brief notification
         this.showNotification('Settings auto-saved', 'success');
@@ -450,6 +477,10 @@ class SettingsManager {
             if (!settings.textOutlineColor) {
                 settings.textOutlineColor = '#000000';
             }
+            // Set default text outline feather if not present
+            if (settings.textOutlineFeather === undefined) {
+                settings.textOutlineFeather = false;
+            }
             return settings;
         }
         return {
@@ -460,7 +491,8 @@ class SettingsManager {
             chorusAnimation: 'musical-staff',
             chorusFont: 'Inter',
             textOutlineWidth: '0',
-            textOutlineColor: '#000000'
+            textOutlineColor: '#000000',
+            textOutlineFeather: false
         };
     }
 
