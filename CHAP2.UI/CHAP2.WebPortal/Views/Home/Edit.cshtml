@@ -40,6 +40,9 @@
                     <h1><i class="fas fa-edit"></i> Edit Chorus</h1>
                     <p>Update the chorus information</p>
                     <div class="chorus-position" id="chorusPosition" style="display: none;"></div>
+                    <button type="button" class="btn-delete-mass-edit" id="deleteChorusBtn" style="display: none;" title="Delete this chorus">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
                 </div>
                 <button type="button" class="nav-arrow nav-next" id="nextChorusBtn" title="Next Chorus" style="display: none;">
                     <i class="fas fa-chevron-right"></i>
@@ -202,10 +205,18 @@
                 const prevBtn = document.getElementById('prevChorusBtn');
                 const nextBtn = document.getElementById('nextChorusBtn');
                 const positionEl = document.getElementById('chorusPosition');
+                const deleteBtn = document.getElementById('deleteChorusBtn');
+                const isMassEdit = sessionStorage.getItem('massEditMode') === 'true';
 
                 if (prevBtn) prevBtn.style.display = 'flex';
                 if (nextBtn) nextBtn.style.display = 'flex';
                 if (positionEl) positionEl.style.display = 'block';
+
+                // Show delete button in mass edit mode
+                if (deleteBtn && isMassEdit) {
+                    deleteBtn.style.display = 'inline-flex';
+                    deleteBtn.addEventListener('click', deleteCurrentChorus);
+                }
 
                 // Update button states
                 updateButtonStates();
@@ -359,10 +370,59 @@
                 }
             }
 
+            async function deleteCurrentChorus() {
+                const chorusName = document.querySelector('input[name="Name"]').value;
+                const confirmDelete = confirm(`Are you sure you want to delete "${chorusName}"?\n\nThis action cannot be undone.`);
+
+                if (!confirmDelete) return;
+
+                try {
+                    const idValue = document.querySelector('input[name="Id"]').value;
+
+                    const response = await fetch('/Home/DeleteChorusJson', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ id: idValue })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Remove from chorus list
+                        chorusList.splice(currentIndex, 1);
+                        sessionStorage.setItem('chorusList', JSON.stringify(chorusList));
+
+                        // Check if there are more choruses
+                        if (chorusList.length === 0) {
+                            alert('All choruses have been processed. Mass Edit complete!');
+                            sessionStorage.removeItem('massEditMode');
+                            sessionStorage.removeItem('chorusList');
+                            sessionStorage.removeItem('currentChorusId');
+                            window.close();
+                            return;
+                        }
+
+                        // Navigate to next chorus (or previous if we were at the last one)
+                        const nextIndex = currentIndex >= chorusList.length ? currentIndex - 1 : currentIndex;
+                        const nextChorus = chorusList[nextIndex];
+                        sessionStorage.setItem('currentChorusId', nextChorus.id);
+                        window.location.href = `/Home/Edit/${nextChorus.id}`;
+                    } else {
+                        alert('Failed to delete chorus: ' + (result.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error deleting chorus:', error);
+                    alert('Error deleting chorus. Please try again.');
+                }
+            }
+
             // Expose for external use if needed
             window.chorusEditNav = {
                 navigateChorus,
                 saveCurrentChorus,
+                deleteCurrentChorus,
                 getChorusList: () => chorusList,
                 getCurrentIndex: () => currentIndex
             };

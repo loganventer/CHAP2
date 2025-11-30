@@ -1406,21 +1406,29 @@ class ChorusDisplay {
     calculateLinesPerPage() {
         const container = document.querySelector('.chorus-content');
         if (!container) return;
-        
-        const containerHeight = container.clientHeight;
+
+        // Get the actual available viewport height, accounting for fixed elements
+        // Header is ~80px at top, controls are ~80px at bottom
+        const headerHeight = 80;
+        const controlsHeight = 100;
+        const safetyMargin = 40; // Extra margin to prevent any cutoff
+
+        const viewportHeight = window.innerHeight;
+        const availableHeight = viewportHeight - headerHeight - controlsHeight - safetyMargin;
+
         const containerWidth = container.clientWidth;
-        const lineHeight = this.currentFontSize * 1.5; // 1.5 line height
-        const padding = 40; // Account for padding
-        
-        // Calculate how many lines can fit vertically
-        const maxLinesVertically = Math.floor((containerHeight - padding) / lineHeight);
+        const lineHeight = this.currentFontSize * 1.4; // Match CSS line-height of 1.4
+
+        // Calculate how many lines can fit vertically in the safe area
+        const maxLinesVertically = Math.floor(availableHeight / lineHeight);
         this.linesPerPage = Math.max(1, maxLinesVertically); // At least 1 line
-        
+
         // Now calculate how many actual text lines will fit after wrapping
         this.calculateWrappedLines();
-        
+
+        console.log(`Viewport height: ${viewportHeight}px, Available height: ${availableHeight}px`);
         console.log(`Font size: ${this.currentFontSize}px, Line height: ${lineHeight}px`);
-        console.log(`Container width: ${containerWidth}px, Container height: ${containerHeight}px`);
+        console.log(`Container width: ${containerWidth}px`);
         console.log(`Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
     }
     
@@ -1428,10 +1436,10 @@ class ChorusDisplay {
     calculateWrappedLines() {
         const container = document.querySelector('.chorus-content');
         if (!container) return;
-        
+
         const containerWidth = container.clientWidth - 40;
         const fontSize = this.currentFontSize;
-        const lineHeight = fontSize * 1.5;
+        const lineHeight = fontSize * 1.4; // Match CSS line-height of 1.4
         
         // Create a temporary element to measure text wrapping
         const tempElement = document.createElement('div');

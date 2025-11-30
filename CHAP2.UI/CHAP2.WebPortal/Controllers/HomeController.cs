@@ -276,31 +276,86 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveChorusJson([FromBody] ChorusEditViewModel model)
+    public async Task<IActionResult> SaveChorusJson([FromBody] SaveChorusRequest request)
     {
         try
         {
-            if (model == null || model.Id == Guid.Empty)
+            _logger.LogInformation("SaveChorusJson called with request: {@Request}", request);
+
+            if (request == null || string.IsNullOrEmpty(request.Id))
             {
+                _logger.LogWarning("SaveChorusJson: Invalid request - null or empty ID");
                 return BadRequest(new { success = false, error = "Invalid chorus data" });
             }
 
+            if (!Guid.TryParse(request.Id, out var chorusId))
+            {
+                _logger.LogWarning("SaveChorusJson: Invalid GUID format: {Id}", request.Id);
+                return BadRequest(new { success = false, error = "Invalid chorus ID format" });
+            }
+
+            var key = (CHAP2.Domain.Enums.MusicalKey)request.Key;
+            var type = (CHAP2.Domain.Enums.ChorusType)request.Type;
+            var timeSignature = (CHAP2.Domain.Enums.TimeSignature)request.TimeSignature;
+
+            _logger.LogInformation("SaveChorusJson: Parsed values - ID: {Id}, Name: {Name}, Key: {Key}, Type: {Type}, TimeSignature: {TimeSignature}",
+                chorusId, request.Name, key, type, timeSignature);
+
             var result = await _chorusApiService.UpdateChorusAsync(
-                model.Id, model.Name, model.ChorusText, model.Key, model.Type, model.TimeSignature);
+                chorusId, request.Name, request.ChorusText, key, type, timeSignature);
 
             if (result)
             {
+                _logger.LogInformation("SaveChorusJson: Successfully saved chorus {Id}", chorusId);
                 return Json(new { success = true, message = "Chorus saved successfully" });
             }
             else
             {
+                _logger.LogWarning("SaveChorusJson: UpdateChorusAsync returned false for {Id}", chorusId);
                 return Json(new { success = false, error = "Failed to save chorus" });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving chorus JSON for ID: {Id}", model?.Id);
-            return StatusCode(500, new { success = false, error = "Failed to save chorus" });
+            _logger.LogError(ex, "Error saving chorus JSON for ID: {Id}", request?.Id);
+            return StatusCode(500, new { success = false, error = $"Failed to save chorus: {ex.Message}" });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteChorusJson([FromBody] DeleteChorusRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("DeleteChorusJson called for ID: {Id}", request?.Id);
+
+            if (request == null || string.IsNullOrEmpty(request.Id))
+            {
+                return BadRequest(new { success = false, error = "Invalid chorus ID" });
+            }
+
+            if (!Guid.TryParse(request.Id, out var chorusId))
+            {
+                return BadRequest(new { success = false, error = "Invalid chorus ID format" });
+            }
+
+            var result = await _chorusApiService.DeleteChorusAsync(chorusId.ToString());
+
+            if (result)
+            {
+                _logger.LogInformation("DeleteChorusJson: Successfully deleted chorus {Id}", chorusId);
+                return Json(new { success = true, message = "Chorus deleted successfully" });
+            }
+            else
+            {
+                _logger.LogWarning("DeleteChorusJson: DeleteChorusAsync returned false for {Id}", chorusId);
+                return Json(new { success = false, error = "Failed to delete chorus" });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting chorus JSON for ID: {Id}", request?.Id);
+            return StatusCode(500, new { success = false, error = $"Failed to delete chorus: {ex.Message}" });
         }
     }
 
@@ -963,6 +1018,21 @@ public class IntelligentSearchRequest
 public class RestartSystemRequest
 {
     public string Confirmation { get; set; } = string.Empty;
+}
+
+public class SaveChorusRequest
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string ChorusText { get; set; } = string.Empty;
+    public int Key { get; set; }
+    public int Type { get; set; }
+    public int TimeSignature { get; set; }
+}
+
+public class DeleteChorusRequest
+{
+    public string Id { get; set; } = string.Empty;
 }
 
 public class LlmSearchResult
