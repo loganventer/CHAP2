@@ -131,6 +131,24 @@ class ChorusDisplay {
         if (musicalStaff) musicalStaff.style.display = 'none';
         if (flowingNotesContainer) flowingNotesContainer.style.display = 'none';
 
+        // Apply background color for all animations except color-shift
+        const chorusDisplayPage = document.querySelector('.chorus-display-page');
+        if (chorusDisplayPage && chorusAnimation !== 'color-shift') {
+            // Get theme background from sessionStorage
+            const currentTheme = sessionStorage.getItem('currentTheme');
+            if (currentTheme) {
+                try {
+                    const theme = JSON.parse(currentTheme);
+                    chorusDisplayPage.style.background = theme.background;
+                } catch (e) {
+                    console.warn('Failed to parse theme:', e);
+                }
+            }
+        } else if (chorusDisplayPage && chorusAnimation === 'color-shift') {
+            // For color-shift, clear background
+            chorusDisplayPage.style.background = 'transparent';
+        }
+
         // Apply selected animation
         switch (chorusAnimation) {
             case 'musical-staff':
@@ -395,7 +413,7 @@ class ChorusDisplay {
     }
 
     initAuroraBorealis() {
-        // True Aurora Borealis effect with realistic flowing curtains of light
+        // True Aurora Borealis effect with frosted glass blur
         const animatedBg = document.querySelector('.animated-background');
         if (!animatedBg) return;
         if (this.auroraBorealisAnimationFrame) return; // Already initialized
@@ -409,6 +427,9 @@ class ChorusDisplay {
         canvas.style.height = '100%';
         canvas.style.zIndex = '0';
         canvas.style.pointerEvents = 'none';
+        // Apply frosted glass effect using CSS backdrop-filter
+        canvas.style.backdropFilter = 'blur(80px) saturate(180%)';
+        canvas.style.webkitBackdropFilter = 'blur(80px) saturate(180%)';
         animatedBg.appendChild(canvas);
 
         const ctx = canvas.getContext('2d');
@@ -417,125 +438,65 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Create noise texture for organic aurora movement
-        const createNoiseField = (width, height) => {
-            const noise = [];
-            for (let x = 0; x < width; x++) {
-                noise[x] = [];
-                for (let y = 0; y < height; y++) {
-                    noise[x][y] = Math.random();
-                }
-            }
-            return noise;
-        };
-
-        const noiseField = createNoiseField(100, 100);
-
-        // Aurora colors - more realistic green, blue, and purple/pink
-        const auroraColors = [
-            { r: 0, g: 255, b: 127 },    // Green (most common)
-            { r: 173, g: 255, b: 47 },   // Yellow-green
-            { r: 0, g: 255, b: 255 },    // Cyan
-            { r: 138, g: 43, b: 226 },   // Blue-violet
-            { r: 255, g: 105, b: 180 }   // Pink (rare)
+        // Aurora wave layers with realistic colors and frosted glass blur
+        const waves = [
+            { color: 'rgba(0, 255, 127, 0.03)', speed: 0.015, amplitude: 100, frequency: 0.006, blur: 40 },
+            { color: 'rgba(173, 255, 47, 0.025)', speed: 0.012, amplitude: 80, frequency: 0.008, blur: 35 },
+            { color: 'rgba(0, 255, 255, 0.022)', speed: 0.018, amplitude: 90, frequency: 0.007, blur: 38 },
+            { color: 'rgba(138, 43, 226, 0.02)', speed: 0.01, amplitude: 70, frequency: 0.009, blur: 32 }
         ];
 
         const drawAurora = () => {
-            // Fade previous frame for smooth trails
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            // Dark starry background
+            ctx.fillStyle = 'rgba(5, 10, 20, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw multiple layers of aurora (reduced from 4 to 3)
-            const numLayers = 3;
-
-            for (let layer = 0; layer < numLayers; layer++) {
-                const layerOffset = layer * 0.3;
-                const colorIndex = layer % auroraColors.length;
-                const baseColor = auroraColors[colorIndex];
-
-                // Draw flowing curtain using vertical ribbons
+            // Draw multiple blurred aurora waves with frosted glass effect
+            waves.forEach((wave, index) => {
                 ctx.save();
+
+                // Apply moderate blur (frosted glass effect is applied via CSS)
+                ctx.filter = `blur(${wave.blur}px) saturate(150%)`;
 
                 // Use additive blending for realistic aurora glow
                 ctx.globalCompositeOperation = 'lighter';
 
-                // Reduced from 60 to 25 ribbons for better performance
-                const numRibbons = 25;
-                for (let i = 0; i < numRibbons; i++) {
-                    const x = (canvas.width / numRibbons) * i;
+                ctx.beginPath();
 
-                    // Sample noise field for organic movement
-                    const noiseX = Math.floor((i / numRibbons) * 99);
-                    const noiseT = Math.floor((time * 0.01) % 99);
-                    const noiseVal = noiseField[noiseX][noiseT];
+                // Draw smooth flowing wave
+                for (let x = 0; x < canvas.width; x += 3) {
+                    // Create gentle, flowing wave pattern
+                    const y1 = canvas.height * 0.35 +
+                               Math.sin(x * wave.frequency + time * wave.speed) * wave.amplitude +
+                               Math.sin(x * wave.frequency * 1.5 + time * wave.speed * 0.8) * (wave.amplitude * 0.4) +
+                               Math.sin(time * 0.003 + index) * 30; // Slow vertical drift
 
-                    // Create flowing vertical waves
-                    ctx.beginPath();
-
-                    // Increased step from 3 to 6 for better performance
-                    for (let y = 0; y < canvas.height; y += 6) {
-                        // Simplified to 2 sine waves instead of 3
-                        const wave1 = Math.sin(y * 0.005 + time * 0.002 + layerOffset + noiseVal * 2) * 80;
-                        const wave2 = Math.sin(y * 0.008 + time * 0.0015 - layerOffset) * 40;
-
-                        const xPos = x + wave1 + wave2;
-
-                        // Intensity varies along height for realistic effect
-                        const heightFactor = Math.sin((y / canvas.height) * Math.PI);
-                        const shimmer = Math.sin(time * 0.003 + i * 0.2 + layer) * 0.3 + 0.7;
-                        const intensity = heightFactor * shimmer * (0.15 + noiseVal * 0.15);
-
-                        if (y === 0) {
-                            ctx.moveTo(xPos, y);
-                        } else {
-                            ctx.lineTo(xPos, y);
-                        }
-
-                        // Draw semi-transparent ribbons less frequently (every 18 instead of 9)
-                        if (y % 18 === 0) {
-                            const ribbonWidth = 15 + noiseVal * 10;
-                            const opacity = intensity * (0.5 + layer * 0.1);
-
-                            const gradient = ctx.createRadialGradient(
-                                xPos, y, 0,
-                                xPos, y, ribbonWidth
-                            );
-
-                            gradient.addColorStop(0, `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, ${opacity})`);
-                            gradient.addColorStop(0.5, `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, ${opacity * 0.5})`);
-                            gradient.addColorStop(1, `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, 0)`);
-
-                            ctx.fillStyle = gradient;
-                            ctx.fillRect(xPos - ribbonWidth, y - 3, ribbonWidth * 2, 6);
-                        }
+                    if (x === 0) {
+                        ctx.moveTo(x, y1);
+                    } else {
+                        ctx.lineTo(x, y1);
                     }
-
-                    // Simplified stroke (no shadow blur for better performance)
-                    const strokeOpacity = 0.12 + noiseVal * 0.1;
-                    ctx.strokeStyle = `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, ${strokeOpacity})`;
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
                 }
 
+                // Complete the shape
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+
+                // Create soft gradient
+                const gradient = ctx.createLinearGradient(0, canvas.height * 0.2, 0, canvas.height);
+                gradient.addColorStop(0, wave.color);
+                gradient.addColorStop(0.4, wave.color.replace(/[\d.]+\)/, '0.06)'));
+                gradient.addColorStop(0.7, wave.color.replace(/[\d.]+\)/, '0.02)'));
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
                 ctx.restore();
-            }
+            });
 
-            // Add occasional bright flares (less frequently)
-            if (Math.random() > 0.985) {
-                const flareX = Math.random() * canvas.width;
-                const flareY = canvas.height * (0.2 + Math.random() * 0.6);
-                const flareColor = auroraColors[Math.floor(Math.random() * auroraColors.length)];
-
-                const flareGradient = ctx.createRadialGradient(flareX, flareY, 0, flareX, flareY, 40);
-                flareGradient.addColorStop(0, `rgba(${flareColor.r}, ${flareColor.g}, ${flareColor.b}, 0.6)`);
-                flareGradient.addColorStop(0.5, `rgba(${flareColor.r}, ${flareColor.g}, ${flareColor.b}, 0.3)`);
-                flareGradient.addColorStop(1, `rgba(${flareColor.r}, ${flareColor.g}, ${flareColor.b}, 0)`);
-
-                ctx.fillStyle = flareGradient;
-                ctx.fillRect(flareX - 40, flareY - 40, 80, 80);
-            }
-
-            time += 1;
+            time += 0.5;
             this.auroraBorealisAnimationFrame = requestAnimationFrame(drawAurora);
         };
 
@@ -572,20 +533,20 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Warm colors (reds, oranges, yellows)
-        const warmColors = [
-            { r: 255, g: 89, b: 94 },   // Coral Red
-            { r: 255, g: 140, b: 66 },  // Orange
-            { r: 255, g: 195, b: 113 }, // Light Orange
-            { r: 255, g: 111, b: 97 }   // Salmon
+        // Dusk colors (deep purples, oranges, pinks)
+        const duskColors = [
+            { r: 255, g: 94, b: 77 },   // Sunset Red
+            { r: 253, g: 121, b: 168 }, // Pink
+            { r: 142, g: 68, b: 173 },  // Purple
+            { r: 241, g: 90, b: 36 }    // Deep Orange
         ];
 
-        // Cold colors (blues, purples, teals)
-        const coldColors = [
-            { r: 72, g: 126, b: 176 },  // Blue
-            { r: 106, g: 76, b: 147 },  // Purple
-            { r: 79, g: 172, b: 254 },  // Light Blue
-            { r: 42, g: 157, b: 143 }   // Teal
+        // Dawn colors (soft yellows, light blues, pastels)
+        const dawnColors = [
+            { r: 255, g: 223, b: 186 }, // Soft Peach
+            { r: 179, g: 229, b: 252 }, // Light Blue
+            { r: 255, g: 250, b: 205 }, // Lemon Chiffon
+            { r: 173, g: 216, b: 230 }  // Light Sky Blue
         ];
 
         // Interpolate between two colors
@@ -599,7 +560,7 @@ class ChorusDisplay {
 
         const drawColorShift = () => {
             // Create multiple cycles for more dynamic color transitions
-            const mainCycle = (Math.sin(time * 0.0004) + 1) / 2; // Primary warm/cold cycle
+            const mainCycle = (Math.sin(time * 0.0004) + 1) / 2; // Primary dusk/dawn cycle
             const secondaryCycle = (Math.sin(time * 0.0003 + Math.PI / 4) + 1) / 2; // Secondary offset cycle
             const tertiaryCycle = (Math.sin(time * 0.0002 + Math.PI / 2) + 1) / 2; // Tertiary cycle
 
@@ -608,17 +569,17 @@ class ChorusDisplay {
 
             // Create 4 different color stops with complex interpolation
             for (let i = 0; i < 4; i++) {
-                const warmIndex1 = i % warmColors.length;
-                const warmIndex2 = (i + 1) % warmColors.length;
-                const coldIndex1 = i % coldColors.length;
-                const coldIndex2 = (i + 1) % coldColors.length;
+                const duskIndex1 = i % duskColors.length;
+                const duskIndex2 = (i + 1) % duskColors.length;
+                const dawnIndex1 = i % dawnColors.length;
+                const dawnIndex2 = (i + 1) % dawnColors.length;
 
                 // First interpolate within color sets
-                const warmMix = lerpColor(warmColors[warmIndex1], warmColors[warmIndex2], secondaryCycle);
-                const coldMix = lerpColor(coldColors[coldIndex1], coldColors[coldIndex2], tertiaryCycle);
+                const duskMix = lerpColor(duskColors[duskIndex1], duskColors[duskIndex2], secondaryCycle);
+                const dawnMix = lerpColor(dawnColors[dawnIndex1], dawnColors[dawnIndex2], tertiaryCycle);
 
-                // Then interpolate between warm and cold
-                colors.push(lerpColor(warmMix, coldMix, mainCycle));
+                // Then interpolate between dusk and dawn
+                colors.push(lerpColor(duskMix, dawnMix, mainCycle));
             }
 
             // Clear canvas
@@ -668,6 +629,25 @@ class ChorusDisplay {
                 ctx.fillStyle = linearGradient;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
+
+            // Adapt font color based on background brightness
+            // Calculate average color brightness (center color for simplicity)
+            const avgColor = colors[0]; // Use center color
+            const brightness = (avgColor.r * 0.299 + avgColor.g * 0.587 + avgColor.b * 0.114);
+
+            // If background is bright (dawn colors), use dark text; if dark (dusk colors), use light text
+            const textColor = brightness > 180 ? '#000000' : '#ffffff';
+
+            // Apply text color to chorus text elements
+            const textLines = document.querySelectorAll('.text-line');
+            textLines.forEach(line => {
+                line.style.color = textColor;
+            });
+
+            const chorusTitle = document.getElementById('chorusTitle');
+            const chorusKey = document.getElementById('chorusKey');
+            if (chorusTitle) chorusTitle.style.color = textColor;
+            if (chorusKey) chorusKey.style.color = textColor;
 
             time += 1;
             this.colorShiftAnimationFrame = requestAnimationFrame(drawColorShift);
