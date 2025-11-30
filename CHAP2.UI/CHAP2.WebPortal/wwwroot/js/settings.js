@@ -137,7 +137,7 @@ class SettingsManager {
                                     <option value="particle-flow">Particle Flow</option>
                                     <option value="aurora">Aurora Wave</option>
                                     <option value="aurora-borealis">Aurora Borealis (True)</option>
-                                    <option value="color-shift">Daytime Animation</option>
+                                    <option value="color-shift">Celestial</option>
                                     <option value="none">None</option>
                                 </select>
                             </div>
