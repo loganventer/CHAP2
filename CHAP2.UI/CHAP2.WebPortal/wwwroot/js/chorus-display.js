@@ -695,7 +695,7 @@ class ChorusDisplay {
                 }
                 // Arc from bottom-right, up to top-center, down to bottom-left
                 const sunArcAngle = sunProgress * Math.PI;
-                celestialX = canvas.width * (1 - sunProgress / 2); // Right to left
+                celestialX = canvas.width * (1 - sunProgress); // Right to left (full width)
                 celestialY = canvas.height * (0.85 - Math.sin(sunArcAngle) * 0.6); // Bottom-right to top to bottom-left
             }
             // Moon position calculation (for gradient center)
@@ -816,8 +816,8 @@ class ChorusDisplay {
 
                 // Calculate sun position (right to left across full arc)
                 const sunArcAngle = sunProgress * Math.PI; // 0 to 2*PI
-                const sunX = canvas.width - (sunProgress * canvas.width / 2); // Right to left
-                const sunY = canvas.height - Math.sin(sunArcAngle) * (canvas.height * 0.6) - canvas.height * 0.15;
+                const sunX = canvas.width * (1 - sunProgress); // Right to left (full width)
+                const sunY = canvas.height * (0.85 - Math.sin(sunArcAngle) * 0.6); // Bottom-right to top to bottom-left
 
                 // Sun with glow (dawn colors during sunrise, dusk colors during sunset)
                 const sunGradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunSize);
