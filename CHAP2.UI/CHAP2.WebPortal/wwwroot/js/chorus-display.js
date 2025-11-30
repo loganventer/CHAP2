@@ -612,24 +612,24 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Dusk colors (realistic sunset/twilight sky)
+        // Dusk colors (realistic sunset/twilight sky) - warmer reds, darker blues
         const duskColors = [
-            { r: 253, g: 94, b: 83 },   // Deep coral sunset
-            { r: 255, g: 121, b: 63 },  // Burnt orange
-            { r: 106, g: 27, b: 154 },  // Deep twilight purple
-            { r: 220, g: 66, b: 47 },   // Crimson red
-            { r: 69, g: 39, b: 160 },   // Indigo twilight
-            { r: 244, g: 96, b: 54 }    // Vibrant sunset orange
+            { r: 255, g: 50, b: 30 },   // Deep warm coral sunset
+            { r: 255, g: 90, b: 20 },   // Rich burnt orange
+            { r: 85, g: 15, b: 140 },   // Deep twilight purple (darker)
+            { r: 230, g: 30, b: 20 },   // Intense crimson red (warmer)
+            { r: 45, g: 20, b: 130 },   // Dark indigo twilight (darker)
+            { r: 255, g: 70, b: 25 }    // Vibrant warm sunset orange
         ];
 
-        // Dawn colors (realistic sunrise/early morning sky)
+        // Dawn colors (realistic sunrise/early morning sky) - warmer reds, darker blues
         const dawnColors = [
-            { r: 255, g: 179, b: 120 }, // Soft peachy sunrise
-            { r: 255, g: 218, b: 185 }, // Warm cream
-            { r: 135, g: 206, b: 235 }, // Sky blue
-            { r: 255, g: 239, b: 213 }, // Papaya whip
-            { r: 176, g: 224, b: 230 }, // Powder blue
-            { r: 255, g: 160, b: 122 }  // Light salmon
+            { r: 255, g: 140, b: 80 },  // Warm peachy sunrise (more saturated)
+            { r: 255, g: 200, b: 150 }, // Warm cream (more saturated)
+            { r: 100, g: 150, b: 210 }, // Sky blue (darker, more saturated)
+            { r: 255, g: 220, b: 180 }, // Papaya whip (warmer)
+            { r: 130, g: 180, b: 200 }, // Powder blue (darker, more saturated)
+            { r: 255, g: 130, b: 90 }   // Light salmon (warmer, more saturated)
         ];
 
         // Interpolate between two colors
