@@ -115,6 +115,44 @@ class ChorusDisplay {
         if (chorusKey) chorusKey.style.fontFamily = `'${chorusFont}', sans-serif`;
 
         console.log(`Applied chorus font: ${chorusFont}`);
+
+        // Also apply text outline settings to title and key
+        this.applyTextOutline();
+    }
+
+    applyTextOutline() {
+        // Get text outline settings from sessionStorage
+        const textOutlineWidth = sessionStorage.getItem('textOutlineWidth') || '0';
+        const textOutlineColor = sessionStorage.getItem('textOutlineColor') || '#000000';
+
+        const chorusTitle = document.getElementById('chorusTitle');
+        const chorusKey = document.getElementById('chorusKey');
+
+        // Apply text outline if width > 0
+        if (textOutlineWidth && parseInt(textOutlineWidth) > 0) {
+            if (chorusTitle) {
+                chorusTitle.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                chorusTitle.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                chorusTitle.style.paintOrder = 'stroke fill';
+            }
+            if (chorusKey) {
+                chorusKey.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                chorusKey.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                chorusKey.style.paintOrder = 'stroke fill';
+            }
+        } else {
+            // Remove text outline if width is 0
+            if (chorusTitle) {
+                chorusTitle.style.webkitTextStroke = '';
+                chorusTitle.style.textStroke = '';
+                chorusTitle.style.paintOrder = '';
+            }
+            if (chorusKey) {
+                chorusKey.style.webkitTextStroke = '';
+                chorusKey.style.textStroke = '';
+                chorusKey.style.paintOrder = '';
+            }
+        }
     }
 
     applyAnimationFromSettings() {
@@ -1340,6 +1378,10 @@ class ChorusDisplay {
         // Get font from settings
         const chorusFont = sessionStorage.getItem('chorusFont') || 'Inter';
 
+        // Get text outline settings
+        const textOutlineWidth = sessionStorage.getItem('textOutlineWidth') || '0';
+        const textOutlineColor = sessionStorage.getItem('textOutlineColor') || '#000000';
+
         // Create and display lines
         linesForPage.forEach(line => {
             const lineElement = document.createElement('div');
@@ -1353,6 +1395,15 @@ class ChorusDisplay {
             lineElement.style.zIndex = '25'; // Ensure text stays above other elements
             lineElement.style.position = 'relative'; // Required for z-index to work
             lineElement.style.fontFamily = `'${chorusFont}', sans-serif`; // Apply font family
+
+            // Apply text outline if width > 0
+            if (textOutlineWidth && parseInt(textOutlineWidth) > 0) {
+                lineElement.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                lineElement.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
+                // Also add paint-order for better rendering
+                lineElement.style.paintOrder = 'stroke fill';
+            }
+
             container.appendChild(lineElement);
         });
         

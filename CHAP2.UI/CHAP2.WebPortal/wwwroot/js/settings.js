@@ -137,7 +137,7 @@ class SettingsManager {
                                     <option value="particle-flow">Particle Flow</option>
                                     <option value="aurora">Aurora Wave</option>
                                     <option value="aurora-borealis">Aurora Borealis (True)</option>
-                                    <option value="color-shift">Color Shift (Warm/Cold)</option>
+                                    <option value="color-shift">Color Shift (Dusk to Dawn)</option>
                                     <option value="none">None</option>
                                 </select>
                             </div>
@@ -154,6 +154,25 @@ class SettingsManager {
                                     <option value="Palatino">Palatino</option>
                                     <option value="Trebuchet MS">Trebuchet MS</option>
                                 </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="textOutlineWidth">Text Outline Width</label>
+                                <select id="textOutlineWidth" class="form-control">
+                                    <option value="0">None</option>
+                                    <option value="1">Thin (1px)</option>
+                                    <option value="2">Medium (2px)</option>
+                                    <option value="3">Thick (3px)</option>
+                                    <option value="4">Extra Thick (4px)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="textOutlineColor">Text Outline Color</label>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="textOutlineColor" value="${this.currentSettings.textOutlineColor || '#000000'}">
+                                    <input type="text" id="textOutlineColorHex" value="${this.currentSettings.textOutlineColor || '#000000'}" readonly>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -207,6 +226,7 @@ class SettingsManager {
         const customBackgroundColor = document.getElementById('customBackgroundColor');
         const customTextColor = document.getElementById('customTextColor');
         const customChorusBackgroundColor = document.getElementById('customChorusBackgroundColor');
+        const textOutlineColor = document.getElementById('textOutlineColor');
 
         if (customBackgroundColor) {
             customBackgroundColor.addEventListener('input', (e) => {
@@ -229,6 +249,13 @@ class SettingsManager {
             });
         }
 
+        if (textOutlineColor) {
+            textOutlineColor.addEventListener('input', (e) => {
+                document.getElementById('textOutlineColorHex').value = e.target.value;
+                this.autoSaveSettings();
+            });
+        }
+
         // Update preview on text input change
         const customBackground = document.getElementById('customBackground');
         const customChorusBackground = document.getElementById('customChorusBackground');
@@ -244,6 +271,7 @@ class SettingsManager {
         // Auto-save on chorus settings change
         const chorusAnimation = document.getElementById('chorusAnimation');
         const chorusFont = document.getElementById('chorusFont');
+        const textOutlineWidth = document.getElementById('textOutlineWidth');
 
         if (chorusAnimation) {
             chorusAnimation.addEventListener('change', () => this.autoSaveSettings());
@@ -251,6 +279,10 @@ class SettingsManager {
 
         if (chorusFont) {
             chorusFont.addEventListener('change', () => this.autoSaveSettings());
+        }
+
+        if (textOutlineWidth) {
+            textOutlineWidth.addEventListener('change', () => this.autoSaveSettings());
         }
 
         // Auto-save on theme change
@@ -305,6 +337,22 @@ class SettingsManager {
             if (chorusFont && this.currentSettings.chorusFont) {
                 chorusFont.value = this.currentSettings.chorusFont;
             }
+
+            // Set text outline width dropdown to current value
+            const textOutlineWidth = document.getElementById('textOutlineWidth');
+            if (textOutlineWidth && this.currentSettings.textOutlineWidth !== undefined) {
+                textOutlineWidth.value = this.currentSettings.textOutlineWidth;
+            }
+
+            // Set text outline color to current value
+            const textOutlineColor = document.getElementById('textOutlineColor');
+            const textOutlineColorHex = document.getElementById('textOutlineColorHex');
+            if (textOutlineColor && this.currentSettings.textOutlineColor) {
+                textOutlineColor.value = this.currentSettings.textOutlineColor;
+                if (textOutlineColorHex) {
+                    textOutlineColorHex.value = this.currentSettings.textOutlineColor;
+                }
+            }
         }
     }
 
@@ -320,6 +368,8 @@ class SettingsManager {
         const theme = themeSelect.value;
         const chorusAnimation = document.getElementById('chorusAnimation').value;
         const chorusFont = document.getElementById('chorusFont').value;
+        const textOutlineWidth = document.getElementById('textOutlineWidth').value;
+        const textOutlineColor = document.getElementById('textOutlineColor').value;
 
         const settings = {
             theme: theme,
@@ -327,7 +377,9 @@ class SettingsManager {
             customTextColor: document.getElementById('customTextColor').value,
             customChorusBackground: document.getElementById('customChorusBackground').value,
             chorusAnimation: chorusAnimation,
-            chorusFont: chorusFont
+            chorusFont: chorusFont,
+            textOutlineWidth: textOutlineWidth,
+            textOutlineColor: textOutlineColor
         };
 
         localStorage.setItem('chap2Settings', JSON.stringify(settings));
@@ -341,6 +393,8 @@ class SettingsManager {
         // Store chorus settings in sessionStorage for immediate access
         sessionStorage.setItem('chorusAnimation', chorusAnimation);
         sessionStorage.setItem('chorusFont', chorusFont);
+        sessionStorage.setItem('textOutlineWidth', textOutlineWidth);
+        sessionStorage.setItem('textOutlineColor', textOutlineColor);
     }
 
     autoSaveSettings() {
@@ -348,6 +402,8 @@ class SettingsManager {
         const theme = themeSelect.value;
         const chorusAnimation = document.getElementById('chorusAnimation').value;
         const chorusFont = document.getElementById('chorusFont').value;
+        const textOutlineWidth = document.getElementById('textOutlineWidth').value;
+        const textOutlineColor = document.getElementById('textOutlineColor').value;
 
         const settings = {
             theme: theme,
@@ -355,7 +411,9 @@ class SettingsManager {
             customTextColor: document.getElementById('customTextColor').value,
             customChorusBackground: document.getElementById('customChorusBackground').value,
             chorusAnimation: chorusAnimation,
-            chorusFont: chorusFont
+            chorusFont: chorusFont,
+            textOutlineWidth: textOutlineWidth,
+            textOutlineColor: textOutlineColor
         };
 
         localStorage.setItem('chap2Settings', JSON.stringify(settings));
@@ -365,6 +423,8 @@ class SettingsManager {
         // Store chorus settings in sessionStorage for immediate access
         sessionStorage.setItem('chorusAnimation', chorusAnimation);
         sessionStorage.setItem('chorusFont', chorusFont);
+        sessionStorage.setItem('textOutlineWidth', textOutlineWidth);
+        sessionStorage.setItem('textOutlineColor', textOutlineColor);
 
         // Show brief notification
         this.showNotification('Settings auto-saved', 'success');
@@ -382,6 +442,14 @@ class SettingsManager {
             if (!settings.chorusFont) {
                 settings.chorusFont = 'Inter';
             }
+            // Set default text outline width if not present
+            if (settings.textOutlineWidth === undefined) {
+                settings.textOutlineWidth = '0';
+            }
+            // Set default text outline color if not present
+            if (!settings.textOutlineColor) {
+                settings.textOutlineColor = '#000000';
+            }
             return settings;
         }
         return {
@@ -390,7 +458,9 @@ class SettingsManager {
             customTextColor: '#ffffff',
             customChorusBackground: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
             chorusAnimation: 'musical-staff',
-            chorusFont: 'Inter'
+            chorusFont: 'Inter',
+            textOutlineWidth: '0',
+            textOutlineColor: '#000000'
         };
     }
 
@@ -415,7 +485,14 @@ class SettingsManager {
         // Apply to chorus display pages
         const chorusDisplayPage = document.querySelector('.chorus-display-page');
         if (chorusDisplayPage) {
-            chorusDisplayPage.style.background = chorusBackground;
+            // Only apply background if animation is NOT color-shift
+            const chorusAnimation = settings.chorusAnimation || sessionStorage.getItem('chorusAnimation') || 'musical-staff';
+            if (chorusAnimation !== 'color-shift') {
+                chorusDisplayPage.style.background = chorusBackground;
+            } else {
+                // For color-shift, ensure no background is set (animation handles it)
+                chorusDisplayPage.style.background = 'transparent';
+            }
         }
 
         // Store for chorus display navigation
