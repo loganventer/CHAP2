@@ -156,6 +156,16 @@ class ChorusDisplay {
                 this.initAuroraWave();
                 break;
 
+            case 'aurora-borealis':
+                // Show true aurora borealis animation
+                this.initAuroraBorealis();
+                break;
+
+            case 'color-shift':
+                // Show color shifting animation
+                this.initColorShift();
+                break;
+
             case 'none':
                 // No animation - all already hidden
                 console.log('No animation selected');
@@ -382,6 +392,250 @@ class ChorusDisplay {
         window.addEventListener('resize', resizeCanvas);
 
         drawWave();
+    }
+
+    initAuroraBorealis() {
+        // True Aurora Borealis effect with vertical curtains of light
+        const animatedBg = document.querySelector('.animated-background');
+        if (!animatedBg) return;
+        if (this.auroraBorealisAnimationFrame) return; // Already initialized
+
+        const canvas = document.createElement('canvas');
+        canvas.id = 'auroraBorealisCanvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.zIndex = '0';
+        canvas.style.pointerEvents = 'none';
+        animatedBg.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let time = 0;
+
+        // Aurora curtain layers - vertical columns of light
+        const curtains = [];
+        const curtainCount = 15;
+
+        // Initialize curtains at different positions
+        for (let i = 0; i < curtainCount; i++) {
+            curtains.push({
+                x: (canvas.width / curtainCount) * i,
+                width: canvas.width / curtainCount + 20,
+                color: ['rgba(0, 255, 136, 0.2)', 'rgba(57, 255, 20, 0.15)', 'rgba(0, 191, 255, 0.12)',
+                        'rgba(138, 43, 226, 0.1)', 'rgba(255, 0, 255, 0.08)'][i % 5],
+                speed: 0.01 + Math.random() * 0.02,
+                frequency: 0.003 + Math.random() * 0.005,
+                amplitude: 30 + Math.random() * 40,
+                phase: Math.random() * Math.PI * 2,
+                shimmer: Math.random() * 0.1 + 0.05
+            });
+        }
+
+        const drawAurora = () => {
+            // Fade out previous frame for trail effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw each curtain
+            curtains.forEach((curtain, index) => {
+                // Update curtain phase for shimmer effect
+                const shimmerIntensity = Math.sin(time * curtain.shimmer) * 0.3 + 0.7;
+
+                // Draw vertical curtain with wavy edges
+                ctx.beginPath();
+
+                // Top of curtain (wavy)
+                for (let y = 0; y < canvas.height; y += 5) {
+                    // Create flowing vertical waves
+                    const xOffset1 = Math.sin(y * curtain.frequency + time * curtain.speed + curtain.phase) * curtain.amplitude;
+                    const xOffset2 = Math.sin(y * curtain.frequency * 1.5 + time * curtain.speed * 0.8) * (curtain.amplitude * 0.5);
+                    const x = curtain.x + xOffset1 + xOffset2;
+
+                    if (y === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+
+                // Right edge going down with different wave
+                for (let y = canvas.height; y >= 0; y -= 5) {
+                    const xOffset1 = Math.sin(y * curtain.frequency + time * curtain.speed + curtain.phase) * curtain.amplitude;
+                    const xOffset2 = Math.sin(y * curtain.frequency * 1.5 + time * curtain.speed * 0.8) * (curtain.amplitude * 0.5);
+                    const x = curtain.x + curtain.width + xOffset1 * 0.8 + xOffset2 * 0.8;
+                    ctx.lineTo(x, y);
+                }
+
+                ctx.closePath();
+
+                // Create vertical gradient for curtain
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                const baseColor = curtain.color;
+                const fadeColor = baseColor.replace(/[\d.]+\)/, '0)');
+
+                gradient.addColorStop(0, fadeColor);
+                gradient.addColorStop(0.2, baseColor.replace(/[\d.]+\)/, (parseFloat(baseColor.match(/[\d.]+\)/)[0]) * shimmerIntensity).toFixed(2) + ')'));
+                gradient.addColorStop(0.5, baseColor.replace(/[\d.]+\)/, (parseFloat(baseColor.match(/[\d.]+\)/)[0]) * shimmerIntensity * 1.2).toFixed(2) + ')'));
+                gradient.addColorStop(0.7, baseColor.replace(/[\d.]+\)/, (parseFloat(baseColor.match(/[\d.]+\)/)[0]) * shimmerIntensity * 0.8).toFixed(2) + ')'));
+                gradient.addColorStop(1, fadeColor);
+
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Add glow/shimmer effect
+                ctx.strokeStyle = baseColor.replace(/[\d.]+\)/, (parseFloat(baseColor.match(/[\d.]+\)/)[0]) * shimmerIntensity * 0.5).toFixed(2) + ')');
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = baseColor;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Add bright spots (stars/bright patches in the aurora)
+                if (Math.random() > 0.95) {
+                    const starY = Math.random() * canvas.height;
+                    const xOffset = Math.sin(starY * curtain.frequency + time * curtain.speed) * curtain.amplitude;
+                    const starX = curtain.x + curtain.width / 2 + xOffset;
+
+                    ctx.beginPath();
+                    ctx.arc(starX, starY, 2 + Math.random() * 3, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = baseColor;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            time += 0.3;
+            this.auroraBorealisAnimationFrame = requestAnimationFrame(drawAurora);
+        };
+
+        // Handle window resize
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', resizeCanvas);
+
+        drawAurora();
+    }
+
+    initColorShift() {
+        // Color shifting background that lerps between warm and cold colors with gradients
+        const animatedBg = document.querySelector('.animated-background');
+        if (!animatedBg) return;
+        if (this.colorShiftAnimationFrame) return; // Already initialized
+
+        const canvas = document.createElement('canvas');
+        canvas.id = 'colorShiftCanvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.zIndex = '0';
+        canvas.style.pointerEvents = 'none';
+        animatedBg.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let time = 0;
+
+        // Warm colors (reds, oranges, yellows)
+        const warmColors = [
+            { r: 255, g: 89, b: 94 },   // Coral Red
+            { r: 255, g: 140, b: 66 },  // Orange
+            { r: 255, g: 195, b: 113 }, // Light Orange
+            { r: 255, g: 111, b: 97 }   // Salmon
+        ];
+
+        // Cold colors (blues, purples, teals)
+        const coldColors = [
+            { r: 72, g: 126, b: 176 },  // Blue
+            { r: 106, g: 76, b: 147 },  // Purple
+            { r: 79, g: 172, b: 254 },  // Light Blue
+            { r: 42, g: 157, b: 143 }   // Teal
+        ];
+
+        // Interpolate between two colors
+        const lerpColor = (color1, color2, t) => {
+            return {
+                r: Math.round(color1.r + (color2.r - color1.r) * t),
+                g: Math.round(color1.g + (color2.g - color1.g) * t),
+                b: Math.round(color1.b + (color2.b - color1.b) * t)
+            };
+        };
+
+        // Get color at time t (0 to 1 cycle)
+        const getColorAtTime = (t, colorSet) => {
+            const index = Math.floor(t * colorSet.length);
+            const nextIndex = (index + 1) % colorSet.length;
+            const localT = (t * colorSet.length) - index;
+            return lerpColor(colorSet[index], colorSet[nextIndex], localT);
+        };
+
+        const drawColorShift = () => {
+            // Calculate transition progress (0 to 1 and back)
+            const cycle = (Math.sin(time * 0.0008) + 1) / 2; // Slow cycle
+
+            // Determine if we're in warm or cold phase
+            const warmPhase = cycle < 0.5;
+            const phaseProgress = warmPhase ? cycle * 2 : (1 - cycle) * 2;
+
+            // Get current colors for gradient stops
+            const colorSet = warmPhase ? warmColors : coldColors;
+
+            // Create multiple gradient stops with interpolated colors
+            const color1 = getColorAtTime(phaseProgress * 0.3, colorSet);
+            const color2 = getColorAtTime(phaseProgress * 0.5 + 0.2, colorSet);
+            const color3 = getColorAtTime(phaseProgress * 0.7 + 0.4, colorSet);
+            const color4 = getColorAtTime(phaseProgress * 0.9 + 0.6, colorSet);
+
+            // Create radial gradient from center
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8
+            );
+
+            gradient.addColorStop(0, `rgba(${color1.r}, ${color1.g}, ${color1.b}, 0.4)`);
+            gradient.addColorStop(0.33, `rgba(${color2.r}, ${color2.g}, ${color2.b}, 0.35)`);
+            gradient.addColorStop(0.66, `rgba(${color3.r}, ${color3.g}, ${color3.b}, 0.3)`);
+            gradient.addColorStop(1, `rgba(${color4.r}, ${color4.g}, ${color4.b}, 0.25)`);
+
+            // Fill the canvas with the gradient
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Add a secondary linear gradient overlay for more depth
+            const linearGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            const overlayColor1 = getColorAtTime(phaseProgress * 0.4 + 0.1, colorSet);
+            const overlayColor2 = getColorAtTime(phaseProgress * 0.8 + 0.3, colorSet);
+
+            linearGradient.addColorStop(0, `rgba(${overlayColor1.r}, ${overlayColor1.g}, ${overlayColor1.b}, 0.15)`);
+            linearGradient.addColorStop(1, `rgba(${overlayColor2.r}, ${overlayColor2.g}, ${overlayColor2.b}, 0.15)`);
+
+            ctx.fillStyle = linearGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            time += 1;
+            this.colorShiftAnimationFrame = requestAnimationFrame(drawColorShift);
+        };
+
+        // Handle window resize
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', resizeCanvas);
+
+        drawColorShift();
     }
 
     async loadChoruses() {
