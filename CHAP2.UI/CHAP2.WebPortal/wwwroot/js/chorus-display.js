@@ -612,20 +612,24 @@ class ChorusDisplay {
 
         let time = 0;
 
-        // Dusk colors (deep purples, oranges, pinks)
+        // Dusk colors (realistic sunset/twilight sky)
         const duskColors = [
-            { r: 255, g: 94, b: 77 },   // Sunset Red
-            { r: 253, g: 121, b: 168 }, // Pink
-            { r: 142, g: 68, b: 173 },  // Purple
-            { r: 241, g: 90, b: 36 }    // Deep Orange
+            { r: 253, g: 94, b: 83 },   // Deep coral sunset
+            { r: 255, g: 121, b: 63 },  // Burnt orange
+            { r: 106, g: 27, b: 154 },  // Deep twilight purple
+            { r: 220, g: 66, b: 47 },   // Crimson red
+            { r: 69, g: 39, b: 160 },   // Indigo twilight
+            { r: 244, g: 96, b: 54 }    // Vibrant sunset orange
         ];
 
-        // Dawn colors (soft yellows, light blues, pastels)
+        // Dawn colors (realistic sunrise/early morning sky)
         const dawnColors = [
-            { r: 255, g: 223, b: 186 }, // Soft Peach
-            { r: 179, g: 229, b: 252 }, // Light Blue
-            { r: 255, g: 250, b: 205 }, // Lemon Chiffon
-            { r: 173, g: 216, b: 230 }  // Light Sky Blue
+            { r: 255, g: 179, b: 120 }, // Soft peachy sunrise
+            { r: 255, g: 218, b: 185 }, // Warm cream
+            { r: 135, g: 206, b: 235 }, // Sky blue
+            { r: 255, g: 239, b: 213 }, // Papaya whip
+            { r: 176, g: 224, b: 230 }, // Powder blue
+            { r: 255, g: 160, b: 122 }  // Light salmon
         ];
 
         // Interpolate between two colors
