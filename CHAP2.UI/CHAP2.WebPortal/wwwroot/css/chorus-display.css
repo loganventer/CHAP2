@@ -21,8 +21,10 @@
 
 .staff-line {
     stroke: rgba(255, 255, 255, 0.9);
-    stroke-width: 2;
+    stroke-width: 5;
     stroke-linecap: round;
+    filter: blur(2px) saturate(150%);
+    opacity: 0.7;
 }
 
 /* Wave animations for staff lines using transform */
@@ -76,12 +78,12 @@
 
 @keyframes lineWave {
     0%, 100% {
-        opacity: 0.7;
-        stroke-width: 2;
+        opacity: 0.6;
+        stroke-width: 5;
     }
     50% {
-        opacity: 0.95;
-        stroke-width: 2.5;
+        opacity: 0.85;
+        stroke-width: 6.5;
     }
 }
 
