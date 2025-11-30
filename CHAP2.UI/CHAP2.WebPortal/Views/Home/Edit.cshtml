@@ -53,7 +53,7 @@
 
 
         <form asp-action="Edit" method="post" class="chorus-form">
-            <input asp-for="Id" type="hidden" />
+            <input asp-for="Id" name="Id" type="hidden" />
             
             <div class="form-section">
                 <h2><i class="fas fa-info-circle"></i> Basic Information</h2>
@@ -76,7 +76,14 @@
                             <option value="">Select a key...</option>
                             @foreach (var key in ViewBag.MusicalKeys)
                             {
-                                <option value="@((int)key)" selected="@(Model.Key == key)">@key</option>
+                                if (Model.Key == key)
+                                {
+                                    <option value="@((int)key)" selected>@key</option>
+                                }
+                                else
+                                {
+                                    <option value="@((int)key)">@key</option>
+                                }
                             }
                         </select>
                         <span asp-validation-for="Key" class="validation-error"></span>
@@ -90,7 +97,14 @@
                             <option value="">Select a type...</option>
                             @foreach (var type in ViewBag.ChorusTypes)
                             {
-                                <option value="@((int)type)" selected="@(Model.Type == type)">@type</option>
+                                if (Model.Type == type)
+                                {
+                                    <option value="@((int)type)" selected>@type</option>
+                                }
+                                else
+                                {
+                                    <option value="@((int)type)">@type</option>
+                                }
                             }
                         </select>
                         <span asp-validation-for="Type" class="validation-error"></span>
@@ -104,7 +118,14 @@
                             <option value="">Select time signature...</option>
                             @foreach (var ts in ViewBag.TimeSignatures)
                             {
-                                <option value="@((int)ts)" selected="@(Model.TimeSignature == ts)">@ts</option>
+                                if (Model.TimeSignature == ts)
+                                {
+                                    <option value="@((int)ts)" selected>@ts</option>
+                                }
+                                else
+                                {
+                                    <option value="@((int)ts)">@ts</option>
+                                }
                             }
                         </select>
                         <span asp-validation-for="TimeSignature" class="validation-error"></span>
@@ -325,12 +346,37 @@
 
             async function saveCurrentChorus() {
                 try {
-                    const idValue = document.querySelector('input[name="Id"]').value;
-                    const nameValue = document.querySelector('input[name="Name"]').value;
-                    const chorusTextValue = document.querySelector('textarea[name="ChorusText"]').value;
-                    const keyValue = document.querySelector('select[name="Key"]').value;
-                    const typeValue = document.querySelector('select[name="Type"]').value;
-                    const timeSignatureValue = document.querySelector('select[name="TimeSignature"]').value;
+                    // Get form elements - try multiple selectors for robustness
+                    const idInput = document.querySelector('input[name="Id"]') || document.getElementById('Id');
+                    const nameInput = document.querySelector('input[name="Name"]') || document.getElementById('Name');
+                    const chorusTextArea = document.querySelector('textarea[name="ChorusText"]') || document.getElementById('ChorusText');
+                    const keySelect = document.querySelector('select[name="Key"]') || document.getElementById('Key');
+                    const typeSelect = document.querySelector('select[name="Type"]') || document.getElementById('Type');
+                    const timeSignatureSelect = document.querySelector('select[name="TimeSignature"]') || document.getElementById('TimeSignature');
+
+                    // Log what we found
+                    console.log('Form elements found:', {
+                        idInput: !!idInput,
+                        nameInput: !!nameInput,
+                        chorusTextArea: !!chorusTextArea,
+                        keySelect: !!keySelect,
+                        typeSelect: !!typeSelect,
+                        timeSignatureSelect: !!timeSignatureSelect
+                    });
+
+                    if (!idInput || !nameInput || !chorusTextArea) {
+                        console.error('Could not find required form elements');
+                        return false;
+                    }
+
+                    const idValue = idInput.value;
+                    const nameValue = nameInput.value;
+                    const chorusTextValue = chorusTextArea.value;
+                    const keyValue = keySelect ? keySelect.value : '0';
+                    const typeValue = typeSelect ? typeSelect.value : '0';
+                    const timeSignatureValue = timeSignatureSelect ? timeSignatureSelect.value : '0';
+
+                    console.log('Form values:', { idValue, nameValue, chorusTextLength: chorusTextValue.length, keyValue, typeValue, timeSignatureValue });
 
                     // Validate required fields
                     if (!idValue || !nameValue || !chorusTextValue) {
@@ -342,9 +388,9 @@
                         Id: idValue,
                         Name: nameValue,
                         ChorusText: chorusTextValue,
-                        Key: parseInt(keyValue) || 0,
-                        Type: parseInt(typeValue) || 0,
-                        TimeSignature: parseInt(timeSignatureValue) || 0
+                        Key: parseInt(keyValue, 10) || 0,
+                        Type: parseInt(typeValue, 10) || 0,
+                        TimeSignature: parseInt(timeSignatureValue, 10) || 0
                     };
 
                     console.log('Saving chorus:', formData);
@@ -356,6 +402,14 @@
                         },
                         body: JSON.stringify(formData)
                     });
+
+                    console.log('Response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('HTTP error:', response.status, errorText);
+                        return false;
+                    }
 
                     const result = await response.json();
                     console.log('Save result:', result);

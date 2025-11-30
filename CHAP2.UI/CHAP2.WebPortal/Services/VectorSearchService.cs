@@ -602,4 +602,78 @@ public class VectorSearchService : IVectorSearchService
     {
         return DateTime.TryParse(value, out var result) ? result : DateTime.MinValue;
     }
+
+    public async Task<bool> DeleteAsync(string chorusId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await InitializeClientAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _logger.LogInformation("Deleting chorus from vector database: {ChorusId}", chorusId);
+
+            // Delete the point by UUID
+            await _client!.DeleteAsync(
+                collectionName: _settings.CollectionName,
+                ids: new[] { Guid.Parse(chorusId) },
+                cancellationToken: cancellationToken
+            );
+
+            _logger.LogInformation("Successfully deleted chorus from vector database: {ChorusId}", chorusId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting chorus from vector database: {ChorusId}", chorusId);
+            return false;
+        }
+    }
+
+    public async Task<bool> UpsertAsync(ChorusSearchResult chorus, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await InitializeClientAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _logger.LogInformation("Upserting chorus to vector database: {ChorusId} - {Name}", chorus.Id, chorus.Name);
+
+            // Generate embedding for the chorus text
+            var embedding = await GenerateRagOptimizedEmbeddingAsync(chorus.ChorusText);
+
+            // Create the payload
+            var payload = new Dictionary<string, Value>
+            {
+                { "name", new Value { StringValue = chorus.Name } },
+                { "chorusText", new Value { StringValue = chorus.ChorusText } },
+                { "key", new Value { StringValue = chorus.Key.ToString() } },
+                { "type", new Value { StringValue = chorus.Type.ToString() } },
+                { "timeSignature", new Value { StringValue = chorus.TimeSignature.ToString() } },
+                { "createdAt", new Value { StringValue = chorus.CreatedAt.ToString("O") } }
+            };
+
+            // Create the point
+            var point = new PointStruct
+            {
+                Id = new PointId { Uuid = chorus.Id },
+                Vectors = new Vectors { Vector = new Vector { Data = { embedding } } },
+                Payload = { payload }
+            };
+
+            // Upsert the point
+            await _client!.UpsertAsync(
+                collectionName: _settings.CollectionName,
+                points: new[] { point },
+                cancellationToken: cancellationToken
+            );
+
+            _logger.LogInformation("Successfully upserted chorus to vector database: {ChorusId}", chorus.Id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error upserting chorus to vector database: {ChorusId}", chorus.Id);
+            return false;
+        }
+    }
 } 

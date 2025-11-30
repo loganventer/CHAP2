@@ -1,4 +1,5 @@
 using CHAP2.WebPortal.Interfaces;
+using CHAP2.WebPortal.DTOs;
 using CHAP2.Domain.Entities;
 using CHAP2.Shared.DTOs;
 using System.Text.Json;
@@ -10,16 +11,19 @@ public class ChorusApiService : IChorusApiService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ChorusApiService> _logger;
+    private readonly IVectorSearchService _vectorSearchService;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public ChorusApiService(IHttpClientFactory httpClientFactory, ILogger<ChorusApiService> logger)
+    public ChorusApiService(IHttpClientFactory httpClientFactory, ILogger<ChorusApiService> logger, IVectorSearchService vectorSearchService)
     {
         _httpClient = httpClientFactory.CreateClient("CHAP2API");
         _logger = logger;
-        
+        _vectorSearchService = vectorSearchService;
+
         _jsonOptions = new JsonSerializerOptions
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
     }
 
@@ -507,8 +511,29 @@ public class ChorusApiService : IChorusApiService
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("API success response: {Response}", responseContent);
+
+                // Sync to vector database (RAG)
+                try
+                {
+                    var chorusSearchResult = new ChorusSearchResult
+                    {
+                        Id = chorus.Id.ToString(),
+                        Name = chorus.Name,
+                        ChorusText = chorus.ChorusText,
+                        Key = (int)chorus.Key,
+                        Type = (int)chorus.Type,
+                        TimeSignature = (int)chorus.TimeSignature,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    var vectorResult = await _vectorSearchService.UpsertAsync(chorusSearchResult, cancellationToken);
+                    _logger.LogInformation("Vector database sync result for create: {Result}", vectorResult);
+                }
+                catch (Exception vectorEx)
+                {
+                    _logger.LogWarning(vectorEx, "Failed to sync chorus to vector database, but JSON was saved successfully");
+                }
             }
-            
+
             _logger.LogInformation("=== CREATE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }
@@ -565,8 +590,29 @@ public class ChorusApiService : IChorusApiService
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("API success response: {Response}", responseContent);
+
+                // Sync to vector database (RAG)
+                try
+                {
+                    var chorusSearchResult = new ChorusSearchResult
+                    {
+                        Id = id.ToString(),
+                        Name = name,
+                        ChorusText = chorusText,
+                        Key = (int)key,
+                        Type = (int)type,
+                        TimeSignature = (int)timeSignature,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    var vectorResult = await _vectorSearchService.UpsertAsync(chorusSearchResult, cancellationToken);
+                    _logger.LogInformation("Vector database sync result for update: {Result}", vectorResult);
+                }
+                catch (Exception vectorEx)
+                {
+                    _logger.LogWarning(vectorEx, "Failed to sync chorus update to vector database, but JSON was updated successfully");
+                }
             }
-            
+
             _logger.LogInformation("=== UPDATE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }
@@ -602,8 +648,19 @@ public class ChorusApiService : IChorusApiService
             else
             {
                 _logger.LogInformation("Chorus deleted successfully via API");
+
+                // Delete from vector database (RAG)
+                try
+                {
+                    var vectorResult = await _vectorSearchService.DeleteAsync(id, cancellationToken);
+                    _logger.LogInformation("Vector database delete result: {Result}", vectorResult);
+                }
+                catch (Exception vectorEx)
+                {
+                    _logger.LogWarning(vectorEx, "Failed to delete chorus from vector database, but JSON was deleted successfully");
+                }
             }
-            
+
             _logger.LogInformation("=== DELETE CHORUS API CALL END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }

@@ -82,18 +82,11 @@ public class Chorus : IEquatable<Chorus>
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Chorus name cannot be empty.");
-        
+
         if (string.IsNullOrWhiteSpace(chorusText))
             throw new DomainException("Chorus text cannot be empty.");
-        
-        if (key == MusicalKey.NotSet)
-            throw new DomainException("Musical key must be specified.");
-        
-        if (type == ChorusType.NotSet)
-            throw new DomainException("Chorus type must be specified.");
-        
-        if (timeSignature == TimeSignature.NotSet)
-            throw new DomainException("Time signature must be specified.");
+
+        // Allow NotSet values for imported choruses that haven't been fully categorized yet
 
         Name = name.Trim();
         ChorusText = chorusText.Trim();

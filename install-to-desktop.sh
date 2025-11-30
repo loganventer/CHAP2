@@ -217,9 +217,6 @@ wait_for_services() {
     # Wait for Qdrant
     wait_for_service "Qdrant" "http://localhost:6333/healthz" 60
 
-    # Wait for LangChain service
-    wait_for_service "LangChain Service" "http://localhost:8000/health" 90
-
     # Wait for CHAP2 API
     wait_for_service "CHAP2 API" "http://localhost:5001/api/health/ping" 90
 
@@ -249,6 +246,40 @@ open_browser() {
 }
 
 ###############################################################################
+# Open firewall port for network access
+###############################################################################
+open_firewall_port() {
+    # Get local IP address
+    LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "unknown")
+
+    if [ "$LOCAL_IP" != "unknown" ]; then
+        log_success "Local IP address: $LOCAL_IP"
+        log_info "Other devices can connect at: http://$LOCAL_IP:8080"
+    fi
+
+    # Check if port 8080 is already accessible (skip firewall config if so)
+    if nc -z localhost 8080 2>/dev/null; then
+        log_info "Port 8080 is already open - skipping firewall configuration"
+        return 0
+    fi
+
+    # Check if firewall is enabled
+    FIREWALL_STATE=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null | grep -o "enabled\|disabled" || echo "unknown")
+
+    if [ "$FIREWALL_STATE" = "enabled" ]; then
+        log_info "macOS Firewall is enabled. Adding exception for Docker..."
+
+        # Add Docker to firewall exceptions (requires sudo)
+        sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Docker.app/Contents/MacOS/Docker 2>/dev/null || true
+        sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Applications/Docker.app/Contents/MacOS/Docker 2>/dev/null || true
+
+        log_success "Docker added to firewall exceptions"
+    else
+        log_info "macOS Firewall is disabled or not accessible - no configuration needed"
+    fi
+}
+
+###############################################################################
 # Main execution
 ###############################################################################
 main() {
@@ -273,10 +304,13 @@ main() {
     # Step 5: Wait for services
     wait_for_services
 
-    # Step 6: Show status
+    # Step 6: Configure network access
+    open_firewall_port
+
+    # Step 7: Show status
     show_status
 
-    # Step 7: Open browser
+    # Step 8: Open browser
     open_browser
 
     echo ""
@@ -285,8 +319,10 @@ main() {
     log_success "========================================="
     echo ""
     log_info "Web Portal: http://localhost:8080"
+    if [ "$LOCAL_IP" != "unknown" ] && [ -n "$LOCAL_IP" ]; then
+        log_info "Network Access: http://$LOCAL_IP:8080"
+    fi
     log_info "API: http://localhost:5001"
-    log_info "LangChain Service: http://localhost:8000"
     log_info "Qdrant: http://localhost:6333"
     echo ""
     log_info "To stop all services, run:"
