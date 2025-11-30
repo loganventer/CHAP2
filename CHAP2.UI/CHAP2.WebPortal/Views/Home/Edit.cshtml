@@ -214,14 +214,26 @@
             function updateButtonStates() {
                 const prevBtn = document.getElementById('prevChorusBtn');
                 const nextBtn = document.getElementById('nextChorusBtn');
+                const isMassEdit = sessionStorage.getItem('massEditMode') === 'true';
+                const isLastChorus = currentIndex >= chorusList.length - 1;
 
                 if (prevBtn) {
                     prevBtn.disabled = currentIndex <= 0;
                     prevBtn.style.opacity = currentIndex <= 0 ? '0.5' : '1';
                 }
                 if (nextBtn) {
-                    nextBtn.disabled = currentIndex >= chorusList.length - 1;
-                    nextBtn.style.opacity = currentIndex >= chorusList.length - 1 ? '0.5' : '1';
+                    // In mass edit mode, show "Finish" on last chorus
+                    if (isMassEdit && isLastChorus) {
+                        nextBtn.innerHTML = '<i class="fas fa-check"></i>';
+                        nextBtn.title = 'Finish Mass Edit';
+                        nextBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    } else {
+                        nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                        nextBtn.title = 'Next Chorus';
+                        nextBtn.style.background = '';
+                    }
+                    nextBtn.disabled = false;
+                    nextBtn.style.opacity = '1';
                 }
             }
 
@@ -267,8 +279,10 @@
 
             async function navigateChorus(direction) {
                 const newIndex = currentIndex + direction;
+                const isMassEdit = sessionStorage.getItem('massEditMode') === 'true';
 
-                if (newIndex < 0 || newIndex >= chorusList.length) {
+                // Don't go before first chorus
+                if (newIndex < 0) {
                     return;
                 }
 
@@ -277,6 +291,19 @@
                 if (!saved) {
                     const confirmNav = confirm('Failed to save current chorus. Navigate anyway?');
                     if (!confirmNav) return;
+                }
+
+                // Check if we're at the last chorus and trying to go next
+                if (newIndex >= chorusList.length) {
+                    if (isMassEdit) {
+                        // Finish mass edit mode
+                        sessionStorage.removeItem('massEditMode');
+                        sessionStorage.removeItem('chorusList');
+                        sessionStorage.removeItem('currentChorusId');
+                        alert(`Mass Edit Complete!\n\nYou have successfully edited all ${chorusList.length} choruses.`);
+                        window.close();
+                    }
+                    return;
                 }
 
                 // Navigate to new chorus

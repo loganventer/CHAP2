@@ -344,7 +344,7 @@ class SettingsManager {
             }
 
             const data = await response.json();
-            const chorusList = data.results || [];
+            let chorusList = data.results || [];
 
             if (chorusList.length === 0) {
                 alert('No choruses found to edit.');
@@ -355,9 +355,13 @@ class SettingsManager {
                 return;
             }
 
+            // Sort choruses alphabetically by name for consistent ordering
+            chorusList.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
             // Store in sessionStorage for navigation
             sessionStorage.setItem('chorusList', JSON.stringify(chorusList));
             sessionStorage.setItem('currentChorusId', chorusList[0].id);
+            sessionStorage.setItem('massEditMode', 'true');
 
             // Close settings modal
             this.closeSettings();
@@ -365,7 +369,7 @@ class SettingsManager {
             // Open first chorus in Edit mode
             window.open(`/Home/Edit/${chorusList[0].id}`, '_blank');
 
-            console.log(`Mass Edit: Opened first of ${chorusList.length} choruses for editing`);
+            console.log(`Mass Edit: Opened first of ${chorusList.length} choruses for editing (sorted alphabetically)`);
 
             // Reset button
             if (btn) {
