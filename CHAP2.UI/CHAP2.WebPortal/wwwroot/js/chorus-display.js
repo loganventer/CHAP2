@@ -121,37 +121,19 @@ class ChorusDisplay {
     }
 
     applyTextOutline() {
-        // Get text outline settings from sessionStorage
-        const textOutlineWidth = sessionStorage.getItem('textOutlineWidth') || '0';
-        const textOutlineColor = sessionStorage.getItem('textOutlineColor') || '#000000';
-
+        // Remove text outline from title and key (outline should only apply to content text)
         const chorusTitle = document.getElementById('chorusTitle');
         const chorusKey = document.getElementById('chorusKey');
 
-        // Apply text outline if width > 0
-        if (textOutlineWidth && parseInt(textOutlineWidth) > 0) {
-            if (chorusTitle) {
-                chorusTitle.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
-                chorusTitle.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
-                chorusTitle.style.paintOrder = 'stroke fill';
-            }
-            if (chorusKey) {
-                chorusKey.style.webkitTextStroke = `${textOutlineWidth}px ${textOutlineColor}`;
-                chorusKey.style.textStroke = `${textOutlineWidth}px ${textOutlineColor}`;
-                chorusKey.style.paintOrder = 'stroke fill';
-            }
-        } else {
-            // Remove text outline if width is 0
-            if (chorusTitle) {
-                chorusTitle.style.webkitTextStroke = '';
-                chorusTitle.style.textStroke = '';
-                chorusTitle.style.paintOrder = '';
-            }
-            if (chorusKey) {
-                chorusKey.style.webkitTextStroke = '';
-                chorusKey.style.textStroke = '';
-                chorusKey.style.paintOrder = '';
-            }
+        if (chorusTitle) {
+            chorusTitle.style.webkitTextStroke = '';
+            chorusTitle.style.textStroke = '';
+            chorusTitle.style.paintOrder = '';
+        }
+        if (chorusKey) {
+            chorusKey.style.webkitTextStroke = '';
+            chorusKey.style.textStroke = '';
+            chorusKey.style.paintOrder = '';
         }
     }
 
@@ -657,9 +639,9 @@ class ChorusDisplay {
 
         const drawColorShift = () => {
             // Create multiple cycles for more dynamic color transitions
-            const mainCycle = (Math.sin(time * 0.0004) + 1) / 2; // Primary dusk/dawn cycle
-            const secondaryCycle = (Math.sin(time * 0.0003 + Math.PI / 4) + 1) / 2; // Secondary offset cycle
-            const tertiaryCycle = (Math.sin(time * 0.0002 + Math.PI / 2) + 1) / 2; // Tertiary cycle
+            const mainCycle = (Math.sin(time * 0.001) + 1) / 2; // Primary dusk/dawn cycle - faster
+            const secondaryCycle = (Math.sin(time * 0.0008 + Math.PI / 4) + 1) / 2; // Secondary offset cycle
+            const tertiaryCycle = (Math.sin(time * 0.0006 + Math.PI / 2) + 1) / 2; // Tertiary cycle
 
             // Determine which phase we're in and create color combinations
             const colors = [];
