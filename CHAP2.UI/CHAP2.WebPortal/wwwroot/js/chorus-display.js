@@ -442,11 +442,11 @@ class ChorusDisplay {
 
         const drawAurora = () => {
             // Fade previous frame for smooth trails
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw multiple layers of aurora
-            const numLayers = 4;
+            // Draw multiple layers of aurora (reduced from 4 to 3)
+            const numLayers = 3;
 
             for (let layer = 0; layer < numLayers; layer++) {
                 const layerOffset = layer * 0.3;
@@ -459,7 +459,8 @@ class ChorusDisplay {
                 // Use additive blending for realistic aurora glow
                 ctx.globalCompositeOperation = 'lighter';
 
-                const numRibbons = 60;
+                // Reduced from 60 to 25 ribbons for better performance
+                const numRibbons = 25;
                 for (let i = 0; i < numRibbons; i++) {
                     const x = (canvas.width / numRibbons) * i;
 
@@ -471,13 +472,13 @@ class ChorusDisplay {
                     // Create flowing vertical waves
                     ctx.beginPath();
 
-                    for (let y = 0; y < canvas.height; y += 3) {
-                        // Multiple sine waves for complex movement
+                    // Increased step from 3 to 6 for better performance
+                    for (let y = 0; y < canvas.height; y += 6) {
+                        // Simplified to 2 sine waves instead of 3
                         const wave1 = Math.sin(y * 0.005 + time * 0.002 + layerOffset + noiseVal * 2) * 80;
                         const wave2 = Math.sin(y * 0.008 + time * 0.0015 - layerOffset) * 40;
-                        const wave3 = Math.sin(y * 0.003 + time * 0.0025 + i * 0.1) * 60;
 
-                        const xPos = x + wave1 + wave2 + wave3;
+                        const xPos = x + wave1 + wave2;
 
                         // Intensity varies along height for realistic effect
                         const heightFactor = Math.sin((y / canvas.height) * Math.PI);
@@ -490,10 +491,10 @@ class ChorusDisplay {
                             ctx.lineTo(xPos, y);
                         }
 
-                        // Draw semi-transparent ribbons
-                        if (y % 9 === 0) {
+                        // Draw semi-transparent ribbons less frequently (every 18 instead of 9)
+                        if (y % 18 === 0) {
                             const ribbonWidth = 15 + noiseVal * 10;
-                            const opacity = intensity * (0.4 + layer * 0.1);
+                            const opacity = intensity * (0.5 + layer * 0.1);
 
                             const gradient = ctx.createRadialGradient(
                                 xPos, y, 0,
@@ -509,31 +510,29 @@ class ChorusDisplay {
                         }
                     }
 
-                    // Stroke the flowing path
-                    const strokeOpacity = 0.1 + noiseVal * 0.1;
+                    // Simplified stroke (no shadow blur for better performance)
+                    const strokeOpacity = 0.12 + noiseVal * 0.1;
                     ctx.strokeStyle = `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, ${strokeOpacity})`;
-                    ctx.lineWidth = 2;
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, 0.4)`;
+                    ctx.lineWidth = 1.5;
                     ctx.stroke();
                 }
 
                 ctx.restore();
             }
 
-            // Add occasional bright flares
-            if (Math.random() > 0.97) {
+            // Add occasional bright flares (less frequently)
+            if (Math.random() > 0.985) {
                 const flareX = Math.random() * canvas.width;
                 const flareY = canvas.height * (0.2 + Math.random() * 0.6);
                 const flareColor = auroraColors[Math.floor(Math.random() * auroraColors.length)];
 
-                const flareGradient = ctx.createRadialGradient(flareX, flareY, 0, flareX, flareY, 50);
+                const flareGradient = ctx.createRadialGradient(flareX, flareY, 0, flareX, flareY, 40);
                 flareGradient.addColorStop(0, `rgba(${flareColor.r}, ${flareColor.g}, ${flareColor.b}, 0.6)`);
                 flareGradient.addColorStop(0.5, `rgba(${flareColor.r}, ${flareColor.g}, ${flareColor.b}, 0.3)`);
                 flareGradient.addColorStop(1, `rgba(${flareColor.r}, ${flareColor.g}, ${flareColor.b}, 0)`);
 
                 ctx.fillStyle = flareGradient;
-                ctx.fillRect(flareX - 50, flareY - 50, 100, 100);
+                ctx.fillRect(flareX - 40, flareY - 40, 80, 80);
             }
 
             time += 1;
