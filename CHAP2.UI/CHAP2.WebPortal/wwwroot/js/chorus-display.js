@@ -297,9 +297,10 @@ class ChorusDisplay {
     }
 
     initAuroraWave() {
-        // Aurora wave animation
+        // Aurora Borealis effect with multiple colored waves
         const animatedBg = document.querySelector('.animated-background');
         if (!animatedBg) return;
+        if (this.auroraAnimationFrame) return; // Already initialized
 
         const canvas = document.createElement('canvas');
         canvas.id = 'auroraCanvas';
@@ -318,32 +319,67 @@ class ChorusDisplay {
 
         let time = 0;
 
+        // Aurora wave layers with different colors
+        const waves = [
+            { color: 'rgba(0, 255, 136, 0.15)', speed: 0.02, amplitude: 80, frequency: 0.008 },
+            { color: 'rgba(57, 255, 20, 0.12)', speed: 0.025, amplitude: 60, frequency: 0.01 },
+            { color: 'rgba(0, 191, 255, 0.1)', speed: 0.018, amplitude: 70, frequency: 0.012 },
+            { color: 'rgba(138, 43, 226, 0.08)', speed: 0.022, amplitude: 50, frequency: 0.015 },
+            { color: 'rgba(255, 0, 255, 0.06)', speed: 0.015, amplitude: 90, frequency: 0.007 }
+        ];
+
         const drawWave = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Fade out previous frame instead of clearing
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, 'rgba(102, 126, 234, 0.3)');
-            gradient.addColorStop(0.5, 'rgba(118, 75, 162, 0.3)');
-            gradient.addColorStop(1, 'rgba(102, 126, 234, 0.3)');
+            // Draw multiple aurora waves
+            waves.forEach((wave, index) => {
+                ctx.beginPath();
 
-            ctx.fillStyle = gradient;
+                for (let x = 0; x < canvas.width; x += 2) {
+                    // Create flowing wave pattern
+                    const y1 = canvas.height * 0.3 +
+                               Math.sin(x * wave.frequency + time * wave.speed) * wave.amplitude +
+                               Math.sin(x * wave.frequency * 2 + time * wave.speed * 1.5) * (wave.amplitude * 0.5);
 
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height / 2);
+                    if (x === 0) {
+                        ctx.moveTo(x, y1);
+                    } else {
+                        ctx.lineTo(x, y1);
+                    }
+                }
 
-            for (let x = 0; x < canvas.width; x++) {
-                const y = canvas.height / 2 + Math.sin(x * 0.01 + time) * 50 + Math.sin(x * 0.02 + time * 0.5) * 30;
-                ctx.lineTo(x, y);
-            }
+                // Complete the shape
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
 
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.lineTo(0, canvas.height);
-            ctx.closePath();
-            ctx.fill();
+                // Create gradient for each wave
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, wave.color);
+                gradient.addColorStop(0.5, wave.color.replace(/[\d.]+\)/, '0.05)'));
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-            time += 0.02;
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Add glow effect
+                ctx.strokeStyle = wave.color.replace(/[\d.]+\)/, '0.3)');
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            time += 0.5;
             this.auroraAnimationFrame = requestAnimationFrame(drawWave);
         };
+
+        // Handle window resize
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', resizeCanvas);
 
         drawWave();
     }
