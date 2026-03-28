@@ -395,10 +395,13 @@
 
                     console.log('Saving chorus:', formData);
 
+                    const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenEl ? tokenEl.value : '';
                     const response = await fetch('/Home/SaveChorusJson', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
                         },
                         body: JSON.stringify(formData)
                     });
@@ -433,10 +436,13 @@
                 try {
                     const idValue = document.querySelector('input[name="Id"]').value;
 
+                    const delTokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const delToken = delTokenEl ? delTokenEl.value : '';
                     const response = await fetch('/Home/DeleteChorusJson', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'RequestVerificationToken': delToken
                         },
                         body: JSON.stringify({ id: idValue })
                     });

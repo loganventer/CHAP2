@@ -438,10 +438,20 @@ public class ChorusSearchService : ISearchService
         };
     }
 
+    private const int MaxRegexPatternLength = 100;
+
     private static bool IsRegexMatch(string text, string pattern)
     {
         try
         {
+            // Limit regex pattern length to prevent ReDoS
+            if (pattern.Length > MaxRegexPatternLength)
+                return false;
+
+            // Disallow backreferences (e.g., \1, \2) to prevent catastrophic backtracking
+            if (Regex.IsMatch(pattern, @"\\[1-9]"))
+                return false;
+
             return Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
         }
         catch (RegexMatchTimeoutException)

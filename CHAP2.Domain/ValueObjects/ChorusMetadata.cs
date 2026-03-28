@@ -2,15 +2,15 @@ namespace CHAP2.Domain.ValueObjects;
 
 public class ChorusMetadata
 {
-    public string? Composer { get; set; }
-    public string? Arranger { get; set; }
-    public string? Copyright { get; set; }
-    public string? Language { get; set; }
-    public string? Genre { get; set; }
-    public int? Tempo { get; set; }
-    public string? Difficulty { get; set; }
-    public List<string> Tags { get; set; } = new();
-    public Dictionary<string, string> CustomProperties { get; set; } = new();
+    public string? Composer { get; init; }
+    public string? Arranger { get; init; }
+    public string? Copyright { get; init; }
+    public string? Language { get; init; }
+    public string? Genre { get; init; }
+    public int? Tempo { get; init; }
+    public string? Difficulty { get; init; }
+    public IReadOnlyList<string> Tags { get; init; } = Array.Empty<string>();
+    public IReadOnlyDictionary<string, string> CustomProperties { get; init; } = new Dictionary<string, string>();
 
     public ChorusMetadata()
     {
@@ -27,22 +27,62 @@ public class ChorusMetadata
         Difficulty = difficulty;
     }
 
-    public void AddTag(string tag)
+    public ChorusMetadata WithTag(string tag)
     {
-        if (!string.IsNullOrWhiteSpace(tag) && !Tags.Contains(tag))
+        if (string.IsNullOrWhiteSpace(tag) || Tags.Contains(tag))
+            return this;
+
+        var newTags = new List<string>(Tags) { tag };
+        return new ChorusMetadata
         {
-            Tags.Add(tag);
-        }
+            Composer = Composer,
+            Arranger = Arranger,
+            Copyright = Copyright,
+            Language = Language,
+            Genre = Genre,
+            Tempo = Tempo,
+            Difficulty = Difficulty,
+            Tags = newTags,
+            CustomProperties = CustomProperties
+        };
     }
 
-    public void RemoveTag(string tag)
+    public ChorusMetadata WithoutTag(string tag)
     {
-        Tags.Remove(tag);
+        var newTags = new List<string>(Tags);
+        newTags.Remove(tag);
+        return new ChorusMetadata
+        {
+            Composer = Composer,
+            Arranger = Arranger,
+            Copyright = Copyright,
+            Language = Language,
+            Genre = Genre,
+            Tempo = Tempo,
+            Difficulty = Difficulty,
+            Tags = newTags,
+            CustomProperties = CustomProperties
+        };
     }
 
-    public void SetCustomProperty(string key, string value)
+    public ChorusMetadata WithCustomProperty(string key, string value)
     {
-        CustomProperties[key] = value;
+        var newProps = new Dictionary<string, string>(CustomProperties)
+        {
+            [key] = value
+        };
+        return new ChorusMetadata
+        {
+            Composer = Composer,
+            Arranger = Arranger,
+            Copyright = Copyright,
+            Language = Language,
+            Genre = Genre,
+            Tempo = Tempo,
+            Difficulty = Difficulty,
+            Tags = Tags,
+            CustomProperties = newProps
+        };
     }
 
     public string? GetCustomProperty(string key)

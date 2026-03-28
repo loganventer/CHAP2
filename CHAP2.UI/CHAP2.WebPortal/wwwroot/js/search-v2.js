@@ -222,6 +222,21 @@ function sortSearchResults(results, searchTerm) {
     }
 }
 
+// A11Y-005: Announce search results to screen readers
+function announceSearchResults(count, searchTerm) {
+    let liveRegion = document.getElementById('searchAriaLive');
+    if (!liveRegion) {
+        liveRegion = document.createElement('div');
+        liveRegion.id = 'searchAriaLive';
+        liveRegion.setAttribute('aria-live', 'polite');
+        liveRegion.setAttribute('aria-atomic', 'true');
+        liveRegion.className = 'sr-only';
+        liveRegion.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
+        document.body.appendChild(liveRegion);
+    }
+    liveRegion.textContent = `${count} result${count !== 1 ? 's' : ''} found for "${searchTerm}"`;
+}
+
 // Display search results
 function displayResults(results, searchTerm) {
     const resultsTable = document.getElementById('resultsTable');
@@ -247,7 +262,10 @@ function displayResults(results, searchTerm) {
     
     // Update count
     resultsCount.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} for "${searchTerm}"`;
-    
+
+    // A11Y-005: Announce result count to screen readers via aria-live region
+    announceSearchResults(results.length, searchTerm);
+
     // Populate table
     results.forEach((result, index) => {
         const row = createResultRow(result, index + 1);
@@ -306,12 +324,12 @@ function createResultRow(result, index) {
         highlightedTitle = highlightSearchTerm(result.name, currentSearchTerm);
     } catch (error) {
         console.error('Error in highlightSearchTerm:', error);
-        highlightedTitle = result.name || 'Unknown';
+        highlightedTitle = window.escapeHtml(result.name || 'Unknown');
     }
     
     const rowHtml = `
         <td class="result-number">${index}</td>
-        <td class="result-title">${highlightedTitle || result.name || 'Unknown'}</td>
+        <td class="result-title">${highlightedTitle || window.escapeHtml(result.name || 'Unknown')}</td>
         <td class="result-key">${getKeyDisplay(result.key)}</td>
         <td class="result-type">${getTypeDisplay(result.type)}</td>
         <td class="result-time">${getTimeSignatureDisplay(result.timeSignature)}</td>
@@ -329,7 +347,7 @@ function createResultRow(result, index) {
             <button class="action-btn" onclick="copyChorusText('${result.id}')" data-tooltip="Copy Lyrics">
                 <i class="fas fa-copy"></i>
             </button>
-            <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${result.name.replace(/'/g, "\\'")}')" data-tooltip="Delete Chorus">
+            <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${window.escapeHtml(result.name || '').replace(/'/g, "&#39;")}')" data-tooltip="Delete Chorus">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
@@ -337,6 +355,10 @@ function createResultRow(result, index) {
     
     row.innerHTML = rowHtml;
     
+    // A11Y-002: Keyboard accessibility for table rows
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'button');
+
     // Add click handler for row
     row.addEventListener('click', function(e) {
         if (!e.target.closest('.action-btn')) {
@@ -346,7 +368,14 @@ function createResultRow(result, index) {
             window.open(url, '_blank', windowFeatures);
         }
     });
-    
+
+    row.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            row.click();
+        }
+    });
+
     return row;
 }
 
@@ -406,10 +435,18 @@ async function showDetail(chorusId) {
             modalTitle.textContent = chorus.name;
         }
         
+        // A11Y-004: Add ARIA attributes for detail modal
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-label', 'Chorus Details');
+
         // Show modal
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
-        
+
+        // Store the element that had focus before modal opened
+        modal._previousFocus = document.activeElement;
+
         // Focus management
         const closeBtn = document.getElementById('modalClose');
         if (closeBtn) {
@@ -456,6 +493,12 @@ function closeModal() {
     const modal = document.getElementById('detailModal');
     modal.style.display = 'none';
     document.body.style.overflow = '';
+
+    // Restore focus to the element that opened the modal
+    if (modal._previousFocus && modal._previousFocus.focus) {
+        modal._previousFocus.focus();
+        modal._previousFocus = null;
+    }
 }
 
 // Clear search results
@@ -656,23 +699,50 @@ let currentChorusName = null;
 function showDeleteConfirmation(chorusId, chorusName) {
     currentChorusId = chorusId;
     currentChorusName = chorusName;
-    
+
     // Update the modal content
     document.getElementById('deleteChorusName').textContent = chorusName;
-    
+
     // Show the modal
     const modal = document.getElementById('deleteModal');
     modal.classList.add('show');
-    
+
+    // A11Y-004: Add ARIA attributes for modal
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Confirm Delete');
+
     // Prevent body scroll
     document.body.style.overflow = 'hidden';
-    
+
+    // Store the element that had focus before modal opened
+    modal._previousFocus = document.activeElement;
+
     // Focus on the cancel button for accessibility
     setTimeout(() => {
         const cancelButton = modal.querySelector('.btn-secondary');
         if (cancelButton) {
             cancelButton.focus();
         }
+        // A11Y-004: Trap focus within the modal
+        if (modal._focusTrapHandler) {
+            modal.removeEventListener('keydown', modal._focusTrapHandler);
+        }
+        modal._focusTrapHandler = function(e) {
+            if (e.key !== 'Tab') return;
+            const focusableEls = modal.querySelectorAll(
+                'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            );
+            if (focusableEls.length === 0) return;
+            const firstEl = focusableEls[0];
+            const lastEl = focusableEls[focusableEls.length - 1];
+            if (e.shiftKey) {
+                if (document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
+            } else {
+                if (document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
+            }
+        };
+        modal.addEventListener('keydown', modal._focusTrapHandler);
     }, 100);
 }
 
@@ -680,10 +750,22 @@ function showDeleteConfirmation(chorusId, chorusName) {
 function hideDeleteModal() {
     const modal = document.getElementById('deleteModal');
     modal.classList.remove('show');
-    
+
+    // Remove focus trap
+    if (modal._focusTrapHandler) {
+        modal.removeEventListener('keydown', modal._focusTrapHandler);
+        modal._focusTrapHandler = null;
+    }
+
     // Restore body scroll
     document.body.style.overflow = '';
-    
+
+    // Restore focus to the element that opened the modal
+    if (modal._previousFocus && modal._previousFocus.focus) {
+        modal._previousFocus.focus();
+        modal._previousFocus = null;
+    }
+
     // Clear current values
     currentChorusId = null;
     currentChorusName = null;

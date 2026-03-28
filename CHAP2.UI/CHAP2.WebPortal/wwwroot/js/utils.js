@@ -169,7 +169,14 @@ function debug(...args) {
     }
 }
 
-// Make utils and debug globally available
+// ARCH-001: Wrap utilities in CHAP2 namespace to avoid global state pollution
+window.CHAP2 = window.CHAP2 || {};
+window.CHAP2.utils = utils;
+window.CHAP2.debug = debug;
+window.CHAP2.showNotification = utils.showNotification.bind(utils);
+window.CHAP2.escapeHtml = utils.escapeHtml.bind(utils);
+
+// Backward-compatible global aliases
 window.utils = utils;
 window.debug = debug;
 window.showNotification = utils.showNotification.bind(utils);

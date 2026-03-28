@@ -335,9 +335,9 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/chorus-display.js?v=@DateTime.Now.Ticks"></script>
-    <script src="~/js/setlist.js?v=@DateTime.Now.Ticks"></script>
-    <script src="~/js/ai-search.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/chorus-display.js" asp-append-version="true"></script>
+    <script src="~/js/setlist.js" asp-append-version="true"></script>
+    <script src="~/js/ai-search.js" asp-append-version="true"></script>
     <script>
         // Initialize both search modes when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {

@@ -7,34 +7,89 @@ let currentChorusName = null;
 function showDeleteConfirmation(chorusId, chorusName) {
     currentChorusId = chorusId;
     currentChorusName = chorusName;
-    
+
     // Update the modal content
     document.getElementById('deleteChorusName').textContent = chorusName;
-    
+
     // Show the modal
     const modal = document.getElementById('deleteModal');
     modal.classList.add('show');
-    
+
+    // A11Y-004: Add ARIA attributes for modal
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Confirm Delete');
+
     // Prevent body scroll
     document.body.style.overflow = 'hidden';
-    
+
+    // Store the element that had focus before modal opened
+    modal._previousFocus = document.activeElement;
+
     // Focus on the cancel button for accessibility
     setTimeout(() => {
         const cancelButton = modal.querySelector('.btn-secondary');
         if (cancelButton) {
             cancelButton.focus();
         }
+        // A11Y-004: Trap focus within the modal
+        trapFocusInModal(modal);
     }, 100);
+}
+
+// A11Y-004: Focus trapping for delete modal
+function trapFocusInModal(modal) {
+    // Remove previous trap listener if any
+    if (modal._focusTrapHandler) {
+        modal.removeEventListener('keydown', modal._focusTrapHandler);
+    }
+
+    modal._focusTrapHandler = function(e) {
+        if (e.key !== 'Tab') return;
+
+        const focusableElements = modal.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstEl = focusableElements[0];
+        const lastEl = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+            if (document.activeElement === firstEl) {
+                e.preventDefault();
+                lastEl.focus();
+            }
+        } else {
+            if (document.activeElement === lastEl) {
+                e.preventDefault();
+                firstEl.focus();
+            }
+        }
+    };
+    modal.addEventListener('keydown', modal._focusTrapHandler);
 }
 
 // Hide delete confirmation modal
 function hideDeleteModal() {
     const modal = document.getElementById('deleteModal');
     modal.classList.remove('show');
-    
+
+    // Remove focus trap
+    if (modal._focusTrapHandler) {
+        modal.removeEventListener('keydown', modal._focusTrapHandler);
+        modal._focusTrapHandler = null;
+    }
+
     // Restore body scroll
     document.body.style.overflow = '';
-    
+
+    // Restore focus to the element that opened the modal
+    if (modal._previousFocus && modal._previousFocus.focus) {
+        modal._previousFocus.focus();
+        modal._previousFocus = null;
+    }
+
     // Clear current values
     currentChorusId = null;
     currentChorusName = null;

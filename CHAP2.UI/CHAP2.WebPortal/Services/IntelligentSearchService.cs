@@ -19,11 +19,11 @@ public class IntelligentSearchService : IIntelligentSearchService
         IChorusApiService chorusApiService,
         ILogger<IntelligentSearchService> logger)
     {
-        _langChainSearchService = langChainSearchService;
-        _vectorSearchService = vectorSearchService;
-        _ollamaService = ollamaService;
-        _chorusApiService = chorusApiService;
-        _logger = logger;
+        _langChainSearchService = langChainSearchService ?? throw new ArgumentNullException(nameof(langChainSearchService));
+        _vectorSearchService = vectorSearchService ?? throw new ArgumentNullException(nameof(vectorSearchService));
+        _ollamaService = ollamaService ?? throw new ArgumentNullException(nameof(ollamaService));
+        _chorusApiService = chorusApiService ?? throw new ArgumentNullException(nameof(chorusApiService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<IntelligentSearchResult> SearchWithIntelligenceAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default)

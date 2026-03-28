@@ -387,21 +387,62 @@ function showSaveConfirmation() {
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('show');
-        
+
+        // A11Y-004: Add ARIA attributes for modal
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-label', 'Confirm Save');
+
+        // Store the element that had focus before modal opened
+        modal._previousFocus = document.activeElement;
+
         // Focus the first button for accessibility
         const firstButton = modal.querySelector('button');
         if (firstButton) {
             firstButton.focus();
         }
+
+        // A11Y-004: Trap focus within the modal
+        if (modal._focusTrapHandler) {
+            modal.removeEventListener('keydown', modal._focusTrapHandler);
+        }
+        modal._focusTrapHandler = function(e) {
+            if (e.key !== 'Tab') return;
+            const focusableEls = modal.querySelectorAll(
+                'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            );
+            if (focusableEls.length === 0) return;
+            const firstEl = focusableEls[0];
+            const lastEl = focusableEls[focusableEls.length - 1];
+            if (e.shiftKey) {
+                if (document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
+            } else {
+                if (document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
+            }
+        };
+        modal.addEventListener('keydown', modal._focusTrapHandler);
     }
 }
 
 function hideSaveConfirmation() {
     debug('Hiding save confirmation modal');
-    
+
     const modal = document.getElementById('saveConfirmationModal');
     if (modal) {
         modal.classList.remove('show');
+
+        // Remove focus trap
+        if (modal._focusTrapHandler) {
+            modal.removeEventListener('keydown', modal._focusTrapHandler);
+            modal._focusTrapHandler = null;
+        }
+
+        // Restore focus to the element that opened the modal
+        if (modal._previousFocus && modal._previousFocus.focus) {
+            modal._previousFocus.focus();
+            modal._previousFocus = null;
+        }
+
         setTimeout(() => {
             modal.style.display = 'none';
         }, 300);

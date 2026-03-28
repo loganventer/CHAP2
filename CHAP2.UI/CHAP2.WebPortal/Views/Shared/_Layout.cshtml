@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/search.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/detail.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/setlist.css?v=@DateTime.Now.Ticks" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/settings.css?v=@DateTime.Now.Ticks" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/ai-search.css?v=@DateTime.Now.Ticks" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/setlist.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/ai-search.css" asp-append-version="true" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -21,14 +21,14 @@
         </main>
     </div>
 
-    <script src="~/js/utils.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
-    <script src="~/js/site.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
-    <script src="~/js/search-v2.js?v=@DateTime.Now.Ticks&cb=@Guid.NewGuid()" asp-append-version="true"></script>
-    <script src="~/js/detail.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
-    <script src="~/js/settings.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
-    <script src="~/js/system-restart.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
+    <script src="~/js/utils.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/search-v2.js" asp-append-version="true"></script>
+    <script src="~/js/detail.js" asp-append-version="true"></script>
+    <script src="~/js/settings.js" asp-append-version="true"></script>
+    <script src="~/js/system-restart.js" asp-append-version="true"></script>
     <environment include="Development">
-        <script src="~/js/debug-crud.js?v=@DateTime.Now.Ticks" asp-append-version="true"></script>
+        <script src="~/js/debug-crud.js" asp-append-version="true"></script>
     </environment>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

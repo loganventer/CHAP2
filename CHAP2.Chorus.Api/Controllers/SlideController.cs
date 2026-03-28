@@ -9,20 +9,23 @@ namespace CHAP2.Chorus.Api.Controllers;
 [Route("[controller]")]
 public class SlideController : ChapControllerAbstractBase
 {
-    private readonly IChorusRepository _chorusResource;
+    private readonly IChorusCommandService _chorusCommandService;
+    private readonly IChorusQueryService _chorusQueryService;
     private readonly ISlideToChorusService _slideToChorusService;
     private readonly SlideConversionSettings _slideSettings;
-    
+
     public SlideController(
-        ILogger<SlideController> logger, 
-        IChorusRepository chorusResource, 
+        ILogger<SlideController> logger,
+        IChorusCommandService chorusCommandService,
+        IChorusQueryService chorusQueryService,
         ISlideToChorusService slideToChorusService,
         IOptions<SlideConversionSettings> slideSettings)
         : base(logger)
     {
-        _chorusResource = chorusResource;
-        _slideToChorusService = slideToChorusService;
-        _slideSettings = slideSettings.Value;
+        _chorusCommandService = chorusCommandService ?? throw new ArgumentNullException(nameof(chorusCommandService));
+        _chorusQueryService = chorusQueryService ?? throw new ArgumentNullException(nameof(chorusQueryService));
+        _slideToChorusService = slideToChorusService ?? throw new ArgumentNullException(nameof(slideToChorusService));
+        _slideSettings = (slideSettings ?? throw new ArgumentNullException(nameof(slideSettings))).Value;
     }
 
     [HttpPost("convert")]
@@ -33,12 +36,12 @@ public class SlideController : ChapControllerAbstractBase
         _logger.LogInformation("Request Content-Type: {ContentType}", Request.ContentType);
         _logger.LogInformation("Request Headers: {Headers}", string.Join(", ", Request.Headers.Keys));
         _logger.LogInformation("Filename header: {Filename}", filename);
-        
+
         LogAction("ConvertSlideToChorus", new { filename });
 
         var fileContent = await ReadRequestBodyAsync();
         _logger.LogInformation("File content length: {Length} bytes", fileContent?.Length ?? 0);
-        
+
         if (!ValidateFileContent(fileContent!, filename))
         {
             _logger.LogWarning("File validation failed");
@@ -52,16 +55,17 @@ public class SlideController : ChapControllerAbstractBase
             return BadRequest("Could not extract chorus name from slide file");
         }
 
-        var existingChorus = await _chorusResource.GetByNameAsync(chorus.Name);
+        var existingChorus = await _chorusQueryService.GetChorusByNameAsync(chorus.Name);
         if (existingChorus != null)
         {
             return await HandleExistingChorus(existingChorus, chorus, filename);
         }
 
-        await _chorusResource.AddAsync(chorus);
-        
-        return Created($"/api/choruses/{chorus.Id}", new 
-        { 
+        await _chorusCommandService.CreateChorusAsync(
+            chorus.Name, chorus.ChorusText, chorus.Key, chorus.Type, chorus.TimeSignature);
+
+        return Created($"/api/choruses/{chorus.Id}", new
+        {
             message = $"Successfully converted PowerPoint file to chorus: {chorus.Name}",
             chorus = chorus,
             originalFilename = filename,
@@ -83,14 +87,14 @@ public class SlideController : ChapControllerAbstractBase
             _logger.LogWarning("No file data provided");
             return false;
         }
-        
+
         if (fileContent.Length > _slideSettings.MaxFileSizeBytes)
         {
-            _logger.LogWarning("File size exceeds maximum allowed size: {FileSize} > {MaxSize}", 
+            _logger.LogWarning("File size exceeds maximum allowed size: {FileSize} > {MaxSize}",
                 fileContent.Length, _slideSettings.MaxFileSizeBytes);
             return false;
         }
-        
+
         if (string.IsNullOrWhiteSpace(filename))
         {
             _logger.LogWarning("No filename header provided");
@@ -112,31 +116,31 @@ public class SlideController : ChapControllerAbstractBase
         if (!string.Equals(existingChorus.ChorusText, newChorus.ChorusText, StringComparison.OrdinalIgnoreCase))
         {
             _logger.LogInformation("Updating existing chorus '{Name}' with new text content", newChorus.Name);
-            
-            existingChorus.Update(
+
+            var updatedChorus = await _chorusCommandService.UpdateChorusAsync(
+                existingChorus.Id,
                 existingChorus.Name,
                 newChorus.ChorusText,
                 existingChorus.Key,
                 existingChorus.Type,
                 existingChorus.TimeSignature
             );
-            await _chorusResource.UpdateAsync(existingChorus);
-            
-            return Ok(new 
-            { 
+
+            return Ok(new
+            {
                 message = $"Updated existing chorus '{newChorus.Name}' with new text content",
-                chorus = existingChorus,
+                chorus = updatedChorus,
                 originalFilename = filename,
                 action = "updated"
             });
         }
 
-        return Ok(new 
-        { 
+        return Ok(new
+        {
             message = $"Chorus '{newChorus.Name}' already exists with identical text content",
             chorus = existingChorus,
             originalFilename = filename,
             action = "no_change"
         });
     }
-} 
+}

@@ -2,7 +2,27 @@
 
 ## Context
 
-The CHAP2 solution is a .NET 9 church chorus management system with 10 projects and ~131 C# files. While it has a reasonable foundation (CQRS pattern, domain events, repository pattern), it has accumulated significant architectural debt: God classes (HomeController at 1047 lines, ChorusApiService at 673 lines), multiple types per file, DTO duplication across layers, reflection hacks on domain entities, dependency direction violations (controllers accessing repositories directly), and fat interfaces. This refactoring will bring the codebase into alignment with IDesign methodology, SOLID principles, and clean architecture conventions.
+The CHAP2 solution is a .NET 9 church chorus management system with 10 projects and ~131 C# files. A code quality review identified 89 findings (10 critical, 42 major, 37 minor). Security hardening, test coverage, performance cleanup, and several architecture fixes have been completed. This plan covers the **remaining structural refactoring** needed to achieve full IDesign, SOLID, one-type-per-file, dependency inversion, and composition-over-inheritance compliance.
+
+### What's Already Done
+- CORS restricted, regex DoS fixed, HTTPS enforcement, dead code removed
+- XSS innerHTML fixes across 7 JS files, debug scripts gated, accessibility improvements
+- 62 tests passing (30 new: repository, cache, search, controller)
+- Domain event dispatch dedup, reflection removed from SlideToChorusService
+- WebPortal repository wrapped with CachedChorusRepository
+- Constructor null guards, async fixes, TryParse, SearchApiRequest extracted
+
+### What Still Needs Fixing (12 violations across 7 criteria)
+
+| Criterion | Status | Violations |
+|---|---|---|
+| One Type Per File | VIOLATED | HomeController (10 types), TraditionalSearchWithAiService (4), OllamaRequest (2x2) |
+| God Classes | VIOLATED | HomeController (1046 lines, 9 deps), ChorusApiService (672), IntelligentSearchService (505), ChorusSearchService (456) |
+| Dependency Inversion | VIOLATED | SlideController→Repository, ChorusApiService reflection (34 instances), DomainEventDispatcher service locator, Application→ViewModels |
+| Composition over Inheritance | VIOLATED | ChapControllerAbstractBase still inherited |
+| DTO Duplication | VIOLATED | OllamaRequest/Response, ChorusSearchResult across WebPortal + Console.Prompt |
+| Interface Segregation | VIOLATED | IChorusApplicationService (5 mixed methods), IVectorSearchService (read+write+compute) |
+| IDesign Layering | VIOLATED | Controllers calling Accessors directly, Engines mixed with Managers |
 
 ---
 
@@ -66,185 +86,153 @@ graph TB
     style SHR fill:#ff4a7a,color:#fff
 ```
 
-### Key Issues Identified
-
-```mermaid
-mindmap
-  root((Architecture<br/>Debt))
-    God Classes
-      HomeController 1047 lines
-      ChorusApiService 673 lines
-      ChorusSearchService 453 lines
-      IntelligentSearchService 505 lines
-    Multiple Types Per File
-      HomeController 10+ types
-      TraditionalSearchWithAiService 4 types
-      OllamaRagService 2 types
-      LangChainSearchService 2 types
-    DTO Duplication
-      OllamaRequest in 2 projects
-      SearchResponseDto in 2 projects
-      ChorusMetadataDto in 2 projects
-      ChorusSearchResult in 2 projects
-    Dependency Violations
-      SlideController → Repository
-      ChorusApiService uses Reflection
-      DomainEventDispatcher Service Locator
-    SOLID Violations
-      ISP: IChorusApplicationService fat interface
-      SRP: Mixed concerns in search services
-      DIP: Application depends on ViewModels
-```
-
 ---
 
 ## Phase 1: One Type Per File + DTO Consolidation
 
-**Goal:** Structural cleanup. No behavioral changes. Lowest risk.
+**Goal:** Every .cs file contains exactly one public type. Eliminate all DTO duplication. Pure structural moves, no behavioral changes.
 
-### 1A. Extract inline types from HomeController.cs
+### 1A. Extract inline types from HomeController.cs (10 types → 1)
 
-8 request/response classes after line 987 need their own files.
+HomeController.cs currently has 10 public types after line 987. Extract each to its own file:
 
-Create `CHAP2.UI/CHAP2.WebPortal/Models/Requests/`:
-- `TraditionalSearchRequest.cs`, `AskQuestionRequest.cs`, `AiSearchRequest.cs`
-- `RagSearchRequest.cs`, `IntelligentSearchRequest.cs`, `RestartSystemRequest.cs`
-- `SaveChorusRequest.cs`, `DeleteChorusRequest.cs`
+```
+CHAP2.UI/CHAP2.WebPortal/Models/Requests/
+├── TraditionalSearchRequest.cs
+├── AskQuestionRequest.cs
+├── AiSearchRequest.cs
+├── RagSearchRequest.cs
+├── IntelligentSearchRequest.cs
+├── RestartSystemRequest.cs
+├── SaveChorusRequest.cs
+└── DeleteChorusRequest.cs
 
-Create `CHAP2.UI/CHAP2.WebPortal/DTOs/LlmSearchResult.cs`
+CHAP2.UI/CHAP2.WebPortal/DTOs/
+└── LlmSearchResult.cs
+```
 
-### 1B. Extract inline types from WebPortal services
+### 1B. Extract inline types from TraditionalSearchWithAiService.cs (4 types → 1)
 
-| Source File | Extract | Target |
-|---|---|---|
-| `TraditionalSearchWithAiService.cs` | `ITraditionalSearchWithAiService` | `Interfaces/ITraditionalSearchWithAiService.cs` |
-| `TraditionalSearchWithAiService.cs` | `SearchFilters` | `Models/SearchFilters.cs` |
-| `TraditionalSearchWithAiService.cs` | `SearchWithAiResult` | `DTOs/SearchWithAiResult.cs` |
-| `OllamaRagService.cs` | `IOllamaRagService` | `Interfaces/IOllamaRagService.cs` |
-| `LangChainSearchService.cs` | `ILangChainSearchService` | `Interfaces/ILangChainSearchService.cs` |
-| `SearchController.cs` | `SearchApiRequest` | `Models/Requests/SearchApiRequest.cs` |
+| Type | Target File |
+|---|---|
+| `ITraditionalSearchWithAiService` | `Interfaces/ITraditionalSearchWithAiService.cs` |
+| `SearchFilters` | `Models/SearchFilters.cs` |
+| `SearchWithAiResult` | `DTOs/SearchWithAiResult.cs` |
 
-### 1C. Consolidate duplicate DTOs
+### 1C. Extract OllamaOptions from OllamaRequest.cs files
+
+Both WebPortal and Console.Prompt have `OllamaRequest` + `OllamaOptions` in the same file. Split `OllamaOptions` to its own file in each, then consolidate in step 1D.
+
+### 1D. Consolidate duplicate DTOs
 
 ```mermaid
 graph LR
     subgraph "BEFORE: Duplicated"
-        WP_O["WebPortal<br/>OllamaRequest"]
-        CP_O["Console.Prompt<br/>OllamaRequest"]
+        WP_O["WebPortal<br/>OllamaRequest<br/>OllamaOptions<br/>OllamaResponse"]
+        CP_O["Console.Prompt<br/>OllamaRequest<br/>OllamaOptions<br/>OllamaResponse"]
         WP_CS["WebPortal<br/>ChorusSearchResult"]
         CP_CS["Console.Prompt<br/>ChorusSearchResult"]
-        SH_SR["Shared<br/>SearchResponseDto"]
-        CC_SR["Console.Common<br/>SearchResponseDto"]
-        SH_CM["Shared<br/>ChorusMetadataDto"]
-        CC_CM["Console.Common<br/>ChorusMetadataDto"]
     end
 
-    subgraph "AFTER: Consolidated in CHAP2.Shared"
+    subgraph "AFTER: Single source in CHAP2.Shared"
         S_O["Shared/DTOs/Ollama/<br/>OllamaRequest.cs<br/>OllamaOptions.cs<br/>OllamaResponse.cs"]
         S_CS["Shared/DTOs/<br/>ChorusSearchResult.cs"]
-        S_SR["Shared/DTOs/<br/>SearchResponseDto.cs"]
-        S_CM["Shared/DTOs/<br/>ChorusMetadataDto.cs"]
     end
 
-    WP_O -->|merge| S_O
+    WP_O -->|merge superset| S_O
     CP_O -->|delete| S_O
-    WP_CS -->|merge| S_CS
+    WP_CS -->|merge with Explanation| S_CS
     CP_CS -->|delete| S_CS
-    CC_SR -->|delete| S_SR
-    SH_SR -->|keep| S_SR
-    CC_CM -->|delete| S_CM
-    SH_CM -->|keep| S_CM
 
     style S_O fill:#4aff7a,color:#000
     style S_CS fill:#4aff7a,color:#000
-    style S_SR fill:#4aff7a,color:#000
-    style S_CM fill:#4aff7a,color:#000
 ```
 
-### 1D. Verify
+- Merge `OllamaRequest`, `OllamaOptions`, `OllamaResponse` into `CHAP2.Shared/DTOs/Ollama/`
+- Use superset of properties (WebPortal has TopP, TopK, RepeatPenalty)
+- Make default values configurable, not hardcoded
+- Merge `ChorusSearchResult` into `CHAP2.Shared/DTOs/` with `Explanation` property included
+- Delete all local copies, update references
+
+### 1E. Verify
 - `dotnet build CHAP2Debug.sln` passes
 - `dotnet test` passes
 - Zero behavioral changes
 
 ---
 
-## Phase 2: Domain Immutability + Eliminate Reflection
+## Phase 2: Eliminate Reflection in ChorusApiService
 
-**Goal:** Fix the domain model so downstream code never needs reflection.
+**Goal:** Remove all 34 instances of `GetProperty`/`SetValue` reflection from ChorusApiService.
+
+### 2A. Make Chorus.Reconstitute fully public
+
+File: `CHAP2.Domain/Entities/Chorus.cs`
+- Verify `Reconstitute` is `public static` (may already be done)
+- Ensure it accepts all properties needed by ChorusApiService
+
+### 2B. Replace all reflection blocks in ChorusApiService
+
+File: `CHAP2.UI/CHAP2.WebPortal/Services/ChorusApiService.cs` (672 lines)
+- 4 methods each have ~30-line reflection blocks (lines 106-134, 212-236, 294-318, 367-391)
+- Replace each with `Chorus.Reconstitute(id, name, text, key, type, timeSig, createdAt, updatedAt, metadata)`
+- Extract `MapDtoToChorus(ApiChorusDto dto)` private helper to DRY the mapping
 
 ```mermaid
 sequenceDiagram
-    participant C as Controller
     participant S as ChorusApiService
     participant API as Chorus API
     participant D as Chorus Entity
 
-    Note over S,D: BEFORE: Reflection hack
-    C->>S: GetChorusByIdAsync(id)
-    S->>API: HTTP GET /api/choruses/{id}
+    Note over S,D: BEFORE: 34 reflection calls
+    S->>API: HTTP GET
     API-->>S: ApiChorusDto JSON
-    S->>D: typeof(Chorus).GetProperty("Id")
-    S->>D: idProperty.SetValue(chorus, guid)
-    S->>D: typeof(Chorus).GetProperty("Key")
-    S->>D: keyProperty.SetValue(chorus, key)
-    S-->>C: Chorus entity (via reflection)
+    S->>D: typeof(Chorus).GetProperty("Id").SetValue(...)
+    S->>D: typeof(Chorus).GetProperty("Key").SetValue(...)
+    S->>D: typeof(Chorus).GetProperty("Type").SetValue(...)
+    S->>D: typeof(Chorus).GetProperty("TimeSignature").SetValue(...)
 
-    Note over S,D: AFTER: Clean reconstitution
-    C->>S: GetChorusByIdAsync(id)
-    S->>API: HTTP GET /api/choruses/{id}
+    Note over S,D: AFTER: Clean factory call
+    S->>API: HTTP GET
     API-->>S: ApiChorusDto JSON
-    S->>D: Chorus.Reconstitute(id, name, text, key, ...)
-    S-->>C: ChorusViewModel (no domain leak)
+    S->>D: Chorus.Reconstitute(id, name, text, key, type, timeSig, ...)
 ```
 
-### 2A. Make ChorusMetadata a proper value object
-- File: `CHAP2.Domain/ValueObjects/ChorusMetadata.cs`
-- Change all public setters to `{ get; init; }`
-- Add `With*` methods for mutation (return new instances)
+### 2C. Stop returning domain entities from IChorusApiService
 
-### 2B. Make Chorus.Reconstitute public
-- File: `CHAP2.Domain/Entities/Chorus.cs`
-- Change `internal static Chorus Reconstitute(...)` to `public static`
+- Change `IChorusApiService` return types from `Chorus` to `ChorusViewModel` or DTOs
+- Update HomeController to work with view models
+- This eliminates the need for reflection entirely
 
-### 2C. Eliminate all reflection in ChorusApiService
-- File: `CHAP2.UI/CHAP2.WebPortal/Services/ChorusApiService.cs`
-- Replace 4 reflection blocks (~30 lines each) with single `Chorus.Reconstitute()` calls
-- Extract `MapDtoToChorus(ApiChorusDto dto)` helper method
-
-### 2D. Stop returning domain entities from IChorusApiService
-- Change `IChorusApiService` return types from `Chorus` to DTOs/ViewModels
-- Update HomeController to work with DTOs instead of domain entities
-- Delete all reflection code
-
-### 2E. Verify
+### 2D. Verify
 - `dotnet build` + `dotnet test`
-- Grep for `GetProperty` - should be zero in non-test code
+- `grep -r "GetProperty" --include="*.cs"` returns zero hits in non-test code
 
 ---
 
 ## Phase 3: Break Up God Classes (SRP)
 
-### 3A. Split HomeController (1047 lines, 8+ injected services)
+### 3A. Split HomeController (1046 lines → 4 controllers)
 
 ```mermaid
 graph TD
     subgraph "BEFORE"
-        HC["HomeController<br/>1047 lines<br/>8 injected services<br/>10+ methods"]
+        HC["HomeController<br/>1046 lines | 9 deps<br/>CRUD + Search + AI + RAG + System"]
     end
 
     subgraph "AFTER"
-        HC2["HomeController<br/>~150 lines<br/>Navigation only"]
-        CRUD["ChorusCrudController<br/>~300 lines<br/>CRUD views + API"]
-        SEARCH["SearchViewController<br/>~250 lines<br/>Search views + API"]
-        SYS["SystemController<br/>~100 lines<br/>Admin operations"]
-        ENUM["EnumDisplayHelper<br/>~80 lines<br/>Static utility"]
+        HC2["HomeController<br/>~100 lines | 1-2 deps<br/>Index, CleanSearch"]
+        CRUD["ChorusCrudController<br/>~300 lines | 3 deps<br/>CRUD views + JSON endpoints"]
+        SEARCH["SearchViewController<br/>~350 lines | 4 deps<br/>Search, AI, RAG, Intelligent"]
+        SYS["SystemController<br/>~100 lines | 2 deps<br/>Restart, Connectivity"]
+        ENUM["EnumDisplayHelper<br/>~80 lines | 0 deps<br/>Static utility"]
     end
 
-    HC -->|extract| HC2
-    HC -->|extract| CRUD
-    HC -->|extract| SEARCH
-    HC -->|extract| SYS
-    HC -->|extract| ENUM
+    HC --> HC2
+    HC --> CRUD
+    HC --> SEARCH
+    HC --> SYS
+    HC --> ENUM
 
     style HC fill:#ff4a4a,color:#fff
     style HC2 fill:#4aff7a,color:#000
@@ -254,39 +242,30 @@ graph TD
     style ENUM fill:#4aff7a,color:#000
 ```
 
-| New Controller | Responsibility |
-|---|---|
-| `ChorusCrudController` | CRUD views + API endpoints |
-| `SearchViewController` | Search-related views + API endpoints |
-| `SystemController` | System administration |
-| `HomeController` (slimmed) | Navigation only (Index, CleanSearch) |
+Extract `GetKeyDisplayName`, `GetTypeDisplayName`, `GetTimeSignatureDisplayName` to `Helpers/EnumDisplayHelper.cs`.
 
-Extract `GetKeyDisplayName`, `GetTypeDisplayName`, `GetTimeSignatureDisplayName` to `Helpers/EnumDisplayHelper.cs`
-
-### 3B. Split ChorusSearchService (453 lines)
+### 3B. Split ChorusSearchService (456 lines → 4 classes)
 
 ```mermaid
 graph TD
     subgraph "BEFORE"
-        CSS["ChorusSearchService<br/>453 lines<br/>cache + search + AI + ranking"]
+        CSS["ChorusSearchService<br/>456 lines<br/>cache + search + AI + ranking"]
     end
 
     subgraph "AFTER: IDesign Roles"
-        CSE["ChorusSearchEngine<br/>(Engine)<br/>Core matching logic"]
-        CSCA["ChorusSearchCacheAccessor<br/>(Accessor)<br/>Cache management"]
-        ASO["AiSearchOrchestrator<br/>(Manager)<br/>AI + merge + rank"]
-        CSS2["ChorusSearchService<br/>(Manager)<br/>Delegates to above"]
+        CSE["ChorusSearchEngine<br/>(Engine)<br/>MatchesSearch, IsRegexMatch<br/>search-by-scope methods"]
+        CSCA["ChorusSearchCacheAccessor<br/>(Accessor)<br/>GetCachedChorusesAsync<br/>InvalidateCache"]
+        ASO["AiSearchOrchestrator<br/>(Manager)<br/>SearchWithAiAsync<br/>merge + rank results"]
+        CSS2["ChorusSearchService<br/>(Manager)<br/>SearchAsync delegates"]
     end
 
-    CSS -->|extract| CSE
-    CSS -->|extract| CSCA
-    CSS -->|extract| ASO
-    CSS -->|slim| CSS2
-
-    CSS2 -->|uses| CSE
-    CSS2 -->|uses| CSCA
-    ASO -->|uses| CSE
-    ASO -->|uses| CSCA
+    CSS --> CSE
+    CSS --> CSCA
+    CSS --> ASO
+    CSS --> CSS2
+    CSS2 --> CSE
+    CSS2 --> CSCA
+    ASO --> CSE
 
     style CSS fill:#ff4a4a,color:#fff
     style CSE fill:#ffa64a,color:#fff
@@ -295,28 +274,19 @@ graph TD
     style CSS2 fill:#4a9eff,color:#fff
 ```
 
-| New Class | IDesign Role | Responsibility |
+### 3C. Split ChorusApiService (672 lines → 3 services)
+
+| New Class | Interface | Responsibility |
 |---|---|---|
-| `ChorusSearchEngine` | Engine | Core matching: `MatchesSearch`, `IsRegexMatch`, search-by-scope |
-| `ChorusSearchCacheAccessor` | Accessor | `GetCachedChorusesAsync`, `InvalidateCache` |
-| `AiSearchOrchestrator` | Manager | `SearchWithAiAsync`, merge+rank results |
-| `ChorusSearchService` (slimmed) | Manager | `SearchAsync` - delegates to Engine + Cache |
+| `ChorusApiReadService` | `IChorusApiReadService` | Get, GetAll, GetByName, Search, TestConnectivity |
+| `ChorusApiWriteService` | `IChorusApiWriteService` | Create, Update, Delete (+ vector DB sync) |
+| `SlideApiService` | `ISlideApiService` | ConvertSlide |
 
-### 3C. Split ChorusApiService (673 lines)
-
-| New Class | Responsibility |
-|---|---|
-| `ChorusApiReadService` | Get, GetAll, GetByName, Search, TestConnectivity |
-| `ChorusApiWriteService` | Create, Update, Delete (+ vector DB sync) |
-| `SlideApiService` | ConvertSlide |
-
-Split `IChorusApiService` into `IChorusApiReadService`, `IChorusApiWriteService`, `ISlideApiService`
-
-### 3D. Split IntelligentSearchService (505 lines)
+### 3D. Split IntelligentSearchService (505 lines → 4 classes)
 
 | New Class | IDesign Role |
 |---|---|
-| `QueryUnderstandingEngine` | Engine - prompt construction for query understanding |
+| `QueryUnderstandingEngine` | Engine - prompt construction |
 | `SearchExplanationEngine` | Engine - explanation generation |
 | `SearchAnalysisEngine` | Engine - analysis generation |
 | `IntelligentSearchService` (slimmed) | Manager - orchestration only |
@@ -327,29 +297,75 @@ Split `IChorusApiService` into `IChorusApiReadService`, `IChorusApiWriteService`
 
 ---
 
-## Phase 4: Dependency Direction + IDesign Layering
+## Phase 4: Dependency Inversion + IDesign Layering
 
 ### 4A. Fix SlideController direct repository access
-- File: `CHAP2.Chorus.Api/Controllers/SlideController.cs`
+
+```mermaid
+graph LR
+    subgraph "BEFORE"
+        SC1["SlideController"] -->|injects| REPO["IChorusRepository"]
+    end
+
+    subgraph "AFTER"
+        SC2["SlideController"] -->|injects| MGR["ISlideConversionManager"]
+        MGR -->|uses| REPO2["IChorusRepository"]
+        MGR -->|uses| SVC["ISlideToChorusService"]
+    end
+
+    style SC1 fill:#ff4a4a,color:#fff
+    style REPO fill:#ff4a4a,color:#fff
+    style SC2 fill:#4aff7a,color:#000
+    style MGR fill:#4a9eff,color:#fff
+    style REPO2 fill:#7a4aff,color:#fff
+    style SVC fill:#ffa64a,color:#fff
+```
+
 - Create `ISlideConversionManager` in Application layer
-- Move convert+check+save logic from controller to manager
+- Move convert+check+save logic from controller into manager
 - Controller becomes thin HTTP adapter
 
 ### 4B. Fix DomainEventDispatcher service locator
-- File: `CHAP2.Application/Services/DomainEventDispatcher.cs`
+
+```mermaid
+graph LR
+    subgraph "BEFORE: Service Locator"
+        DED1["DomainEventDispatcher"] -->|IServiceProvider| SP["ServiceProvider"]
+        SP -->|reflection| H1["Handler?"]
+    end
+
+    subgraph "AFTER: Explicit Injection"
+        DED2["DomainEventDispatcher"] -->|constructor| CH["IEnumerable of<br/>IDomainEventHandler of ChorusCreatedEvent"]
+        DED2 -->|constructor| UH["IEnumerable of<br/>IDomainEventHandler of ChorusUpdatedEvent"]
+        DED2 -->|constructor| DH["IEnumerable of<br/>IDomainEventHandler of ChorusDeletedEvent"]
+    end
+
+    style DED1 fill:#ff4a4a,color:#fff
+    style SP fill:#ff4a4a,color:#fff
+    style DED2 fill:#4aff7a,color:#000
+```
+
 - Replace `IServiceProvider` + reflection with explicit handler injection
-- Or create `DomainEventHandlerRegistry` for type-safe dispatch
+- Or create `DomainEventHandlerRegistry` for type-safe dispatch without reflection
 
-### 4C. Split IChorusApplicationService (ISP violation)
-- File: `CHAP2.Application/Interfaces/IChorusApplicationService.cs`
-- Remove ViewModel dependencies from Application layer
-- Use existing `IChorusCommandService` + `IChorusQueryService` instead
-- Deprecate `IChorusApplicationService` if redundant
+### 4C. Remove Application → Shared ViewModels dependency
 
-### 4D. Remove Application → Shared ViewModels dependency
-- Create Application-layer command records: `CreateChorusCommand`, `UpdateChorusCommand`
-- Change `ChorusApplicationService` to accept commands, not ViewModels
-- Evaluate removing Shared project reference from Application.csproj
+- `IChorusApplicationService` currently accepts `ChorusCreateViewModel` and `ChorusEditViewModel`
+- Create Application-layer command records:
+  ```csharp
+  public record CreateChorusCommand(string Name, string ChorusText, MusicalKey Key, ChorusType Type, TimeSignature TimeSignature);
+  public record UpdateChorusCommand(string Id, string Name, string ChorusText, MusicalKey Key, ChorusType Type, TimeSignature TimeSignature);
+  ```
+- Change service to accept commands, not ViewModels
+- Consider deprecating `IChorusApplicationService` since `IChorusCommandService` + `IChorusQueryService` already exist
+
+### 4D. Split IVectorSearchService (ISP)
+
+| New Interface | Responsibility |
+|---|---|
+| `IVectorSearchAccessor` | `SearchSimilarAsync`, `GetAllChorusesAsync` |
+| `IVectorWriteAccessor` | `UpsertAsync`, `DeleteAsync` |
+| `IEmbeddingEngine` | `GenerateEmbeddingAsync` (computation, not data access) |
 
 ### 4E. Enforce IDesign call chain
 
@@ -392,26 +408,20 @@ graph TD
     style DOM fill:#ff4a7a,color:#fff
 ```
 
-**Rules:**
-- Controllers → Managers only
-- Managers → Engines + Accessors
-- Engines → Domain only (stateless, no data access)
-- Accessors → External systems only (DB, HTTP, files)
-
 ### 4F. Verify
 - `dotnet build` + `dotnet test`
 - Verify no layer-skipping in dependency graph
 
 ---
 
-## Phase 5: Composition Over Inheritance + Cleanup
+## Phase 5: Composition Over Inheritance + Final Cleanup
 
 ### 5A. Replace ChapControllerAbstractBase inheritance
 
 ```mermaid
 graph LR
     subgraph "BEFORE: Inheritance"
-        BASE["ChapControllerAbstractBase<br/>(abstract class)"]
+        BASE["ChapControllerAbstractBase<br/>(abstract, 26 lines)"]
         C1["ChorusesController"] -->|inherits| BASE
         C2["SlideController"] -->|inherits| BASE
         C3["HealthController"] -->|inherits| BASE
@@ -419,57 +429,68 @@ graph LR
 
     subgraph "AFTER: Composition"
         CL["IControllerLogger<br/>(injected service)"]
-        C4["ChorusesController"] -->|uses| CL
-        C5["SlideController"] -->|uses| CL
-        C6["HealthController"] -->|uses| CL
+        C4["ChorusesController : ControllerBase"] -->|uses| CL
+        C5["SlideController : ControllerBase"] -->|uses| CL
+        C6["HealthController : ControllerBase"] -->|uses| CL
     end
 
     style BASE fill:#ff4a4a,color:#fff
     style CL fill:#4aff7a,color:#000
 ```
 
-- Only provides `LogAction` helper - poor use of inheritance
-- Create `IControllerLogger` + `ControllerLogger` (composition)
-- Inject into controllers, delete abstract base class
+- Create `IControllerLogger` + `ControllerLogger`
+- Inject into controllers instead of inheriting
+- Delete `ChapControllerAbstractBase.cs`
 
-### 5B. Split IVectorSearchService (ISP)
-- `IVectorSearchAccessor` - read operations
-- `IVectorWriteAccessor` - write operations
-- `IEmbeddingEngine` - embedding generation (computation, not data access)
+### 5B. Make ChorusMetadata a true value object
 
-### 5C. Fix AiSearchService async methods
-- File: `CHAP2.Application/Services/AiSearchService.cs`
-- Remove `async` keyword from methods that don't await, return `Task.FromResult`
+- Change all public setters to `{ get; init; }`
+- Replace `List<string> Tags` with `IReadOnlyList<string>`
+- Replace mutable Dictionary with `IReadOnlyDictionary`
+- Add `With*` methods for creating modified copies
+- Update `ChorusMetadataJsonConverter`
 
-### 5D. Remove dead code
-- Delete `IServices` + `Services.cs` (placeholder with no real functionality)
-- Delete `IController` interface (only used by removed base class)
-
-### 5E. Verify
+### 5C. Verify
 - `dotnet build` with zero warnings
-- `dotnet test`
+- `dotnet test` - all 62+ tests pass
 
 ---
 
-## Phase 6: Tests + Security
+## Phase Execution Overview
 
-### 6A. Add unit tests for new classes
-Priority: `ChorusSearchEngine`, `SlideConversionManager`, `ChorusApiReadService`, new controllers
+```mermaid
+gantt
+    title Refactoring Phases
+    dateFormat X
+    axisFormat %s
 
-### 6B. Fix CORS configuration
-- Replace `AllowAnyOrigin()` with explicit allowlist
-- Remove manual `Access-Control-Allow-Origin: *` headers
+    section Phase 1
+    One Type Per File + DTO Consolidation    :p1, 0, 30
+    section Phase 2
+    Eliminate Reflection in ChorusApiService  :p2, 30, 50
+    section Phase 3
+    Break Up God Classes (SRP)               :p3, 50, 85
+    section Phase 4
+    Dependency Inversion + IDesign Layering   :p4, 85, 115
+    section Phase 5
+    Composition + Final Cleanup              :p5, 115, 135
+```
 
-### 6C. Add Chorus.MarkAsDeleted domain method
-- Raises `ChorusDeletedEvent` for complete entity lifecycle
+| Phase | Risk | Estimated Files Changed |
+|---|---|---|
+| 1: One Type Per File + DTO Consolidation | Low (structural only) | ~25 |
+| 2: Eliminate Reflection | Medium (API contract) | ~10 |
+| 3: Break Up God Classes | Medium (behavioral splits) | ~25 |
+| 4: Dependency Inversion + IDesign | Medium-High (architecture) | ~20 |
+| 5: Composition + Cleanup | Low (cleanup) | ~15 |
 
 ---
 
-## IDesign Classification Summary (Post-Refactoring)
+## IDesign Classification (Post-Refactoring)
 
 ```mermaid
 graph TB
-    subgraph "Managers (Orchestrate Workflow)"
+    subgraph "Managers"
         M1["ChorusCommandService"]
         M2["ChorusQueryService"]
         M3["SlideConversionManager"]
@@ -478,7 +499,7 @@ graph TB
         M6["ConsoleApplicationService"]
     end
 
-    subgraph "Engines (Stateless Business Logic)"
+    subgraph "Engines"
         E1["ChorusSearchEngine"]
         E2["QueryUnderstandingEngine"]
         E3["SearchExplanationEngine"]
@@ -487,9 +508,10 @@ graph TB
         E6["SlideToChorusService"]
         E7["SemanticTermExpansionEngine"]
         E8["EnumDisplayHelper"]
+        E9["EmbeddingEngine"]
     end
 
-    subgraph "Accessors (Data Access)"
+    subgraph "Accessors"
         A1["DiskChorusRepository"]
         A2["CachedChorusRepository"]
         A3["ChorusApiReadService"]
@@ -498,14 +520,11 @@ graph TB
         A6["VectorWriteAccessor"]
         A7["OllamaService"]
         A8["LangChainSearchService"]
-        A9["ApiClientService"]
-        A10["QdrantService"]
     end
 
-    subgraph "Utilities (Cross-Cutting)"
+    subgraph "Utilities"
         U1["DomainEventDispatcher"]
         U2["ControllerLogger"]
-        U3["Configuration Classes"]
     end
 
     M1 --> E5
@@ -535,6 +554,7 @@ graph TB
     style E6 fill:#ffa64a,color:#fff
     style E7 fill:#ffa64a,color:#fff
     style E8 fill:#ffa64a,color:#fff
+    style E9 fill:#ffa64a,color:#fff
     style A1 fill:#7a4aff,color:#fff
     style A2 fill:#7a4aff,color:#fff
     style A3 fill:#7a4aff,color:#fff
@@ -543,57 +563,23 @@ graph TB
     style A6 fill:#7a4aff,color:#fff
     style A7 fill:#7a4aff,color:#fff
     style A8 fill:#7a4aff,color:#fff
-    style A9 fill:#7a4aff,color:#fff
-    style A10 fill:#7a4aff,color:#fff
     style U1 fill:#888,color:#fff
     style U2 fill:#888,color:#fff
-    style U3 fill:#888,color:#fff
 ```
-
----
-
-## Phase Execution Overview
-
-```mermaid
-gantt
-    title Refactoring Phases (Sequential, Independently Shippable)
-    dateFormat X
-    axisFormat %s
-
-    section Phase 1
-    One Type Per File + DTO Consolidation    :p1, 0, 40
-    section Phase 2
-    Domain Immutability + Eliminate Reflection :p2, 40, 55
-    section Phase 3
-    Break Up God Classes (SRP)               :p3, 55, 85
-    section Phase 4
-    Dependency Direction + IDesign Layering   :p4, 85, 110
-    section Phase 5
-    Composition Over Inheritance + Cleanup    :p5, 110, 125
-    section Phase 6
-    Tests + Security                         :p6, 125, 145
-```
-
-| Phase | Risk | Estimated Files |
-|---|---|---|
-| 1: One Type Per File + DTO Consolidation | Low (structural only) | ~40 |
-| 2: Domain Immutability + Eliminate Reflection | Medium (API contract) | ~15 |
-| 3: Break Up God Classes | Medium (behavioral splits) | ~30 |
-| 4: Dependency Direction + IDesign Layering | Medium-High (architecture) | ~25 |
-| 5: Composition + SOLID Cleanup | Low (cleanup) | ~15 |
-| 6: Tests + Security | Low (additive) | ~20 |
 
 ---
 
 ## Critical Files
 
-| File | Lines | Issue | Phase |
+| File | Lines | Violations | Phase |
 |---|---|---|---|
-| `CHAP2.WebPortal/Controllers/HomeController.cs` | 1047 | 10+ inline types, 8 deps, God class | 1A, 3A |
-| `CHAP2.WebPortal/Services/ChorusApiService.cs` | 673 | 4x reflection blocks, returns domain entities | 2C, 2D, 3C |
-| `CHAP2.Application/Services/ChorusSearchService.cs` | 453 | Mixed cache+search+AI+ranking | 3B |
-| `CHAP2.WebPortal/Services/IntelligentSearchService.cs` | 505 | Mixed orchestration+prompt+analysis | 3D |
-| `CHAP2.Domain/Entities/Chorus.cs` | ~180 | Reconstitute needs public visibility | 2B |
-| `CHAP2.Chorus.Api/Controllers/SlideController.cs` | ~130 | Direct repo access | 4A |
-| `CHAP2.Application/Services/DomainEventDispatcher.cs` | 72 | Service locator anti-pattern | 4B |
-| `CHAP2.Chorus.Api/Controllers/ChapControllerAbstractBase.cs` | 26 | Unnecessary inheritance | 5A |
+| `WebPortal/Controllers/HomeController.cs` | 1046 | 10 inline types, 9 deps, God class | 1A, 3A |
+| `WebPortal/Services/ChorusApiService.cs` | 672 | 34 reflection calls, returns domain entities | 2B, 2C, 3C |
+| `WebPortal/Services/IntelligentSearchService.cs` | 505 | Mixed orchestration+prompt+analysis | 3D |
+| `Application/Services/ChorusSearchService.cs` | 456 | Mixed cache+search+AI+ranking | 3B |
+| `WebPortal/Services/TraditionalSearchWithAiService.cs` | 288 | 4 types in one file | 1B |
+| `Chorus.Api/Controllers/SlideController.cs` | ~130 | Direct repo injection | 4A |
+| `Application/Services/DomainEventDispatcher.cs` | 72 | Service locator anti-pattern | 4B |
+| `Application/Interfaces/IChorusApplicationService.cs` | ~20 | Fat interface + ViewModel dependency | 4C |
+| `Chorus.Api/Controllers/ChapControllerAbstractBase.cs` | 26 | Unnecessary inheritance | 5A |
+| `Domain/ValueObjects/ChorusMetadata.cs` | ~60 | Mutable value object | 5B |

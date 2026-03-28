@@ -253,14 +253,25 @@ class SearchUI {
     setupRowClickHandlers() {
         const rows = this.elements.resultsTableBody.querySelectorAll('.result-row');
         rows.forEach(row => {
+            // A11Y-002: Keyboard accessibility for table rows
+            row.setAttribute('tabindex', '0');
+            row.setAttribute('role', 'button');
+
             row.addEventListener('click', (e) => {
                 // Don't trigger if clicking on action buttons
                 if (e.target.closest('.btn-action')) {
                     return;
                 }
-                
+
                 const chorusId = row.dataset.id;
                 viewChorus(chorusId);
+            });
+
+            row.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    row.click();
+                }
             });
         });
     }

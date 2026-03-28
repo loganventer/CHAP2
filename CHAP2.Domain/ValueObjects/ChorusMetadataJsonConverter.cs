@@ -12,13 +12,25 @@ public class ChorusMetadataJsonConverter : JsonConverter<ChorusMetadata>
             throw new JsonException();
         }
 
-        var metadata = new ChorusMetadata();
+        string? composer = null;
+        string? arranger = null;
+        string? copyright = null;
+        string? language = null;
+        string? genre = null;
+        int? tempo = null;
+        string? difficulty = null;
+        var tags = new List<string>();
+        var customProperties = new Dictionary<string, string>();
 
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndObject)
             {
-                return metadata;
+                return new ChorusMetadata(composer, arranger, copyright, language, genre, tempo, difficulty)
+                {
+                    Tags = tags,
+                    CustomProperties = customProperties
+                };
             }
 
             if (reader.TokenType != JsonTokenType.PropertyName)
@@ -32,26 +44,26 @@ public class ChorusMetadataJsonConverter : JsonConverter<ChorusMetadata>
             switch (propertyName?.ToLowerInvariant())
             {
                 case "composer":
-                    metadata.Composer = reader.GetString();
+                    composer = reader.GetString();
                     break;
                 case "arranger":
-                    metadata.Arranger = reader.GetString();
+                    arranger = reader.GetString();
                     break;
                 case "copyright":
-                    metadata.Copyright = reader.GetString();
+                    copyright = reader.GetString();
                     break;
                 case "language":
-                    metadata.Language = reader.GetString();
+                    language = reader.GetString();
                     break;
                 case "genre":
-                    metadata.Genre = reader.GetString();
+                    genre = reader.GetString();
                     break;
                 case "tempo":
                     if (reader.TokenType == JsonTokenType.Number)
-                        metadata.Tempo = reader.GetInt32();
+                        tempo = reader.GetInt32();
                     break;
                 case "difficulty":
-                    metadata.Difficulty = reader.GetString();
+                    difficulty = reader.GetString();
                     break;
                 case "tags":
                     if (reader.TokenType == JsonTokenType.StartArray)
@@ -60,7 +72,7 @@ public class ChorusMetadataJsonConverter : JsonConverter<ChorusMetadata>
                         {
                             if (reader.TokenType == JsonTokenType.String)
                             {
-                                metadata.Tags.Add(reader.GetString() ?? string.Empty);
+                                tags.Add(reader.GetString() ?? string.Empty);
                             }
                         }
                     }
@@ -76,7 +88,7 @@ public class ChorusMetadataJsonConverter : JsonConverter<ChorusMetadata>
                                 reader.Read();
                                 if (reader.TokenType == JsonTokenType.String)
                                 {
-                                    metadata.CustomProperties[key ?? string.Empty] = reader.GetString() ?? string.Empty;
+                                    customProperties[key ?? string.Empty] = reader.GetString() ?? string.Empty;
                                 }
                             }
                         }

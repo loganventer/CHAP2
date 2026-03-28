@@ -8,6 +8,7 @@ using CHAP2.Shared.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Note: No authentication configured - this API is designed for internal/local network use only
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();

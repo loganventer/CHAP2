@@ -1,6 +1,7 @@
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Domain.Enums;
+using CHAP2.Domain.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -80,7 +81,7 @@ public class ChorusCommandServiceTests
         var act = () => _sut.UpdateChorusAsync(id, "Name", "Text", MusicalKey.C, ChorusType.Praise, TimeSignature.FourFour);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<ChorusNotFoundException>();
     }
 
     [Test]
@@ -109,7 +110,7 @@ public class ChorusCommandServiceTests
         var act = () => _sut.DeleteChorusAsync(id);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<ChorusNotFoundException>();
         await _repository.DidNotReceive().DeleteAsync(id, Arg.Any<CancellationToken>());
     }
 }

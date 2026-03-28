@@ -141,32 +141,33 @@ class SetlistManager {
         if (setlistEmpty) setlistEmpty.style.display = 'none';
         if (setlistItems) setlistItems.style.display = 'block';
 
-        // Build setlist items HTML
+        // Build setlist items HTML (escape user-derived values to prevent XSS)
+        const esc = window.escapeHtml || utils.escapeHtml;
         const html = this.setlist.map((chorus, index) => `
-            <div class="setlist-item" data-chorus-id="${chorus.id}" draggable="true">
+            <div class="setlist-item" data-chorus-id="${esc(chorus.id)}" draggable="true">
                 <div class="setlist-item-drag">
                     <i class="fas fa-grip-vertical"></i>
                 </div>
                 <div class="setlist-item-number">${index + 1}</div>
                 <div class="setlist-item-content">
-                    <div class="setlist-item-title">${chorus.name}</div>
+                    <div class="setlist-item-title">${esc(chorus.name)}</div>
                     <div class="setlist-item-meta">
-                        ${chorus.key ? `<span><i class="fas fa-music"></i> ${chorus.key}</span>` : ''}
-                        ${chorus.type ? `<span><i class="fas fa-tag"></i> ${chorus.type}</span>` : ''}
-                        ${chorus.timeSignature ? `<span><i class="fas fa-clock"></i> ${chorus.timeSignature}</span>` : ''}
+                        ${chorus.key ? `<span><i class="fas fa-music"></i> ${esc(String(chorus.key))}</span>` : ''}
+                        ${chorus.type ? `<span><i class="fas fa-tag"></i> ${esc(String(chorus.type))}</span>` : ''}
+                        ${chorus.timeSignature ? `<span><i class="fas fa-clock"></i> ${esc(String(chorus.timeSignature))}</span>` : ''}
                     </div>
                 </div>
                 <div class="setlist-item-actions">
-                    <button class="btn-icon" onclick="window.setlistManager.moveUp('${chorus.id}')" title="Move up" ${index === 0 ? 'disabled' : ''}>
+                    <button class="btn-icon" onclick="window.setlistManager.moveUp('${esc(chorus.id)}')" title="Move up" ${index === 0 ? 'disabled' : ''}>
                         <i class="fas fa-arrow-up"></i>
                     </button>
-                    <button class="btn-icon" onclick="window.setlistManager.moveDown('${chorus.id}')" title="Move down" ${index === this.setlist.length - 1 ? 'disabled' : ''}>
+                    <button class="btn-icon" onclick="window.setlistManager.moveDown('${esc(chorus.id)}')" title="Move down" ${index === this.setlist.length - 1 ? 'disabled' : ''}>
                         <i class="fas fa-arrow-down"></i>
                     </button>
-                    <button class="btn-icon" onclick="viewChorus('${chorus.id}')" title="View">
+                    <button class="btn-icon" onclick="viewChorus('${esc(chorus.id)}')" title="View">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn-icon btn-danger" onclick="window.setlistManager.removeChorus('${chorus.id}')" title="Remove">
+                    <button class="btn-icon btn-danger" onclick="window.setlistManager.removeChorus('${esc(chorus.id)}')" title="Remove">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>

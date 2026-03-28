@@ -1,6 +1,7 @@
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.Enums;
+using CHAP2.Domain.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Application.Services
@@ -55,7 +56,7 @@ namespace CHAP2.Application.Services
             if (existingChorus == null)
             {
                 _logger.LogWarning("Chorus with ID {Id} not found for update", id);
-                throw new InvalidOperationException($"Chorus with ID {id} not found");
+                throw new ChorusNotFoundException(id);
             }
 
             existingChorus.Update(name, chorusText, key, type, timeSignature);
@@ -85,7 +86,7 @@ namespace CHAP2.Application.Services
             if (existingChorus == null)
             {
                 _logger.LogWarning("Chorus with ID {Id} not found for deletion", id);
-                throw new InvalidOperationException($"Chorus with ID {id} not found");
+                throw new ChorusNotFoundException(id);
             }
 
             await _chorusRepository.DeleteAsync(id, cancellationToken);

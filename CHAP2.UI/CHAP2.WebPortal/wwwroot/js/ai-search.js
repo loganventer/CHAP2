@@ -219,7 +219,10 @@ class AiSearch {
             statusText.style.opacity = '0';
             
             setTimeout(() => {
-                statusText.innerHTML = `<h3>${messageWithTimestamp}</h3>`;
+                const h3 = document.createElement('h3');
+                h3.textContent = messageWithTimestamp;
+                statusText.innerHTML = '';
+                statusText.appendChild(h3);
                 statusText.style.opacity = '1';
                 
                 // Add subtle animation for thinking state
@@ -279,7 +282,10 @@ class AiSearch {
             setTimeout(() => {
                 // Update the message
                 if (typeof message === 'string') {
-                    statusText.innerHTML = `<h3>${message}</h3>`;
+                    const h3 = document.createElement('h3');
+                    h3.textContent = message;
+                    statusText.innerHTML = '';
+                    statusText.appendChild(h3);
                 } else {
                     statusText.textContent = message;
                 }
@@ -483,19 +489,20 @@ class AiSearch {
         
         debug('AI Search: Extracted metadata:', { chorusName, chorusKey, chorusType, chorusTimeSignature });
         
+        const esc = window.escapeHtml;
         row.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;">
                     <h5 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.1rem;">
-                        ${index + 1}. ${chorusName}
+                        ${index + 1}. ${esc(chorusName)}
                     </h5>
                     <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666;">
-                        <span><i class="fas fa-music"></i> ${getKeyDisplay(chorusKey)}</span>
-                        <span><i class="fas fa-tag"></i> ${getTypeDisplay(chorusType)}</span>
-                        <span><i class="fas fa-clock"></i> ${getTimeSignatureDisplay(chorusTimeSignature)}</span>
+                        <span><i class="fas fa-music"></i> ${esc(getKeyDisplay(chorusKey))}</span>
+                        <span><i class="fas fa-tag"></i> ${esc(getTypeDisplay(chorusType))}</span>
+                        <span><i class="fas fa-clock"></i> ${esc(getTimeSignatureDisplay(chorusTimeSignature))}</span>
                     </div>
                     <div style="margin-top: 0.5rem; font-style: italic; color: #666; font-size: 0.85rem; line-height: 1.3;">
-                        ${result.explanation || ''}
+                        ${esc(result.explanation || '')}
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem; margin-left: 1rem;">
@@ -508,7 +515,7 @@ class AiSearch {
                     <button class="action-btn" onclick="copyChorusText('${result.id}')" data-tooltip="Copy Lyrics" style="padding: 0.5rem; border: none; background: #ffc107; color: #212529; border-radius: 4px; cursor: pointer;">
                         <i class="fas fa-copy"></i>
                     </button>
-                    <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${(chorusName).replace(/'/g, "\\'")}')" data-tooltip="Delete Chorus" style="padding: 0.5rem; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
+                    <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${esc(chorusName).replace(/'/g, "&#39;")}')" data-tooltip="Delete Chorus" style="padding: 0.5rem; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -563,9 +570,10 @@ class AiSearch {
         const terms = queryUnderstanding.split(',').map(term => term.trim());
         debug('AI Search: Parsed terms:', terms);
         
-        // Format the terms with better styling
-        const formattedTerms = terms.map(term => 
-            `<span>${term}</span>`
+        // Format the terms with better styling (escape user data)
+        const esc = window.escapeHtml;
+        const formattedTerms = terms.map(term =>
+            `<span>${esc(term)}</span>`
         ).join('');
         
         understandingSection.innerHTML = `
@@ -643,13 +651,13 @@ class AiSearch {
                     explanationElement.style.borderRadius = '4px';
                     
                     setTimeout(() => {
-                        explanationElement.innerHTML = results[index].explanation;
+                        explanationElement.textContent = results[index].explanation;
                         explanationElement.style.background = 'transparent';
                     }, 200);
                 }
             }
         });
-        
+
         // Update status to show explanations are complete
         this.updateAiStatus('✅ Explanations added to results!', 'success');
     }
@@ -761,16 +769,18 @@ class AiSearch {
             return times[numValue] || 'Unknown';
         };
         
+        const esc = window.escapeHtml;
+        const chorusName = result.name || result.Name || 'Untitled Chorus';
         row.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;">
                     <h5 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.1rem;">
-                        ${index + 1}. ${result.name || result.Name || 'Untitled Chorus'}
+                        ${index + 1}. ${esc(chorusName)}
                     </h5>
                     <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666;">
-                        <span><i class="fas fa-music"></i> ${getKeyDisplay(result.key || result.Key)}</span>
-                        <span><i class="fas fa-tag"></i> ${getTypeDisplay(result.type || result.Type)}</span>
-                        <span><i class="fas fa-clock"></i> ${getTimeSignatureDisplay(result.timeSignature || result.TimeSignature)}</span>
+                        <span><i class="fas fa-music"></i> ${esc(getKeyDisplay(result.key || result.Key))}</span>
+                        <span><i class="fas fa-tag"></i> ${esc(getTypeDisplay(result.type || result.Type))}</span>
+                        <span><i class="fas fa-clock"></i> ${esc(getTimeSignatureDisplay(result.timeSignature || result.TimeSignature))}</span>
                     </div>
                     <div style="margin-top: 0.5rem; font-style: italic; color: #999; font-size: 0.85rem; line-height: 1.3;">
                         <i class="fas fa-spinner fa-spin"></i> Generating explanation...
@@ -786,7 +796,7 @@ class AiSearch {
                     <button class="action-btn" onclick="copyChorusText('${result.id || result.Id}')" data-tooltip="Copy Lyrics" style="padding: 0.5rem; border: none; background: #ffc107; color: #212529; border-radius: 4px; cursor: pointer;">
                         <i class="fas fa-copy"></i>
                     </button>
-                    <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id || result.Id}', '${(result.name || result.Name || '').replace(/'/g, "\\'")}')" data-tooltip="Delete Chorus" style="padding: 0.5rem; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
+                    <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id || result.Id}', '${esc(chorusName).replace(/'/g, "&#39;")}')" data-tooltip="Delete Chorus" style="padding: 0.5rem; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -836,7 +846,7 @@ class AiSearch {
                 explanationElement.style.color = '#666';
                 
                 setTimeout(() => {
-                    explanationElement.innerHTML = explanation;
+                    explanationElement.textContent = explanation;
                     explanationElement.style.background = 'transparent';
                 }, 200);
             }
@@ -857,7 +867,7 @@ class AiSearch {
                 explanationElement.style.borderRadius = '4px';
                 
                 setTimeout(() => {
-                    explanationElement.innerHTML = explanation;
+                    explanationElement.textContent = explanation;
                     explanationElement.style.background = 'transparent';
                 }, 100);
             }
@@ -1285,7 +1295,7 @@ class AiSearch {
     displayAiAnalysis(analysis) {
         if (!this.aiAnalysisContainer || !this.analysisContent) return;
 
-        this.analysisContent.innerHTML = analysis;
+        this.analysisContent.textContent = analysis;
         this.aiAnalysisContainer.style.display = 'block';
         
         // Add sparkle effect
