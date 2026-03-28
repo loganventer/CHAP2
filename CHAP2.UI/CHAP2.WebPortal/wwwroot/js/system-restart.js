@@ -177,12 +177,15 @@ class SystemRestart {
                         <h5 class="modal-title">✅ Restart Initiated</h5>
                     </div>
                     <div class="modal-body">
-                        <p>${message}</p>
+                        <p id="restart-success-message"></p>
                         <p>The portal will reload automatically in a few seconds.</p>
                     </div>
                 </div>
             </div>
         `;
+
+        // Safely set API response text
+        dialog.querySelector('#restart-success-message').textContent = message;
 
         document.body.appendChild(dialog);
 
@@ -211,7 +214,7 @@ class SystemRestart {
                         <h5 class="modal-title">❌ Restart Failed</h5>
                     </div>
                     <div class="modal-body">
-                        <p>${error}</p>
+                        <p id="restart-error-message"></p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
@@ -219,6 +222,9 @@ class SystemRestart {
                 </div>
             </div>
         `;
+
+        // Safely set API error text
+        dialog.querySelector('#restart-error-message').textContent = error;
 
         document.body.appendChild(dialog);
     }

@@ -316,18 +316,28 @@ function showNotification(message, type = 'info', duration = 5000) {
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-message">${message}</span>
-            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
-    
+
+    const content = document.createElement('div');
+    content.className = 'notification-content';
+
+    const messageSpan = document.createElement('span');
+    messageSpan.className = 'notification-message';
+    messageSpan.textContent = message;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'notification-close';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.addEventListener('click', function() {
+        notification.remove();
+    });
+
+    content.appendChild(messageSpan);
+    content.appendChild(closeBtn);
+    notification.appendChild(content);
+
     // Add to page
     document.body.appendChild(notification);
-    
+
     // Auto-remove after duration
     setTimeout(() => {
         if (notification.parentElement) {

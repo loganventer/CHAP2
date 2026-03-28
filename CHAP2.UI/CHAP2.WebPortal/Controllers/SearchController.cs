@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Enums;
+using CHAP2.Domain.Constants;
 using CHAP2.WebPortal.DTOs;
 using CHAP2.WebPortal.Services;
 
@@ -132,17 +133,10 @@ public class SearchController : ControllerBase
     {
         return scope?.ToLowerInvariant() switch
         {
-            "name" => SearchScope.Name,
-            "text" => SearchScope.Text,
-            "key" => SearchScope.Key,
+            SearchScopeConstants.Name => SearchScope.Name,
+            SearchScopeConstants.Text => SearchScope.Text,
+            SearchScopeConstants.Key => SearchScope.Key,
             _ => SearchScope.All
         };
     }
-}
-
-public record SearchApiRequest(
-    string Query,
-    string? SearchMode = "Contains",
-    string? SearchScope = "All",
-    int? MaxResults = 50
-); 
+} 

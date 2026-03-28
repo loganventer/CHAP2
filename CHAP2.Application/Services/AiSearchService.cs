@@ -12,7 +12,7 @@ public class AiSearchService : IAiSearchService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<List<string>> GenerateSearchTermsAsync(string query, CancellationToken cancellationToken = default)
+    public Task<List<string>> GenerateSearchTermsAsync(string query, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Generating AI search terms for query: {Query}", query);
         
@@ -113,10 +113,10 @@ public class AiSearchService : IAiSearchService
         
         _logger.LogInformation("Generated {Count} search terms: {Terms}", distinctTerms.Count, string.Join(", ", distinctTerms));
         
-        return distinctTerms;
+        return Task.FromResult(distinctTerms);
     }
 
-    public async Task<string> AnalyzeSearchContextAsync(string query, List<string> searchTerms, CancellationToken cancellationToken = default)
+    public Task<string> AnalyzeSearchContextAsync(string query, List<string> searchTerms, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Analyzing search context for query: {Query} with {Count} terms", query, searchTerms.Count);
         
@@ -161,6 +161,6 @@ public class AiSearchService : IAiSearchService
         var context = string.Join("; ", analysis);
         _logger.LogInformation("Search context analysis: {Context}", context);
         
-        return context;
+        return Task.FromResult(context);
     }
 } 

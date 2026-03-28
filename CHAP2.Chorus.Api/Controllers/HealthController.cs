@@ -1,4 +1,3 @@
-using CHAP2.Chorus.Api.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 

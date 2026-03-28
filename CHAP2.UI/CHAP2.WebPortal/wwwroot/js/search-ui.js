@@ -321,9 +321,13 @@ class SearchUI {
     // Utility methods
     highlightSearchTerm(text, searchTerm) {
         if (!searchTerm || !text) return text;
-        
-        const regex = new RegExp(`(${searchTerm})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+
+        // Escape regex special characters to prevent ReDoS
+        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Escape HTML entities in the text first to prevent XSS
+        const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const regex = new RegExp(`(${escapedTerm})`, 'gi');
+        return safeText.replace(regex, '<mark>$1</mark>');
     }
 
     truncateText(text, maxLength) {
@@ -395,7 +399,11 @@ class SearchUI {
         }
         
         if (Array.isArray(terms)) {
-            termsElement.innerHTML = `<strong>AI Search Terms:</strong> ${terms.join(', ')}`;
+            termsElement.textContent = '';
+            const strong = document.createElement('strong');
+            strong.textContent = 'AI Search Terms:';
+            termsElement.appendChild(strong);
+            termsElement.appendChild(document.createTextNode(' ' + terms.join(', ')));
             termsElement.style.display = 'block';
         }
     }

@@ -351,10 +351,15 @@ class SetlistManager {
         // Create notification element
         const notification = document.createElement('div');
         notification.className = `setlist-notification setlist-notification-${type}`;
-        notification.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i>
-            <span>${message}</span>
-        `;
+
+        const icon = document.createElement('i');
+        icon.className = `fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'times-circle' : 'info-circle'}`;
+
+        const span = document.createElement('span');
+        span.textContent = message;
+
+        notification.appendChild(icon);
+        notification.appendChild(span);
 
         notification.style.cssText = `
             position: fixed;

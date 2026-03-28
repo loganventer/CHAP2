@@ -120,17 +120,10 @@ function addKeyboardShortcuts() {
             printChorus();
         }
         
-        // Ctrl/Cmd + C to copy lyrics
-        if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-            event.preventDefault();
-            copyLyrics();
-        }
-        
-        // Escape to close window
-        if (event.key === 'Escape') {
-            window.close();
-        }
-        
+        // Note: Ctrl/Cmd+C intentionally not overridden to preserve native copy behavior
+
+        // Note: Escape key intentionally not overriding window.close() to preserve standard browser behavior
+
         // F11 for fullscreen
         if (event.key === 'F11') {
             event.preventDefault();
@@ -228,11 +221,15 @@ function highlightSearchTerm() {
     const searchTerm = urlParams.get('highlight');
     
     if (searchTerm) {
+        // Escape regex special characters to prevent ReDoS
+        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const lyricsLines = document.querySelectorAll('.lyrics-line');
         lyricsLines.forEach(line => {
             const text = line.textContent;
-            const highlightedText = text.replace(
-                new RegExp(searchTerm, 'gi'),
+            // Escape HTML entities first, then apply highlight
+            const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const highlightedText = safeText.replace(
+                new RegExp(escapedTerm, 'gi'),
                 match => `<mark>${match}</mark>`
             );
             line.innerHTML = highlightedText;

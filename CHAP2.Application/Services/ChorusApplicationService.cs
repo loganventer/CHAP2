@@ -17,9 +17,9 @@ public class ChorusApplicationService : IChorusApplicationService
         IChorusQueryService chorusQueryService,
         ILogger<ChorusApplicationService> logger)
     {
-        _chorusCommandService = chorusCommandService;
-        _chorusQueryService = chorusQueryService;
-        _logger = logger;
+        _chorusCommandService = chorusCommandService ?? throw new ArgumentNullException(nameof(chorusCommandService));
+        _chorusQueryService = chorusQueryService ?? throw new ArgumentNullException(nameof(chorusQueryService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<bool> CreateChorusAsync(ChorusCreateViewModel model)
@@ -75,8 +75,14 @@ public class ChorusApplicationService : IChorusApplicationService
     {
         try
         {
+            if (!Guid.TryParse(id, out var guidId))
+            {
+                _logger.LogWarning("Invalid GUID format for chorus ID: {Id}", id);
+                return false;
+            }
+
             _logger.LogInformation("Deleting chorus with ID: {Id}", id);
-            await _chorusCommandService.DeleteChorusAsync(Guid.Parse(id));
+            await _chorusCommandService.DeleteChorusAsync(guidId);
             return true;
         }
         catch (Exception ex)
@@ -90,7 +96,13 @@ public class ChorusApplicationService : IChorusApplicationService
     {
         try
         {
-            return await _chorusQueryService.GetChorusByIdAsync(Guid.Parse(id));
+            if (!Guid.TryParse(id, out var guidId))
+            {
+                _logger.LogWarning("Invalid GUID format for chorus ID: {Id}", id);
+                return null;
+            }
+
+            return await _chorusQueryService.GetChorusByIdAsync(guidId);
         }
         catch (Exception ex)
         {
@@ -103,8 +115,18 @@ public class ChorusApplicationService : IChorusApplicationService
     {
         try
         {
-            var searchModeEnum = Enum.Parse<SearchMode>(searchMode);
-            var searchScopeEnum = Enum.Parse<SearchScope>(searchIn);
+            if (!Enum.TryParse<SearchMode>(searchMode, out var searchModeEnum))
+            {
+                _logger.LogWarning("Invalid search mode: {SearchMode}, defaulting to Contains", searchMode);
+                searchModeEnum = SearchMode.Contains;
+            }
+
+            if (!Enum.TryParse<SearchScope>(searchIn, out var searchScopeEnum))
+            {
+                _logger.LogWarning("Invalid search scope: {SearchScope}, defaulting to All", searchIn);
+                searchScopeEnum = SearchScope.All;
+            }
+
             return await _chorusQueryService.SearchChorusesAsync(query, searchModeEnum, searchScopeEnum);
         }
         catch (Exception ex)

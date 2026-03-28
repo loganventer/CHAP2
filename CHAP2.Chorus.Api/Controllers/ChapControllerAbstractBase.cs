@@ -1,10 +1,9 @@
-using CHAP2.Chorus.Api.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Chorus.Api.Controllers;
 
-public abstract class ChapControllerAbstractBase : ControllerBase, IController
+public abstract class ChapControllerAbstractBase : ControllerBase
 {
     protected readonly ILogger _logger;
     

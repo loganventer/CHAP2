@@ -46,8 +46,11 @@ builder.Services.AddScoped<IIntelligentSearchService, IntelligentSearchService>(
 builder.Services.AddScoped<IChorusRepository>(provider =>
 {
     var logger = provider.GetRequiredService<ILogger<DiskChorusRepository>>();
-    // Point to the API's data directory instead of WebPortal's empty data directory
-    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "CHAP2.Chorus.Api", "data", "chorus");
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var chorusDataPath = configuration["ChorusDataPath"] ?? "data/chorus";
+    var folderPath = Path.IsPathRooted(chorusDataPath)
+        ? chorusDataPath
+        : Path.Combine(Directory.GetCurrentDirectory(), chorusDataPath);
     return new DiskChorusRepository(folderPath, logger);
 });
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
@@ -72,11 +75,19 @@ builder.Services.AddHttpClient<ILangChainSearchService, LangChainSearchService>(
 // Configure CORS
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? (builder.Environment.IsDevelopment()
+            ? new[] { "http://localhost:5000", "http://localhost:5001", "http://localhost:5173" }
+            : Array.Empty<string>());
+
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
     });
 });
 

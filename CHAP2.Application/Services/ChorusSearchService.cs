@@ -26,10 +26,10 @@ public class ChorusSearchService : ISearchService
         IMemoryCache cache,
         IAiSearchService aiSearchService)
     {
-        _chorusRepository = chorusRepository;
-        _logger = logger;
-        _cache = cache;
-        _aiSearchService = aiSearchService;
+        _chorusRepository = chorusRepository ?? throw new ArgumentNullException(nameof(chorusRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _aiSearchService = aiSearchService ?? throw new ArgumentNullException(nameof(aiSearchService));
     }
 
     public async Task<IReadOnlyList<Chorus>> SearchByNameAsync(string searchTerm, SearchMode searchMode = SearchMode.Contains, CancellationToken cancellationToken = default)
@@ -442,7 +442,11 @@ public class ChorusSearchService : ISearchService
     {
         try
         {
-            return Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase);
+            return Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
         }
         catch (ArgumentException)
         {
