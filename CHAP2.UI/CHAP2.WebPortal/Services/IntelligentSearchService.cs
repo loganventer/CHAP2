@@ -4,22 +4,6 @@ using Microsoft.Extensions.Logging;
 
 namespace CHAP2.WebPortal.Services;
 
-public interface IIntelligentSearchService
-{
-    Task<IntelligentSearchResult> SearchWithIntelligenceAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
-    IAsyncEnumerable<string> SearchWithIntelligenceStreamingAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
-    Task<List<ChorusSearchResult>> SearchAsync(string query, int maxResults = 10, CancellationToken cancellationToken = default);
-    Task<string> GenerateAnalysisAsync(string query, List<ChorusSearchResult> results, CancellationToken cancellationToken = default);
-}
-
-public class IntelligentSearchResult
-{
-    public List<ChorusSearchResult> SearchResults { get; set; } = new();
-    public string AiAnalysis { get; set; } = string.Empty;
-    public bool HasAiAnalysis { get; set; } = false;
-    public string QueryUnderstanding { get; set; } = string.Empty;
-}
-
 public class IntelligentSearchService : IIntelligentSearchService
 {
     private readonly ILangChainSearchService _langChainSearchService;
@@ -50,15 +34,15 @@ public class IntelligentSearchService : IIntelligentSearchService
 
             // Use LangChain service for intelligent search
             var result = await _langChainSearchService.SearchWithIntelligenceAsync(query, maxResults, cancellationToken);
-            
+
             _logger.LogInformation("LangChain search returned {Count} results", result.SearchResults.Count);
-            
+
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during intelligent search for query: {Query}", query);
-            
+
             // Fallback to original implementation if LangChain fails
             try
             {
@@ -110,12 +94,12 @@ public class IntelligentSearchService : IIntelligentSearchService
         try
         {
             _logger.LogInformation("Performing basic search for query: {Query}", query);
-            
+
             // Use LangChain service for basic search
             var results = await _langChainSearchService.SearchAsync(query, maxResults, cancellationToken);
-            
+
             _logger.LogInformation("Basic search returned {Count} results", results.Count);
-            
+
             return results;
         }
         catch (Exception ex)
@@ -131,10 +115,10 @@ public class IntelligentSearchService : IIntelligentSearchService
 
         // Try LangChain service first
         var langChainEnumerator = _langChainSearchService.SearchWithIntelligenceStreamingAsync(query, maxResults, cancellationToken).GetAsyncEnumerator();
-        
+
         var langChainResults = new List<string>();
         var langChainSuccess = false;
-        
+
         try
         {
             while (await langChainEnumerator.MoveNextAsync())
@@ -183,7 +167,7 @@ public class IntelligentSearchService : IIntelligentSearchService
         // Step 1: Use LLM to understand the query (stream immediately when ready)
         _logger.LogInformation("Step 1: Generating query understanding...");
         var queryUnderstandingTask = GenerateQueryUnderstandingAsync(query, cancellationToken);
-        
+
         // Wait for query understanding and stream it immediately
         var queryUnderstanding = await queryUnderstandingTask;
         _logger.LogInformation("Query understanding generated: {Understanding}", queryUnderstanding);
@@ -191,11 +175,11 @@ public class IntelligentSearchService : IIntelligentSearchService
 
         // Step 2: Search vector database (stream results immediately when ready)
         _logger.LogInformation("Step 2: Searching vector database...");
-        
+
         List<ChorusSearchResult> searchResults;
         bool vectorSearchFailed = false;
         string vectorSearchError = "";
-        
+
         try
         {
             searchResults = await _vectorSearchService.SearchSimilarAsync(queryUnderstanding, maxResults, cancellationToken);
@@ -230,7 +214,7 @@ public class IntelligentSearchService : IIntelligentSearchService
         // Step 3: Fetch detailed results (stream as they become available)
         _logger.LogInformation("Step 3: Fetching detailed results for {Count} search results", searchResults.Count);
         var detailedResults = new List<ChorusSearchResult>();
-        
+
         // Fetch details in parallel and stream as they become available
         var detailTasks = searchResults.Select(async (result, index) =>
         {
@@ -249,23 +233,23 @@ public class IntelligentSearchService : IIntelligentSearchService
         {
             var completedTask = await Task.WhenAny(detailTasks);
             detailTasks.Remove(completedTask);
-            
+
             var result = await completedTask;
             if (result != null)
             {
                 detailedResults.Add(result.Result);
                 // Stream individual result immediately
-                yield return System.Text.Json.JsonSerializer.Serialize(new { 
-                    type = "searchResult", 
-                    index = result.Index, 
-                    searchResult = result.Result 
+                yield return System.Text.Json.JsonSerializer.Serialize(new {
+                    type = "searchResult",
+                    index = result.Index,
+                    searchResult = result.Result
                 });
             }
         }
-        
+
         // Also send the complete results array for compatibility
         yield return System.Text.Json.JsonSerializer.Serialize(new { type = "searchResults", searchResults = detailedResults });
-        
+
         if (!detailedResults.Any())
         {
             _logger.LogInformation("No detailed results found, sending error message");
@@ -275,7 +259,7 @@ public class IntelligentSearchService : IIntelligentSearchService
 
         // Step 4: Generate explanations for each result in parallel (stream as they complete)
         _logger.LogInformation("Step 4: Generating explanations for {Count} results", detailedResults.Count);
-        
+
         // Start all explanation tasks in parallel
         var explanationTasks = detailedResults.Select(async (result, index) =>
         {
@@ -289,12 +273,12 @@ public class IntelligentSearchService : IIntelligentSearchService
         {
             var completedTask = await Task.WhenAny(explanationTasks);
             explanationTasks.Remove(completedTask);
-            
+
             var explanationResult = await completedTask;
-            yield return System.Text.Json.JsonSerializer.Serialize(new { 
-                type = "chorusReason", 
-                chorusId = explanationResult.ChorusId, 
-                reason = explanationResult.Explanation 
+            yield return System.Text.Json.JsonSerializer.Serialize(new {
+                type = "chorusReason",
+                chorusId = explanationResult.ChorusId,
+                reason = explanationResult.Explanation
             });
         }
 
@@ -337,7 +321,7 @@ CRITICAL: ONLY SINGLE WORDS
 - No compound words, no phrases, no multi-word expressions
 - Examples: ""Jesus"" not ""Jesus Christ"", ""genade"" not ""God se genade""
 
-IMPORTANT: 
+IMPORTANT:
 - Focus on the user's SPECIFIC query, not general religious terms
 - Generate single words that will find choruses that actually match what the user is looking for
 - Avoid generic terms that would return irrelevant results
@@ -348,7 +332,7 @@ Generate focused single-word search terms that will find the most relevant choru
 
         var response = await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);
         var searchTerms = response.Trim();
-        
+
         // Parse the response and take all terms, ensuring they are single words
         var terms = searchTerms.Split(',', StringSplitOptions.RemoveEmptyEntries)
                               .Select(t => t.Trim())
@@ -356,7 +340,7 @@ Generate focused single-word search terms that will find the most relevant choru
                               .Select(t => t.Split(' ')[0]) // Take only the first word of each term
                               .Where(t => !string.IsNullOrWhiteSpace(t))
                               .ToList();
-        
+
         _logger.LogInformation("Generated {Count} single-word search terms: {Terms}", terms.Count, string.Join(", ", terms));
         return string.Join(", ", terms);
     }
@@ -371,10 +355,10 @@ Generate focused single-word search terms that will find the most relevant choru
     {
         var prompt = CreateExplanationPrompt(query, results);
         var response = await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);
-        
+
         // Parse the response and assign explanations
         var lines = response.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        
+
         for (int i = 0; i < results.Count && i < lines.Length; i++)
         {
             var explanation = lines[i].Trim();
@@ -419,7 +403,7 @@ Context:
 {contextBuilder}
 
 Provide a focused analysis highlighting the most relevant choruses:";
-        
+
         return prompt;
     }
 
@@ -460,14 +444,14 @@ Provide a focused analysis highlighting the most relevant choruses:";
         try
         {
             _logger.LogInformation("Fetching chorus details for ID: {ChorusId}", chorusId);
-            
+
             // Use the chorus API service to get full details
             var chorusDetails = await _chorusApiService.GetChorusByIdAsync(chorusId);
             if (chorusDetails != null)
             {
-                _logger.LogInformation("Successfully fetched chorus details: Name={Name}, Key={Key}, Type={Type}, TimeSignature={TimeSignature}", 
+                _logger.LogInformation("Successfully fetched chorus details: Name={Name}, Key={Key}, Type={Type}, TimeSignature={TimeSignature}",
                     chorusDetails.Name, chorusDetails.Key, chorusDetails.Type, chorusDetails.TimeSignature);
-                
+
                 return new ChorusSearchResult
                 {
                     Id = chorusDetails.Id.ToString(),
@@ -490,7 +474,7 @@ Provide a focused analysis highlighting the most relevant choruses:";
         {
             _logger.LogWarning(ex, "Failed to fetch chorus details for ID: {ChorusId}", chorusId);
         }
-        
+
         return null;
     }
 
@@ -518,4 +502,4 @@ Explanation:";
         var response = await _ollamaService.GenerateResponseAsync(prompt, cancellationToken);
         return response.Trim();
     }
-} 
+}

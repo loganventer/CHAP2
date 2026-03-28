@@ -3,7 +3,7 @@ class AiSearch {
     constructor() {
         // Guard against multiple initializations
         if (window.aiSearchInitialized) {
-            console.log('AiSearch: Already initialized, skipping...');
+            debug('AiSearch: Already initialized, skipping...');
             return;
         }
         
@@ -49,8 +49,8 @@ class AiSearch {
     
     init() {
         // Debug: Check what page we're on
-        console.log('AiSearch: Current page URL:', window.location.pathname);
-        console.log('AiSearch: Page title:', document.title);
+        debug('AiSearch: Current page URL:', window.location.pathname);
+        debug('AiSearch: Page title:', document.title);
         
         // Try to find elements with AI-specific IDs first, then fall back to generic IDs
         this.searchInput = document.getElementById('aiSearchInput') || document.getElementById('searchQuery');
@@ -63,7 +63,7 @@ class AiSearch {
         this.statusText = document.getElementById('statusText');
         
         // Debug logging
-        console.log('AiSearch init - Elements found:', {
+        debug('AiSearch init - Elements found:', {
             searchInput: !!this.searchInput,
             searchBtn: !!this.searchBtn,
             resultsContainer: !!this.resultsContainer,
@@ -78,21 +78,21 @@ class AiSearch {
         if (!this.searchInput || !this.searchBtn) {
             this.initRetryCount++;
             if (this.initRetryCount >= this.maxInitRetries) {
-                console.log('AiSearch: Max retries reached, giving up initialization');
+                debug('AiSearch: Max retries reached, giving up initialization');
                 return;
             }
-            console.log(`AiSearch: No AI search elements found, retry ${this.initRetryCount}/${this.maxInitRetries}, waiting for container initialization...`);
+            debug(`AiSearch: No AI search elements found, retry ${this.initRetryCount}/${this.maxInitRetries}, waiting for container initialization...`);
             // Wait for the container to be initialized by search-integration.js
             setTimeout(() => this.init(), 500);
             return;
         }
         
-        console.log('AiSearch: AI search elements found, setting up event listeners');
+        debug('AiSearch: AI search elements found, setting up event listeners');
         
         // Add click event listener to search button
         if (this.searchBtn) {
             this.searchBtn.addEventListener('click', () => {
-                console.log('AI Search button clicked');
+                debug('AI Search button clicked');
                 this.performSearch();
             });
         }
@@ -101,7 +101,7 @@ class AiSearch {
         if (this.searchInput) {
             this.searchInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
-                    console.log('AI Search Enter key pressed');
+                    debug('AI Search Enter key pressed');
                     event.preventDefault();
                     this.performSearch();
                 }
@@ -109,7 +109,7 @@ class AiSearch {
             
             // Add input event listener to cancel current search when new input is detected
             this.searchInput.addEventListener('input', (event) => {
-                console.log('AI Search input detected, cancelling current search if any');
+                debug('AI Search input detected, cancelling current search if any');
                 this.cancelCurrentSearch();
                 
                 // Auto-resize functionality for textarea
@@ -131,7 +131,7 @@ class AiSearch {
         const clearFiltersBtn = document.getElementById('aiClearFiltersBtn');
         if (clearFiltersBtn) {
             clearFiltersBtn.addEventListener('click', () => {
-                console.log('AI Clear Filters button clicked');
+                debug('AI Clear Filters button clicked');
                 this.clearFilters();
             });
         }
@@ -153,14 +153,14 @@ class AiSearch {
         // Add event listeners to both tabs
         if (aiTab) {
             aiTab.addEventListener('click', () => {
-                console.log('AI Search: AI tab clicked, cancelling current search');
+                debug('AI Search: AI tab clicked, cancelling current search');
                 this.cancelCurrentSearch();
             });
         }
         
         if (classicTab) {
             classicTab.addEventListener('click', () => {
-                console.log('AI Search: Classic tab clicked, cancelling current search');
+                debug('AI Search: Classic tab clicked, cancelling current search');
                 this.cancelCurrentSearch();
             });
         }
@@ -169,7 +169,7 @@ class AiSearch {
     createStatusIndicator() {
         // Only create if search input exists
         if (!this.searchInput) {
-            console.log('AiSearch: No search input found, skipping status indicator creation');
+            debug('AiSearch: No search input found, skipping status indicator creation');
             return;
         }
         
@@ -245,7 +245,7 @@ class AiSearch {
             this.stopRotatingMessages();
         }
         
-        console.log(`AI Search: Status updated - ${type}: ${message}`);
+        debug(`AI Search: Status updated - ${type}: ${message}`);
     }
 
     startRotatingMessages(type) {
@@ -353,8 +353,8 @@ class AiSearch {
     }
 
     displaySearchResultsWithAnimation(results) {
-        console.log('AI Search: displaySearchResultsWithAnimation called with:', results);
-        console.log('AI Search: resultsContainer exists:', !!this.resultsContainer);
+        debug('AI Search: displaySearchResultsWithAnimation called with:', results);
+        debug('AI Search: resultsContainer exists:', !!this.resultsContainer);
         
         if (!this.resultsContainer) {
             console.error('AI Search: resultsContainer is null!');
@@ -363,7 +363,7 @@ class AiSearch {
 
         // Preserve the query understanding section if it exists
         const queryUnderstandingSection = this.resultsContainer.querySelector('.query-understanding-section');
-        console.log('AI Search: Found existing query understanding section:', !!queryUnderstandingSection);
+        debug('AI Search: Found existing query understanding section:', !!queryUnderstandingSection);
         
         // Clear everything except the query understanding section
         this.resultsContainer.innerHTML = '';
@@ -371,11 +371,11 @@ class AiSearch {
         // Restore the query understanding section if it existed
         if (queryUnderstandingSection) {
             this.resultsContainer.appendChild(queryUnderstandingSection);
-            console.log('AI Search: Restored query understanding section');
+            debug('AI Search: Restored query understanding section');
         }
         
         if (!results || results.length === 0) {
-            console.log('AI Search: No results to display');
+            debug('AI Search: No results to display');
             this.resultsContainer.innerHTML = `
                 <div class="no-results" style="text-align: center; padding: 2rem; color: #666;">
                     <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
@@ -384,7 +384,7 @@ class AiSearch {
                 </div>
             `;
         } else {
-            console.log('AI Search: Displaying', results.length, 'results');
+            debug('AI Search: Displaying', results.length, 'results');
             // Create results header
             const header = document.createElement('div');
             header.className = 'results-header';
@@ -402,7 +402,7 @@ class AiSearch {
             resultsList.style.cssText = 'display: flex; flex-direction: column; gap: 0.5rem;';
             
             results.forEach((result, index) => {
-                console.log('AI Search: Creating result row for:', result.name || 'Untitled');
+                debug('AI Search: Creating result row for:', result.name || 'Untitled');
                 const resultElement = this.createAnimatedResultRow(result, index);
                 resultsList.appendChild(resultElement);
             });
@@ -411,13 +411,13 @@ class AiSearch {
         }
 
         this.resultsContainer.style.display = 'block';
-        console.log('AI Search: Results container display set to block');
+        debug('AI Search: Results container display set to block');
         
         // Also show the parent container if it exists
         const parentContainer = document.getElementById('aiResults');
         if (parentContainer) {
             parentContainer.style.display = 'block';
-            console.log('AI Search: Parent container display set to block');
+            debug('AI Search: Parent container display set to block');
         }
         
         // Ensure the aiResults container is specifically visible
@@ -427,7 +427,7 @@ class AiSearch {
     }
 
     createAnimatedResultRow(result, index) {
-        console.log('AI Search: Creating result row with data:', result);
+        debug('AI Search: Creating result row with data:', result);
         
         const row = document.createElement('div');
         row.className = 'search-result-item';
@@ -481,7 +481,7 @@ class AiSearch {
         const chorusType = result.type || metadata.type || result.Type;
         const chorusTimeSignature = result.timeSignature || metadata.timeSignature || result.TimeSignature;
         
-        console.log('AI Search: Extracted metadata:', { chorusName, chorusKey, chorusType, chorusTimeSignature });
+        debug('AI Search: Extracted metadata:', { chorusName, chorusKey, chorusType, chorusTimeSignature });
         
         row.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -546,9 +546,9 @@ class AiSearch {
     }
 
     displayQueryUnderstanding(queryUnderstanding) {
-        console.log('AI Search: displayQueryUnderstanding called with:', queryUnderstanding);
-        console.log('AI Search: resultsContainer exists:', !!this.resultsContainer);
-        console.log('AI Search: resultsContainer display style:', this.resultsContainer?.style.display);
+        debug('AI Search: displayQueryUnderstanding called with:', queryUnderstanding);
+        debug('AI Search: resultsContainer exists:', !!this.resultsContainer);
+        debug('AI Search: resultsContainer display style:', this.resultsContainer?.style.display);
         
         if (!this.resultsContainer) {
             console.error('AI Search: resultsContainer is null in displayQueryUnderstanding');
@@ -561,7 +561,7 @@ class AiSearch {
         
         // Parse the query understanding into individual terms
         const terms = queryUnderstanding.split(',').map(term => term.trim());
-        console.log('AI Search: Parsed terms:', terms);
+        debug('AI Search: Parsed terms:', terms);
         
         // Format the terms with better styling
         const formattedTerms = terms.map(term => 
@@ -586,27 +586,27 @@ class AiSearch {
         const existingSection = this.resultsContainer.querySelector('.query-understanding-section');
         if (existingSection) {
             existingSection.remove();
-            console.log('AI Search: Removed existing query understanding section');
+            debug('AI Search: Removed existing query understanding section');
         }
         
         // Insert at the top of the results container
         this.resultsContainer.insertBefore(understandingSection, this.resultsContainer.firstChild);
-        console.log('AI Search: Query understanding section added to DOM');
+        debug('AI Search: Query understanding section added to DOM');
         
         // Ensure the results container is visible
         this.resultsContainer.style.display = 'block';
-        console.log('AI Search: Results container display set to block');
+        debug('AI Search: Results container display set to block');
         
         // Also show the parent container if it exists
         const parentContainer = document.getElementById('aiResults');
         if (parentContainer) {
             parentContainer.style.display = 'block';
-            console.log('AI Search: Parent container display set to block');
+            debug('AI Search: Parent container display set to block');
             
             // Also add the query understanding to the aiResults container
             const aiResultsUnderstandingSection = understandingSection.cloneNode(true);
             parentContainer.appendChild(aiResultsUnderstandingSection);
-            console.log('AI Search: Query understanding added to aiResults container');
+            debug('AI Search: Query understanding added to aiResults container');
         }
         
         // Ensure all AI search containers are visible
@@ -623,11 +623,11 @@ class AiSearch {
         // Add sparkle effect
         this.addSparkleEffect(understandingSection);
         
-        console.log('AI Search: displayQueryUnderstanding completed successfully');
+        debug('AI Search: displayQueryUnderstanding completed successfully');
     }
 
     updateResultsWithExplanations(results) {
-        console.log('Updating results with explanations...');
+        debug('Updating results with explanations...');
         
         // Find all result rows and update their explanations
         const resultRows = this.resultsContainer.querySelectorAll('.search-result-item');
@@ -655,7 +655,7 @@ class AiSearch {
     }
 
     displaySearchResultsWithoutExplanations(results) {
-        console.log('AI Search: displaySearchResultsWithoutExplanations called with:', results);
+        debug('AI Search: displaySearchResultsWithoutExplanations called with:', results);
         if (!this.resultsContainer) {
             console.error('AI Search: resultsContainer is null in displaySearchResultsWithoutExplanations');
             return;
@@ -663,7 +663,7 @@ class AiSearch {
 
         // Preserve the query understanding section if it exists
         const queryUnderstandingSection = this.resultsContainer.querySelector('.query-understanding-section');
-        console.log('AI Search: Found existing query understanding section:', !!queryUnderstandingSection);
+        debug('AI Search: Found existing query understanding section:', !!queryUnderstandingSection);
         
         // Clear everything except the query understanding section
         this.resultsContainer.innerHTML = '';
@@ -671,7 +671,7 @@ class AiSearch {
         // Restore the query understanding section if it existed
         if (queryUnderstandingSection) {
             this.resultsContainer.appendChild(queryUnderstandingSection);
-            console.log('AI Search: Restored query understanding section');
+            debug('AI Search: Restored query understanding section');
         }
         
         if (!results || results.length === 0) {
@@ -684,9 +684,9 @@ class AiSearch {
                 </div>
             `;
             this.resultsContainer.appendChild(noResultsDiv);
-            console.log('AI Search: Added no results message');
+            debug('AI Search: Added no results message');
         } else {
-            console.log('AI Search: Displaying', results.length, 'results (without explanations)');
+            debug('AI Search: Displaying', results.length, 'results (without explanations)');
             // Create results header
             const header = document.createElement('div');
             header.className = 'results-header';
@@ -705,7 +705,7 @@ class AiSearch {
             
             results.forEach((result, index) => {
                 const chorusName = result.name || result.Name || 'Untitled Chorus';
-                console.log('AI Search: Creating result row for:', chorusName);
+                debug('AI Search: Creating result row for:', chorusName);
                 const resultElement = this.createResultRowWithoutExplanation(result, index);
                 resultsList.appendChild(resultElement);
             });
@@ -714,13 +714,13 @@ class AiSearch {
         }
 
         this.resultsContainer.style.display = 'block';
-        console.log('AI Search: Results container display set to block');
+        debug('AI Search: Results container display set to block');
         
         // Also show the parent container if it exists
         const parentContainer = document.getElementById('aiResults');
         if (parentContainer) {
             parentContainer.style.display = 'block';
-            console.log('AI Search: Parent container display set to block');
+            debug('AI Search: Parent container display set to block');
         }
         
         this.animateResultRows();
@@ -952,7 +952,7 @@ class AiSearch {
     }
 
     async performSearch() {
-        console.log('AI Search: performSearch called');
+        debug('AI Search: performSearch called');
         
         // Clear previous results
         this.fadeOutResults();
@@ -968,13 +968,13 @@ class AiSearch {
         const aiTab = document.querySelector('.tab-button[data-tab="ai"]');
         const regularTab = document.querySelector('.tab-button[data-tab="regular"]');
         
-        console.log('AI Search: Tab detection - aiTab:', !!aiTab, 'regularTab:', !!regularTab);
-        console.log('AI Search: aiTab active:', aiTab?.classList.contains('active'));
-        console.log('AI Search: regularTab active:', regularTab?.classList.contains('active'));
+        debug('AI Search: Tab detection - aiTab:', !!aiTab, 'regularTab:', !!regularTab);
+        debug('AI Search: aiTab active:', aiTab?.classList.contains('active'));
+        debug('AI Search: regularTab active:', regularTab?.classList.contains('active'));
         
         // If we're not on the AI tab, switch to it first
         if (aiTab && !aiTab.classList.contains('active')) {
-            console.log('AI Search: Switching to AI tab before search');
+            debug('AI Search: Switching to AI tab before search');
             aiTab.click(); // This will trigger the tab switching logic
             // Wait a moment for the tab switch to complete
             await new Promise(resolve => setTimeout(resolve, 150));
@@ -984,7 +984,7 @@ class AiSearch {
         this.cancelCurrentSearch();
         
         this.searchInProgress = true;
-        console.log('AI Search: Search in progress set to true');
+        debug('AI Search: Search in progress set to true');
         
         // Create new AbortController for this search
         this.currentSearchController = new AbortController();
@@ -994,7 +994,7 @@ class AiSearch {
         
         const query = this.searchInput.value.trim();
         
-        console.log('AI Search: Search query:', query);
+        debug('AI Search: Search query:', query);
         
         if (!query) {
             alert('Please enter a search query');
@@ -1009,7 +1009,7 @@ class AiSearch {
             return;
         }
 
-        console.log('AI Search: Starting search process...');
+        debug('AI Search: Starting search process...');
 
         // Update button state (handle both complex and simple button structures)
         const btnText = this.searchBtn.querySelector('.btn-text');
@@ -1027,7 +1027,7 @@ class AiSearch {
 
         // Show AI status
         this.updateAiStatus('🤖 Initializing AI search...', 'thinking');
-        console.log('AI Search: Status updated to initializing');
+        debug('AI Search: Status updated to initializing');
         
         // Ensure AI search containers are visible
         this.ensureAiContainersVisible();
@@ -1038,14 +1038,14 @@ class AiSearch {
         try {
             // Get filter values
             const filters = this.getFilterValues();
-            console.log('AI Search: Filters:', filters);
+            debug('AI Search: Filters:', filters);
             
             // Build enhanced query
             const enhancedQuery = this.buildEnhancedQuery(query, filters);
-            console.log('AI Search: Enhanced query:', enhancedQuery);
+            debug('AI Search: Enhanced query:', enhancedQuery);
 
             // Use streaming endpoint for proper flow
-            console.log('AI Search: Using streaming endpoint for proper flow');
+            debug('AI Search: Using streaming endpoint for proper flow');
             
             // Create a timeout promise (15 minutes)
             const timeoutPromise = new Promise((_, reject) => {
@@ -1070,7 +1070,7 @@ class AiSearch {
             // Race between fetch and timeout
             const response = await Promise.race([fetchPromise, timeoutPromise]);
 
-            console.log('AI Search: Response status:', response.status);
+            debug('AI Search: Response status:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -1100,12 +1100,12 @@ class AiSearch {
                                 jsonData = jsonData.slice(6).trim();
                             }
                             
-                            console.log('AI Search: Processing JSON data:', jsonData.substring(0, 100) + '...');
+                            debug('AI Search: Processing JSON data:', jsonData.substring(0, 100) + '...');
                             
                             let data;
                             try {
                                 data = JSON.parse(jsonData);
-                                console.log('AI Search: Received streaming data:', data);
+                                debug('AI Search: Received streaming data:', data);
                             } catch (parseError) {
                                 console.error('AI Search: Error parsing JSON:', parseError);
                                 console.error('AI Search: Raw JSON data:', jsonData);
@@ -1128,20 +1128,20 @@ class AiSearch {
                                         seen.add(id);
                                         return true;
                                     });
-                                    console.log('AI Search: Deduplicated results, now have', data.searchResults.length, 'unique results');
+                                    debug('AI Search: Deduplicated results, now have', data.searchResults.length, 'unique results');
                                 }
                             }
                             
                             try {
                                 switch (data.type) {
                                     case 'queryUnderstanding':
-                                        console.log('AI Search: Displaying query understanding');
+                                        debug('AI Search: Displaying query understanding');
                                         this.displayQueryUnderstanding(data.queryUnderstanding);
                                         this.updateAiStatus('🔍 Understanding your search query...', 'thinking');
                                         break;
                                         
                                     case 'searchResult':
-                                        console.log('AI Search: Received individual search result:', data.index);
+                                        debug('AI Search: Received individual search result:', data.index);
                                         this.individualResultsStreaming = true;
                                         this.receivedIndividualResults.add(data.index);
                                         this.addSearchResult(data.index, data.searchResult);
@@ -1149,46 +1149,46 @@ class AiSearch {
                                         break;
                                         
                                     case 'searchResults':
-                                        console.log('AI Search: Received complete search results array');
+                                        debug('AI Search: Received complete search results array');
                                         // Only display if we haven't been streaming individual results
                                         if (!this.individualResultsStreaming) {
                                             this.displaySearchResultsWithAnimation(data.searchResults);
                                         } else {
-                                            console.log('AI Search: Skipping searchResults display - individual results already streaming');
+                                            debug('AI Search: Skipping searchResults display - individual results already streaming');
                                         }
                                         this.updateAiStatus(`📚 Found ${data.searchResults.length} choruses, analyzing why each matches...`, 'thinking');
                                         break;
                                         
                                     case 'chorusReason':
-                                        console.log('AI Search: Received chorus reason:', data.chorusId);
+                                        debug('AI Search: Received chorus reason:', data.chorusId);
                                         this.updateChorusReason(data.chorusId, data.reason);
                                         this.updateAiStatus('💭 Analyzing why each chorus matches...', 'thinking');
                                         break;
                                         
                                     case 'aiAnalysis':
-                                        console.log('AI Search: Displaying AI analysis');
+                                        debug('AI Search: Displaying AI analysis');
                                         this.displayAiAnalysis(data.analysis);
                                         this.updateAiStatus('✅ AI analysis complete!', 'success');
                                         break;
                                         
                                     case 'progress':
-                                        console.log('AI Search: Progress update:', data.message);
+                                        debug('AI Search: Progress update:', data.message);
                                         this.updateAiStatus(data.message, 'thinking');
                                         break;
                                         
                                     case 'ollamaCall':
-                                        console.log('AI Search: Ollama service call:', data.service);
+                                        debug('AI Search: Ollama service call:', data.service);
                                         this.updateAiStatus(`🤖 Calling ${data.service} service...`, 'thinking');
                                         break;
                                         
                                     case 'step':
-                                        console.log('AI Search: Step update:', data.step, data.total);
+                                        debug('AI Search: Step update:', data.step, data.total);
                                         const progress = Math.round((data.step / data.total) * 100);
                                         this.updateAiStatus(`⚡ Step ${data.step}/${data.total} (${progress}%) - ${data.message}`, 'thinking');
                                         break;
                                         
                                     case 'complete':
-                                        console.log('AI Search: Search completed');
+                                        debug('AI Search: Search completed');
                                         this.celebrateAndFadeStatus();
                                         break;
                                         
@@ -1220,10 +1220,10 @@ class AiSearch {
             console.error('AI Search: Error during search:', error);
             
             if (error.name === 'AbortError') {
-                console.log('AI Search: Search was cancelled');
+                debug('AI Search: Search was cancelled');
                 this.updateAiStatus('⏹️ Search cancelled', 'error');
             } else if (error.message.includes('timeout') || error.message.includes('timed out') || error.name === 'TimeoutError') {
-                console.log('AI Search: Request timed out');
+                debug('AI Search: Request timed out');
                 this.updateAiStatus('⏰ Request timed out. The AI is taking longer than expected. Please try again with a simpler query.', 'error');
             } else {
                 this.updateAiStatus('❌ Search failed: ' + error.message, 'error');
@@ -1231,7 +1231,7 @@ class AiSearch {
         } finally {
             this.searchInProgress = false;
             this.resetButtonState();
-            console.log('AI Search: Search completed, resetting state');
+            debug('AI Search: Search completed, resetting state');
         }
     }
 
@@ -1320,13 +1320,13 @@ class AiSearch {
     }
 
     cancelCurrentSearch() {
-        console.log('AI Search: Cancelling current search...');
+        debug('AI Search: Cancelling current search...');
         
         // Cancel the current fetch request
         if (this.currentSearchController) {
             this.currentSearchController.abort();
             this.currentSearchController = null;
-            console.log('AI Search: Current search aborted.');
+            debug('AI Search: Current search aborted.');
         }
         
         // Reset search state
@@ -1391,64 +1391,64 @@ class AiSearch {
     }
 
     ensureAiContainersVisible() {
-        console.log('AI Search: Ensuring AI containers are visible...');
+        debug('AI Search: Ensuring AI containers are visible...');
         
         // Ensure the AI search input is visible
         const aiSearchInput = document.getElementById('aiSearchInput');
         if (aiSearchInput) {
             aiSearchInput.style.display = 'block';
-            console.log('AI Search: AI search input made visible');
+            debug('AI Search: AI search input made visible');
         }
 
         // Ensure the AI search button is visible
         const aiSearchBtn = document.getElementById('aiSearchButton');
         if (aiSearchBtn) {
             aiSearchBtn.style.display = 'inline-block';
-            console.log('AI Search: AI search button made visible');
+            debug('AI Search: AI search button made visible');
         }
 
         // Ensure the AI search results container is visible
         const aiSearchResults = document.getElementById('aiSearchResults');
         if (aiSearchResults) {
             aiSearchResults.style.display = 'block';
-            console.log('AI Search: AI search results container made visible');
+            debug('AI Search: AI search results container made visible');
         }
 
         // Ensure the AI analysis container is visible
         const aiAnalysis = document.getElementById('aiAnalysis');
         if (aiAnalysis) {
             aiAnalysis.style.display = 'block';
-            console.log('AI Search: AI analysis container made visible');
+            debug('AI Search: AI analysis container made visible');
         }
 
         // Ensure the AI status indicator is visible
         const aiStatusIndicator = document.getElementById('aiStatusIndicator');
         if (aiStatusIndicator) {
             aiStatusIndicator.style.display = 'block';
-            console.log('AI Search: AI status indicator made visible');
+            debug('AI Search: AI status indicator made visible');
         }
         
         // Ensure the aiResults container (which contains the chorus list) is visible
         const aiResults = document.getElementById('aiResults');
         if (aiResults) {
             aiResults.style.display = 'block';
-            console.log('AI Search: AI results container made visible');
+            debug('AI Search: AI results container made visible');
         }
         
-        console.log('AI Search: All AI containers visibility ensured');
+        debug('AI Search: All AI containers visibility ensured');
     }
 
     ensureAiResultsVisible() {
-        console.log('AI Search: Ensuring aiResults container is visible...');
+        debug('AI Search: Ensuring aiResults container is visible...');
         const aiResults = document.getElementById('aiResults');
         if (aiResults) {
             aiResults.style.display = 'block';
-            console.log('AI Search: aiResults container made visible');
+            debug('AI Search: aiResults container made visible');
         }
     }
 
     addSearchResult(index, searchResult) {
-        console.log('AI Search: Adding search result at index:', index);
+        debug('AI Search: Adding search result at index:', index);
         
         // Get the results container
         const resultsContainer = document.getElementById('aiResults');
@@ -1474,11 +1474,11 @@ class AiSearch {
         // Add sparkle effect
         this.addSparkleEffect(resultRow);
         
-        console.log('AI Search: Added search result for:', searchResult.name);
+        debug('AI Search: Added search result for:', searchResult.name);
     }
 
     updateChorusReason(chorusId, reason) {
-        console.log('AI Search: Updating chorus reason for ID:', chorusId, 'Reason:', reason);
+        debug('AI Search: Updating chorus reason for ID:', chorusId, 'Reason:', reason);
         
         try {
             const resultRows = this.resultsContainer.querySelectorAll('.search-result-item');
@@ -1488,7 +1488,7 @@ class AiSearch {
                 try {
                     const rowChorusId = row.dataset.chorusId;
                     if (rowChorusId === chorusId) {
-                        console.log('AI Search: Found matching row for chorus ID:', chorusId);
+                        debug('AI Search: Found matching row for chorus ID:', chorusId);
                         found = true;
                         
                         // Find or create the reason element
@@ -1521,7 +1521,7 @@ class AiSearch {
                             reasonElement.style.transition = 'opacity 0.3s ease-in';
                         }, 100);
                         
-                        console.log('AI Search: Updated reason for chorus:', chorusId);
+                        debug('AI Search: Updated reason for chorus:', chorusId);
                     }
                 } catch (rowError) {
                     console.error('AI Search: Error processing row', index, ':', rowError);

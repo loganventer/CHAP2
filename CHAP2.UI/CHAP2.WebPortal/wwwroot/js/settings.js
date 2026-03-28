@@ -345,7 +345,7 @@ class SettingsManager {
 
             const data = await response.json();
             let chorusList = data.results || [];
-            console.log(`Mass Edit: Fetched ${chorusList.length} total choruses`);
+            debug(`Mass Edit: Fetched ${chorusList.length} total choruses`);
 
             if (chorusList.length === 0) {
                 alert('No choruses found to edit.');
@@ -370,7 +370,7 @@ class SettingsManager {
             // Open first chorus in Edit mode
             window.open(`/Home/Edit/${chorusList[0].id}`, '_blank');
 
-            console.log(`Mass Edit: Opened first of ${chorusList.length} choruses for editing (sorted alphabetically)`);
+            debug(`Mass Edit: Opened first of ${chorusList.length} choruses for editing (sorted alphabetically)`);
 
             // Reset button
             if (btn) {
@@ -684,5 +684,5 @@ document.head.appendChild(style);
 // Initialize settings manager
 document.addEventListener('DOMContentLoaded', () => {
     window.settingsManager = new SettingsManager();
-    console.log('Settings manager initialized');
+    debug('Settings manager initialized');
 });

@@ -1,7 +1,7 @@
 // Search functionality - V2 (Fixed version)
 // Guard against multiple initializations
 if (window.searchInitialized) {
-    console.log('Search already initialized, skipping...');
+    debug('Search already initialized, skipping...');
 } else {
     window.searchInitialized = true;
 }
@@ -16,48 +16,16 @@ let minSearchLength = 2; // minimum characters - match console app
 
 // Initialize search functionality
 function initializeSearch() {
-    console.log('Initializing search functionality...');
+    debug('Initializing search functionality...');
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearBtn');
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
     
-    console.log('Search input found:', !!searchInput);
-    console.log('Clear button found:', !!clearBtn);
-    console.log('Status indicator found:', !!statusIndicator);
-    
     if (searchInput) {
-        console.log('Search input found, setting up event listeners...');
-        console.log('Search input value:', searchInput.value);
-        console.log('Search input display:', searchInput.style.display);
-        console.log('Search input parent display:', searchInput.parentElement.style.display);
-        
-        // Remove test calls that interfere with AI search
-        // console.log('Testing search function...');
-        // setTimeout(() => {
-        //     console.log('Testing API call...');
-        //     fetch('/Home/Search?q=test')
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             console.log('API test successful:', data.results ? data.results.length : 0, 'results');
-        //         })
-        //         .catch(error => {
-        //             console.error('API test failed:', error);
-        //         });
-        // }, 1000);
-        
-        // Test debounce function
-        console.log('Testing debounce function...');
-        const testDebounced = debounce((value) => {
-            console.log('Test debounce executed with:', value);
-        }, 500);
-        testDebounced('test-value');
-        
-        // Add extra debugging to search input event
         searchInput.addEventListener('input', function() {
             const value = this.value.trim();
             currentSearchTerm = value;
-            console.log('[DEBUG] Search input event fired, value:', value);
             
             // Show/hide clear button
             if (value.length > 0) {
@@ -69,13 +37,11 @@ function initializeSearch() {
             
             // Perform search automatically on every keystroke
             if (value.length >= minSearchLength) {
-                console.log('Triggering search for:', value);
                 debouncedSearch(value);
             } else if (value.length === 0) {
                 clearResults();
             } else if (value.length === 1) {
                 // Special handling for single character - treat as key search
-                console.log('Triggering single character search for:', value);
                 debouncedSearch(value);
             }
         });
@@ -133,13 +99,10 @@ function initializeSearch() {
 // Debounce function
 function debounce(func, wait) {
     return function executedFunction(...args) {
-        console.log('Debounce function called with args:', args);
         const later = () => {
-            console.log('Debounce timeout executing, calling performSearch');
             clearTimeout(searchTimeout);
             func(...args);
         };
-        console.log('Setting debounce timeout for', wait, 'ms');
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(later, wait);
     };
@@ -147,23 +110,17 @@ function debounce(func, wait) {
 
 // Debounced search function
 const debouncedSearch = debounce((value) => {
-    console.log('[DEBUG] debouncedSearch called with:', value);
     performTraditionalSearch(value);
 }, searchDelay);
 
 // Perform traditional search
 async function performTraditionalSearch(searchTerm) {
-    console.log('[DEBUG] performTraditionalSearch START, searchTerm:', searchTerm);
-    
     if (isSearching || !searchTerm) {
-        console.log('Search blocked - isSearching:', isSearching, 'searchTerm:', searchTerm);
         return;
     }
-    
+
     currentSearchTerm = searchTerm;
     isSearching = true;
-    
-    console.log('Starting traditional search for:', searchTerm);
     
     // Show loading state
     showLoading();
@@ -181,7 +138,7 @@ async function performTraditionalSearch(searchTerm) {
             }
         }
         
-        console.log('Making traditional search API call to:', searchUrl);
+        debug('Search API call:', searchUrl);
         
         const response = await fetch(searchUrl, {
             method: 'GET',
@@ -191,37 +148,34 @@ async function performTraditionalSearch(searchTerm) {
             }
         });
         
-        console.log('[DEBUG] Traditional search API response status:', response.status);
+        debug('Search response status:', response.status);
         
         if (!response.ok) {
             throw new Error(`[DEBUG] HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
-        console.log('[DEBUG] Traditional search API response data:', data);
         
         if (data.error) {
             throw new Error('[DEBUG] API error: ' + data.error);
         }
         
         searchResults = data.results || [];
-        console.log('[DEBUG] Traditional search results count:', searchResults.length);
+        debug('Search results count:', searchResults.length);
         
         // Apply sorting similar to console app
         if (searchResults.length > 0) {
             searchResults = sortSearchResults(searchResults, searchTerm);
         }
         
-        console.log('Calling displayResults with:', searchResults.length, 'results');
         displayResults(searchResults, searchTerm);
         
     } catch (error) {
-        console.error('[DEBUG] Traditional search error:', error);
+        console.error('Traditional search error:', error);
         showError('Search failed. ' + (error.message || error));
     } finally {
         isSearching = false;
         hideLoading();
-        console.log('[DEBUG] performTraditionalSearch END');
     }
 }
 
@@ -270,39 +224,23 @@ function sortSearchResults(results, searchTerm) {
 
 // Display search results
 function displayResults(results, searchTerm) {
-    console.log('[DEBUG] displayResults called with:', { results: results.length, searchTerm });
-    console.log('currentSearchTerm in displayResults:', currentSearchTerm);
-    
     const resultsTable = document.getElementById('resultsTable');
     const resultsBody = document.getElementById('resultsBody');
     const resultsHeader = document.getElementById('resultsHeader');
     const resultsCount = document.getElementById('resultsCount');
     const noResults = document.getElementById('noResults');
     
-    console.log('Results elements found:', {
-        resultsTable: !!resultsTable,
-        resultsBody: !!resultsBody,
-        resultsHeader: !!resultsHeader,
-        resultsCount: !!resultsCount,
-        noResults: !!noResults
-    });
-    
     // Clear previous results
     resultsBody.innerHTML = '';
     
     if (results.length === 0) {
-        // Show no results
-        console.log('[DEBUG] No results found, showing no results message');
         resultsTable.style.display = 'none';
         resultsHeader.style.display = 'none';
         noResults.style.display = 'flex';
-        // Show a debug message in the UI
-        noResults.innerHTML += '<div style="color:red;font-size:0.9em;">[DEBUG] No results found for: ' + searchTerm + '</div>';
         return;
     }
     
     // Show results
-    console.log('Showing results:', results.length);
     noResults.style.display = 'none';
     resultsTable.style.display = 'table';
     resultsHeader.style.display = 'flex';
@@ -312,14 +250,12 @@ function displayResults(results, searchTerm) {
     
     // Populate table
     results.forEach((result, index) => {
-        console.log('Creating row for result:', result);
         const row = createResultRow(result, index + 1);
         resultsBody.appendChild(row);
     });
     
     // Animate results
     animateResults();
-    console.log('[DEBUG] displayResults END');
 }
 
 // Enum conversion helpers
@@ -360,24 +296,14 @@ function getTimeSignatureDisplay(timeValue) {
 
 // Create result row
 function createResultRow(result, index) {
-    console.log('Creating row for result:', result);
-    console.log('Result name:', result.name);
-    console.log('Result keys:', Object.keys(result));
-    console.log('currentSearchTerm:', currentSearchTerm);
-    
     const row = document.createElement('tr');
     row.className = 'result-row';
     row.setAttribute('data-id', result.id);
     
     // Highlight search term in title
     let highlightedTitle;
-    console.log('About to call highlightSearchTerm with:', { name: result.name, currentSearchTerm });
     try {
         highlightedTitle = highlightSearchTerm(result.name, currentSearchTerm);
-        console.log('Highlighted title:', highlightedTitle);
-        console.log('Type of highlightedTitle:', typeof highlightedTitle);
-        console.log('highlightedTitle === undefined:', highlightedTitle === undefined);
-        console.log('highlightedTitle === null:', highlightedTitle === null);
     } catch (error) {
         console.error('Error in highlightSearchTerm:', error);
         highlightedTitle = result.name || 'Unknown';
@@ -409,7 +335,6 @@ function createResultRow(result, index) {
         </td>
     `;
     
-    console.log('Row HTML:', rowHtml);
     row.innerHTML = rowHtml;
     
     // Add click handler for row
@@ -427,39 +352,26 @@ function createResultRow(result, index) {
 
 // Highlight search term in text
 function highlightSearchTerm(text, searchTerm) {
-    console.log('highlightSearchTerm called with:', { text, searchTerm });
-    
     try {
-        // Simple test first
         if (!text) {
-            console.log('text is falsy, returning empty string');
             return '';
         }
-        
+
         // Basic HTML escape
         const escapedText = text.replace(/&/g, '&amp;')
                                .replace(/</g, '&lt;')
                                .replace(/>/g, '&gt;')
                                .replace(/"/g, '&quot;')
                                .replace(/'/g, '&#39;');
-        console.log('escapedText:', escapedText);
-        
+
         if (!searchTerm) {
-            console.log('searchTerm is falsy, returning escaped text');
             return escapedText;
         }
-        
+
         // Escape regex special characters in the search term
         const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        console.log('escapedSearchTerm:', escapedSearchTerm);
-        
         const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-        console.log('regex:', regex);
-        
-        const result = escapedText.replace(regex, '<mark>$1</mark>');
-        console.log('final result:', result);
-        
-        return result;
+        return escapedText.replace(regex, '<mark>$1</mark>');
     } catch (error) {
         console.error('Error in highlightSearchTerm function:', error);
         return text || '';
@@ -525,7 +437,7 @@ function openInNewWindow(chorusId) {
                     newWindow.resizeTo(newWindow.screen.availWidth, newWindow.screen.availHeight);
                 }
             } catch (e) {
-                console.log('Could not maximize window:', e);
+                debug('Could not maximize window:', e);
             }
         });
     }
@@ -664,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Test connectivity
     testConnectivity().then(connected => {
-        console.log('Connectivity test result:', connected);
+        debug('Connectivity test result:', connected);
     });
     
     // Modal close button
@@ -811,7 +723,7 @@ async function confirmDelete() {
             
             // Refresh the search to get updated results
             if (currentSearchTerm && currentSearchTerm.length >= minSearchLength) {
-                console.log('Refreshing search after deletion with term:', currentSearchTerm);
+                debug('Refreshing search after deletion with term:', currentSearchTerm);
                 performTraditionalSearch(currentSearchTerm);
             } else {
                 // If no current search term, just clear results

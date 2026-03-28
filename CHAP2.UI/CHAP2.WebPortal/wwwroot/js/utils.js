@@ -162,5 +162,15 @@ const utils = {
     }
 };
 
-// Make utils globally available
-window.utils = utils; 
+// Debug logging - only logs when window.CHAP2_DEBUG is true
+function debug(...args) {
+    if (window.CHAP2_DEBUG) {
+        console.log('[CHAP2]', ...args);
+    }
+}
+
+// Make utils and debug globally available
+window.utils = utils;
+window.debug = debug;
+window.showNotification = utils.showNotification.bind(utils);
+window.escapeHtml = utils.escapeHtml.bind(utils); 

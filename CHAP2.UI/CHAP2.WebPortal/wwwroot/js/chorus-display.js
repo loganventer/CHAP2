@@ -115,7 +115,7 @@ class ChorusDisplay {
         if (chorusTitle) chorusTitle.style.fontFamily = `'${chorusFont}', sans-serif`;
         if (chorusKey) chorusKey.style.fontFamily = `'${chorusFont}', sans-serif`;
 
-        console.log(`Applied chorus font: ${chorusFont}`);
+        debug(`Applied chorus font: ${chorusFont}`);
 
         // Also apply text outline settings to title and key
         this.applyTextOutline();
@@ -142,7 +142,7 @@ class ChorusDisplay {
         // Get animation from sessionStorage or use default
         const chorusAnimation = sessionStorage.getItem('chorusAnimation') || 'musical-staff';
 
-        console.log(`Applying chorus animation: ${chorusAnimation}`);
+        debug(`Applying chorus animation: ${chorusAnimation}`);
 
         // Get animation elements
         const musicalStaff = document.querySelector('.musical-staff-background');
@@ -213,7 +213,7 @@ class ChorusDisplay {
 
             case 'none':
                 // No animation - all already hidden
-                console.log('No animation selected');
+                debug('No animation selected');
                 break;
 
             default:
@@ -877,11 +877,11 @@ class ChorusDisplay {
         try {
             // Check if we're on a chorus display page
             if (!window.chorusData) {
-                console.log('Not on chorus display page, skipping chorus loading');
+                debug('Not on chorus display page, skipping chorus loading');
                 return; // Not on a chorus display page, exit early
             }
 
-            console.log('Loading choruses for display page');
+            debug('Loading choruses for display page');
 
             // First, try to load from sessionStorage
             const storedChorusList = sessionStorage.getItem('chorusList');
@@ -890,7 +890,7 @@ class ChorusDisplay {
             if (storedChorusList) {
                 try {
                     this.choruses = JSON.parse(storedChorusList);
-                    console.log(`Loaded ${this.choruses.length} choruses from sessionStorage`);
+                    debug(`Loaded ${this.choruses.length} choruses from sessionStorage`);
 
                     // Find current chorus index
                     const currentId = window.chorusData?.id || storedCurrentChorusId;
@@ -913,7 +913,7 @@ class ChorusDisplay {
             const response = await fetch('/Home/Search?q=*');
             const data = await response.json();
             this.choruses = data.results || [];
-            console.log(`Loaded ${this.choruses.length} choruses from server`);
+            debug(`Loaded ${this.choruses.length} choruses from server`);
 
             // Find current chorus index - add null check for window.chorusData
             if (window.chorusData && window.chorusData.id) {
@@ -932,10 +932,10 @@ class ChorusDisplay {
     }
     
     setupEventListeners() {
-        console.log('Setting up event listeners...');
-        console.log('window.chorusData:', window.chorusData);
-        console.log('window.location.pathname:', window.location.pathname);
-        console.log('Includes /ChorusDisplay/:', window.location.pathname.includes('/ChorusDisplay/'));
+        debug('Setting up event listeners...');
+        debug('window.chorusData:', window.chorusData);
+        debug('window.location.pathname:', window.location.pathname);
+        debug('Includes /ChorusDisplay/:', window.location.pathname.includes('/ChorusDisplay/'));
 
         // Navigation buttons for pages
         const prevPageBtn = document.getElementById('prevPageBtn');
@@ -954,7 +954,7 @@ class ChorusDisplay {
         const prevChorusBtn = document.getElementById('prevChorusBtn');
         const nextChorusBtn = document.getElementById('nextChorusBtn');
 
-        console.log('Navigation buttons found:', { prevPageBtn, nextPageBtn, prevBtn, nextBtn, prevChorusBtn, nextChorusBtn, printBtn, closeBtn, increaseFontBtn, decreaseFontBtn });
+        debug('Navigation buttons found:', { prevPageBtn, nextPageBtn, prevBtn, nextBtn, prevChorusBtn, nextChorusBtn, printBtn, closeBtn, increaseFontBtn, decreaseFontBtn });
 
         // Only add event listeners if the elements exist (they won't on the search page)
         // Page navigation (if separate page buttons exist)
@@ -976,25 +976,25 @@ class ChorusDisplay {
 
         // Always add resize listener if we're on a chorus display page
         if (window.chorusData || window.location.pathname.includes('/ChorusDisplay/')) {
-            console.log('Setting up resize listener for chorus display page');
+            debug('Setting up resize listener for chorus display page');
             window.addEventListener('resize', () => {
-                console.log('Resize event fired!');
+                debug('Resize event fired!');
                 this.handleResize();
             });
 
             // Also add keyboard shortcuts
-            console.log('Setting up keyboard listener for chorus display page');
+            debug('Setting up keyboard listener for chorus display page');
             document.addEventListener('keydown', (e) => {
-                console.log('Keyboard event captured:', e.key);
+                debug('Keyboard event captured:', e.key);
                 this.handleKeyboard(e);
             });
         } else {
-            console.log('Not on chorus display page, skipping resize listener');
+            debug('Not on chorus display page, skipping resize listener');
         }
     }
     
     handleKeyboard(e) {
-        console.log('Keyboard event:', e.key);
+        debug('Keyboard event:', e.key);
         switch (e.key) {
             case 'ArrowLeft':
                 e.preventDefault();
@@ -1033,12 +1033,12 @@ class ChorusDisplay {
                 break;
             case '+':
             case '=':
-                console.log('Plus/Equals key pressed!');
+                debug('Plus/Equals key pressed!');
                 e.preventDefault();
                 this.increaseFontSize();
                 break;
             case '-':
-                console.log('Minus key pressed!');
+                debug('Minus key pressed!');
                 e.preventDefault();
                 this.decreaseFontSize();
                 break;
@@ -1073,14 +1073,14 @@ class ChorusDisplay {
     }
 
     async navigateChorus(direction) {
-        console.log('=== NAVIGATE CHORUS CALLED ===');
-        console.log('Direction:', direction);
-        console.log('Current choruses array:', this.choruses);
-        console.log('Choruses length:', this.choruses ? this.choruses.length : 'null');
-        console.log('Current chorus index:', this.currentChorusIndex);
+        debug('=== NAVIGATE CHORUS CALLED ===');
+        debug('Direction:', direction);
+        debug('Current choruses array:', this.choruses);
+        debug('Choruses length:', this.choruses ? this.choruses.length : 'null');
+        debug('Current chorus index:', this.currentChorusIndex);
 
         if (!this.choruses || this.choruses.length <= 1) {
-            console.log('Not enough choruses to navigate');
+            debug('Not enough choruses to navigate');
             this.showNotification('No other choruses available', 'info');
             return;
         }
@@ -1095,12 +1095,12 @@ class ChorusDisplay {
             newIndex = 0;
         }
 
-        console.log('New index:', newIndex);
+        debug('New index:', newIndex);
 
         // Load the new chorus
         const chorus = this.choruses[newIndex];
 
-        console.log('Chorus to load:', chorus);
+        debug('Chorus to load:', chorus);
 
         if (!chorus) {
             console.error('Chorus not found at index:', newIndex);
@@ -1128,7 +1128,7 @@ class ChorusDisplay {
         }
 
         this.updateNavigationButtons();
-        console.log(`Chorus list set: ${this.choruses.length} choruses, current index: ${this.currentChorusIndex}`);
+        debug(`Chorus list set: ${this.choruses.length} choruses, current index: ${this.currentChorusIndex}`);
     }
 
     // Get the current chorus list
@@ -1189,39 +1189,39 @@ class ChorusDisplay {
     }
     
     getKeyDisplay(keyValue) {
-        console.log('getKeyDisplay called with:', keyValue);
-        console.log('keyValue type:', typeof keyValue);
+        debug('getKeyDisplay called with:', keyValue);
+        debug('keyValue type:', typeof keyValue);
         
         // Handle different key formats
         if (keyValue === null || keyValue === undefined || keyValue === '') {
-            console.log('Key value is null/undefined/empty, returning "Not Set"');
+            debug('Key value is null/undefined/empty, returning "Not Set"');
             return 'Not Set';
         }
         
         // If it's already a string and looks like a key, return it
         if (typeof keyValue === 'string' && keyValue.trim() !== '') {
-            console.log('Key value is string:', keyValue);
+            debug('Key value is string:', keyValue);
             return keyValue.trim();
         }
         
         // If it's a number, convert to key
         if (typeof keyValue === 'number' || !isNaN(parseInt(keyValue))) {
             const numValue = parseInt(keyValue);
-            console.log('Key value as number:', numValue);
+            debug('Key value as number:', numValue);
             const keys = ['Not Set', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C♭', 'D♭', 'E♭', 'F♭', 'G♭', 'A♭', 'B♭'];
             const result = keys[numValue] || 'Not Set';
-            console.log('Converted number to key:', result);
+            debug('Converted number to key:', result);
             return result;
         }
         
-        console.log('Could not process key value, returning "Not Set"');
+        debug('Could not process key value, returning "Not Set"');
         return 'Not Set';
     }
     
     updateDisplay(chorusData) {
-        console.log('Updating display with chorus data:', chorusData);
-        console.log('Key value received:', chorusData.key);
-        console.log('Key type:', typeof chorusData.key);
+        debug('Updating display with chorus data:', chorusData);
+        debug('Key value received:', chorusData.key);
+        debug('Key type:', typeof chorusData.key);
 
         // Update title and key
         const titleElement = document.getElementById('chorusTitle');
@@ -1231,7 +1231,7 @@ class ChorusDisplay {
 
         // Debug the key display
         const keyDisplay = this.getKeyDisplay(chorusData.key);
-        console.log('Key display result:', keyDisplay);
+        debug('Key display result:', keyDisplay);
 
         if (keyElement) keyElement.textContent = keyDisplay;
 
@@ -1243,7 +1243,7 @@ class ChorusDisplay {
 
         // Calculate optimal font size based on longest line width
         this.calculateOptimalFontSize();
-        console.log('Calculated optimal font size:', this.currentFontSize, 'px');
+        debug('Calculated optimal font size:', this.currentFontSize, 'px');
 
         // Calculate initial layout
         this.calculateLinesPerPage();
@@ -1259,9 +1259,9 @@ class ChorusDisplay {
 
         // Apply initial font size
         this.applyFontSize();
-        console.log('Applied font size:', this.currentFontSize, 'px');
+        debug('Applied font size:', this.currentFontSize, 'px');
 
-        console.log(`Display initialized: ${this.totalPages} pages, ${this.linesPerPage} lines per page`);
+        debug(`Display initialized: ${this.totalPages} pages, ${this.linesPerPage} lines per page`);
     }
 
     parseChorusPages(text) {
@@ -1275,12 +1275,12 @@ class ChorusDisplay {
             this.hasExplicitPageBreaks = true;
             // Also populate currentChorusLines for functions that need all lines (like calculateOptimalFontSize)
             this.currentChorusLines = this.explicitPages.flat();
-            console.log(`Found ${this.explicitPages.length} explicit pages with ${this.currentChorusLines.length} total lines`);
+            debug(`Found ${this.explicitPages.length} explicit pages with ${this.currentChorusLines.length} total lines`);
         } else {
             // No explicit page breaks, use automatic pagination
             this.currentChorusLines = text.split('\n').filter(line => line.trim() !== '');
             this.hasExplicitPageBreaks = false;
-            console.log(`Parsed ${this.currentChorusLines.length} lines from chorus text (automatic pagination)`);
+            debug(`Parsed ${this.currentChorusLines.length} lines from chorus text (automatic pagination)`);
         }
     }
 
@@ -1317,7 +1317,7 @@ class ChorusDisplay {
             }
         }
 
-        console.log(`Longest line (${longestLine.length} chars): "${longestLine}"`);
+        debug(`Longest line (${longestLine.length} chars): "${longestLine}"`);
 
         // Create a temporary element to measure text width
         const tempElement = document.createElement('span');
@@ -1358,7 +1358,7 @@ class ChorusDisplay {
 
         // Set the optimal font size
         this.currentFontSize = Math.max(this.minFontSize, Math.min(this.maxFontSize, optimalSize));
-        console.log(`Optimal font size for horizontal fit: ${this.currentFontSize}px (container width: ${containerWidth}px)`);
+        debug(`Optimal font size for horizontal fit: ${this.currentFontSize}px (container width: ${containerWidth}px)`);
     }
     
     // Update page indicator
@@ -1383,7 +1383,7 @@ class ChorusDisplay {
         const containerHeight = container.clientHeight;
         const containerWidth = container.clientWidth;
         
-        console.log(`Container size: ${containerWidth}x${containerHeight}`);
+        debug(`Container size: ${containerWidth}x${containerHeight}`);
         
         // Don't change font size - just recalculate pagination with current font size
         this.applyFontSize();
@@ -1401,7 +1401,7 @@ class ChorusDisplay {
         this.displayCurrentPage();
         this.updateNavigationButtons();
         
-        console.log(`Auto-fit complete. Font size: ${this.currentFontSize}px, Pages: ${this.totalPages}`);
+        debug(`Auto-fit complete. Font size: ${this.currentFontSize}px, Pages: ${this.totalPages}`);
     }
     
     // Calculate how many lines can fit on one page - simplified approach
@@ -1409,7 +1409,7 @@ class ChorusDisplay {
         // If we have explicit page breaks, use them
         if (this.hasExplicitPageBreaks) {
             this.totalPages = this.explicitPages.length;
-            console.log(`Using explicit page breaks: ${this.totalPages} pages`);
+            debug(`Using explicit page breaks: ${this.totalPages} pages`);
             this.updatePageIndicator();
             return;
         }
@@ -1449,8 +1449,8 @@ class ChorusDisplay {
             this.currentPage = Math.max(0, this.totalPages - 1);
         }
 
-        console.log(`Available height: ${availableHeight}px, Line height: ${lineHeight}px`);
-        console.log(`Lines per page: ${this.linesPerPage}, Total lines: ${this.currentChorusLines.length}, Total pages: ${this.totalPages}`);
+        debug(`Available height: ${availableHeight}px, Line height: ${lineHeight}px`);
+        debug(`Lines per page: ${this.linesPerPage}, Total lines: ${this.currentChorusLines.length}, Total pages: ${this.totalPages}`);
 
         // Update page indicator
         this.updatePageIndicator();
@@ -1525,7 +1525,7 @@ class ChorusDisplay {
             }
         }
 
-        console.log(`Maximized font size for single page: ${this.currentFontSize}px`);
+        debug(`Maximized font size for single page: ${this.currentFontSize}px`);
     }
     
     // Optimize font size for multiple pages while maximizing screen usage
@@ -1573,7 +1573,7 @@ class ChorusDisplay {
             }
         }
 
-        console.log(`Optimized font size for multiple pages: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}`);
+        debug(`Optimized font size for multiple pages: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}`);
     }
     
     // Display the current page
@@ -1592,7 +1592,7 @@ class ChorusDisplay {
         // Get lines for current page
         const linesForPage = this.getLinesForPage(this.currentPage);
         
-        console.log(`Displaying page ${this.currentPage + 1}/${this.totalPages} with ${linesForPage.length} lines:`, linesForPage);
+        debug(`Displaying page ${this.currentPage + 1}/${this.totalPages} with ${linesForPage.length} lines:`, linesForPage);
         
         // Clear container
         container.innerHTML = '';
@@ -1688,20 +1688,20 @@ class ChorusDisplay {
         // Update page indicator
         this.updatePageIndicator();
         
-        console.log(`Displayed ${linesForPage.length} lines on page ${this.currentPage + 1}/${this.totalPages}`);
+        debug(`Displayed ${linesForPage.length} lines on page ${this.currentPage + 1}/${this.totalPages}`);
     }
     
     // Get lines for a specific page
     getLinesForPage(pageIndex) {
         if (pageIndex < 0 || pageIndex >= this.totalPages) {
-            console.log(`Invalid page index: ${pageIndex}, total pages: ${this.totalPages}`);
+            debug(`Invalid page index: ${pageIndex}, total pages: ${this.totalPages}`);
             return [];
         }
 
         // If we have explicit page breaks, return the explicit page
         if (this.hasExplicitPageBreaks) {
             const pageLines = this.explicitPages[pageIndex] || [];
-            console.log(`Page ${pageIndex + 1}: Explicit page with ${pageLines.length} lines`);
+            debug(`Page ${pageIndex + 1}: Explicit page with ${pageLines.length} lines`);
             return pageLines;
         }
 
@@ -1716,7 +1716,7 @@ class ChorusDisplay {
             }
         }
 
-        console.log(`Page ${pageIndex + 1}: Lines ${startLineIndex + 1}-${endLineIndex} of ${this.currentChorusLines.length}`);
+        debug(`Page ${pageIndex + 1}: Lines ${startLineIndex + 1}-${endLineIndex} of ${this.currentChorusLines.length}`);
         return pageLines;
     }
     
@@ -1758,7 +1758,7 @@ class ChorusDisplay {
                 nextChorusBtn.style.display = 'none';
             }
 
-            console.log(`Chorus navigation buttons updated: ${this.choruses ? this.choruses.length : 0} choruses, current index: ${this.currentChorusIndex}`);
+            debug(`Chorus navigation buttons updated: ${this.choruses ? this.choruses.length : 0} choruses, current index: ${this.currentChorusIndex}`);
         }
 
         // Update page navigation buttons
@@ -1784,7 +1784,7 @@ class ChorusDisplay {
                 nextPageBtn.style.display = 'none';
             }
 
-            console.log(`Page navigation buttons updated: ${this.totalPages} pages, current page: ${this.currentPage + 1}`);
+            debug(`Page navigation buttons updated: ${this.totalPages} pages, current page: ${this.currentPage + 1}`);
         }
     }
     
@@ -1841,16 +1841,16 @@ class ChorusDisplay {
     
     // Font size controls
     increaseFontSize() {
-        console.log('=== INCREASE FONT SIZE CALLED ===');
-        console.log('Current font size:', this.currentFontSize);
-        console.log('Current lines per page:', this.linesPerPage);
-        console.log('Current total pages:', this.totalPages);
-        console.log('Total chorus lines:', this.currentChorusLines.length);
+        debug('=== INCREASE FONT SIZE CALLED ===');
+        debug('Current font size:', this.currentFontSize);
+        debug('Current lines per page:', this.linesPerPage);
+        debug('Current total pages:', this.totalPages);
+        debug('Total chorus lines:', this.currentChorusLines.length);
         
         if (this.currentFontSize < this.maxFontSize) {
             this.currentFontSize += this.fontSizeStep;
             
-            console.log(`Increasing font size to ${this.currentFontSize}px`);
+            debug(`Increasing font size to ${this.currentFontSize}px`);
             
             // Recalculate lines per page first
             this.calculateLinesPerPage();
@@ -1870,10 +1870,10 @@ class ChorusDisplay {
             this.updateNavigationButtons();
             this.updatePageIndicator();
             
-            console.log('=== AFTER INCREASE ===');
-            console.log('New font size:', this.currentFontSize);
-            console.log('New lines per page:', this.linesPerPage);
-            console.log('New total pages:', this.totalPages);
+            debug('=== AFTER INCREASE ===');
+            debug('New font size:', this.currentFontSize);
+            debug('New lines per page:', this.linesPerPage);
+            debug('New total pages:', this.totalPages);
             
             this.showNotification(`Font size: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Pages: ${this.totalPages}`, 'info');
         } else {
@@ -1882,16 +1882,16 @@ class ChorusDisplay {
     }
     
     decreaseFontSize() {
-        console.log('=== DECREASE FONT SIZE CALLED ===');
-        console.log('Current font size:', this.currentFontSize);
-        console.log('Current lines per page:', this.linesPerPage);
-        console.log('Current total pages:', this.totalPages);
-        console.log('Total chorus lines:', this.currentChorusLines.length);
+        debug('=== DECREASE FONT SIZE CALLED ===');
+        debug('Current font size:', this.currentFontSize);
+        debug('Current lines per page:', this.linesPerPage);
+        debug('Current total pages:', this.totalPages);
+        debug('Total chorus lines:', this.currentChorusLines.length);
         
         if (this.currentFontSize > this.minFontSize) {
             this.currentFontSize -= this.fontSizeStep;
             
-            console.log(`Decreasing font size to ${this.currentFontSize}px`);
+            debug(`Decreasing font size to ${this.currentFontSize}px`);
             
             // Recalculate lines per page first
             this.calculateLinesPerPage();
@@ -1911,10 +1911,10 @@ class ChorusDisplay {
             this.updateNavigationButtons();
             this.updatePageIndicator();
             
-            console.log('=== AFTER DECREASE ===');
-            console.log('New font size:', this.currentFontSize);
-            console.log('New lines per page:', this.linesPerPage);
-            console.log('New total pages:', this.totalPages);
+            debug('=== AFTER DECREASE ===');
+            debug('New font size:', this.currentFontSize);
+            debug('New lines per page:', this.linesPerPage);
+            debug('New total pages:', this.totalPages);
             
             this.showNotification(`Font size: ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Pages: ${this.totalPages}`, 'info');
         } else {
@@ -1930,7 +1930,7 @@ class ChorusDisplay {
         // Update navigation buttons
         this.updateNavigationButtons();
         
-        console.log(`Recalculated: Font size ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
+        debug(`Recalculated: Font size ${this.currentFontSize}px, Lines per page: ${this.linesPerPage}, Total pages: ${this.totalPages}`);
     }
     
     // Optimize font size to fill screen with current font size
@@ -1979,7 +1979,7 @@ class ChorusDisplay {
             }
         }
         
-        console.log(`Optimized font size: ${this.currentFontSize}px, Pages: ${this.totalPages}, Lines per page: ${this.linesPerPage}`);
+        debug(`Optimized font size: ${this.currentFontSize}px, Pages: ${this.totalPages}, Lines per page: ${this.linesPerPage}`);
     }
     
     
@@ -1996,7 +1996,7 @@ class ChorusDisplay {
         // If no lines to show and we're not on the last page, move to next page
         if (linesToShow.length === 0 && this.currentPage < this.totalPages - 1) {
             this.currentPage++;
-            console.log(`Adjusted to page ${this.currentPage + 1} due to font size change`);
+            debug(`Adjusted to page ${this.currentPage + 1} due to font size change`);
         }
     }
     
@@ -2023,16 +2023,16 @@ class ChorusDisplay {
             line.style.textAlign = 'center'; // Ensure centering
         });
         
-        console.log(`Applied font size: ${this.currentFontSize}px with line height: ${lineHeight}px`);
+        debug(`Applied font size: ${this.currentFontSize}px with line height: ${lineHeight}px`);
     }
     
     // Handle window resize
     handleResize() {
-        console.log('handleResize called!');
+        debug('handleResize called!');
         // Debounce resize events
         clearTimeout(this.resizeTimeout);
         this.resizeTimeout = setTimeout(() => {
-            console.log('Resize timeout fired, calling autoFitText');
+            debug('Resize timeout fired, calling autoFitText');
             if (this.currentChorusLines.length > 0) {
                 // Recalculate optimal font size to fill the screen
                 this.autoFitText();
@@ -2042,7 +2042,7 @@ class ChorusDisplay {
 
     // Setup auto-hide buttons on mouse inactivity
     setupAutoHideButtons() {
-        console.log('Setting up auto-hide buttons...');
+        debug('Setting up auto-hide buttons...');
 
         // Get all button containers
         this.buttonElements = {
@@ -2066,7 +2066,7 @@ class ChorusDisplay {
             this.resetHideTimer();
         });
 
-        console.log('Auto-hide buttons initialized');
+        debug('Auto-hide buttons initialized');
     }
 
     // Reset the hide timer
@@ -2110,7 +2110,7 @@ class ChorusDisplay {
             this.buttonElements.pageIndicator.style.transition = 'opacity 0.3s ease-in';
         }
 
-        console.log('Buttons shown');
+        debug('Buttons shown');
     }
 
     // Hide all buttons with fade-out
@@ -2141,25 +2141,22 @@ class ChorusDisplay {
             this.buttonElements.pageIndicator.style.transition = 'opacity 0.5s ease-out';
         }
 
-        console.log('Buttons hidden after inactivity');
+        debug('Buttons hidden after inactivity');
     }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded event fired');
-    console.log('window.chorusData:', window.chorusData);
-    console.log('window.location.pathname:', window.location.pathname);
-    console.log('Includes /ChorusDisplay/:', window.location.pathname.includes('/ChorusDisplay/'));
+    debug('DOMContentLoaded, path:', window.location.pathname);
 
     // Only initialize ChorusDisplay if we're on a chorus display page
     // Check if we have chorus data or if we're on a ChorusDisplay page
     if (window.chorusData || window.location.pathname.includes('/ChorusDisplay/')) {
-        console.log('Creating ChorusDisplay instance...');
+        debug('Creating ChorusDisplay instance...');
         window.chorusDisplay = new ChorusDisplay();
-        console.log('ChorusDisplay instance created and stored in window.chorusDisplay');
+        debug('ChorusDisplay instance created and stored in window.chorusDisplay');
     } else {
-        console.log('Not on chorus display page, skipping ChorusDisplay initialization');
+        debug('Not on chorus display page, skipping ChorusDisplay initialization');
     }
 });
 
@@ -2177,7 +2174,7 @@ window.addEventListener('load', () => {
 window.setChorusList = function(chorusList, currentChorusId = null) {
     if (window.chorusDisplay) {
         window.chorusDisplay.setChorusList(chorusList, currentChorusId);
-        console.log('Chorus list set via global function');
+        debug('Chorus list set via global function');
     } else {
         console.warn('ChorusDisplay instance not available. Make sure you are on a chorus display page.');
     }

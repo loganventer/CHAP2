@@ -187,7 +187,7 @@ class SearchUI {
     displayResults(results, totalCount, metadata) {
         // Store results globally for chorus navigation
         window.currentChorusList = results;
-        console.log(`Search UI: Stored ${results.length} choruses for navigation`);
+        debug(`Search UI: Stored ${results.length} choruses for navigation`);
 
         // Update results header
         this.elements.resultsCount.textContent = `Found ${totalCount} result${totalCount !== 1 ? 's' : ''}`;
@@ -315,7 +315,7 @@ class SearchUI {
 
     exportResults() {
         // Implementation for exporting results
-        console.log('Export functionality to be implemented');
+        debug('Export functionality to be implemented');
     }
 
     // Utility methods

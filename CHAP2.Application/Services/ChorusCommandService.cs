@@ -1,7 +1,6 @@
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.Enums;
-using CHAP2.Domain.Events;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Application.Services
@@ -31,9 +30,10 @@ namespace CHAP2.Application.Services
             var chorus = Chorus.Create(name, chorusText, key, type, timeSignature);
             
             await _chorusRepository.AddAsync(chorus, cancellationToken);
-            
-            // Dispatch domain event
-            await _eventDispatcher.DispatchAsync(new ChorusCreatedEvent(chorus.Id, chorus.Name));
+
+            // Dispatch domain events raised by the entity and clear them
+            await _eventDispatcher.DispatchAndClearAsync(chorus.DomainEvents.ToList(), cancellationToken);
+            chorus.ClearDomainEvents();
             
             _logger.LogInformation("Successfully created chorus with ID: {Id}", chorus.Id);
             return chorus;
@@ -60,7 +60,11 @@ namespace CHAP2.Application.Services
 
             existingChorus.Update(name, chorusText, key, type, timeSignature);
             await _chorusRepository.UpdateAsync(existingChorus, cancellationToken);
-            
+
+            // Dispatch domain events raised by the entity and clear them
+            await _eventDispatcher.DispatchAndClearAsync(existingChorus.DomainEvents.ToList(), cancellationToken);
+            existingChorus.ClearDomainEvents();
+
             _logger.LogInformation("Successfully updated chorus with ID: {Id}", id);
             return existingChorus;
         }

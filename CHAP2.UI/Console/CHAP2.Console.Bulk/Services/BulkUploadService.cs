@@ -7,20 +7,6 @@ using CHAP2.Console.Common.DTOs;
 
 namespace CHAP2.Console.Bulk.Services;
 
-public interface IBulkUploadService
-{
-    Task<int> UploadFolderAsync(string folderPath, CancellationToken cancellationToken = default);
-    Task<UploadResult> UploadFileAsync(string filePath, CancellationToken cancellationToken = default);
-}
-
-public class UploadResult
-{
-    public bool Success { get; set; }
-    public string FileName { get; set; } = string.Empty;
-    public string? ErrorMessage { get; set; }
-    public Chorus? Chorus { get; set; }
-}
-
 public class BulkUploadService : IBulkUploadService
 {
     private readonly IHttpClientFactory _httpClientFactory;
@@ -130,7 +116,7 @@ public class BulkUploadService : IBulkUploadService
 
             // Call the API
             using var httpClient = _httpClientFactory.CreateClient("CHAP2API");
-            
+
             // Create the request
             var request = new HttpRequestMessage(HttpMethod.Post, "api/slide/convert");
             request.Content = new ByteArrayContent(fileBytes);
@@ -201,4 +187,4 @@ public class BulkUploadService : IBulkUploadService
 
         return result;
     }
-} 
+}

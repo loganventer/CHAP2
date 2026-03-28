@@ -83,24 +83,18 @@ public class SlideToChorusService : ISlideToChorusService
 
             var chorus = Chorus.CreateFromSlide(
                 name: cleanTitle,
-                chorusText: textWithoutTitle
+                chorusText: textWithoutTitle,
+                key: key
             );
-            
-            // Set the key if found
+
             if (key != MusicalKey.NotSet)
             {
-                var chorusType = typeof(Chorus);
-                var keyProperty = chorusType.GetProperty("Key");
-                if (keyProperty != null)
-                {
-                    keyProperty.SetValue(chorus, key);
-                    _logger.LogInformation("Successfully converted slide to chorus: {ChorusName} with key {Key} and {TextLength} characters", 
-                        chorus.Name, key, textWithoutTitle.Length);
-                }
+                _logger.LogInformation("Successfully converted slide to chorus: {ChorusName} with key {Key} and {TextLength} characters",
+                    chorus.Name, key, textWithoutTitle.Length);
             }
             else
             {
-                _logger.LogInformation("Successfully converted slide to chorus: {ChorusName} (no key detected) with {TextLength} characters", 
+                _logger.LogInformation("Successfully converted slide to chorus: {ChorusName} (no key detected) with {TextLength} characters",
                     chorus.Name, textWithoutTitle.Length);
             }
             

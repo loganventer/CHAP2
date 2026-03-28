@@ -12,7 +12,7 @@ class SetlistManager {
             const saved = localStorage.getItem('chap2_setlist');
             if (saved) {
                 this.setlist = JSON.parse(saved);
-                console.log(`Loaded ${this.setlist.length} choruses from localStorage`);
+                debug(`Loaded ${this.setlist.length} choruses from localStorage`);
             }
         } catch (e) {
             console.error('Error loading setlist from localStorage:', e);
@@ -24,7 +24,7 @@ class SetlistManager {
     saveToLocalStorage() {
         try {
             localStorage.setItem('chap2_setlist', JSON.stringify(this.setlist));
-            console.log(`Saved ${this.setlist.length} choruses to localStorage`);
+            debug(`Saved ${this.setlist.length} choruses to localStorage`);
         } catch (e) {
             console.error('Error saving setlist to localStorage:', e);
         }
@@ -419,5 +419,5 @@ window.addToSetlist = function(chorusId) {
 document.addEventListener('DOMContentLoaded', function() {
     window.setlistManager = new SetlistManager();
     window.setlistManager.refreshDisplay();
-    console.log('Setlist manager initialized');
+    debug('Setlist manager initialized');
 });

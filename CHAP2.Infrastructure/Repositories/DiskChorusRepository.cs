@@ -121,10 +121,25 @@ public class DiskChorusRepository : IChorusRepository
         }
     }
 
+    public async Task<IReadOnlyList<Chorus>> GetAllAsync(int skip, int take, CancellationToken cancellationToken = default)
+    {
+        if (skip < 0) throw new ArgumentOutOfRangeException(nameof(skip), "Skip must be non-negative");
+        if (take <= 0) throw new ArgumentOutOfRangeException(nameof(take), "Take must be positive");
+
+        var all = await GetAllAsync(cancellationToken);
+        return all.Skip(skip).Take(take).ToList();
+    }
+
+    public async Task<int> GetCountAsync(CancellationToken cancellationToken = default)
+    {
+        var files = Directory.GetFiles(_folderPath, "*.json");
+        return await Task.FromResult(files.Length);
+    }
+
     public async Task<IReadOnlyList<Chorus>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ids);
-        
+
         var tasks = ids.Select(id => GetByIdAsync(id, cancellationToken));
         var results = await Task.WhenAll(tasks);
         return results.OfType<Chorus>().ToList();

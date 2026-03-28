@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using CHAP2.Domain.Enums;
 using CHAP2.Domain.Exceptions;
+using CHAP2.Domain.Constants;
 using CHAP2.Application.Interfaces;
+using CHAP2.Application.Helpers;
 using CHAP2.Chorus.Api.Configuration;
+using CHAP2.Chorus.Api.Requests;
 using CHAP2.Shared.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -41,8 +44,8 @@ public class ChorusesController : ChapControllerAbstractBase
         try
         {
             var chorus = await _chorusCommandService.CreateChorusAsync(
-                request.Name,
-                request.ChorusText,
+                InputSanitizer.SanitizeName(request.Name),
+                InputSanitizer.SanitizeChorusText(request.ChorusText),
                 request.Key,
                 request.Type,
                 request.TimeSignature,
@@ -97,6 +100,9 @@ public class ChorusesController : ChapControllerAbstractBase
             return BadRequest("Search query 'q' is required");
         }
 
+        // Sanitize search query
+        q = InputSanitizer.SanitizeSearchQuery(q);
+
         if (searchMode == SearchMode.Contains && !string.IsNullOrEmpty(_searchSettings.DefaultSearchMode))
         {
             if (System.Enum.TryParse<SearchMode>(_searchSettings.DefaultSearchMode, true, out var defaultMode))
@@ -113,10 +119,10 @@ public class ChorusesController : ChapControllerAbstractBase
         {
             var searchScope = searchIn?.ToLowerInvariant() switch
             {
-                "name" => SearchScope.Name,
-                "text" => SearchScope.Text,
-                "key" => SearchScope.Key,
-                "all" or _ => SearchScope.All
+                SearchScopeConstants.Name => SearchScope.Name,
+                SearchScopeConstants.Text => SearchScope.Text,
+                SearchScopeConstants.Key => SearchScope.Key,
+                SearchScopeConstants.All or _ => SearchScope.All
             };
 
             var results = await _chorusQueryService.SearchChorusesAsync(q, searchMode, searchScope, cancellationToken);
@@ -172,8 +178,8 @@ public class ChorusesController : ChapControllerAbstractBase
         {
             var updatedChorus = await _chorusCommandService.UpdateChorusAsync(
                 id,
-                request.Name,
-                request.ChorusText,
+                InputSanitizer.SanitizeName(request.Name),
+                InputSanitizer.SanitizeChorusText(request.ChorusText),
                 request.Key,
                 request.Type,
                 request.TimeSignature,
@@ -210,22 +216,4 @@ public class ChorusesController : ChapControllerAbstractBase
             return NotFound(ex.Message);
         }
     }
-}
-
-public class CreateChorusRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string ChorusText { get; set; } = string.Empty;
-    public MusicalKey Key { get; set; }
-    public ChorusType Type { get; set; }
-    public TimeSignature TimeSignature { get; set; }
-}
-
-public class UpdateChorusRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string ChorusText { get; set; } = string.Empty;
-    public MusicalKey Key { get; set; }
-    public ChorusType Type { get; set; }
-    public TimeSignature TimeSignature { get; set; }
 } 

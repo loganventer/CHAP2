@@ -1,8 +1,6 @@
 // Modern Form JavaScript for CHAP2 Web Portal
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Form page loaded');
-    
     // Initialize form functionality
     initializeForm();
     
@@ -19,20 +17,15 @@ document.addEventListener('DOMContentLoaded', function() {
     autoResizeTextarea();
     setupSmartPlaceholder();
     
-    console.log('Form initialization complete');
 });
 
 function initializeForm() {
-    console.log('Initializing form...');
-    
     // Add focus effects to form inputs
     const inputs = document.querySelectorAll('.form-input, .form-select, .form-textarea');
-    console.log('Found inputs:', inputs.length);
-    
+
     inputs.forEach(input => {
         input.addEventListener('focus', function() {
             this.parentElement.classList.add('focused');
-            console.log('Input focused:', this.name);
         });
         
         input.addEventListener('blur', function() {
@@ -51,74 +44,33 @@ function initializeForm() {
         });
     });
     
-    console.log('Form initialization complete');
 }
 
 function setupFormSubmission() {
     const forms = document.querySelectorAll('.chorus-form');
-    console.log('Found forms:', forms.length);
-    
+
     forms.forEach((form, index) => {
-        console.log(`Setting up form ${index + 1}:`, form);
-        console.log('Form action:', form.action);
-        console.log('Form method:', form.method);
-        console.log('Form enctype:', form.enctype);
-        
         form.addEventListener('submit', function(e) {
-            console.log('=== FORM SUBMISSION START ===');
-            console.log('Form submission event triggered');
-            console.log('Form action:', form.action);
-            console.log('Form method:', form.method);
-            console.log('Form enctype:', form.enctype);
-            console.log('Event type:', e.type);
-            
-            // Log form data
-            const formData = new FormData(form);
-            console.log('Form data entries:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`  ${key}: ${value}`);
-            }
-            
-            // Log form elements
-            console.log('Form elements:');
-            const elements = form.elements;
-            for (let i = 0; i < elements.length; i++) {
-                const element = elements[i];
-                if (element.name) {
-                    console.log(`  ${element.name}: ${element.value} (type: ${element.type})`);
-                }
-            }
-            
             // Use HTML5 validation first
-            console.log('Checking HTML5 validity...');
             if (!form.checkValidity()) {
-                console.log('HTML5 validation failed');
                 e.preventDefault();
                 form.reportValidity();
                 showNotification('Please fix the errors before submitting', 'error');
                 return;
             }
-            console.log('HTML5 validation passed');
-            
+
             // Additional custom validation
-            console.log('Running custom validation...');
             if (!validateForm()) {
-                console.log('Custom validation failed');
                 e.preventDefault();
                 showNotification('Please fix the errors before submitting', 'error');
                 return;
             }
-            console.log('Custom validation passed');
-            
+
             // Add loading state
-            console.log('Adding loading state...');
             document.body.classList.add('loading');
-            
+
             // Show loading message
             showNotification('Saving chorus...', 'info');
-            
-            console.log('Form submission proceeding...');
-            console.log('=== FORM SUBMISSION END ===');
             
             // Remove loading state after a delay (in case of errors)
             setTimeout(() => {
@@ -410,7 +362,7 @@ function setupSmartPlaceholder() {
 
 // Save Confirmation Modal Functions
 function showSaveConfirmation() {
-    console.log('Showing save confirmation modal');
+    debug('Showing save confirmation modal');
     
     // Validate form first
     const form = document.querySelector('.chorus-form');
@@ -445,7 +397,7 @@ function showSaveConfirmation() {
 }
 
 function hideSaveConfirmation() {
-    console.log('Hiding save confirmation modal');
+    debug('Hiding save confirmation modal');
     
     const modal = document.getElementById('saveConfirmationModal');
     if (modal) {
@@ -457,7 +409,7 @@ function hideSaveConfirmation() {
 }
 
 function confirmSave() {
-    console.log('User confirmed save, submitting form');
+    debug('User confirmed save, submitting form');
     
     // Hide the modal
     hideSaveConfirmation();

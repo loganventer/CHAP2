@@ -11,4 +11,4 @@ obj/
 .DS_Store
 
 # Data files
-data/chorus/*.json 
+data/chorus/*.json .work/CodeQuality.Agents/

@@ -16,11 +16,43 @@ public class Chorus : IEquatable<Chorus>
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
     public ChorusMetadata Metadata { get; private set; }
-    public List<IDomainEvent> DomainEvents { get; } = new();
 
-    private Chorus() 
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    public void ClearDomainEvents() => _domainEvents.Clear();
+
+    private Chorus()
     {
         Metadata = new ChorusMetadata();
+    }
+
+    /// <summary>
+    /// Reconstitutes a Chorus entity from persistence without raising domain events.
+    /// Used by the repository/DTO layer for hydration from storage.
+    /// </summary>
+    internal static Chorus Reconstitute(
+        Guid id,
+        string name,
+        string chorusText,
+        MusicalKey key,
+        ChorusType type,
+        TimeSignature timeSignature,
+        DateTime createdAt,
+        DateTime? updatedAt,
+        ChorusMetadata? metadata)
+    {
+        return new Chorus
+        {
+            Id = id,
+            Name = name,
+            ChorusText = chorusText,
+            Key = key,
+            Type = type,
+            TimeSignature = timeSignature,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt,
+            Metadata = metadata ?? new ChorusMetadata()
+        };
     }
 
     public static Chorus Create(string name, string chorusText, MusicalKey key, ChorusType type, TimeSignature timeSignature)
@@ -51,15 +83,15 @@ public class Chorus : IEquatable<Chorus>
             CreatedAt = DateTime.UtcNow,
             Metadata = new ChorusMetadata()
         };
-        chorus.DomainEvents.Add(new ChorusCreatedEvent(chorus.Id, chorus.Name));
+        chorus._domainEvents.Add(new ChorusCreatedEvent(chorus.Id, chorus.Name));
         return chorus;
     }
 
-    public static Chorus CreateFromSlide(string name, string chorusText)
+    public static Chorus CreateFromSlide(string name, string chorusText, MusicalKey key = MusicalKey.NotSet)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Chorus name cannot be empty.");
-        
+
         if (string.IsNullOrWhiteSpace(chorusText))
             throw new DomainException("Chorus text cannot be empty.");
 
@@ -68,13 +100,13 @@ public class Chorus : IEquatable<Chorus>
             Id = Guid.NewGuid(),
             Name = name.Trim(),
             ChorusText = chorusText.Trim(),
-            Key = MusicalKey.NotSet,
+            Key = key,
             Type = ChorusType.NotSet,
             TimeSignature = TimeSignature.NotSet,
             CreatedAt = DateTime.UtcNow,
             Metadata = new ChorusMetadata()
         };
-        chorus.DomainEvents.Add(new ChorusCreatedEvent(chorus.Id, chorus.Name));
+        chorus._domainEvents.Add(new ChorusCreatedEvent(chorus.Id, chorus.Name));
         return chorus;
     }
 
@@ -94,6 +126,7 @@ public class Chorus : IEquatable<Chorus>
         Type = type;
         TimeSignature = timeSignature;
         UpdatedAt = DateTime.UtcNow;
+        _domainEvents.Add(new ChorusUpdatedEvent(Id, Name));
     }
 
     public void UpdateMetadata(ChorusMetadata metadata)

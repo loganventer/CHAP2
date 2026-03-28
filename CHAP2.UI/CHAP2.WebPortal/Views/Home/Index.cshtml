@@ -2,7 +2,7 @@
     ViewData["Title"] = "Search";
 }
 
-<div class="search-container">
+<div class="search-container" role="search">
     <div class="search-header">
         <div class="logo-section">
             <i class="fas fa-music logo-icon"></i>
@@ -40,10 +40,11 @@
         <div class="search-section active" id="regularSearch">
             <div class="search-box">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" 
-                       id="searchInput" 
-                       class="search-input" 
+                <input type="text"
+                       id="searchInput"
+                       class="search-input"
                        placeholder="Search choruses by name, text, or musical key..."
+                       aria-label="Search choruses by name, text, or musical key"
                        autocomplete="off">
                 <div class="search-actions">
                     <button class="clear-btn" id="clearBtn" style="display: none;">
@@ -101,6 +102,7 @@
                        id="aiSearchInput"
                        class="search-input auto-resize"
                        placeholder="Ask about choruses using natural language..."
+                       aria-label="AI search - ask about choruses using natural language"
                        rows="1"
                        maxlength="400"
                        style="resize: none; overflow: hidden; min-height: 40px; max-height: 120px;"></textarea>
@@ -198,7 +200,7 @@
         </div>
     </div>
 
-    <div class="results-container">
+    <div class="results-container" aria-live="polite">
         <!-- Regular Search Results -->
         <div class="results-section" id="regularResults">
             <div class="results-header" id="resultsHeader" style="display: none;">
@@ -339,39 +341,25 @@
     <script>
         // Initialize both search modes when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Initializing search modes...');
-            console.log('AiSearch class available:', typeof AiSearch);
-            console.log('window.aiSearch before init:', !!window.aiSearch);
-            
             // Initialize traditional search
             if (typeof initializeSearch === 'function') {
                 initializeSearch();
             }
-            
+
             // Initialize AI search
             if (typeof AiSearch === 'function') {
                 window.aiSearch = new AiSearch();
-                console.log('AI Search initialized:', !!window.aiSearch);
-                console.log('cancelCurrentSearch available:', typeof window.aiSearch.cancelCurrentSearch);
-                console.log('All AI Search methods:', Object.getOwnPropertyNames(window.aiSearch));
             } else {
-                console.log('AiSearch class not found, trying alternative initialization...');
                 // Try to initialize after a short delay
                 setTimeout(() => {
                     if (typeof AiSearch === 'function') {
                         window.aiSearch = new AiSearch();
-                        console.log('AI Search initialized (delayed):', !!window.aiSearch);
-                        console.log('cancelCurrentSearch available (delayed):', typeof window.aiSearch.cancelCurrentSearch);
-                    } else {
-                        console.log('AiSearch class still not found after delay');
                     }
                 }, 100);
             }
-            
+
             // Set up tab switching
             setupTabSwitching();
-            
-            console.log('Search modes initialized');
         });
         
         function setupTabSwitching() {
@@ -381,22 +369,11 @@
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const targetTab = button.getAttribute('data-tab');
-                    console.log('Tab switched to:', targetTab);
-                    
+
                     // Cancel AI search if it's running
                     if (window.aiSearch && typeof window.aiSearch.cancelCurrentSearch === 'function') {
-                        console.log('Tab switching: Cancelling AI search');
                         window.aiSearch.cancelCurrentSearch();
-                    } else {
-                        console.log('Tab switching: AI search not available or cancelCurrentSearch not found');
-                        console.log('window.aiSearch exists:', !!window.aiSearch);
-                        if (window.aiSearch) {
-                            console.log('Available methods:', Object.getOwnPropertyNames(window.aiSearch));
-                        }
                     }
-                    
-                    // Clear all results when switching tabs
-                    console.log('Tab switching: Clearing all results');
                     
                     // Clear regular search results
                     const resultsTable = document.getElementById('resultsTable');
@@ -472,15 +449,12 @@
 
                     // Re-initialize search if switching to regular search
                     if (targetTab === 'regular') {
-                        console.log('Switching to regular search, re-initializing...');
                         setTimeout(() => {
                             if (typeof initializeSearch === 'function') {
                                 initializeSearch();
                             }
                         }, 100);
                     }
-                    
-                    console.log('Tab switching completed');
                 });
             });
         }
@@ -488,7 +462,7 @@
         // Browse All Choruses function
         async function browseAllChoruses() {
             try {
-                console.log('Browse All: Fetching all choruses...');
+                debug('Browse All: Fetching all choruses...');
 
                 // Show loading notification
                 const loadingNotification = document.createElement('div');
@@ -506,7 +480,7 @@
                 const data = await response.json();
                 const allChoruses = data.results || [];
 
-                console.log(`Browse All: Found ${allChoruses.length} choruses`);
+                debug(`Browse All: Found ${allChoruses.length} choruses`);
 
                 if (allChoruses.length === 0) {
                     alert('No choruses found in the database.');
@@ -524,7 +498,7 @@
                 // Open first chorus in new window with full list for navigation
                 window.open(`/Home/ChorusDisplay/${allChoruses[0].id}`, '_blank');
 
-                console.log('Browse All: Opened first chorus with full navigation list');
+                debug('Browse All: Opened first chorus with full navigation list');
             } catch (error) {
                 console.error('Browse All: Error loading choruses', error);
                 alert('Error loading choruses. Please try again.');

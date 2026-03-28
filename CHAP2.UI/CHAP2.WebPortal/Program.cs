@@ -51,7 +51,10 @@ builder.Services.AddScoped<IChorusRepository>(provider =>
     var folderPath = Path.IsPathRooted(chorusDataPath)
         ? chorusDataPath
         : Path.Combine(Directory.GetCurrentDirectory(), chorusDataPath);
-    return new DiskChorusRepository(folderPath, logger);
+    var innerRepo = new DiskChorusRepository(folderPath, logger);
+    var cache = provider.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+    var cacheLogger = provider.GetRequiredService<ILogger<CachedChorusRepository>>();
+    return new CachedChorusRepository(innerRepo, cache, cacheLogger);
 });
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 

@@ -1,6 +1,6 @@
 // Search Integration - Initializes the clean search system
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Search Integration: Initializing...');
+    debug('Search Integration: Initializing...');
     
     // Initialize regular search using the original search.js functionality
     const searchContainer = document.getElementById('searchContainer');
@@ -119,13 +119,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Initialize the original search functionality
         initializeSearch();
-        console.log('Search Integration: Regular search initialized with original functionality');
+        debug('Search Integration: Regular search initialized with original functionality');
     }
 
     // Initialize AI search if container exists
     const aiSearchContainer = document.getElementById('aiSearchContainer');
     if (aiSearchContainer) {
-        console.log('Search Integration: Initializing AI search...');
+        debug('Search Integration: Initializing AI search...');
         
         // Create AI search interface
         aiSearchContainer.innerHTML = `
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize the AiSearch class for the AI tab
         window.aiSearch = new AiSearch();
-        console.log('Search Integration: AI search initialized');
+        debug('Search Integration: AI search initialized');
     }
     
     // Set up tab switching
@@ -280,11 +280,11 @@ function setupTabSwitching() {
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetTab = button.getAttribute('data-tab');
-            console.log('Tab switched to:', targetTab);
+            debug('Tab switched to:', targetTab);
             
             // Cancel AI search if it's running
             if (window.aiSearch) {
-                console.log('Tab switching: Cancelling AI search');
+                debug('Tab switching: Cancelling AI search');
                 window.aiSearch.cancelCurrentSearch();
             }
             
@@ -309,7 +309,7 @@ function setupTabSwitching() {
             
             // Re-initialize search if switching to regular search
             if (targetTab === 'regular') {
-                console.log('Switching to regular search, re-initializing...');
+                debug('Switching to regular search, re-initializing...');
                 setTimeout(() => {
                     if (typeof initializeSearch === 'function') {
                         initializeSearch();
@@ -317,14 +317,14 @@ function setupTabSwitching() {
                 }, 100);
             }
             
-            console.log('Tab switching completed');
+            debug('Tab switching completed');
         });
     });
 }
 
 // Function to clear all search results
 function clearAllSearchResults() {
-    console.log('Clearing all search results...');
+    debug('Clearing all search results...');
     
     // Clear traditional search results
     const resultsTable = document.getElementById('resultsTable');
@@ -391,7 +391,7 @@ function clearAllSearchResults() {
         aiSearchInput.value = '';
     }
     
-    console.log('All search results cleared');
+    debug('All search results cleared');
 }
 
 // Global variable to store current search results for chorus navigation
@@ -403,7 +403,7 @@ function viewChorus(id) {
     if (window.currentChorusList && window.currentChorusList.length > 0) {
         sessionStorage.setItem('chorusList', JSON.stringify(window.currentChorusList));
         sessionStorage.setItem('currentChorusId', id);
-        console.log(`Stored ${window.currentChorusList.length} choruses in sessionStorage for navigation`);
+        debug(`Stored ${window.currentChorusList.length} choruses in sessionStorage for navigation`);
     }
 
     window.open(`/Home/ChorusDisplay/${id}`, '_blank');
