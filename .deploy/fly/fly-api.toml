@@ -1,0 +1,21 @@
+app = "chap2-api"
+primary_region = "jnb"
+
+[build]
+  dockerfile = "../../langchain_search_service/Dockerfile.api.simple"
+
+[env]
+  ASPNETCORE_ENVIRONMENT = "Production"
+  ASPNETCORE_URLS = "http://0.0.0.0:8080"
+  ASPNETCORE_Kestrel__Endpoints__Http__Url = "http://0.0.0.0:8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[mounts]
+  source = "chorus_data"
+  destination = "/app/data"
