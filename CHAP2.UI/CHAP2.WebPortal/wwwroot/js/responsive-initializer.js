@@ -17,6 +17,9 @@ class ResponsiveInitializer {
         const deviceDetector = new CHAP2.DeviceDetector();
         CHAP2.deviceDetector = deviceDetector;
 
+        // Populate mobile sync label on any page that has it (Index page)
+        ResponsiveInitializer._populateMobileSyncLabel();
+
         // Initialize page-specific features
         if (window.chorusData) {
             ResponsiveInitializer._initChorusDisplayPage(CHAP2, deviceDetector);
@@ -63,9 +66,6 @@ class ResponsiveInitializer {
             }
         });
 
-        // Show the mobile sync URL label on desktop
-        ResponsiveInitializer._populateMobileSyncLabel();
-
         // Hook into existing ChorusDisplay navigation to broadcast changes.
         // The desktop ChorusDisplay navigates via full page reload (window.location.href),
         // so we broadcast BEFORE the navigation happens.
@@ -95,9 +95,9 @@ class ResponsiveInitializer {
             const data = await response.json();
 
             if (data.url) {
-                const path = window.location.pathname;
-                labelEl.textContent = `Mobile sync: ${data.url}${path}`;
-                debug('[ResponsiveInitializer] Mobile sync URL:', data.url + path);
+                const syncUrl = `${data.url}/Home/MobileSync`;
+                labelEl.textContent = `Mobile: ${syncUrl}`;
+                debug('[ResponsiveInitializer] Mobile sync URL:', syncUrl);
             } else {
                 labelEl.textContent = 'Network unavailable';
             }

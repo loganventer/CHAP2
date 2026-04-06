@@ -1,0 +1,239 @@
+@{
+    ViewData["Title"] = "Mobile Sync";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>CHAP2 Mobile Sync</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/responsive.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mobile-chorus.css" asp-append-version="true" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #001f3f 0%, #003d7a 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        /* Override: always show the mobile card (this page is mobile-only) */
+        .mobile-chorus-card {
+            display: flex !important;
+        }
+
+        /* Waiting state */
+        .mobile-sync-waiting {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            padding: 2rem;
+            z-index: 5;
+        }
+
+        .mobile-sync-waiting__icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.6;
+            animation: pulse-waiting 2s ease-in-out infinite;
+        }
+
+        .mobile-sync-waiting__title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .mobile-sync-waiting__subtitle {
+            font-size: 0.9rem;
+            opacity: 0.6;
+            max-width: 280px;
+        }
+
+        .mobile-sync-waiting__status {
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .mobile-sync-waiting__dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .mobile-sync-waiting__dot--connected {
+            background: #10b981;
+        }
+
+        .mobile-sync-waiting__dot--reconnecting {
+            background: #f59e0b;
+            animation: pulse-waiting 1.5s infinite;
+        }
+
+        @@keyframes pulse-waiting {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Hide waiting when chorus is active */
+        .mobile-sync-waiting--hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Waiting state (shown until a chorus is received) -->
+    <div class="mobile-sync-waiting" id="syncWaiting">
+        <div class="mobile-sync-waiting__icon">
+            <i class="fas fa-music"></i>
+        </div>
+        <div class="mobile-sync-waiting__title">CHAP2 Mobile Sync</div>
+        <div class="mobile-sync-waiting__subtitle">
+            Waiting for a chorus to be displayed on the main screen...
+        </div>
+        <div class="mobile-sync-waiting__status">
+            <div class="mobile-sync-waiting__dot" id="waitingDot"></div>
+            <span id="waitingStatus">Connecting...</span>
+        </div>
+    </div>
+
+    <!-- Mobile chorus card (hidden until a chorus arrives) -->
+    <div class="mobile-chorus-card" id="mobileChorusCard" style="display: none;" aria-label="Chorus display">
+        <div class="mobile-chorus-card__header">
+            <div class="mobile-chorus-card__sync-indicator mobile-chorus-card__sync-indicator--connected" id="syncIndicator" title="Connected"></div>
+            <h1 class="mobile-chorus-card__title" id="mobileChorusTitle"></h1>
+            <span class="mobile-chorus-card__key" id="mobileChorusKey"></span>
+            <button class="lyrics-panel__toggle" id="lyricsPanelToggle"
+                    aria-expanded="false" aria-controls="lyricsPanel">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="lyrics-panel" id="lyricsPanel" aria-hidden="true">
+            <div class="lyrics-panel__content" id="lyricsPanelContent"></div>
+        </div>
+        <div class="mobile-chorus-card__nav">
+            <button class="mobile-nav-btn" id="mobilePrevBtn" aria-label="Previous chorus">
+                <i class="fas fa-chevron-left"></i> Prev
+            </button>
+            <span class="mobile-chorus-card__position" id="mobilePosition"></span>
+            <button class="mobile-nav-btn" id="mobileNextBtn" aria-label="Next chorus">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="~/js/utils.js" asp-append-version="true"></script>
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script src="~/js/device-detector.js" asp-append-version="true"></script>
+    <script src="~/js/touch-handler.js" asp-append-version="true"></script>
+    <script src="~/js/lyrics-panel.js" asp-append-version="true"></script>
+    <script src="~/js/chorus-sync-service.js" asp-append-version="true"></script>
+    <script src="~/js/mobile-chorus-view.js" asp-append-version="true"></script>
+    <script>
+        /**
+         * MobileSyncPage - Standalone mobile sync page initializer.
+         * Connects to SignalR and waits for chorus change events.
+         */
+        (function () {
+            const CHAP2 = window.CHAP2 || {};
+            const waitingEl = document.getElementById('syncWaiting');
+            const waitingDot = document.getElementById('waitingDot');
+            const waitingStatus = document.getElementById('waitingStatus');
+            const cardEl = document.getElementById('mobileChorusCard');
+            let mobileView = null;
+            let choruses = [];
+            let currentIndex = -1;
+
+            function updateWaitingStatus(status) {
+                waitingDot.className = 'mobile-sync-waiting__dot';
+                if (status === 'connected') {
+                    waitingDot.classList.add('mobile-sync-waiting__dot--connected');
+                    waitingStatus.textContent = 'Connected - waiting for chorus...';
+                } else if (status === 'reconnecting') {
+                    waitingDot.classList.add('mobile-sync-waiting__dot--reconnecting');
+                    waitingStatus.textContent = 'Reconnecting...';
+                } else {
+                    waitingStatus.textContent = 'Disconnected';
+                }
+            }
+
+            // Create sync service
+            const syncService = new CHAP2.ChorusSyncService({
+                onStatusChange: (status) => {
+                    updateWaitingStatus(status);
+                    if (mobileView) {
+                        mobileView.updateSyncStatus(status);
+                    }
+                }
+            });
+            CHAP2.syncService = syncService;
+
+            // Create device detector
+            const deviceDetector = new CHAP2.DeviceDetector();
+
+            async function showChorus(chorusId) {
+                try {
+                    const response = await fetch('/Home/ChorusData/' + chorusId);
+                    if (!response.ok) return;
+                    const data = await response.json();
+
+                    const chorusData = {
+                        id: data.id,
+                        name: data.name,
+                        key: data.key,
+                        text: data.chorusText
+                    };
+
+                    // Hide waiting, show card
+                    waitingEl.classList.add('mobile-sync-waiting--hidden');
+                    cardEl.style.display = '';
+
+                    if (!mobileView) {
+                        // First chorus received - initialize the mobile view
+                        // Set chorusData on window so MobileChorusView can use it
+                        window.chorusData = chorusData;
+                        mobileView = new CHAP2.MobileChorusView({
+                            deviceDetector: deviceDetector,
+                            syncService: syncService,
+                            chorusData: chorusData
+                        });
+                        mobileView.init();
+                        mobileView.show();
+                        CHAP2.mobileChorusView = mobileView;
+                    } else {
+                        mobileView.updateChorus(chorusData);
+                    }
+                } catch (err) {
+                    console.error('[MobileSyncPage] Error fetching chorus:', err);
+                }
+            }
+
+            // Listen for chorus changes
+            syncService.onChorusChanged((chorusId) => {
+                debug('[MobileSyncPage] Chorus changed:', chorusId);
+                showChorus(chorusId);
+            });
+
+            // Connect
+            syncService.connect();
+        })();
+    </script>
+</body>
+</html>

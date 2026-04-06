@@ -48,6 +48,11 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult MobileSync()
+    {
+        return View();
+    }
+
     public IActionResult CleanSearch()
     {
         return View();
