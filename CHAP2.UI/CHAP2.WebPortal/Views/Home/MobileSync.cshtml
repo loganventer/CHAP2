@@ -237,8 +237,21 @@
                 showChorus(chorusId);
             });
 
-            // Connect, then check if there's already a chorus being displayed
+            // Connect, then load chorus from URL param or server state
             syncService.connect().then(async () => {
+                // Check for chorusId in URL (from mobile search tap)
+                const params = new URLSearchParams(window.location.search);
+                const urlChorusId = params.get('chorusId');
+
+                if (urlChorusId) {
+                    debug('[MobileSyncPage] Loading chorus from URL:', urlChorusId);
+                    showChorus(urlChorusId);
+                    // Also broadcast so desktop picks it up
+                    syncService.broadcastChorusChange(urlChorusId);
+                    return;
+                }
+
+                // Otherwise check if there's already a chorus being displayed
                 try {
                     const response = await fetch('/Home/CurrentChorus');
                     if (response.ok) {

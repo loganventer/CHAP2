@@ -256,17 +256,15 @@ function createMobileResultCard(result, index) {
             <button class="action-btn action-btn-add-setlist" onclick="event.stopPropagation(); addToSetlistFromSearch('${result.id}')" aria-label="Add to Setlist">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="action-btn" onclick="event.stopPropagation(); openInNewWindow('${result.id}')" aria-label="Open">
-                <i class="fas fa-external-link-alt"></i>
-            </button>
-            <button class="action-btn" onclick="event.stopPropagation(); showDetail('${result.id}')" aria-label="Details">
+            <button class="action-btn" onclick="event.stopPropagation(); window.location.href='/sync?chorusId=${result.id}'" aria-label="View">
                 <i class="fas fa-eye"></i>
             </button>
         </div>
     `;
 
     card.addEventListener('click', function () {
-        window.open('/Home/ChorusDisplay/' + result.id, '_blank');
+        // On mobile, open the sync view instead of chorus display
+        window.location.href = '/sync?chorusId=' + result.id;
     });
 
     return card;
