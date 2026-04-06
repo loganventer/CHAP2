@@ -244,21 +244,14 @@ function displayResults(results, searchTerm) {
     const resultsHeader = document.getElementById('resultsHeader');
     const resultsCount = document.getElementById('resultsCount');
     const noResults = document.getElementById('noResults');
-    const resultsMobileCards = document.getElementById('resultsMobileCards');
-    
+
     // Clear previous results
     resultsBody.innerHTML = '';
-    if (resultsMobileCards) {
-        resultsMobileCards.innerHTML = '';
-    }
-    
+
     if (results.length === 0) {
         resultsTable.style.display = 'none';
         resultsHeader.style.display = 'none';
         noResults.style.display = 'flex';
-        if (resultsMobileCards) {
-            resultsMobileCards.style.display = 'none';
-        }
         return;
     }
     
@@ -278,15 +271,6 @@ function displayResults(results, searchTerm) {
         const row = createResultRow(result, index + 1);
         resultsBody.appendChild(row);
     });
-    
-    // Populate mobile cards
-    if (resultsMobileCards) {
-        results.forEach((result, index) => {
-            const card = createMobileResultCard(result, index + 1);
-            resultsMobileCards.appendChild(card);
-        });
-        resultsMobileCards.style.display = 'block';
-    }
     
     // Animate results
     animateResults();
