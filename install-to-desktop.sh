@@ -315,7 +315,7 @@ detect_local_ip() {
 }
 
 ###############################################################################
-# Open firewall port for mobile browsing
+# Open firewall for mobile browsing
 ###############################################################################
 open_firewall_port() {
     detect_local_ip
@@ -325,7 +325,7 @@ open_firewall_port() {
         echo ""
         log_info "========================================="
         log_info "  Mobile Sync URL:"
-        log_info "  http://$LOCAL_IP:8080"
+        log_info "  http://$LOCAL_IP:8080/Home/MobileSync"
         log_info "========================================="
         echo ""
         log_info "Open this URL on phones to sync with the chorus display"
@@ -337,28 +337,72 @@ open_firewall_port() {
     FIREWALL_STATE=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null | grep -o "enabled\|disabled" || echo "unknown")
 
     if [ "$FIREWALL_STATE" = "enabled" ]; then
-        log_info "macOS Firewall is enabled. Adding exceptions for network access..."
+        log_info "macOS Firewall is enabled. Configuring exceptions for network access..."
 
-        # Add Docker to firewall exceptions
-        sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Docker.app/Contents/MacOS/Docker 2>/dev/null || true
-        sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Applications/Docker.app/Contents/MacOS/Docker 2>/dev/null || true
+        # Find and whitelist all Docker-related binaries
+        # Docker Desktop uses multiple executables for networking
+        local docker_binaries=(
+            "/Applications/Docker.app/Contents/MacOS/Docker"
+            "/Applications/Docker.app/Contents/MacOS/com.docker.backend"
+            "/Applications/Docker.app/Contents/MacOS/com.docker.vmnetd"
+            "/Applications/Docker.app/Contents/Resources/bin/vpnkit"
+        )
 
-        # Also add com.docker.backend if it exists
-        if [ -f "/Applications/Docker.app/Contents/MacOS/com.docker.backend" ]; then
-            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Docker.app/Contents/MacOS/com.docker.backend 2>/dev/null || true
-            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Applications/Docker.app/Contents/MacOS/com.docker.backend 2>/dev/null || true
+        # Also dynamically find any other Docker binaries
+        while IFS= read -r binary; do
+            docker_binaries+=("$binary")
+        done < <(find /Applications/Docker.app/Contents -type f -perm +111 -name "com.docker.*" 2>/dev/null)
+
+        local added=0
+        for binary in "${docker_binaries[@]}"; do
+            if [ -f "$binary" ]; then
+                sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add "$binary" 2>/dev/null || true
+                sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp "$binary" 2>/dev/null || true
+                added=$((added + 1))
+            fi
+        done
+
+        # Also whitelist the docker CLI itself
+        local docker_path
+        docker_path=$(which docker 2>/dev/null)
+        if [ -n "$docker_path" ] && [ -f "$docker_path" ]; then
+            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add "$docker_path" 2>/dev/null || true
+            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp "$docker_path" 2>/dev/null || true
+            added=$((added + 1))
         fi
 
-        log_success "Docker added to firewall exceptions"
+        log_success "$added Docker binaries added to firewall exceptions"
     else
         log_info "macOS Firewall is disabled - no configuration needed"
     fi
 
-    # Verify the port is accessible from the network
+    # Verify the port is accessible
     if nc -z localhost 8080 2>/dev/null; then
         log_success "Port 8080 is open and accepting connections"
     else
         log_warn "Port 8080 does not appear to be listening yet - services may still be starting"
+    fi
+
+    # Check for iPhone hotspot (client isolation blocks device-to-device traffic)
+    if [ "$LOCAL_IP" != "unknown" ]; then
+        local subnet
+        subnet=$(ifconfig en0 2>/dev/null | awk '/netmask/{print $4}')
+        local router
+        router=$(netstat -rn 2>/dev/null | awk '/default.*en0/{print $2; exit}')
+
+        if [[ "$LOCAL_IP" == 172.20.10.* ]] || [[ "$router" == 172.20.10.* ]]; then
+            echo ""
+            log_warn "========================================="
+            log_warn "  iPhone Hotspot Detected!"
+            log_warn "========================================="
+            log_warn "iPhone hotspots block device-to-device traffic."
+            log_warn "Mobile phones cannot reach this Mac over a hotspot."
+            log_warn ""
+            log_warn "To enable mobile sync, connect all devices to"
+            log_warn "the same Wi-Fi network (home/church router)."
+            log_warn "========================================="
+            echo ""
+        fi
     fi
 }
 
@@ -423,12 +467,53 @@ SCRIPT_EOF
 }
 
 ###############################################################################
+# Nuke all Docker state (containers, images, volumes, networks, build cache)
+###############################################################################
+nuke_docker() {
+    log_info "Nuking all Docker containers, images, volumes, and cache..."
+
+    # Stop all running containers
+    local containers
+    containers=$(docker ps -aq 2>/dev/null)
+    if [ -n "$containers" ]; then
+        docker stop $containers 2>/dev/null || true
+        docker rm -f $containers 2>/dev/null || true
+        log_success "All containers removed"
+    else
+        log_info "No containers to remove"
+    fi
+
+    # Remove all images
+    local images
+    images=$(docker images -q 2>/dev/null)
+    if [ -n "$images" ]; then
+        docker rmi -f $images 2>/dev/null || true
+        log_success "All images removed"
+    else
+        log_info "No images to remove"
+    fi
+
+    # Remove all volumes, networks, and build cache
+    docker volume prune -f 2>/dev/null || true
+    docker network prune -f 2>/dev/null || true
+    docker system prune -af --volumes 2>/dev/null || true
+
+    log_success "Docker nuked clean"
+}
+
+###############################################################################
 # Copy to Desktop
 ###############################################################################
 copy_to_desktop() {
     local desktop_file="$HOME/Desktop/start-chap2.command"
 
-    log_info "Copying startup script to Desktop..."
+    # Always remove existing script first
+    if [ -f "$desktop_file" ]; then
+        rm -f "$desktop_file"
+        log_info "Removed existing desktop script"
+    fi
+
+    log_info "Creating fresh startup script on Desktop..."
 
     # Create a temporary file
     local temp_file=$(mktemp)
@@ -458,6 +543,13 @@ main() {
 
     # Detect project directory
     detect_project_dir
+
+    # Nuke Docker before creating fresh desktop script
+    if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then
+        nuke_docker
+    else
+        log_info "Docker not running, skipping cleanup"
+    fi
 
     # Copy to Desktop
     copy_to_desktop
