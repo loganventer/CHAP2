@@ -109,6 +109,11 @@ class MobileChorusView {
         this._updateDisplay();
         this._updateNavigationState();
 
+        // Default lyrics expanded on load
+        if (this._lyricsPanel && this._chorusData) {
+            this._lyricsPanel.expand();
+        }
+
         debug('[MobileChorusView] Initialized.');
     }
 
