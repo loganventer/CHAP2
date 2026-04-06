@@ -4,36 +4,33 @@
    Visible only at mobile breakpoints (<= 768px).
    ========================================================================== */
 
-/* Hide mobile view on desktop */
+/* Hide mobile view on desktop, and always on ChorusDisplay page */
 @media (min-width: 769px) {
     .mobile-chorus-card {
         display: none !important;
     }
 }
 
-/* Hide desktop chorus elements on mobile */
-@media (max-width: 768px) {
-    .chorus-container {
-        display: none !important;
-    }
+/* On ChorusDisplay page, always hide the mobile card */
+.chorus-display-page .mobile-chorus-card {
+    display: none !important;
+}
 
-    .controls-container {
-        display: none !important;
-    }
+/* Hide desktop chorus elements ONLY on the MobileSync page (body.mobile-sync-page) */
+.mobile-sync-page .chorus-container {
+    display: none !important;
+}
 
-    .page-indicator {
-        display: none !important;
-    }
+.mobile-sync-page .controls-container {
+    display: none !important;
+}
 
-    .animated-background {
-        /* Simplify to static gradient on mobile for battery savings */
-        animation: none !important;
-    }
+.mobile-sync-page .page-indicator {
+    display: none !important;
+}
 
-    .animated-background svg,
-    .animated-background .flowing-notes-container {
-        display: none !important;
-    }
+.mobile-sync-page .animated-background {
+    display: none !important;
 }
 
 /* ==========================================================================
