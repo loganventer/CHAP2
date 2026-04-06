@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: chap2-api
+    runtime: docker
+    dockerfilePath: langchain_search_service/Dockerfile.api.simple
+    dockerContext: .
+    region: frankfurt
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:10000
+      - key: ASPNETCORE_Kestrel__Endpoints__Http__Url
+        value: http://0.0.0.0:10000
+    disk:
+      name: chorus-data
+      mountPath: /app/data
+      sizeGB: 1
+
+  - type: web
+    name: chap2-web
+    runtime: docker
+    dockerfilePath: langchain_search_service/Dockerfile.webportal.simple
+    dockerContext: .
+    region: frankfurt
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:10000
+      - key: ASPNETCORE_Kestrel__Endpoints__Http__Url
+        value: http://0.0.0.0:10000
+      - key: ApiService__BaseUrl
+        fromService:
+          name: chap2-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
