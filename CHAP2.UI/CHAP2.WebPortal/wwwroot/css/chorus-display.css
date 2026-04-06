@@ -713,6 +713,50 @@
     z-index: 15;
 }
 
+/* Mobile Sync URL Label (desktop only) */
+.mobile-sync-label {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    z-index: 15;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: opacity 0.5s ease;
+    user-select: all;
+}
+
+.mobile-sync-label i {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.mobile-sync-label:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 768px) {
+    .mobile-sync-label {
+        display: none;
+    }
+}
+
+@media print {
+    .mobile-sync-label {
+        display: none;
+    }
+}
+
 /* Controls Container */
 .controls-container {
     position: fixed;
@@ -758,8 +802,8 @@
     }
 
     .nav-btn {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
         font-size: 1rem;
     }
 
@@ -788,8 +832,8 @@
     }
 
     .control-btn {
-        width: 35px;
-        height: 35px;
+        width: 44px;
+        height: 44px;
         font-size: 0.8rem;
     }
 

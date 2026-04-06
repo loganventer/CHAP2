@@ -1,0 +1,310 @@
+/* ==========================================================================
+   Mobile Chorus View
+   Compact card with title + key, expandable lyrics panel, navigation.
+   Visible only at mobile breakpoints (<= 768px).
+   ========================================================================== */
+
+/* Hide mobile view on desktop */
+@media (min-width: 769px) {
+    .mobile-chorus-card {
+        display: none !important;
+    }
+}
+
+/* Hide desktop chorus elements on mobile */
+@media (max-width: 768px) {
+    .chorus-container {
+        display: none !important;
+    }
+
+    .controls-container {
+        display: none !important;
+    }
+
+    .page-indicator {
+        display: none !important;
+    }
+
+    .animated-background {
+        /* Simplify to static gradient on mobile for battery savings */
+        animation: none !important;
+    }
+
+    .animated-background svg,
+    .animated-background .flowing-notes-container {
+        display: none !important;
+    }
+}
+
+/* ==========================================================================
+   Mobile Card
+   ========================================================================== */
+
+.mobile-chorus-card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #001f3f 0%, #003d7a 100%);
+    color: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---------- Header ---------- */
+
+.mobile-chorus-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.mobile-chorus-card__title {
+    flex: 1;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ffffff;
+    line-height: 1.3;
+}
+
+.mobile-chorus-card__key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(99, 102, 241, 0.8);
+    color: #ffffff;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 2.5rem;
+    text-align: center;
+}
+
+/* ---------- Sync Indicator ---------- */
+
+.mobile-chorus-card__sync-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    flex-shrink: 0;
+    transition: background-color 0.3s ease;
+}
+
+.mobile-chorus-card__sync-indicator--connected {
+    background: #10b981;
+}
+
+.mobile-chorus-card__sync-indicator--reconnecting {
+    background: #f59e0b;
+    animation: pulse-indicator 1.5s infinite;
+}
+
+@keyframes pulse-indicator {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ---------- Lyrics Panel (Accordion) ---------- */
+
+.lyrics-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease-in-out;
+    flex: 1;
+    min-height: 0;
+}
+
+.lyrics-panel--expanded {
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.lyrics-panel__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.lyrics-panel__toggle:hover,
+.lyrics-panel__toggle:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.lyrics-panel__toggle i {
+    transition: transform 0.35s ease;
+}
+
+.lyrics-panel__toggle--expanded i {
+    transform: rotate(180deg);
+}
+
+.lyrics-panel__content {
+    padding: 1.25rem 1.5rem;
+}
+
+.lyrics-panel__line {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: rgba(255, 255, 255, 0.95);
+    padding: 0.15rem 0;
+}
+
+.lyrics-panel__line--empty {
+    height: 1rem;
+}
+
+/* Scroll fade hint at bottom */
+.lyrics-panel--expanded::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, rgba(0, 31, 63, 0.8));
+    pointer-events: none;
+    display: block;
+}
+
+/* ---------- Navigation Bar ---------- */
+
+.mobile-chorus-card__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    gap: 0.5rem;
+}
+
+.mobile-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0.5rem 1.25rem;
+    background: rgba(99, 102, 241, 0.6);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.mobile-nav-btn:hover,
+.mobile-nav-btn:active {
+    background: rgba(99, 102, 241, 0.8);
+    transform: scale(0.98);
+}
+
+.mobile-nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.mobile-chorus-card__position {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    min-width: 3rem;
+}
+
+/* ---------- Small Phone Adjustments ---------- */
+
+@media (max-width: 480px) {
+    .mobile-chorus-card__header {
+        padding: 0.75rem 1rem;
+        gap: 0.5rem;
+    }
+
+    .mobile-chorus-card__title {
+        font-size: 1.1rem;
+    }
+
+    .mobile-chorus-card__key {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.6rem;
+    }
+
+    .lyrics-panel__content {
+        padding: 1rem 1.25rem;
+    }
+
+    .lyrics-panel__line {
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    .mobile-chorus-card__nav {
+        padding: 0.5rem 1rem;
+    }
+
+    .mobile-nav-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ---------- Reduced Motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .lyrics-panel {
+        transition-duration: 0.01ms !important;
+    }
+
+    .lyrics-panel__toggle i {
+        transition-duration: 0.01ms !important;
+    }
+
+    .mobile-chorus-card__sync-indicator--reconnecting {
+        animation: none !important;
+    }
+}
+
+/* ---------- Print: Hide Mobile Elements ---------- */
+
+@media print {
+    .mobile-chorus-card {
+        display: none !important;
+    }
+}

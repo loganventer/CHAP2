@@ -172,6 +172,74 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    public IActionResult NetworkInfo()
+    {
+        var localIp = GetLocalIpAddress();
+        var port = HttpContext.Request.Host.Port ?? (HttpContext.Request.IsHttps ? 443 : 80);
+        var scheme = HttpContext.Request.Scheme;
+        var url = localIp != null ? $"{scheme}://{localIp}:{port}" : null;
+
+        return Json(new { ip = localIp, port, url });
+    }
+
+    private static string? GetLocalIpAddress()
+    {
+        try
+        {
+            var networkInterfaces = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces();
+            foreach (var ni in networkInterfaces)
+            {
+                if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up)
+                    continue;
+                if (ni.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+                    continue;
+
+                var properties = ni.GetIPProperties();
+                foreach (var addr in properties.UnicastAddresses)
+                {
+                    if (addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        var ip = addr.Address.ToString();
+                        if (!ip.StartsWith("127.") && !ip.StartsWith("169.254."))
+                            return ip;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fall through
+        }
+        return null;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ChorusData(string id)
+    {
+        try
+        {
+            var chorus = await _chorusApiService.GetChorusByIdAsync(id);
+            if (chorus == null)
+            {
+                return NotFound();
+            }
+
+            return Json(new
+            {
+                id = chorus.Id.ToString(),
+                name = chorus.Name,
+                key = chorus.Key.ToString(),
+                chorusText = chorus.ChorusText
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting chorus data for ID: {Id}", id);
+            return NotFound();
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> DetailPartial(string id)
     {
         try

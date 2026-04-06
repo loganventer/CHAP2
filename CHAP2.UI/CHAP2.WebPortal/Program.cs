@@ -1,5 +1,6 @@
 using CHAP2.WebPortal.Interfaces;
 using CHAP2.WebPortal.Services;
+using CHAP2.WebPortal.Hubs;
 using CHAP2.Shared.Configuration;
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
@@ -13,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
+builder.Services.AddSignalR();
 
 // Configure response buffering for streaming
 builder.Services.Configure<KestrelServerOptions>(options =>
@@ -89,7 +91,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(allowedOrigins)
                   .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .AllowAnyHeader()
+                  .AllowCredentials();
         }
     });
 });
@@ -120,6 +123,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();
+
+app.MapHub<ChorusHub>("/chorusHub");
 
 app.MapControllerRoute(
     name: "default",

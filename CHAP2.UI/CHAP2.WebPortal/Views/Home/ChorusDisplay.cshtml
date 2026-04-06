@@ -11,7 +11,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@Model.Name - CHAP2</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/responsive.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/chorus-display.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mobile-chorus.css" asp-append-version="true" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -75,6 +77,52 @@
         </div>
     </div>
 
+    <!-- Mobile Chorus View (hidden on desktop via CSS media queries) -->
+    <div class="mobile-chorus-card" id="mobileChorusCard" aria-label="Chorus display">
+        <div class="mobile-chorus-card__header">
+            <div class="mobile-chorus-card__sync-indicator" id="syncIndicator" title="Connection status"></div>
+            <h1 class="mobile-chorus-card__title" id="mobileChorusTitle">@Model.Name</h1>
+            <span class="mobile-chorus-card__key" id="mobileChorusKey">@Model.Key</span>
+            <button class="lyrics-panel__toggle" id="lyricsPanelToggle"
+                    aria-expanded="false" aria-controls="lyricsPanel">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="lyrics-panel" id="lyricsPanel" aria-hidden="true">
+            <div class="lyrics-panel__content" id="lyricsPanelContent">
+                @{
+                    var mobileLines = Model.ChorusText.Split('\n');
+                    foreach (var line in mobileLines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            <div class="lyrics-panel__line">@line</div>
+                        }
+                        else
+                        {
+                            <div class="lyrics-panel__line lyrics-panel__line--empty"></div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+        <div class="mobile-chorus-card__nav">
+            <button class="mobile-nav-btn" id="mobilePrevBtn" aria-label="Previous chorus">
+                <i class="fas fa-chevron-left"></i> Prev
+            </button>
+            <span class="mobile-chorus-card__position" id="mobilePosition"></span>
+            <button class="mobile-nav-btn" id="mobileNextBtn" aria-label="Next chorus">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Sync URL Label (desktop only, hidden on mobile) -->
+    <div class="mobile-sync-label" id="mobileSyncLabel">
+        <i class="fas fa-mobile-alt"></i>
+        <span id="mobileSyncUrl">Detecting network...</span>
+    </div>
+
     <!-- Controls -->
     <div class="controls-container">
         <button class="control-btn" id="decreaseFontBtn" title="Decrease Font Size">
@@ -105,6 +153,14 @@
             maxDisplayLines: 8 // Configurable maximum lines per page
         };
     </script>
+    <script src="~/js/utils.js" asp-append-version="true"></script>
     <script src="~/js/chorus-display.js" asp-append-version="true"></script>
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script src="~/js/device-detector.js" asp-append-version="true"></script>
+    <script src="~/js/touch-handler.js" asp-append-version="true"></script>
+    <script src="~/js/lyrics-panel.js" asp-append-version="true"></script>
+    <script src="~/js/chorus-sync-service.js" asp-append-version="true"></script>
+    <script src="~/js/mobile-chorus-view.js" asp-append-version="true"></script>
+    <script src="~/js/responsive-initializer.js" asp-append-version="true"></script>
 </body>
 </html> 

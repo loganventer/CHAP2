@@ -161,6 +161,37 @@ ensure_docker_running() {
 }
 
 ###############################################################################
+# Check if containers already exist
+###############################################################################
+containers_exist() {
+    cd "$DOCKER_COMPOSE_DIR"
+    local count
+    count=$(docker-compose ps -q 2>/dev/null | wc -l | tr -d ' ')
+    [ "$count" -gt 0 ]
+}
+
+###############################################################################
+# Check if all containers are running
+###############################################################################
+containers_running() {
+    cd "$DOCKER_COMPOSE_DIR"
+    local total stopped
+    total=$(docker-compose ps -q 2>/dev/null | wc -l | tr -d ' ')
+    stopped=$(docker-compose ps -q --filter "status=exited" 2>/dev/null | wc -l | tr -d ' ')
+    [ "$total" -gt 0 ] && [ "$stopped" -eq 0 ]
+}
+
+###############################################################################
+# Start existing containers (no rebuild)
+###############################################################################
+start_containers() {
+    log_info "Starting existing CHAP2 containers..."
+    cd "$DOCKER_COMPOSE_DIR"
+    docker-compose start
+    log_success "Containers started"
+}
+
+###############################################################################
 # Stop and remove existing containers
 ###############################################################################
 cleanup_containers() {
@@ -171,7 +202,7 @@ cleanup_containers() {
 }
 
 ###############################################################################
-# Deploy containers
+# Build and deploy containers from scratch
 ###############################################################################
 deploy_containers() {
     log_info "Deploying CHAP2 containers..."
@@ -182,6 +213,27 @@ deploy_containers() {
     docker-compose up -d --build
 
     log_success "Containers deployed"
+}
+
+###############################################################################
+# Smart start: reuse existing containers when possible
+###############################################################################
+smart_start() {
+    cd "$DOCKER_COMPOSE_DIR"
+
+    if containers_running; then
+        log_success "All CHAP2 containers are already running"
+        return 0
+    fi
+
+    if containers_exist; then
+        log_info "Found existing CHAP2 containers, starting them..."
+        start_containers
+        return 0
+    fi
+
+    log_info "No existing containers found, building from scratch..."
+    deploy_containers
 }
 
 ###############################################################################
@@ -214,9 +266,6 @@ wait_for_service() {
 wait_for_services() {
     log_info "Waiting for all services to start..."
 
-    # Wait for Qdrant
-    wait_for_service "Qdrant" "http://localhost:6333/healthz" 60
-
     # Wait for CHAP2 API
     wait_for_service "CHAP2 API" "http://localhost:5001/api/health/ping" 90
 
@@ -246,36 +295,70 @@ open_browser() {
 }
 
 ###############################################################################
-# Open firewall port for network access
+# Detect local network IP address
+###############################################################################
+detect_local_ip() {
+    # Try common interfaces in order of preference
+    LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || \
+               ipconfig getifaddr en1 2>/dev/null || \
+               ipconfig getifaddr en2 2>/dev/null || \
+               echo "unknown")
+
+    # Fallback: parse route table for default interface
+    if [ "$LOCAL_IP" = "unknown" ]; then
+        local iface
+        iface=$(route -n get default 2>/dev/null | awk '/interface:/{print $2}')
+        if [ -n "$iface" ]; then
+            LOCAL_IP=$(ipconfig getifaddr "$iface" 2>/dev/null || echo "unknown")
+        fi
+    fi
+}
+
+###############################################################################
+# Open firewall port for mobile browsing
 ###############################################################################
 open_firewall_port() {
-    # Get local IP address
-    LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "unknown")
+    detect_local_ip
 
     if [ "$LOCAL_IP" != "unknown" ]; then
         log_success "Local IP address: $LOCAL_IP"
-        log_info "Other devices can connect at: http://$LOCAL_IP:8080"
+        echo ""
+        log_info "========================================="
+        log_info "  Mobile Sync URL:"
+        log_info "  http://$LOCAL_IP:8080"
+        log_info "========================================="
+        echo ""
+        log_info "Open this URL on phones to sync with the chorus display"
+    else
+        log_warn "Could not detect local IP address. Mobile sync may not be available."
     fi
 
-    # Check if port 8080 is already accessible (skip firewall config if so)
-    if nc -z localhost 8080 2>/dev/null; then
-        log_info "Port 8080 is already open - skipping firewall configuration"
-        return 0
-    fi
-
-    # Check if firewall is enabled
+    # Check if firewall is enabled and configure exceptions
     FIREWALL_STATE=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null | grep -o "enabled\|disabled" || echo "unknown")
 
     if [ "$FIREWALL_STATE" = "enabled" ]; then
-        log_info "macOS Firewall is enabled. Adding exception for Docker..."
+        log_info "macOS Firewall is enabled. Adding exceptions for network access..."
 
-        # Add Docker to firewall exceptions (requires sudo)
+        # Add Docker to firewall exceptions
         sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Docker.app/Contents/MacOS/Docker 2>/dev/null || true
         sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Applications/Docker.app/Contents/MacOS/Docker 2>/dev/null || true
 
+        # Also add com.docker.backend if it exists
+        if [ -f "/Applications/Docker.app/Contents/MacOS/com.docker.backend" ]; then
+            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Docker.app/Contents/MacOS/com.docker.backend 2>/dev/null || true
+            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Applications/Docker.app/Contents/MacOS/com.docker.backend 2>/dev/null || true
+        fi
+
         log_success "Docker added to firewall exceptions"
     else
-        log_info "macOS Firewall is disabled or not accessible - no configuration needed"
+        log_info "macOS Firewall is disabled - no configuration needed"
+    fi
+
+    # Verify the port is accessible from the network
+    if nc -z localhost 8080 2>/dev/null; then
+        log_success "Port 8080 is open and accepting connections"
+    else
+        log_warn "Port 8080 does not appear to be listening yet - services may still be starting"
     fi
 }
 
@@ -295,22 +378,19 @@ main() {
     # Step 2: Ensure Docker is running
     ensure_docker_running
 
-    # Step 3: Cleanup old containers
-    cleanup_containers
+    # Step 3: Start containers (reuse existing, or build if none found)
+    smart_start
 
-    # Step 4: Deploy containers
-    deploy_containers
-
-    # Step 5: Wait for services
+    # Step 4: Wait for services
     wait_for_services
 
-    # Step 6: Configure network access
+    # Step 5: Configure network access
     open_firewall_port
 
-    # Step 7: Show status
+    # Step 6: Show status
     show_status
 
-    # Step 8: Open browser
+    # Step 7: Open browser
     open_browser
 
     echo ""
@@ -323,7 +403,6 @@ main() {
         log_info "Network Access: http://$LOCAL_IP:8080"
     fi
     log_info "API: http://localhost:5001"
-    log_info "Qdrant: http://localhost:6333"
     echo ""
     log_info "To stop all services, run:"
     log_info "  cd $DOCKER_COMPOSE_DIR && docker-compose down"

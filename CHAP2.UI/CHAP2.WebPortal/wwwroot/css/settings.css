@@ -244,6 +244,8 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    min-height: 44px;
+    min-width: 44px;
 }
 
 .settings-button:hover {

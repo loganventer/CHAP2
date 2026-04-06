@@ -1,16 +1,16 @@
 services:
-  # Qdrant Vector Database
-  qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "0.0.0.0:6333:6333"
-      - "0.0.0.0:6334:6334"
-    volumes:
-      - qdrant_data:/qdrant/storage
-    environment:
-      - QDRANT__SERVICE__HTTP_PORT=6333
-      - QDRANT__SERVICE__GRPC_PORT=6334
-    restart: unless-stopped
+  # Qdrant Vector Database - Disabled (AI search is disabled)
+  #qdrant:
+  #  image: qdrant/qdrant:latest
+  #  ports:
+  #    - "0.0.0.0:6333:6333"
+  #    - "0.0.0.0:6334:6334"
+  #  volumes:
+  #    - qdrant_data:/qdrant/storage
+  #  environment:
+  #    - QDRANT__SERVICE__HTTP_PORT=6333
+  #    - QDRANT__SERVICE__GRPC_PORT=6334
+  #  restart: unless-stopped
 
   # LangChain Search Service - Temporarily disabled
   #langchain-service:
@@ -54,15 +54,5 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:8080
       - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:8080
-      - LangChainService__BaseUrl=http://langchain-service:8000
       - ApiService__BaseUrl=http://chap2-api:5001
-      - Qdrant__Host=qdrant
-      - Qdrant__Port=6333
-      - Ollama__Host=host.docker.internal
-      - Ollama__Port=11434
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped
-
-volumes:
-  qdrant_data: 
