@@ -237,6 +237,41 @@ function announceSearchResults(count, searchTerm) {
     liveRegion.textContent = `${count} result${count !== 1 ? 's' : ''} found for "${searchTerm}"`;
 }
 
+// Create mobile result card
+function createMobileResultCard(result, index) {
+    const card = document.createElement('div');
+    card.className = 'mobile-result-card';
+    card.setAttribute('data-id', result.id);
+
+    card.innerHTML = `
+        <div class="mobile-result-header">
+            <h3 class="mobile-result-title">${window.escapeHtml(result.name || 'Unknown')}</h3>
+            <span class="mobile-result-key">${getKeyDisplay(result.key)}</span>
+        </div>
+        <div class="mobile-result-meta">
+            <span class="mobile-result-type">${getTypeDisplay(result.type)}</span>
+            <span class="mobile-result-time">${getTimeSignatureDisplay(result.timeSignature)}</span>
+        </div>
+        <div class="mobile-result-actions">
+            <button class="action-btn action-btn-add-setlist" onclick="event.stopPropagation(); addToSetlistFromSearch('${result.id}')" aria-label="Add to Setlist">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="action-btn" onclick="event.stopPropagation(); openInNewWindow('${result.id}')" aria-label="Open">
+                <i class="fas fa-external-link-alt"></i>
+            </button>
+            <button class="action-btn" onclick="event.stopPropagation(); showDetail('${result.id}')" aria-label="Details">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
+    `;
+
+    card.addEventListener('click', function () {
+        window.open('/Home/ChorusDisplay/' + result.id, '_blank');
+    });
+
+    return card;
+}
+
 // Display search results
 function displayResults(results, searchTerm) {
     const resultsTable = document.getElementById('resultsTable');
@@ -244,33 +279,45 @@ function displayResults(results, searchTerm) {
     const resultsHeader = document.getElementById('resultsHeader');
     const resultsCount = document.getElementById('resultsCount');
     const noResults = document.getElementById('noResults');
+    const resultsMobileCards = document.getElementById('resultsMobileCards');
 
     // Clear previous results
     resultsBody.innerHTML = '';
+    if (resultsMobileCards) resultsMobileCards.innerHTML = '';
 
     if (results.length === 0) {
         resultsTable.style.display = 'none';
         resultsHeader.style.display = 'none';
         noResults.style.display = 'flex';
+        if (resultsMobileCards) resultsMobileCards.style.display = 'none';
         return;
     }
-    
+
     // Show results
     noResults.style.display = 'none';
     resultsTable.style.display = 'table';
     resultsHeader.style.display = 'flex';
-    
+
     // Update count
     resultsCount.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} for "${searchTerm}"`;
 
     // A11Y-005: Announce result count to screen readers via aria-live region
     announceSearchResults(results.length, searchTerm);
 
-    // Populate table
+    // Populate desktop table
     results.forEach((result, index) => {
         const row = createResultRow(result, index + 1);
         resultsBody.appendChild(row);
     });
+
+    // Populate mobile cards
+    if (resultsMobileCards) {
+        results.forEach((result, index) => {
+            const card = createMobileResultCard(result, index + 1);
+            resultsMobileCards.appendChild(card);
+        });
+        resultsMobileCards.style.display = '';
+    }
     
     // Animate results
     animateResults();

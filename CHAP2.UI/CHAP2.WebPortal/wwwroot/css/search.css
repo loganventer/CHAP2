@@ -760,27 +760,53 @@
     .results-mobile-cards {
         display: block;
     }
-    
+
     .results-table {
         font-size: var(--font-size-xs);
     }
-    
+
     .results-table th,
     .results-table td {
         padding: var(--spacing-sm);
     }
-    
+
     .col-context {
         display: none;
     }
-    
+
     .tips-content {
         grid-template-columns: 1fr;
     }
-    
+
     .modal-container {
         margin: var(--spacing-lg);
         max-height: calc(100vh - 2 * var(--spacing-lg));
+    }
+
+    .search-tabs {
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+    }
+
+    .search-input {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+        padding: var(--spacing-lg);
+    }
+
+    .mobile-sync-label {
+        order: 1;
+        width: 100%;
+        justify-content: center;
+        font-size: var(--font-size-xs);
+    }
+
+    .mobile-result-card {
+        padding: var(--spacing-md);
+    }
+
+    .mobile-result-actions .action-btn {
+        min-width: 44px;
+        min-height: 44px;
     }
 }
 
