@@ -218,6 +218,39 @@ public class HomeController : Controller
         return null;
     }
 
+    [HttpPost]
+    public async Task<IActionResult> UpdateChorusKey(string id, [FromBody] UpdateKeyRequest request)
+    {
+        try
+        {
+            if (!Enum.TryParse<MusicalKey>(request.Key, ignoreCase: true, out var musicalKey))
+            {
+                return BadRequest(new { error = "Invalid key" });
+            }
+
+            var chorus = await _chorusApiService.GetChorusByIdAsync(id);
+            if (chorus == null)
+            {
+                return NotFound();
+            }
+
+            await _chorusApiService.UpdateChorusAsync(
+                chorus.Id, chorus.Name, chorus.ChorusText,
+                musicalKey, chorus.Type, chorus.TimeSignature);
+            return Ok(new { id, key = musicalKey.ToString() });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating key for chorus {Id}", id);
+            return StatusCode(500, new { error = "Failed to update key" });
+        }
+    }
+
+    public class UpdateKeyRequest
+    {
+        public string Key { get; set; } = string.Empty;
+    }
+
     [HttpGet]
     public async Task<IActionResult> ChorusData(string id)
     {

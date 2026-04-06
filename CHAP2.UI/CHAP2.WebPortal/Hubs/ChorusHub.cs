@@ -25,6 +25,15 @@ public class ChorusHub : Hub<IChorusHub>
         await Clients.Others.ReceiveChorusChanged(chorusId);
     }
 
+    /// <summary>
+    /// Broadcasts a key change for the current chorus to all other connected clients.
+    /// </summary>
+    public async Task SendKeyChanged(string chorusId, string newKey)
+    {
+        _logger.LogDebug("Key changed to {NewKey} for chorus {ChorusId} by {ConnectionId}", newKey, chorusId, Context.ConnectionId);
+        await Clients.Others.ReceiveKeyChanged(chorusId, newKey);
+    }
+
     public override Task OnConnectedAsync()
     {
         _logger.LogDebug("Client connected: {ConnectionId}", Context.ConnectionId);

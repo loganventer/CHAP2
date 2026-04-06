@@ -127,6 +127,11 @@ app.UseCors();
 app.MapHub<ChorusHub>("/chorusHub");
 
 app.MapControllerRoute(
+    name: "sync",
+    pattern: "sync",
+    defaults: new { controller = "Home", action = "MobileSync" });
+
+app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 

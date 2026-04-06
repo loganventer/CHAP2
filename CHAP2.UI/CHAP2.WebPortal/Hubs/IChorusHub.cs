@@ -10,4 +10,9 @@ public interface IChorusHub
     /// Called when the currently displayed chorus changes on any connected client.
     /// </summary>
     Task ReceiveChorusChanged(string chorusId);
+
+    /// <summary>
+    /// Called when the key of the current chorus is changed from a remote client.
+    /// </summary>
+    Task ReceiveKeyChanged(string chorusId, string newKey);
 }

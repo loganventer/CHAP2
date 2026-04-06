@@ -325,7 +325,7 @@ open_firewall_port() {
         echo ""
         log_info "========================================="
         log_info "  Mobile Sync URL:"
-        log_info "  http://$LOCAL_IP:8080/Home/MobileSync"
+        log_info "  http://$LOCAL_IP:8080/sync"
         log_info "========================================="
         echo ""
         log_info "Open this URL on phones to sync with the chorus display"

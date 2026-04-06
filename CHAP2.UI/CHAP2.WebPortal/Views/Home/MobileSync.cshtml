@@ -119,11 +119,16 @@
         <div class="mobile-chorus-card__header">
             <div class="mobile-chorus-card__sync-indicator mobile-chorus-card__sync-indicator--connected" id="syncIndicator" title="Connected"></div>
             <h1 class="mobile-chorus-card__title" id="mobileChorusTitle"></h1>
-            <span class="mobile-chorus-card__key" id="mobileChorusKey"></span>
             <button class="lyrics-panel__toggle" id="lyricsPanelToggle"
                     aria-expanded="false" aria-controls="lyricsPanel">
                 <i class="fas fa-chevron-down"></i>
             </button>
+        </div>
+        <div class="mobile-chorus-card__key-area">
+            <div class="mobile-chorus-card__key" id="mobileChorusKey" role="button" aria-label="Change key">
+                <span id="mobileChorusKeyText"></span>
+                <i class="fas fa-pen mobile-chorus-card__key-edit-icon"></i>
+            </div>
         </div>
         <div class="lyrics-panel" id="lyricsPanel" aria-hidden="true">
             <div class="lyrics-panel__content" id="lyricsPanelContent"></div>
@@ -145,6 +150,7 @@
     <script src="~/js/touch-handler.js" asp-append-version="true"></script>
     <script src="~/js/lyrics-panel.js" asp-append-version="true"></script>
     <script src="~/js/chorus-sync-service.js" asp-append-version="true"></script>
+    <script src="~/js/key-picker.js" asp-append-version="true"></script>
     <script src="~/js/mobile-chorus-view.js" asp-append-version="true"></script>
     <script>
         /**

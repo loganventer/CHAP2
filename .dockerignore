@@ -10,7 +10,6 @@
 
 # Node modules and frontend build artifacts
 **/node_modules/
-**/wwwroot/lib/
 **/dist/
 **/build/
 

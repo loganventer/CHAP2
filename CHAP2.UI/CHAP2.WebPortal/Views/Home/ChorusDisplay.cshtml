@@ -82,11 +82,16 @@
         <div class="mobile-chorus-card__header">
             <div class="mobile-chorus-card__sync-indicator" id="syncIndicator" title="Connection status"></div>
             <h1 class="mobile-chorus-card__title" id="mobileChorusTitle">@Model.Name</h1>
-            <span class="mobile-chorus-card__key" id="mobileChorusKey">@Model.Key</span>
             <button class="lyrics-panel__toggle" id="lyricsPanelToggle"
                     aria-expanded="false" aria-controls="lyricsPanel">
                 <i class="fas fa-chevron-down"></i>
             </button>
+        </div>
+        <div class="mobile-chorus-card__key-area">
+            <div class="mobile-chorus-card__key" id="mobileChorusKey" role="button" aria-label="Change key">
+                <span id="mobileChorusKeyText">@Model.Key</span>
+                <i class="fas fa-pen mobile-chorus-card__key-edit-icon"></i>
+            </div>
         </div>
         <div class="lyrics-panel" id="lyricsPanel" aria-hidden="true">
             <div class="lyrics-panel__content" id="lyricsPanelContent">
@@ -137,9 +142,9 @@
         // Pass chorus data to JavaScript
         window.chorusData = {
             id: '@Model.Id',
-            name: '@Html.Raw(Json.Serialize(Model.Name))',
+            name: @Html.Raw(Json.Serialize(Model.Name)),
             key: '@Model.Key',
-            text: '@Html.Raw(Json.Serialize(Model.ChorusText))'
+            text: @Html.Raw(Json.Serialize(Model.ChorusText))
         };
         
         // Chorus display configuration
@@ -154,6 +159,7 @@
     <script src="~/js/touch-handler.js" asp-append-version="true"></script>
     <script src="~/js/lyrics-panel.js" asp-append-version="true"></script>
     <script src="~/js/chorus-sync-service.js" asp-append-version="true"></script>
+    <script src="~/js/key-picker.js" asp-append-version="true"></script>
     <script src="~/js/mobile-chorus-view.js" asp-append-version="true"></script>
     <script src="~/js/responsive-initializer.js" asp-append-version="true"></script>
 </body>

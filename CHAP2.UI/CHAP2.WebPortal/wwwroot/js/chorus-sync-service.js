@@ -22,6 +22,7 @@ class ChorusSyncService {
         this._onStatusChange = options.onStatusChange || null;
         this._connection = null;
         this._chorusChangedCallbacks = [];
+        this._keyChangedCallbacks = [];
         this._connected = false;
     }
 
@@ -38,11 +39,18 @@ class ChorusSyncService {
             .configureLogging(signalR.LogLevel.Warning)
             .build();
 
-        // Register the server-to-client method
+        // Register server-to-client methods
         this._connection.on('ReceiveChorusChanged', (chorusId) => {
             debug('[ChorusSyncService] Received chorus change:', chorusId);
             for (const callback of this._chorusChangedCallbacks) {
                 callback(chorusId);
+            }
+        });
+
+        this._connection.on('ReceiveKeyChanged', (chorusId, newKey) => {
+            debug('[ChorusSyncService] Received key change:', chorusId, newKey);
+            for (const callback of this._keyChangedCallbacks) {
+                callback(chorusId, newKey);
             }
         });
 
@@ -102,6 +110,29 @@ class ChorusSyncService {
         }
     }
 
+    /**
+     * Register a callback for when a remote client changes the key.
+     * @param {function(string, string): void} callback - Receives (chorusId, newKey).
+     */
+    onKeyChanged(callback) {
+        this._keyChangedCallbacks.push(callback);
+    }
+
+    /**
+     * Broadcast a key change to all other connected clients.
+     * @param {string} chorusId
+     * @param {string} newKey
+     */
+    async broadcastKeyChange(chorusId, newKey) {
+        if (!this._connection || !this._connected) return;
+        try {
+            await this._connection.invoke('SendKeyChanged', chorusId, newKey);
+            debug('[ChorusSyncService] Broadcast key change:', chorusId, newKey);
+        } catch (err) {
+            console.error('[ChorusSyncService] Failed to broadcast key change:', err);
+        }
+    }
+
     /** @returns {boolean} Whether the connection is currently active. */
     isConnected() {
         return this._connected;
@@ -119,6 +150,7 @@ class ChorusSyncService {
             this._connected = false;
         }
         this._chorusChangedCallbacks = [];
+        this._keyChangedCallbacks = [];
     }
 
     /** @private */

@@ -18,6 +18,7 @@ class MobileChorusView {
         this._chorusData = chorusData;
         this._lyricsPanel = null;
         this._touchHandler = null;
+        this._keyPicker = null;
         this._choruses = [];
         this._currentIndex = -1;
         this._visible = false;
@@ -74,10 +75,33 @@ class MobileChorusView {
             this._nextBtn.addEventListener('click', () => this._navigateChorus(1));
         }
 
+        // Compose KeyPicker for key changes
+        if (window.CHAP2.KeyPicker) {
+            this._keyPicker = new window.CHAP2.KeyPicker({
+                onSelect: (newKey) => this._handleKeyChange(newKey)
+            });
+        }
+
+        // Make key badge tappable to open picker
+        if (this._keyEl) {
+            this._keyEl.addEventListener('click', () => {
+                if (this._keyPicker && this._chorusData) {
+                    this._keyPicker.open(this._chorusData.key);
+                }
+            });
+        }
+
         // Listen for real-time chorus changes from other clients
         if (this._syncService) {
             this._syncService.onChorusChanged((chorusId) => {
                 this._handleRemoteChorusChange(chorusId);
+            });
+
+            this._syncService.onKeyChanged((chorusId, newKey) => {
+                if (this._chorusData && this._chorusData.id === chorusId) {
+                    this._chorusData.key = newKey;
+                    this._updateDisplay();
+                }
             });
         }
 
@@ -141,11 +165,44 @@ class MobileChorusView {
     destroy() {
         if (this._lyricsPanel) this._lyricsPanel.destroy();
         if (this._touchHandler) this._touchHandler.destroy();
+        if (this._keyPicker) this._keyPicker.destroy();
         this._lyricsPanel = null;
         this._touchHandler = null;
+        this._keyPicker = null;
     }
 
     // ---- Private Methods ----
+
+    /** @private Handle key change from the picker. Persists and broadcasts. */
+    async _handleKeyChange(newKey) {
+        if (!this._chorusData) return;
+
+        const chorusId = this._chorusData.id;
+
+        try {
+            const response = await fetch(`/Home/UpdateChorusKey/${chorusId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: newKey })
+            });
+
+            if (!response.ok) {
+                console.error('[MobileChorusView] Failed to update key:', response.status);
+                return;
+            }
+
+            // Update local state
+            this._chorusData.key = newKey;
+            this._updateDisplay();
+
+            // Broadcast to other clients
+            if (this._syncService) {
+                this._syncService.broadcastKeyChange(chorusId, newKey);
+            }
+        } catch (err) {
+            console.error('[MobileChorusView] Error updating key:', err);
+        }
+    }
 
     /** @private Update the title, key, and lyrics content in the DOM. */
     _updateDisplay() {
@@ -155,9 +212,12 @@ class MobileChorusView {
             this._titleEl.textContent = this._chorusData.name;
         }
 
-        if (this._keyEl) {
-            const keyDisplay = this._getKeyDisplay(this._chorusData.key);
-            this._keyEl.textContent = keyDisplay;
+        // Update key text (inside the key circle, there's a span for the text)
+        const keyTextEl = document.getElementById('mobileChorusKeyText');
+        if (keyTextEl) {
+            keyTextEl.textContent = this._getKeyDisplay(this._chorusData.key);
+        } else if (this._keyEl) {
+            this._keyEl.textContent = this._getKeyDisplay(this._chorusData.key);
         }
 
         // Update lyrics panel content

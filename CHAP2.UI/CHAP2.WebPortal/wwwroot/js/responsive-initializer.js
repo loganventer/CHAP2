@@ -42,8 +42,13 @@ class ResponsiveInitializer {
         });
         CHAP2.syncService = syncService;
 
-        // Connect to SignalR hub
-        syncService.connect();
+        // Connect to SignalR hub, then broadcast the current chorus
+        syncService.connect().then(() => {
+            if (window.chorusData && window.chorusData.id) {
+                syncService.broadcastChorusChange(window.chorusData.id);
+                debug('[ResponsiveInitializer] Broadcast initial chorus:', window.chorusData.id);
+            }
+        });
 
         // Create MobileChorusView with injected dependencies (Composition)
         const mobileView = new CHAP2.MobileChorusView({
@@ -73,10 +78,20 @@ class ResponsiveInitializer {
 
         // Listen for remote chorus changes on desktop (triggers navigation)
         syncService.onChorusChanged((chorusId) => {
-            // If we're on desktop, navigate to the new chorus
             if (!deviceDetector.isMobile()) {
                 debug('[ResponsiveInitializer] Desktop received remote chorus change:', chorusId);
                 window.location.href = `/Home/ChorusDisplay/${chorusId}`;
+            }
+        });
+
+        // Listen for remote key changes on desktop (update the key display)
+        syncService.onKeyChanged((chorusId, newKey) => {
+            if (!deviceDetector.isMobile()) {
+                debug('[ResponsiveInitializer] Desktop received key change:', chorusId, newKey);
+                const keyEl = document.getElementById('chorusKey');
+                if (keyEl) {
+                    keyEl.textContent = newKey.replace('Sharp', '#').replace('Flat', 'b');
+                }
             }
         });
     }
@@ -95,9 +110,19 @@ class ResponsiveInitializer {
             const data = await response.json();
 
             if (data.url) {
-                const syncUrl = `${data.url}/Home/MobileSync`;
+                const syncUrl = `${data.url}/sync`;
                 labelEl.textContent = `Mobile: ${syncUrl}`;
                 debug('[ResponsiveInitializer] Mobile sync URL:', syncUrl);
+
+                // Make the label clickable -- opens sync page in new tab for testing
+                const labelContainer = document.getElementById('mobileSyncLabel');
+                if (labelContainer) {
+                    labelContainer.style.cursor = 'pointer';
+                    labelContainer.title = 'Click to open mobile sync in a new tab';
+                    labelContainer.addEventListener('click', () => {
+                        window.open('/sync', '_blank');
+                    });
+                }
             } else {
                 labelEl.textContent = 'Network unavailable';
             }
