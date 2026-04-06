@@ -507,28 +507,27 @@ nuke_docker() {
 copy_to_desktop() {
     local desktop_file="$HOME/Desktop/start-chap2.command"
 
-    # Always remove existing script first
-    if [ -f "$desktop_file" ]; then
-        rm -f "$desktop_file"
-        log_info "Removed existing desktop script"
-    fi
-
+    # Force remove any existing script (ignore errors)
+    rm -f "$desktop_file" 2>/dev/null || true
     log_info "Creating fresh startup script on Desktop..."
 
-    # Create a temporary file
-    local temp_file=$(mktemp)
-
     # Create the script with the detected path
+    local temp_file
+    temp_file=$(mktemp)
     create_startup_script "$temp_file"
 
-    # Copy to Desktop
-    cp "$temp_file" "$desktop_file"
+    # Overwrite desktop file
+    cp -f "$temp_file" "$desktop_file"
     chmod +x "$desktop_file"
+    rm -f "$temp_file"
 
-    # Clean up temp file
-    rm "$temp_file"
-
-    log_success "Installed to: $desktop_file"
+    # Verify it was written
+    if [ -f "$desktop_file" ]; then
+        log_success "Installed to: $desktop_file"
+    else
+        log_error "Failed to write desktop script!"
+        exit 1
+    fi
 }
 
 ###############################################################################
