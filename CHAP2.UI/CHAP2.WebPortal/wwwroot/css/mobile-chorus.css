@@ -1,37 +1,8 @@
 /* ==========================================================================
    Mobile Chorus View
-   Compact card with title + key, expandable lyrics panel, navigation.
-   Visible only at mobile breakpoints (<= 768px).
+   Styles for the /sync page (MobileSync). This is a standalone mobile page,
+   not a responsive overlay. These styles only apply on the MobileSync page.
    ========================================================================== */
-
-/* Hide mobile view on desktop, and always on ChorusDisplay page */
-@media (min-width: 769px) {
-    .mobile-chorus-card {
-        display: none !important;
-    }
-}
-
-/* On ChorusDisplay page, always hide the mobile card */
-.chorus-display-page .mobile-chorus-card {
-    display: none !important;
-}
-
-/* Hide desktop chorus elements ONLY on the MobileSync page (body.mobile-sync-page) */
-.mobile-sync-page .chorus-container {
-    display: none !important;
-}
-
-.mobile-sync-page .controls-container {
-    display: none !important;
-}
-
-.mobile-sync-page .page-indicator {
-    display: none !important;
-}
-
-.mobile-sync-page .animated-background {
-    display: none !important;
-}
 
 /* ==========================================================================
    Mobile Card

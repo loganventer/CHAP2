@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CHAP2 Web Portal</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/responsive.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/search.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/detail.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/setlist.css" asp-append-version="true" />
@@ -28,8 +27,32 @@
     <script src="~/js/detail.js" asp-append-version="true"></script>
     <script src="~/js/settings.js" asp-append-version="true"></script>
     <script src="~/js/system-restart.js" asp-append-version="true"></script>
-    <script src="~/js/device-detector.js" asp-append-version="true"></script>
-    <script src="~/js/responsive-initializer.js" asp-append-version="true"></script>
+    <script>
+        // Populate the mobile sync URL label if present on the page
+        (function () {
+            var labelEl = document.getElementById('mobileSyncUrl');
+            var labelContainer = document.getElementById('mobileSyncLabel');
+            if (!labelEl) return;
+            fetch('/Home/NetworkInfo')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.url) {
+                        var syncUrl = data.url + '/sync';
+                        labelEl.textContent = 'Mobile: ' + syncUrl;
+                        if (labelContainer) {
+                            labelContainer.style.cursor = 'pointer';
+                            labelContainer.title = 'Click to open mobile sync in a new tab';
+                            labelContainer.addEventListener('click', function () {
+                                window.open('/sync', '_blank');
+                            });
+                        }
+                    } else {
+                        labelEl.textContent = 'Network unavailable';
+                    }
+                })
+                .catch(function () { labelEl.textContent = 'Network unavailable'; });
+        })();
+    </script>
     <environment include="Development">
         <script src="~/js/debug-crud.js" asp-append-version="true"></script>
     </environment>
