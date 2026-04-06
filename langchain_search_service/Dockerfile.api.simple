@@ -30,4 +30,5 @@ RUN dotnet publish "CHAP2.Chorus.Api/CHAP2.Chorus.Api.csproj" -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "CHAP2.Chorus.Api.dll"] 
+COPY CHAP2.Chorus.Api/data /app/data
+ENTRYPOINT ["dotnet", "CHAP2.Chorus.Api.dll"]

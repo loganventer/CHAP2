@@ -13,10 +13,6 @@ services:
         value: http://0.0.0.0:10000
       - key: ASPNETCORE_Kestrel__Endpoints__Http__Url
         value: http://0.0.0.0:10000
-    disk:
-      name: chorus-data
-      mountPath: /app/data
-      sizeGB: 1
 
   - type: web
     name: chap2-web
