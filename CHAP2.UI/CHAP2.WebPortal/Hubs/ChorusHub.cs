@@ -10,6 +10,11 @@ public class ChorusHub : Hub<IChorusHub>
 {
     private readonly ILogger<ChorusHub> _logger;
 
+    /// <summary>
+    /// The most recently displayed chorus ID. Static so it persists across connections.
+    /// </summary>
+    public static string? CurrentChorusId { get; private set; }
+
     public ChorusHub(ILogger<ChorusHub> logger)
     {
         _logger = logger;
@@ -21,6 +26,7 @@ public class ChorusHub : Hub<IChorusHub>
     /// </summary>
     public async Task SendChorusChanged(string chorusId)
     {
+        CurrentChorusId = chorusId;
         _logger.LogDebug("Chorus changed to {ChorusId} by connection {ConnectionId}", chorusId, Context.ConnectionId);
         await Clients.Others.ReceiveChorusChanged(chorusId);
     }

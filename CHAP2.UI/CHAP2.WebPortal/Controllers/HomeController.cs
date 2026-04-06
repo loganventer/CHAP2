@@ -53,6 +53,17 @@ public class HomeController : Controller
         return View();
     }
 
+    [HttpGet]
+    public IActionResult CurrentChorus()
+    {
+        var chorusId = Hubs.ChorusHub.CurrentChorusId;
+        if (string.IsNullOrEmpty(chorusId))
+        {
+            return Json(new { chorusId = (string?)null });
+        }
+        return Json(new { chorusId });
+    }
+
     public IActionResult CleanSearch()
     {
         return View();

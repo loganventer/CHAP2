@@ -237,8 +237,21 @@
                 showChorus(chorusId);
             });
 
-            // Connect
-            syncService.connect();
+            // Connect, then check if there's already a chorus being displayed
+            syncService.connect().then(async () => {
+                try {
+                    const response = await fetch('/Home/CurrentChorus');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.chorusId) {
+                            debug('[MobileSyncPage] Current chorus on server:', data.chorusId);
+                            showChorus(data.chorusId);
+                        }
+                    }
+                } catch (err) {
+                    debug('[MobileSyncPage] Could not fetch current chorus:', err);
+                }
+            });
         })();
     </script>
 </body>
