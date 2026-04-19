@@ -71,8 +71,9 @@ body.theme-candlelight::after {
     55%      { opacity: 0.9;  transform: scale(0.99); }
 }
 
-/* ---------------- Paper grain: full-page texture ---------------- */
-/* A true surface texture blankets the whole page; it's not a motif. */
+/* ---------------- Full-page textures ---------------- */
+/* Genuine surface textures (grain, marble, linen, stonework) blanket
+   the whole page -- they're materials, not motifs. */
 body.theme-paper-grain { position: relative; }
 body.theme-paper-grain::after {
     content: '';
@@ -81,6 +82,36 @@ body.theme-paper-grain::after {
     background-size: 200px 200px;
     opacity: 0.5;
     mix-blend-mode: multiply;
+}
+
+body.theme-marble { position: relative; }
+body.theme-marble::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: url('/img/patterns/marble.svg');
+    background-size: 240px 240px;
+    opacity: 0.65;
+    mix-blend-mode: multiply;
+}
+
+body.theme-linen { position: relative; }
+body.theme-linen::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: url('/img/patterns/linen.svg');
+    background-size: 8px 8px;
+    opacity: 0.35;
+    mix-blend-mode: overlay;
+}
+
+body.theme-stonework { position: relative; }
+body.theme-stonework::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: url('/img/patterns/stonework.svg');
+    background-size: 120px 80px;
+    opacity: 0.2;
+    mix-blend-mode: overlay;
 }
 
 /* ---------------- Motif patterns: edge-framed, not full-page ---------------- */

@@ -2,55 +2,6 @@
 class SettingsManager {
     constructor() {
         this.themes = {
-            default: {
-                name: 'Default Purple',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                logoFilter: 'brightness(0) invert(1)'
-            },
-            dark: {
-                name: 'Dark Mode',
-                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                logoFilter: 'brightness(0) invert(1)'
-            },
-            navy: {
-                name: 'Navy Blue',
-                background: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
-                textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
-                logoFilter: 'brightness(0) invert(1)'
-            },
-            forest: {
-                name: 'Forest Green',
-                background: 'linear-gradient(135deg, #1a4d2e 0%, #2e7d55 100%)',
-                textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #1a4d2e 0%, #2e7d55 100%)',
-                logoFilter: 'brightness(0) invert(1)'
-            },
-            sunset: {
-                name: 'Sunset Orange',
-                background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
-                textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
-                logoFilter: 'brightness(0) invert(1)'
-            },
-            ocean: {
-                name: 'Ocean Blue',
-                background: 'linear-gradient(135deg, #0066cc 0%, #0099ff 100%)',
-                textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #0066cc 0%, #0099ff 100%)',
-                logoFilter: 'brightness(0) invert(1)'
-            },
-            royal: {
-                name: 'Royal Purple',
-                background: 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)',
-                textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)',
-                logoFilter: 'brightness(0) invert(1)'
-            },
             parchment: {
                 name: 'Parchment & Ink',
                 background: 'linear-gradient(135deg, #f5efe0 0%, #e8dcc4 100%)',
@@ -154,6 +105,30 @@ class SettingsManager {
                 textColor: '#e4f2f5',
                 chorusBackground: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
                 logoFilter: 'brightness(0) invert(1)'
+            },
+            chapelMarble: {
+                name: 'Chapel Marble',
+                background: 'radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.35) 0%, transparent 55%), linear-gradient(160deg, #ece7df 0%, #d8d1c4 50%, #c9c1b2 100%)',
+                textColor: '#2a2420',
+                chorusBackground: 'radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.35) 0%, transparent 55%), linear-gradient(160deg, #ece7df 0%, #d8d1c4 50%, #c9c1b2 100%)',
+                logoFilter: 'none',
+                bodyClass: 'theme-marble'
+            },
+            altarLinen: {
+                name: 'Altar Linen',
+                background: 'radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(150deg, #f5ede0 0%, #e8dcc4 55%, #d8c8a6 100%)',
+                textColor: '#3a2a14',
+                chorusBackground: 'radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(150deg, #f5ede0 0%, #e8dcc4 55%, #d8c8a6 100%)',
+                logoFilter: 'none',
+                bodyClass: 'theme-linen'
+            },
+            naveStonework: {
+                name: 'Nave Stonework',
+                background: 'radial-gradient(ellipse at 70% 30%, rgba(214, 164, 76, 0.15) 0%, transparent 55%), linear-gradient(165deg, #2a2824 0%, #3a3731 55%, #231f1a 100%)',
+                textColor: '#efe8d6',
+                chorusBackground: 'radial-gradient(ellipse at 70% 30%, rgba(214, 164, 76, 0.15) 0%, transparent 55%), linear-gradient(165deg, #2a2824 0%, #3a3731 55%, #231f1a 100%)',
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-stonework'
             },
             starlight: {
                 name: 'Starlight',
@@ -700,10 +675,10 @@ class SettingsManager {
             return settings;
         }
         const defaults = {
-            theme: 'default',
-            customBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            customTextColor: '#ffffff',
-            customChorusBackground: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
+            theme: 'cathedralStone',
+            customBackground: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
+            customTextColor: '#f0ece2',
+            customChorusBackground: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
             chorusAnimation: 'musical-staff',
             chorusFont: 'Inter',
             textOutlineWidth: '0',
@@ -716,7 +691,13 @@ class SettingsManager {
     }
 
     applyTheme(settings) {
-        const theme = settings.theme;
+        let theme = settings.theme;
+        // Safety: if the stored theme was removed in a later build, fall
+        // back to a sensible default rather than throwing on undefined.
+        if (theme !== 'custom' && !this.themes[theme]) {
+            theme = 'cathedralStone';
+            settings.theme = theme;
+        }
         let background, textColor, chorusBackground, logoFilter, bodyClass;
 
         if (theme === 'custom') {
