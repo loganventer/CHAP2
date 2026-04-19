@@ -3,6 +3,7 @@ using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Application.EventHandlers;
 using CHAP2.Domain.Events;
+using CHAP2.Infrastructure.Git;
 using CHAP2.Infrastructure.Repositories;
 using CHAP2.Shared.Configuration;
 
@@ -69,6 +70,21 @@ builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreatedEventHandler>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedEventHandler>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedEventHandler>();
+
+// Git sync: pushes chorus changes to the remote so local edits survive Render redeploys.
+builder.Services.AddSingleton<IGitCommandRunner, GitCommandRunner>();
+builder.Services.AddSingleton<IGitRepositoryLocator, GitRepositoryLocator>();
+builder.Services.AddSingleton<IChorusGitSync>(provider =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChorusResourceOptions>>().Value;
+    var runner = provider.GetRequiredService<IGitCommandRunner>();
+    var locator = provider.GetRequiredService<IGitRepositoryLocator>();
+    var logger = provider.GetRequiredService<ILogger<ChorusGitSync>>();
+    return new ChorusGitSync(options.FolderPath, runner, locator, logger);
+});
+builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreatedGitSyncHandler>();
+builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedGitSyncHandler>();
+builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedGitSyncHandler>();
 
 builder.Services.AddControllers(options =>
 {
