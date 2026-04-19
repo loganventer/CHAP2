@@ -17,10 +17,6 @@ class BrowserExitGuard {
     }
 
     _onBeforeUnload(e) {
-        // Only nag when a chorus is being displayed; closing from plain
-        // search should not be interrupted.
-        if (!document.body.classList.contains('chorus-overlay-open')) return;
-
         const msg = 'Are you sure you want to exit? To go back to search, press Esc.';
         e.preventDefault();
         e.returnValue = msg;
