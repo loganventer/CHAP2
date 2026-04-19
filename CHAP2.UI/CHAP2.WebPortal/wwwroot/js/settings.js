@@ -79,6 +79,34 @@ class SettingsManager {
                 chorusBackground: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
                 logoFilter: 'brightness(0) invert(1)'
             },
+            stainedGlass: {
+                name: 'Stained Glass',
+                background: 'radial-gradient(circle at 18% 22%, rgba(155, 34, 66, 0.35) 0%, transparent 55%), radial-gradient(circle at 82% 28%, rgba(34, 80, 155, 0.35) 0%, transparent 55%), radial-gradient(circle at 70% 82%, rgba(76, 34, 120, 0.35) 0%, transparent 55%), linear-gradient(160deg, #180a2a 0%, #2a123d 55%, #150720 100%)',
+                textColor: '#f6ecff',
+                chorusBackground: 'radial-gradient(circle at 18% 22%, rgba(155, 34, 66, 0.35) 0%, transparent 55%), radial-gradient(circle at 82% 28%, rgba(34, 80, 155, 0.35) 0%, transparent 55%), radial-gradient(circle at 70% 82%, rgba(76, 34, 120, 0.35) 0%, transparent 55%), linear-gradient(160deg, #180a2a 0%, #2a123d 55%, #150720 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            goldenHour: {
+                name: 'Golden Hour',
+                background: 'radial-gradient(ellipse at 20% 10%, rgba(212, 162, 74, 0.35) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(139, 26, 26, 0.3) 0%, transparent 55%), linear-gradient(145deg, #2b1810 0%, #3d2817 50%, #1a0e08 100%)',
+                textColor: '#f5e7c8',
+                chorusBackground: 'radial-gradient(ellipse at 20% 10%, rgba(212, 162, 74, 0.35) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(139, 26, 26, 0.3) 0%, transparent 55%), linear-gradient(145deg, #2b1810 0%, #3d2817 50%, #1a0e08 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            sanctuary: {
+                name: 'Sanctuary',
+                background: 'radial-gradient(ellipse at 50% 35%, rgba(212, 162, 74, 0.25) 0%, transparent 65%), linear-gradient(180deg, #1a0808 0%, #3a0f12 55%, #180606 100%)',
+                textColor: '#f2e4c5',
+                chorusBackground: 'radial-gradient(ellipse at 50% 35%, rgba(212, 162, 74, 0.25) 0%, transparent 65%), linear-gradient(180deg, #1a0808 0%, #3a0f12 55%, #180606 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            fresco: {
+                name: 'Fresco',
+                background: 'radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(135deg, #e8d8b7 0%, #d4b896 50%, #c9a678 100%)',
+                textColor: '#3a2410',
+                chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(135deg, #e8d8b7 0%, #d4b896 50%, #c9a678 100%)',
+                logoFilter: 'none'
+            },
             custom: {
                 name: 'Custom Theme',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
