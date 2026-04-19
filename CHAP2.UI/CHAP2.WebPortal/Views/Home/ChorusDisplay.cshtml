@@ -34,14 +34,16 @@
         <div class="flowing-notes-container" id="flowingNotesContainer"></div>
     </div>
 
-    <!-- Church seal watermark (own stacking context, sits above the body background, below lyrics) -->
-    <img class="logo-watermark" id="logoWatermark" src="~/img/kerk-logo.png" alt="" aria-hidden="true" />
-
     <!-- Page Indicator -->
     <div class="page-indicator" id="pageIndicator"></div>
 
     <!-- Main Content -->
     <div class="chorus-container">
+        <!-- Church seal watermark: lives inside the chorus-container stacking context
+             so it is always above everything outside it (body bg, animations) and
+             always below the text/controls inside it, on every theme. -->
+        <img class="logo-watermark" id="logoWatermark" src="~/img/kerk-logo.png" alt="" aria-hidden="true" />
+
         <div class="chorus-header">
             <h1 class="chorus-title" id="chorusTitle">@Model.Name</h1>
             <div class="chorus-key" id="chorusKey">@Model.Key</div>

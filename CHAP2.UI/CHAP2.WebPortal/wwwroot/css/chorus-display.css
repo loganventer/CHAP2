@@ -19,7 +19,12 @@
     pointer-events: none;
 }
 
-/* Church seal watermark: centered behind the lyrics, low contrast. */
+/* Church seal watermark: lives inside the .chorus-container stacking
+   context so it always sits above outer backgrounds/animations and
+   below the text children (which come after it in DOM). Uses position
+   fixed so it's centred relative to the viewport regardless of
+   container padding; ancestor overflow:hidden does not clip fixed
+   descendants. */
 .logo-watermark {
     position: fixed;
     top: 50%;
@@ -28,7 +33,7 @@
     height: min(75vmin, 650px);
     transform: translate(-50%, -50%);
     object-fit: contain;
-    opacity: 0.14;
+    opacity: 0.16;
     z-index: 0;
     pointer-events: none;
     user-select: none;
