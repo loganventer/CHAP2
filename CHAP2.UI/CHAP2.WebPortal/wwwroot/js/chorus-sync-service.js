@@ -25,6 +25,10 @@ class ChorusSyncService {
         this._keyChangedCallbacks = [];
         this._setlistChangedCallbacks = [];
         this._connected = false;
+        // Cache the most recent setlist broadcast so a listener that
+        // registers AFTER the hub already pushed the list (which can
+        // happen inside MobileChorusView.init on /sync) still gets it.
+        this._lastSetlist = null;
     }
 
     /** Establish the SignalR connection with auto-reconnect. */
@@ -59,6 +63,7 @@ class ChorusSyncService {
             let list = [];
             try { list = JSON.parse(setlistJson || '[]') || []; }
             catch (err) { debug('[ChorusSyncService] Bad setlist JSON:', err); }
+            this._lastSetlist = list;
             debug('[ChorusSyncService] Received setlist update, length:', list.length);
             for (const callback of this._setlistChangedCallbacks) {
                 callback(list);
@@ -146,10 +151,18 @@ class ChorusSyncService {
 
     /**
      * Register a callback for when a remote client broadcasts its setlist.
+     * If a setlist has already been received before this listener was
+     * registered, the cached value is replayed synchronously so late
+     * subscribers (e.g. MobileChorusView.init running after OnConnected
+     * already pushed the list) still get the current setlist.
      * @param {function(Array): void} callback - Receives the setlist array.
      */
     onSetlistChanged(callback) {
         this._setlistChangedCallbacks.push(callback);
+        if (Array.isArray(this._lastSetlist)) {
+            try { callback(this._lastSetlist); }
+            catch (err) { console.error('[ChorusSyncService] Setlist replay failed:', err); }
+        }
     }
 
     /**
