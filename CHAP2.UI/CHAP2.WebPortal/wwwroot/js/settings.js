@@ -187,9 +187,18 @@ class SettingsManager {
                                     <option value="aurora">Aurora Wave</option>
                                     <option value="aurora-borealis">Aurora Borealis (True)</option>
                                     <option value="color-shift">Celestial</option>
-                                    <option value="church-seal">Church Seal (Watermark)</option>
                                     <option value="none">None</option>
                                 </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="showChurchSeal">
+                                    <input type="checkbox" id="showChurchSeal" style="margin-right: 8px;">
+                                    Show church seal as watermark
+                                </label>
+                                <div class="form-help" style="margin-top: 5px; font-size: 12px; color: #999;">
+                                    Sits behind the lyrics at low contrast; works with any background animation
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -354,6 +363,11 @@ class SettingsManager {
             textOutlineFeather.addEventListener('change', () => this.autoSaveSettings());
         }
 
+        const showChurchSeal = document.getElementById('showChurchSeal');
+        if (showChurchSeal) {
+            showChurchSeal.addEventListener('change', () => this.autoSaveSettings());
+        }
+
         // Auto-save on theme change
         if (themeSelect) {
             themeSelect.addEventListener('change', () => this.autoSaveSettings());
@@ -494,6 +508,11 @@ class SettingsManager {
             if (textOutlineFeather) {
                 textOutlineFeather.checked = this.currentSettings.textOutlineFeather || false;
             }
+
+            const showChurchSeal = document.getElementById('showChurchSeal');
+            if (showChurchSeal) {
+                showChurchSeal.checked = this.currentSettings.showChurchSeal === true;
+            }
         }
     }
 
@@ -505,76 +524,47 @@ class SettingsManager {
     }
 
     saveSettings() {
-        const themeSelect = document.getElementById('themeSelect');
-        const theme = themeSelect.value;
-        const chorusAnimation = document.getElementById('chorusAnimation').value;
-        const chorusFont = document.getElementById('chorusFont').value;
-        const textOutlineWidth = document.getElementById('textOutlineWidth').value;
-        const textOutlineColor = document.getElementById('textOutlineColor').value;
-        const textOutlineFeather = document.getElementById('textOutlineFeather').checked;
-
-        const settings = {
-            theme: theme,
-            customBackground: document.getElementById('customBackground').value,
-            customTextColor: document.getElementById('customTextColor').value,
-            customChorusBackground: document.getElementById('customChorusBackground').value,
-            chorusAnimation: chorusAnimation,
-            chorusFont: chorusFont,
-            textOutlineWidth: textOutlineWidth,
-            textOutlineColor: textOutlineColor,
-            textOutlineFeather: textOutlineFeather
-        };
-
-        localStorage.setItem('chap2Settings', JSON.stringify(settings));
-        this.currentSettings = settings;
+        const settings = this._collectFormSettings();
+        this._persist(settings);
         this.applyTheme(settings);
         this.closeSettings();
-
-        // Show success notification
         this.showNotification('Settings saved successfully!', 'success');
-
-        // Store chorus settings in sessionStorage for immediate access
-        sessionStorage.setItem('chorusAnimation', chorusAnimation);
-        sessionStorage.setItem('chorusFont', chorusFont);
-        sessionStorage.setItem('textOutlineWidth', textOutlineWidth);
-        sessionStorage.setItem('textOutlineColor', textOutlineColor);
-        sessionStorage.setItem('textOutlineFeather', textOutlineFeather);
     }
 
     autoSaveSettings() {
-        const themeSelect = document.getElementById('themeSelect');
-        const theme = themeSelect.value;
-        const chorusAnimation = document.getElementById('chorusAnimation').value;
-        const chorusFont = document.getElementById('chorusFont').value;
-        const textOutlineWidth = document.getElementById('textOutlineWidth').value;
-        const textOutlineColor = document.getElementById('textOutlineColor').value;
-        const textOutlineFeather = document.getElementById('textOutlineFeather').checked;
+        const settings = this._collectFormSettings();
+        this._persist(settings);
+        this.applyTheme(settings);
+        this.showNotification('Settings auto-saved', 'success');
+    }
 
-        const settings = {
-            theme: theme,
+    /** @private Collect every settings value from the modal form. */
+    _collectFormSettings() {
+        const showChurchSealEl = document.getElementById('showChurchSeal');
+        return {
+            theme: document.getElementById('themeSelect').value,
             customBackground: document.getElementById('customBackground').value,
             customTextColor: document.getElementById('customTextColor').value,
             customChorusBackground: document.getElementById('customChorusBackground').value,
-            chorusAnimation: chorusAnimation,
-            chorusFont: chorusFont,
-            textOutlineWidth: textOutlineWidth,
-            textOutlineColor: textOutlineColor,
-            textOutlineFeather: textOutlineFeather
+            chorusAnimation: document.getElementById('chorusAnimation').value,
+            chorusFont: document.getElementById('chorusFont').value,
+            textOutlineWidth: document.getElementById('textOutlineWidth').value,
+            textOutlineColor: document.getElementById('textOutlineColor').value,
+            textOutlineFeather: document.getElementById('textOutlineFeather').checked,
+            showChurchSeal: showChurchSealEl ? showChurchSealEl.checked : false
         };
+    }
 
+    /** @private Persist settings to localStorage + sessionStorage mirrors. */
+    _persist(settings) {
         localStorage.setItem('chap2Settings', JSON.stringify(settings));
         this.currentSettings = settings;
-        this.applyTheme(settings);
-
-        // Store chorus settings in sessionStorage for immediate access
-        sessionStorage.setItem('chorusAnimation', chorusAnimation);
-        sessionStorage.setItem('chorusFont', chorusFont);
-        sessionStorage.setItem('textOutlineWidth', textOutlineWidth);
-        sessionStorage.setItem('textOutlineColor', textOutlineColor);
-        sessionStorage.setItem('textOutlineFeather', textOutlineFeather);
-
-        // Show brief notification
-        this.showNotification('Settings auto-saved', 'success');
+        sessionStorage.setItem('chorusAnimation', settings.chorusAnimation);
+        sessionStorage.setItem('chorusFont', settings.chorusFont);
+        sessionStorage.setItem('textOutlineWidth', settings.textOutlineWidth);
+        sessionStorage.setItem('textOutlineColor', settings.textOutlineColor);
+        sessionStorage.setItem('textOutlineFeather', settings.textOutlineFeather);
+        sessionStorage.setItem('showChurchSeal', settings.showChurchSeal ? 'true' : 'false');
     }
 
     loadSettings() {
@@ -601,9 +591,15 @@ class SettingsManager {
             if (settings.textOutlineFeather === undefined) {
                 settings.textOutlineFeather = false;
             }
+            // Church seal watermark: off by default, independent of animation.
+            if (settings.showChurchSeal === undefined) {
+                settings.showChurchSeal = false;
+            }
+            // Mirror into sessionStorage so the chorus display iframe can read it.
+            sessionStorage.setItem('showChurchSeal', settings.showChurchSeal ? 'true' : 'false');
             return settings;
         }
-        return {
+        const defaults = {
             theme: 'default',
             customBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             customTextColor: '#ffffff',
@@ -612,8 +608,11 @@ class SettingsManager {
             chorusFont: 'Inter',
             textOutlineWidth: '0',
             textOutlineColor: '#000000',
-            textOutlineFeather: false
+            textOutlineFeather: false,
+            showChurchSeal: false
         };
+        sessionStorage.setItem('showChurchSeal', 'false');
+        return defaults;
     }
 
     applyTheme(settings) {

@@ -213,11 +213,6 @@ class ChorusDisplay {
                 this.initColorShift();
                 break;
 
-            case 'church-seal':
-                // Show the church seal as a centered low-opacity watermark.
-                if (logoWatermark) logoWatermark.style.display = 'block';
-                break;
-
             case 'none':
                 // No animation - all already hidden
                 debug('No animation selected');
@@ -229,6 +224,12 @@ class ChorusDisplay {
                 if (flowingNotesContainer) flowingNotesContainer.style.display = 'block';
                 this.initFlowingNotes();
                 break;
+        }
+
+        // Church seal watermark is independent of the animation choice.
+        const showChurchSeal = sessionStorage.getItem('showChurchSeal') === 'true';
+        if (logoWatermark) {
+            logoWatermark.style.display = showChurchSeal ? 'block' : 'none';
         }
     }
 
