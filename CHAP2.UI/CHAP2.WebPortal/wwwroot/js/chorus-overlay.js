@@ -30,15 +30,30 @@ class ChorusOverlay {
     }
 
     /**
-     * Open the overlay pointing at the given chorus id.
+     * Open the overlay pointing at the given chorus id. Focus is handed
+     * to the iframe once it finishes loading so keyboard input (arrows,
+     * Esc, font-size shortcuts, Ctrl+P) flows into the chorus display.
      * @param {string} chorusId
      */
     openChorus(chorusId) {
         if (!chorusId || !this._root || !this._frame) return;
+        this._frame.addEventListener('load', this._focusFrame, { once: true });
         this._frame.src = `/Home/ChorusDisplay/${chorusId}`;
         this._root.hidden = false;
         document.body.classList.add('chorus-overlay-open');
         document.addEventListener('keydown', this._onKeydown);
+    }
+
+    /** @private Give the iframe's window keyboard focus. */
+    _focusFrame = () => {
+        try {
+            this._frame.focus();
+            if (this._frame.contentWindow) {
+                this._frame.contentWindow.focus();
+            }
+        } catch (e) {
+            // Cross-origin or transient; ignore.
+        }
     }
 
     /** Close the overlay and tear down the iframe so SignalR disconnects. */
