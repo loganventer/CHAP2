@@ -33,6 +33,11 @@
 .setlist-footer-btn,
 .settings-button {
     position: relative;
+    /* Sit above the theme ::before / ::after overlays (those use
+       z-index 0 and 1) so the theme background texture cannot paint
+       across the button. The overlays still render behind everything
+       else in the body background. */
+    z-index: 3;
     overflow: hidden;
     isolation: isolate;
 }
