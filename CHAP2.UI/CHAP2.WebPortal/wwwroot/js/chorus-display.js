@@ -167,14 +167,17 @@ class ChorusDisplay {
                     document.documentElement.style.setProperty('--logo-filter', theme.logoFilter);
                 }
                 if (chorusDisplayPage) {
-                    // Swap any previously applied theme-* class.
+                    // Swap any previously applied theme-* / motion-* class.
                     const toRemove = [];
                     for (const cls of chorusDisplayPage.classList) {
-                        if (cls.startsWith('theme-')) toRemove.push(cls);
+                        if (cls.startsWith('theme-') || cls.startsWith('motion-')) toRemove.push(cls);
                     }
                     toRemove.forEach(c => chorusDisplayPage.classList.remove(c));
                     if (theme && theme.bodyClass) {
                         chorusDisplayPage.classList.add(theme.bodyClass);
+                    }
+                    if (theme && theme.motionClass) {
+                        chorusDisplayPage.classList.add(theme.motionClass);
                     }
                 }
                 if (chorusDisplayPage && chorusAnimation !== 'color-shift' && theme && theme.background) {

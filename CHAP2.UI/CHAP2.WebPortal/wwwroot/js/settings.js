@@ -8,7 +8,8 @@ class SettingsManager {
                 textColor: '#1a1a1a',
                 chorusBackground: 'linear-gradient(135deg, #f5efe0 0%, #e8dcc4 100%)',
                 logoFilter: 'none',
-                bodyClass: 'theme-paper-grain-dark'
+                bodyClass: 'theme-paper-grain-dark',
+                motionClass: 'motion-gentle-breathe'
             },
             cathedralStone: {
                 name: 'Cathedral Stone',
@@ -16,14 +17,16 @@ class SettingsManager {
                 textColor: '#f0ece2',
                 chorusBackground: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-damask-tl'
+                bodyClass: 'theme-damask-tl',
+                motionClass: 'motion-warm-flicker'
             },
             doveDusk: {
                 name: 'Dove & Dusk',
                 background: 'linear-gradient(135deg, #0f1c2e 0%, #162638 100%)',
                 textColor: '#f2f0e8',
                 chorusBackground: 'linear-gradient(135deg, #0f1c2e 0%, #162638 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                motionClass: 'motion-cloud-drift'
             },
             classicSeal: {
                 name: 'Classic Seal',
@@ -38,14 +41,16 @@ class SettingsManager {
                 background: 'radial-gradient(circle at 18% 22%, rgba(155, 34, 66, 0.35) 0%, transparent 55%), radial-gradient(circle at 82% 28%, rgba(34, 80, 155, 0.35) 0%, transparent 55%), radial-gradient(circle at 70% 82%, rgba(76, 34, 120, 0.35) 0%, transparent 55%), linear-gradient(160deg, #180a2a 0%, #2a123d 55%, #150720 100%)',
                 textColor: '#f6ecff',
                 chorusBackground: 'radial-gradient(circle at 18% 22%, rgba(155, 34, 66, 0.35) 0%, transparent 55%), radial-gradient(circle at 82% 28%, rgba(34, 80, 155, 0.35) 0%, transparent 55%), radial-gradient(circle at 70% 82%, rgba(76, 34, 120, 0.35) 0%, transparent 55%), linear-gradient(160deg, #180a2a 0%, #2a123d 55%, #150720 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-glass-drift'
             },
             goldenHour: {
                 name: 'Golden Hour',
                 background: 'radial-gradient(ellipse at 20% 10%, rgba(212, 162, 74, 0.35) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(139, 26, 26, 0.3) 0%, transparent 55%), linear-gradient(145deg, #2b1810 0%, #3d2817 50%, #1a0e08 100%)',
                 textColor: '#f5e7c8',
                 chorusBackground: 'radial-gradient(ellipse at 20% 10%, rgba(212, 162, 74, 0.35) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(139, 26, 26, 0.3) 0%, transparent 55%), linear-gradient(145deg, #2b1810 0%, #3d2817 50%, #1a0e08 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-golden-breathe'
             },
             sanctuary: {
                 name: 'Sanctuary',
@@ -53,7 +58,8 @@ class SettingsManager {
                 textColor: '#f2e4c5',
                 chorusBackground: 'radial-gradient(ellipse at 50% 35%, rgba(212, 162, 74, 0.25) 0%, transparent 65%), linear-gradient(180deg, #1a0808 0%, #3a0f12 55%, #180606 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-small-cross-4corners'
+                bodyClass: 'theme-small-cross-4corners',
+                motionClass: 'motion-warm-flicker'
             },
             fresco: {
                 name: 'Fresco',
@@ -61,32 +67,37 @@ class SettingsManager {
                 textColor: '#3a2410',
                 chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(135deg, #e8d8b7 0%, #d4b896 50%, #c9a678 100%)',
                 logoFilter: 'none',
-                bodyClass: 'theme-paper-grain-dark'
+                bodyClass: 'theme-paper-grain-dark',
+                motionClass: 'motion-gentle-breathe'
             },
             pentecost: {
                 name: 'Pentecost',
                 background: 'radial-gradient(circle at 30% 70%, rgba(255, 140, 30, 0.45) 0%, transparent 50%), radial-gradient(circle at 75% 35%, rgba(220, 50, 30, 0.35) 0%, transparent 55%), linear-gradient(180deg, #2a0a06 0%, #551408 55%, #2a0503 100%)',
                 textColor: '#ffe4c0',
                 chorusBackground: 'radial-gradient(circle at 30% 70%, rgba(255, 140, 30, 0.45) 0%, transparent 50%), radial-gradient(circle at 75% 35%, rgba(220, 50, 30, 0.35) 0%, transparent 55%), linear-gradient(180deg, #2a0a06 0%, #551408 55%, #2a0503 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-pentecost-flame'
             },
             advent: {
                 name: 'Advent',
                 background: 'radial-gradient(ellipse at 80% 20%, rgba(214, 164, 76, 0.25) 0%, transparent 55%), radial-gradient(ellipse at 20% 85%, rgba(178, 48, 64, 0.25) 0%, transparent 55%), linear-gradient(155deg, #0e2a1a 0%, #1a3d2a 55%, #0b1e13 100%)',
                 textColor: '#ece4c6',
                 chorusBackground: 'radial-gradient(ellipse at 80% 20%, rgba(214, 164, 76, 0.25) 0%, transparent 55%), radial-gradient(ellipse at 20% 85%, rgba(178, 48, 64, 0.25) 0%, transparent 55%), linear-gradient(155deg, #0e2a1a 0%, #1a3d2a 55%, #0b1e13 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                motionClass: 'motion-cloud-drift'
             },
             epiphany: {
                 name: 'Epiphany',
                 background: 'radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 25%), radial-gradient(circle at 70% 60%, rgba(212, 184, 110, 0.22) 0%, transparent 40%), radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.12) 0%, transparent 18%), linear-gradient(160deg, #07102a 0%, #0c1a3d 55%, #040820 100%)',
                 textColor: '#eaf0ff',
                 chorusBackground: 'radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 25%), radial-gradient(circle at 70% 60%, rgba(212, 184, 110, 0.22) 0%, transparent 40%), radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.12) 0%, transparent 18%), linear-gradient(160deg, #07102a 0%, #0c1a3d 55%, #040820 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                motionClass: 'motion-star-twinkle'
             },
             easterDawn: {
                 name: 'Easter Dawn',
                 background: 'radial-gradient(ellipse at 30% 15%, rgba(255, 235, 215, 0.6) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(200, 150, 180, 0.35) 0%, transparent 55%), linear-gradient(160deg, #fce7e0 0%, #f5c6c0 50%, #e4a8bf 100%)',
+                motionClass: 'motion-gentle-breathe',
                 textColor: '#3c1020',
                 chorusBackground: 'radial-gradient(ellipse at 30% 15%, rgba(255, 235, 215, 0.6) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(200, 150, 180, 0.35) 0%, transparent 55%), linear-gradient(160deg, #fce7e0 0%, #f5c6c0 50%, #e4a8bf 100%)',
                 logoFilter: 'none'
@@ -97,14 +108,16 @@ class SettingsManager {
                 textColor: '#2e1a0a',
                 chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 240, 215, 0.55) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(170, 90, 50, 0.22) 0%, transparent 55%), linear-gradient(135deg, #e7d6b3 0%, #d4b486 50%, #b9945d 100%)',
                 logoFilter: 'none',
-                bodyClass: 'theme-paper-grain-dark'
+                bodyClass: 'theme-paper-grain-dark',
+                motionClass: 'motion-warm-flicker'
             },
             galilee: {
                 name: 'Sea of Galilee',
                 background: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
                 textColor: '#e4f2f5',
                 chorusBackground: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-galilee-shimmer'
             },
             chapelMarble: {
                 name: 'Chapel Marble',
@@ -112,7 +125,8 @@ class SettingsManager {
                 textColor: '#2a2420',
                 chorusBackground: 'radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.35) 0%, transparent 55%), linear-gradient(160deg, #ece7df 0%, #d8d1c4 50%, #c9c1b2 100%)',
                 logoFilter: 'none',
-                bodyClass: 'theme-marble'
+                bodyClass: 'theme-marble',
+                motionClass: 'motion-cloud-drift'
             },
             altarLinen: {
                 name: 'Altar Linen',
@@ -120,7 +134,8 @@ class SettingsManager {
                 textColor: '#3a2a14',
                 chorusBackground: 'radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(150deg, #f5ede0 0%, #e8dcc4 55%, #d8c8a6 100%)',
                 logoFilter: 'none',
-                bodyClass: 'theme-linen'
+                bodyClass: 'theme-linen',
+                motionClass: 'motion-gentle-breathe'
             },
             naveStonework: {
                 name: 'Nave Stonework',
@@ -128,7 +143,8 @@ class SettingsManager {
                 textColor: '#efe8d6',
                 chorusBackground: 'radial-gradient(ellipse at 70% 30%, rgba(214, 164, 76, 0.15) 0%, transparent 55%), linear-gradient(165deg, #2a2824 0%, #3a3731 55%, #231f1a 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-stonework'
+                bodyClass: 'theme-stonework',
+                motionClass: 'motion-warm-flicker'
             },
             starlight: {
                 name: 'Starlight',
@@ -698,7 +714,7 @@ class SettingsManager {
             theme = 'cathedralStone';
             settings.theme = theme;
         }
-        let background, textColor, chorusBackground, logoFilter, bodyClass;
+        let background, textColor, chorusBackground, logoFilter, bodyClass, motionClass;
 
         if (theme === 'custom') {
             background = settings.customBackground;
@@ -706,12 +722,14 @@ class SettingsManager {
             chorusBackground = settings.customChorusBackground;
             logoFilter = this.themes.custom.logoFilter;
             bodyClass = this.themes.custom.bodyClass || null;
+            motionClass = this.themes.custom.motionClass || null;
         } else {
             background = this.themes[theme].background;
             textColor = this.themes[theme].textColor;
             chorusBackground = this.themes[theme].chorusBackground;
             logoFilter = this.themes[theme].logoFilter || 'brightness(0) invert(1)';
             bodyClass = this.themes[theme].bodyClass || null;
+            motionClass = this.themes[theme].motionClass || null;
         }
 
         // Apply to body (search page)
@@ -719,8 +737,9 @@ class SettingsManager {
         document.body.style.color = textColor;
         document.documentElement.style.setProperty('--logo-filter', logoFilter);
 
-        // Swap the body theme class (optional pattern / animation overlay).
-        this._applyBodyThemeClass(bodyClass);
+        // Swap the body theme + motion classes (optional pattern and
+        // optional independent animation overlay).
+        this._applyBodyThemeClass(bodyClass, motionClass);
 
         // Apply to chorus display pages
         const chorusDisplayPage = document.querySelector('.chorus-display-page');
@@ -737,23 +756,26 @@ class SettingsManager {
 
         // Store for chorus display navigation (includes logoFilter so the
         // ChorusDisplay iframe can tint the watermark correctly per theme,
-        // and bodyClass so the iframe can apply the same pattern/animation overlay).
+        // and bodyClass / motionClass so the iframe applies the same
+        // pattern + animation overlays).
         sessionStorage.setItem('currentTheme', JSON.stringify({
             background: chorusBackground,
             textColor: textColor,
             logoFilter: logoFilter,
-            bodyClass: bodyClass
+            bodyClass: bodyClass,
+            motionClass: motionClass
         }));
     }
 
-    /** @private Remove any previously-applied theme-* class and add the new one. */
-    _applyBodyThemeClass(bodyClass) {
+    /** @private Remove any previously-applied theme-* / motion-* class and add the new ones. */
+    _applyBodyThemeClass(bodyClass, motionClass) {
         const toRemove = [];
         for (const cls of document.body.classList) {
-            if (cls.startsWith('theme-')) toRemove.push(cls);
+            if (cls.startsWith('theme-') || cls.startsWith('motion-')) toRemove.push(cls);
         }
         toRemove.forEach(c => document.body.classList.remove(c));
         if (bodyClass) document.body.classList.add(bodyClass);
+        if (motionClass) document.body.classList.add(motionClass);
     }
 
     showNotification(message, type = 'info') {
