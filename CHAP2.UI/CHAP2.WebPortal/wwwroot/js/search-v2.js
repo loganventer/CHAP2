@@ -79,6 +79,18 @@ function initializeSearch() {
                 }
                 return;
             }
+            if (e.key === 'Escape' && this.value.length > 0) {
+                // Swallow Esc so it clears the search instead of closing
+                // an overlay that isn't open; mirror the Clear button flow.
+                e.preventDefault();
+                e.stopPropagation();
+                this.value = '';
+                currentSearchTerm = '';
+                clearTimeout(searchTimeout);
+                clearResults();
+                if (clearBtn) clearBtn.style.display = 'none';
+                return;
+            }
             if (e.key === 'ArrowDown') {
                 // Jump into the result list on the first arrow-down from the search box.
                 const firstRow = document.querySelector('#resultsBody tr.result-row, #resultsMobileCards .mobile-result-card');
