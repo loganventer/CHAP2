@@ -12,11 +12,14 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/responsive.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/mobile-chorus.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/themes.css" asp-append-version="true" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
             margin: 0;
+            /* Background is applied by SettingsManager.applyTheme() on load;
+               this fallback is used only until the theme script runs. */
             background: linear-gradient(135deg, #001f3f 0%, #003d7a 100%);
             min-height: 100vh;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -109,6 +112,8 @@
     </style>
 </head>
 <body class="mobile-sync-page">
+    <!-- Theme-driven star field (CSS-hidden unless theme-starlight active) -->
+    <div class="starlight-field" id="starlightField" aria-hidden="true"></div>
     <!-- Waiting state (shown until a chorus is received) -->
     <div class="mobile-sync-waiting" id="syncWaiting">
         <div class="mobile-sync-waiting__icon">
@@ -161,7 +166,11 @@
     <script src="~/js/lyrics-panel.js" asp-append-version="true"></script>
     <script src="~/js/chorus-sync-service.js" asp-append-version="true"></script>
     <script src="~/js/key-picker.js" asp-append-version="true"></script>
+    <script src="~/js/starlight-field.js" asp-append-version="true"></script>
     <script src="~/js/mobile-chorus-view.js" asp-append-version="true"></script>
+    <!-- Apply the user's saved theme (background, body class, motion class,
+         logo filter, button accent) from localStorage/sessionStorage. -->
+    <script src="~/js/settings.js" asp-append-version="true"></script>
     <script>
         /**
          * MobileSyncPage - Standalone mobile sync page initializer.
