@@ -8,7 +8,7 @@
  * consume. The field is CSS-hidden unless body carries .theme-starlight.
  */
 class StarlightField {
-    constructor(containerId = 'starlightField', count = 55) {
+    constructor(containerId = 'starlightField', count = 38) {
         this._containerId = containerId;
         this._count = count;
         // A palette of subtle star temperatures so the field doesn't read
@@ -43,10 +43,10 @@ class StarlightField {
         s.style.left = (Math.random() * 100).toFixed(2) + '%';
 
         // Each star blinks on its OWN clock: negative delay pins the
-        // phase randomly; duration varies 1.2s..5s so some flicker fast
-        // and others slowly pulse.
-        s.style.animationDelay = (-Math.random() * 6).toFixed(2) + 's';
-        s.style.animationDuration = (1.2 + Math.random() * 3.8).toFixed(2) + 's';
+        // phase randomly; durations are slower (3-10s) so the field
+        // feels calm rather than frantic.
+        s.style.animationDelay = (-Math.random() * 10).toFixed(2) + 's';
+        s.style.animationDuration = (3 + Math.random() * 7).toFixed(2) + 's';
 
         // Random size -- tiny dust to prominent beacons.
         const size = (0.8 + Math.random() * 2.4).toFixed(2);
@@ -58,8 +58,9 @@ class StarlightField {
         s.style.setProperty('--star-color', colour);
         s.style.setProperty('--ray-angle', Math.floor(Math.random() * 180) + 'deg');
 
-        // ~22% of stars get a stronger glow + visible ray cross at peak.
-        if (Math.random() < 0.22) {
+        // ~12% of stars get a stronger glow + visible ray cross at peak
+        // (lower than before to avoid a busy sky).
+        if (Math.random() < 0.12) {
             s.classList.add('star--bright');
         }
         return s;

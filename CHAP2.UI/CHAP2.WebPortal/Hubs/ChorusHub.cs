@@ -15,6 +15,12 @@ public class ChorusHub : Hub<IChorusHub>
     /// </summary>
     public static string? CurrentChorusId { get; private set; }
 
+    /// <summary>
+    /// The most recently broadcast setlist (JSON). Static so new mobile
+    /// clients can pick it up as soon as they connect.
+    /// </summary>
+    public static string? CurrentSetlistJson { get; private set; }
+
     public ChorusHub(ILogger<ChorusHub> logger)
     {
         _logger = logger;
@@ -40,10 +46,28 @@ public class ChorusHub : Hub<IChorusHub>
         await Clients.Others.ReceiveKeyChanged(chorusId, newKey);
     }
 
-    public override Task OnConnectedAsync()
+    /// <summary>
+    /// Broadcasts a setlist update to other connected clients and stores
+    /// it statically so any future connection picks it up on connect.
+    /// </summary>
+    public async Task SendSetlistUpdate(string setlistJson)
+    {
+        CurrentSetlistJson = setlistJson;
+        _logger.LogDebug("Setlist updated ({Length} chars) by connection {ConnectionId}",
+            setlistJson?.Length ?? 0, Context.ConnectionId);
+        await Clients.Others.ReceiveSetlistUpdate(setlistJson ?? string.Empty);
+    }
+
+    public override async Task OnConnectedAsync()
     {
         _logger.LogDebug("Client connected: {ConnectionId}", Context.ConnectionId);
-        return base.OnConnectedAsync();
+        // Hand the newest setlist to the caller so a mobile that joins
+        // after a desktop has already broadcast still gets the list.
+        if (!string.IsNullOrEmpty(CurrentSetlistJson))
+        {
+            await Clients.Caller.ReceiveSetlistUpdate(CurrentSetlistJson);
+        }
+        await base.OnConnectedAsync();
     }
 
     public override Task OnDisconnectedAsync(Exception? exception)

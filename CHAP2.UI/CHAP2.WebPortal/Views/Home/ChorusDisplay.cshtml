@@ -130,6 +130,17 @@
                 if (window.chorusData && window.chorusData.id) {
                     syncService.broadcastChorusChange(window.chorusData.id);
                 }
+                // Broadcast the current setlist (same-origin localStorage) so
+                // mobile sync can drive prev/next from it.
+                try {
+                    const raw = localStorage.getItem('chap2_setlist');
+                    const list = raw ? JSON.parse(raw) : [];
+                    if (Array.isArray(list) && list.length > 0) {
+                        syncService.broadcastSetlist(list);
+                    }
+                } catch (e) {
+                    console.warn('Failed to broadcast setlist:', e);
+                }
             });
 
             // Listen for remote chorus changes (from mobile next/prev)

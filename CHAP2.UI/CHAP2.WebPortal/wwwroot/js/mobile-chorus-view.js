@@ -103,6 +103,20 @@ class MobileChorusView {
                     this._updateDisplay();
                 }
             });
+
+            // Remote client broadcast its setlist -- drive prev/next from it.
+            if (typeof this._syncService.onSetlistChanged === 'function') {
+                this._syncService.onSetlistChanged((setlist) => {
+                    if (!Array.isArray(setlist)) return;
+                    this._choruses = setlist;
+                    const currentId = this._chorusData && this._chorusData.id;
+                    this._currentIndex = currentId
+                        ? this._choruses.findIndex(c => c && c.id === currentId)
+                        : -1;
+                    this._updateNavigationState();
+                    debug('[MobileChorusView] Setlist received via sync, items:', setlist.length);
+                });
+            }
         }
 
         // Update display with current data

@@ -23,6 +23,7 @@ class ChorusSyncService {
         this._connection = null;
         this._chorusChangedCallbacks = [];
         this._keyChangedCallbacks = [];
+        this._setlistChangedCallbacks = [];
         this._connected = false;
     }
 
@@ -51,6 +52,16 @@ class ChorusSyncService {
             debug('[ChorusSyncService] Received key change:', chorusId, newKey);
             for (const callback of this._keyChangedCallbacks) {
                 callback(chorusId, newKey);
+            }
+        });
+
+        this._connection.on('ReceiveSetlistUpdate', (setlistJson) => {
+            let list = [];
+            try { list = JSON.parse(setlistJson || '[]') || []; }
+            catch (err) { debug('[ChorusSyncService] Bad setlist JSON:', err); }
+            debug('[ChorusSyncService] Received setlist update, length:', list.length);
+            for (const callback of this._setlistChangedCallbacks) {
+                callback(list);
             }
         });
 
@@ -130,6 +141,30 @@ class ChorusSyncService {
             debug('[ChorusSyncService] Broadcast key change:', chorusId, newKey);
         } catch (err) {
             console.error('[ChorusSyncService] Failed to broadcast key change:', err);
+        }
+    }
+
+    /**
+     * Register a callback for when a remote client broadcasts its setlist.
+     * @param {function(Array): void} callback - Receives the setlist array.
+     */
+    onSetlistChanged(callback) {
+        this._setlistChangedCallbacks.push(callback);
+    }
+
+    /**
+     * Broadcast the current setlist so mobile sync clients can drive
+     * their prev/next navigation from it.
+     * @param {Array} setlist - Array of chorus summaries (id + name at minimum).
+     */
+    async broadcastSetlist(setlist) {
+        if (!this._connection || !this._connected) return;
+        try {
+            const json = JSON.stringify(setlist || []);
+            await this._connection.invoke('SendSetlistUpdate', json);
+            debug('[ChorusSyncService] Broadcast setlist, items:', (setlist || []).length);
+        } catch (err) {
+            console.error('[ChorusSyncService] Failed to broadcast setlist:', err);
         }
     }
 

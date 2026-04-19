@@ -82,22 +82,20 @@ body.theme-starlight .starlight-field { display: block; }
     transform: translate(-50%, -50%) rotate(calc(var(--ray-angle) + 90deg));
 }
 @keyframes star-ray {
-    0%, 22%, 36%, 100% { opacity: 0;   width: 10px; }
-    28%                 { opacity: 0.9; width: 30px; }
+    /* Rays appear only briefly at the star's peak and stay subtle. */
+    0%, 48%, 62%, 100% { opacity: 0;   width: 12px; }
+    55%                 { opacity: 0.7; width: 24px; }
 }
 
 @keyframes star-twinkle {
-    /* Real stars: mostly dim, with two uneven bright spikes per cycle
-       at different heights, so independent randomized phases land at
-       different moments in the viewport. */
-    0%   { opacity: 0.08; transform: scale(0.55); }
-    20%  { opacity: 0.2;  transform: scale(0.65); }
-    28%  { opacity: 1;    transform: scale(1.5); }
-    32%  { opacity: 0.15; transform: scale(0.7); }
-    58%  { opacity: 0.25; transform: scale(0.8); }
-    64%  { opacity: 0.85; transform: scale(1.25); }
-    68%  { opacity: 0.18; transform: scale(0.7); }
-    100% { opacity: 0.08; transform: scale(0.55); }
+    /* Calm real-sky feel: stars hold dim for most of their cycle with
+       a single gentle bright peak. Randomized duration + delay per
+       star still means dozens are in different phases at any moment. */
+    0%   { opacity: 0.2; transform: scale(0.75); }
+    45%  { opacity: 0.35; transform: scale(0.9); }
+    55%  { opacity: 0.95; transform: scale(1.25); }
+    65%  { opacity: 0.35; transform: scale(0.9); }
+    100% { opacity: 0.2; transform: scale(0.75); }
 }
 
 body.theme-starlight { position: relative; }
