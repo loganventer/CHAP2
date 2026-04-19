@@ -1838,7 +1838,16 @@ class ChorusDisplay {
     }
     
     close() {
-        // Try to close the window, fallback to going back
+        // If hosted inside the ChorusOverlay iframe, ask the parent to close us.
+        if (window.parent && window.parent !== window) {
+            try {
+                window.parent.postMessage({ type: 'chorus-overlay:close' }, window.location.origin);
+                return;
+            } catch (e) {
+                // Fall through to standalone-page behaviour.
+            }
+        }
+        // Standalone page: close the popup or go back.
         if (window.opener) {
             window.close();
         } else {

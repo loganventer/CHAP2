@@ -9,6 +9,10 @@
             <h1 class="app-title">Evangelie Kerk van Jesus Christus</h1>
         </div>
         <div class="header-actions">
+            <div class="mobile-sync-label" id="mobileSyncLabel">
+                <i class="fas fa-mobile-alt"></i>
+                <span id="mobileSyncUrl">Detecting network...</span>
+            </div>
             <div class="header-actions-row">
                 <div class="search-status" id="searchStatus" title="API connectivity">
                     <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
@@ -19,10 +23,6 @@
                 <button class="settings-button" id="settingsButton">
                     <i class="fas fa-cog"></i> Settings
                 </button>
-            </div>
-            <div class="mobile-sync-label" id="mobileSyncLabel">
-                <i class="fas fa-mobile-alt"></i>
-                <span id="mobileSyncUrl">Detecting network...</span>
             </div>
         </div>
     </div>
@@ -287,7 +287,16 @@
     </div>
 </div>
 
+<!-- Chorus Display Overlay (iframe-based, fullscreen above the home page) -->
+<div class="chorus-overlay" id="chorusOverlay" hidden>
+    <button class="chorus-overlay__close" id="chorusOverlayClose" type="button" aria-label="Close chorus display" title="Close (Esc)">
+        <i class="fas fa-times"></i>
+    </button>
+    <iframe class="chorus-overlay__frame" id="chorusOverlayFrame" title="Chorus display" allowfullscreen></iframe>
+</div>
+
 @section Scripts {
+    <script src="~/js/chorus-overlay.js" asp-append-version="true"></script>
     <script src="~/js/chorus-display.js" asp-append-version="true"></script>
     <script src="~/js/setlist.js" asp-append-version="true"></script>
     <script src="~/js/ai-search.js" asp-append-version="true"></script>
@@ -348,8 +357,12 @@
                 // Remove loading notification
                 document.body.removeChild(loadingNotification);
 
-                // Open first chorus in new window with full list for navigation
-                window.open(`/Home/ChorusDisplay/${allChoruses[0].id}`, '_blank');
+                // Open first chorus in the in-page overlay (fallback to navigation).
+                if (window.chorusOverlay && typeof window.chorusOverlay.openChorus === 'function') {
+                    window.chorusOverlay.openChorus(allChoruses[0].id);
+                } else {
+                    window.location.href = `/Home/ChorusDisplay/${allChoruses[0].id}`;
+                }
 
                 debug('Browse All: Opened first chorus with full navigation list');
             } catch (error) {

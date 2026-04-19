@@ -101,8 +101,12 @@ class SetlistManager {
         sessionStorage.setItem('chorusList', JSON.stringify(this.setlist));
         sessionStorage.setItem('currentChorusId', this.setlist[0].id);
 
-        // Open first chorus in ChorusDisplay view
-        window.open(`/Home/ChorusDisplay/${this.setlist[0].id}`, '_blank');
+        // Open first chorus in the in-page overlay (falls back to full navigation).
+        if (window.chorusOverlay && typeof window.chorusOverlay.openChorus === 'function') {
+            window.chorusOverlay.openChorus(this.setlist[0].id);
+        } else {
+            window.location.href = `/Home/ChorusDisplay/${this.setlist[0].id}`;
+        }
         this.showNotification('Launching setlist...', 'success');
     }
 

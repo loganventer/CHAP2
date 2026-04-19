@@ -407,10 +407,12 @@ function createResultRow(result, index) {
     // Add click handler for row
     row.addEventListener('click', function(e) {
         if (!e.target.closest('.action-btn')) {
-            // Always open chorus display in new window
-            const url = `/Home/ChorusDisplay/${result.id}`;
-            const windowFeatures = 'width=1200,height=800,scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no';
-            window.open(url, '_blank', windowFeatures);
+            // Open the chorus display as an in-page overlay (no new window).
+            if (window.chorusOverlay && typeof window.chorusOverlay.openChorus === 'function') {
+                window.chorusOverlay.openChorus(result.id);
+            } else {
+                window.location.href = `/Home/ChorusDisplay/${result.id}`;
+            }
         }
     });
 
@@ -504,25 +506,13 @@ async function showDetail(chorusId) {
     }
 }
 
-// Open chorus display in new window
+// Open chorus display inline as a fullscreen overlay (falls back to navigation).
 function openInNewWindow(chorusId) {
-    const url = `/Home/ChorusDisplay/${chorusId}`;
-    const windowFeatures = 'scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no,fullscreen=yes';
-    const newWindow = window.open(url, '_blank', windowFeatures);
-    
-    // Fallback for browsers that don't support fullscreen in window.open
-    if (newWindow) {
-        newWindow.addEventListener('load', function() {
-            try {
-                if (newWindow.screen && newWindow.screen.availWidth) {
-                    newWindow.moveTo(0, 0);
-                    newWindow.resizeTo(newWindow.screen.availWidth, newWindow.screen.availHeight);
-                }
-            } catch (e) {
-                debug('Could not maximize window:', e);
-            }
-        });
+    if (window.chorusOverlay && typeof window.chorusOverlay.openChorus === 'function') {
+        window.chorusOverlay.openChorus(chorusId);
+        return;
     }
+    window.location.href = `/Home/ChorusDisplay/${chorusId}`;
 }
 
 // Copy chorus text to clipboard

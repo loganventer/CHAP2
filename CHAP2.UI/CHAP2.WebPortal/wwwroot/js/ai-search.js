@@ -539,16 +539,18 @@ class AiSearch {
             if (!e.target.closest('.action-btn')) {
                 const chorusId = result.id || result.Id;
                 if (chorusId) {
-                    const url = `/Home/ChorusDisplay/${chorusId}`;
-                    const windowFeatures = 'width=1200,height=800,scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no';
-                    window.open(url, '_blank', windowFeatures);
+                    if (window.chorusOverlay && typeof window.chorusOverlay.openChorus === 'function') {
+                        window.chorusOverlay.openChorus(chorusId);
+                    } else {
+                        window.location.href = `/Home/ChorusDisplay/${chorusId}`;
+                    }
                 }
             }
         });
-        
+
         // Add cursor pointer to indicate clickable
         row.style.cursor = 'pointer';
-        
+
         return row;
     }
 
@@ -814,15 +816,17 @@ class AiSearch {
             row.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
         });
         
-        // Add click functionality to open chorus display (same as original search)
+        // Add click functionality to open the chorus overlay.
         row.addEventListener('click', (e) => {
             // Don't trigger row click if clicking on action buttons
             if (!e.target.closest('.action-btn')) {
                 const chorusId = result.id || result.Id;
                 if (chorusId) {
-                    const url = `/Home/ChorusDisplay/${chorusId}`;
-                    const windowFeatures = 'width=1200,height=800,scrollbars=no,resizable=yes,menubar=no,toolbar=no,location=no,status=no';
-                    window.open(url, '_blank', windowFeatures);
+                    if (window.chorusOverlay && typeof window.chorusOverlay.openChorus === 'function') {
+                        window.chorusOverlay.openChorus(chorusId);
+                    } else {
+                        window.location.href = `/Home/ChorusDisplay/${chorusId}`;
+                    }
                 }
             }
         });
