@@ -59,34 +59,61 @@ wait_for_docker() {
     return 1
 }
 
+# Docker Desktop can report the daemon as ready while its internal
+# network/DNS is still warming up, which makes `docker pull` fail with
+# "no such host". Probe the registry resolution until it works (or time out).
+wait_for_docker_network() {
+    local tries=30
+    while [ $tries -gt 0 ]; do
+        if docker run --rm --network bridge busybox nslookup mcr.microsoft.com >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 2
+        tries=$((tries - 1))
+    done
+    return 1
+}
+
 # Make sure the Docker daemon is available before we try to talk to it.
 # On macOS this auto-launches Docker Desktop and waits for it to be ready.
 ensure_docker_running() {
-    if docker_daemon_ready; then return 0; fi
-    case "$(uname -s)" in
-        Darwin)
-            echo "Docker daemon not reachable. Starting Docker Desktop..."
-            if ! open -a Docker >/dev/null 2>&1; then
-                echo "Could not launch Docker Desktop. Install it from https://www.docker.com/products/docker-desktop/"
+    local just_started=0
+    if ! docker_daemon_ready; then
+        case "$(uname -s)" in
+            Darwin)
+                echo "Docker daemon not reachable. Starting Docker Desktop..."
+                if ! open -a Docker >/dev/null 2>&1; then
+                    echo "Could not launch Docker Desktop. Install it from https://www.docker.com/products/docker-desktop/"
+                    return 1
+                fi
+                echo "Waiting for Docker to become ready..."
+                if wait_for_docker; then
+                    echo "Docker is ready."
+                    just_started=1
+                else
+                    echo "Docker did not become ready in time."
+                    return 1
+                fi
+                ;;
+            Linux)
+                echo "Docker daemon not reachable. Try: sudo systemctl start docker"
                 return 1
-            fi
-            echo "Waiting for Docker to become ready..."
-            if wait_for_docker; then
-                echo "Docker is ready."
-                return 0
-            fi
-            echo "Docker did not become ready in time."
-            return 1
-            ;;
-        Linux)
-            echo "Docker daemon not reachable. Try: sudo systemctl start docker"
-            return 1
-            ;;
-        *)
-            echo "Docker daemon not reachable."
-            return 1
-            ;;
-    esac
+                ;;
+            *)
+                echo "Docker daemon not reachable."
+                return 1
+                ;;
+        esac
+    fi
+
+    # If we just started Docker, its network may still be settling.
+    if [ $just_started -eq 1 ]; then
+        echo "Waiting for Docker network to settle..."
+        if ! wait_for_docker_network; then
+            echo "Warning: Docker network probe timed out; continuing anyway."
+        fi
+    fi
+    return 0
 }
 
 local_images_exist() {
@@ -117,9 +144,17 @@ start_containers() {
 }
 
 # Bring the local stack up (optionally rebuilding), wait for it, and open the browser.
+# Retries once on failure to swallow Docker-Desktop-just-started DNS races.
 run_local() {
     local build_flag="$1"
-    start_containers "$build_flag"
+    if ! start_containers "$build_flag"; then
+        echo "First start attempt failed. Waiting 10s then retrying once..."
+        sleep 10
+        start_containers "$build_flag" || {
+            echo "Local stack failed to start. See output above."
+            exit 1
+        }
+    fi
     echo "Waiting for local web portal..."
     if wait_for_local_ready; then
         open_url "$LOCAL_URL"
