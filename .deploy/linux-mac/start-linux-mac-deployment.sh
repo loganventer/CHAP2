@@ -7,6 +7,7 @@ LOCAL_URL="http://localhost:8080"
 LOCAL_SERVICE="chap2-webportal"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$SCRIPT_DIR"
 
 REDEPLOY="false"
@@ -71,11 +72,57 @@ start_containers() {
     $COMPOSE up -d $build_flag
 }
 
+# (Re)create the desktop launcher that runs this script when double-clicked.
+# macOS: a .command shell file (optionally with a custom icon via `fileicon`).
+# Linux: a .desktop entry pointing at this script with the kerk-logo icon.
+install_desktop_shortcut() {
+    local desktop_dir="$HOME/Desktop"
+    [ -d "$desktop_dir" ] || return 0
+
+    local icon_source="$REPO_ROOT/CHAP2.UI/CHAP2.WebPortal/wwwroot/img/kerk-logo.png"
+    local script_path="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
+
+    case "$(uname -s)" in
+        Darwin)
+            local shortcut="$desktop_dir/Evangelie Kerk.command"
+            cat > "$shortcut" <<SH
+#!/bin/bash
+cd "$SCRIPT_DIR"
+./$(basename "${BASH_SOURCE[0]}") "\$@"
+SH
+            chmod +x "$shortcut"
+            # Custom icon: fileicon (Homebrew) is the simplest non-destructive
+            # way to attach an icon to a file. Gracefully skip if missing.
+            if command -v fileicon >/dev/null 2>&1 && [ -f "$icon_source" ]; then
+                fileicon set "$shortcut" "$icon_source" >/dev/null 2>&1 || true
+            fi
+            echo "Desktop shortcut refreshed: $shortcut"
+            ;;
+        Linux)
+            local shortcut="$desktop_dir/evangelie-kerk.desktop"
+            cat > "$shortcut" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Evangelie Kerk
+Comment=Launch Evangelie Kerk chorus search
+Exec="$script_path"
+Icon=$icon_source
+Terminal=false
+Categories=Application;
+EOF
+            chmod +x "$shortcut"
+            echo "Desktop shortcut refreshed: $shortcut"
+            ;;
+    esac
+}
+
 # --- Main ------------------------------------------------------------------
 
 echo "========================================"
 echo "CHAP2 Linux/Mac Deployment"
 echo "========================================"
+
+install_desktop_shortcut
 
 if [ "$REDEPLOY" = "true" ]; then
     echo "Mode: redeploy (full rebuild, local)"
