@@ -107,6 +107,48 @@ class SettingsManager {
                 chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(135deg, #e8d8b7 0%, #d4b896 50%, #c9a678 100%)',
                 logoFilter: 'none'
             },
+            pentecost: {
+                name: 'Pentecost',
+                background: 'radial-gradient(circle at 30% 70%, rgba(255, 140, 30, 0.45) 0%, transparent 50%), radial-gradient(circle at 75% 35%, rgba(220, 50, 30, 0.35) 0%, transparent 55%), linear-gradient(180deg, #2a0a06 0%, #551408 55%, #2a0503 100%)',
+                textColor: '#ffe4c0',
+                chorusBackground: 'radial-gradient(circle at 30% 70%, rgba(255, 140, 30, 0.45) 0%, transparent 50%), radial-gradient(circle at 75% 35%, rgba(220, 50, 30, 0.35) 0%, transparent 55%), linear-gradient(180deg, #2a0a06 0%, #551408 55%, #2a0503 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            advent: {
+                name: 'Advent',
+                background: 'radial-gradient(ellipse at 80% 20%, rgba(214, 164, 76, 0.25) 0%, transparent 55%), radial-gradient(ellipse at 20% 85%, rgba(178, 48, 64, 0.25) 0%, transparent 55%), linear-gradient(155deg, #0e2a1a 0%, #1a3d2a 55%, #0b1e13 100%)',
+                textColor: '#ece4c6',
+                chorusBackground: 'radial-gradient(ellipse at 80% 20%, rgba(214, 164, 76, 0.25) 0%, transparent 55%), radial-gradient(ellipse at 20% 85%, rgba(178, 48, 64, 0.25) 0%, transparent 55%), linear-gradient(155deg, #0e2a1a 0%, #1a3d2a 55%, #0b1e13 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            epiphany: {
+                name: 'Epiphany',
+                background: 'radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 25%), radial-gradient(circle at 70% 60%, rgba(212, 184, 110, 0.22) 0%, transparent 40%), radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.12) 0%, transparent 18%), linear-gradient(160deg, #07102a 0%, #0c1a3d 55%, #040820 100%)',
+                textColor: '#eaf0ff',
+                chorusBackground: 'radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 25%), radial-gradient(circle at 70% 60%, rgba(212, 184, 110, 0.22) 0%, transparent 40%), radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.12) 0%, transparent 18%), linear-gradient(160deg, #07102a 0%, #0c1a3d 55%, #040820 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            easterDawn: {
+                name: 'Easter Dawn',
+                background: 'radial-gradient(ellipse at 30% 15%, rgba(255, 235, 215, 0.6) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(200, 150, 180, 0.35) 0%, transparent 55%), linear-gradient(160deg, #fce7e0 0%, #f5c6c0 50%, #e4a8bf 100%)',
+                textColor: '#3c1020',
+                chorusBackground: 'radial-gradient(ellipse at 30% 15%, rgba(255, 235, 215, 0.6) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(200, 150, 180, 0.35) 0%, transparent 55%), linear-gradient(160deg, #fce7e0 0%, #f5c6c0 50%, #e4a8bf 100%)',
+                logoFilter: 'none'
+            },
+            jerusalemStone: {
+                name: 'Jerusalem Stone',
+                background: 'radial-gradient(ellipse at 25% 20%, rgba(255, 240, 215, 0.55) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(170, 90, 50, 0.22) 0%, transparent 55%), linear-gradient(135deg, #e7d6b3 0%, #d4b486 50%, #b9945d 100%)',
+                textColor: '#2e1a0a',
+                chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 240, 215, 0.55) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(170, 90, 50, 0.22) 0%, transparent 55%), linear-gradient(135deg, #e7d6b3 0%, #d4b486 50%, #b9945d 100%)',
+                logoFilter: 'none'
+            },
+            galilee: {
+                name: 'Sea of Galilee',
+                background: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
+                textColor: '#e4f2f5',
+                chorusBackground: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
             custom: {
                 name: 'Custom Theme',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
