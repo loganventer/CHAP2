@@ -232,12 +232,18 @@ class MobileChorusView {
         }
     }
 
-    /** @private Load the chorus navigation list from sessionStorage. */
+    /** @private Load the chorus navigation list from sessionStorage, falling back to the saved setlist in localStorage. */
     _loadChorusList() {
         try {
             const stored = sessionStorage.getItem('chorusList');
             if (stored) {
                 this._choruses = JSON.parse(stored);
+            }
+            if (!this._choruses || this._choruses.length === 0) {
+                const savedSetlist = localStorage.getItem('chap2_setlist');
+                if (savedSetlist) {
+                    this._choruses = JSON.parse(savedSetlist) || [];
+                }
             }
             const currentId = this._chorusData?.id;
             if (currentId && this._choruses.length > 0) {
