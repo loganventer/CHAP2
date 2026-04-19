@@ -31,6 +31,18 @@
     animation: pulse 2s infinite;
 }
 
+img.logo-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    border-radius: 50%;
+    animation: none;
+    /* Logo is black on transparent; theme sets --logo-filter (invert on dark themes). */
+    filter: var(--logo-filter, brightness(0) invert(1));
+    flex-shrink: 0;
+}
+
 .app-title {
     font-size: var(--font-size-4xl);
     font-weight: 700;

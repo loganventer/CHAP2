@@ -50,7 +50,7 @@ function printChorus() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>${chorusTitle} - CHAP2</title>
+            <title>${chorusTitle} - Evangelie Kerk van Jesus Christus</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; }
                 .header { text-align: center; margin-bottom: 30px; }

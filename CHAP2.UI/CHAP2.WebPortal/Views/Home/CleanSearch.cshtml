@@ -5,9 +5,9 @@
 <div class="search-page">
     <div class="search-header">
         <div class="logo-section">
-            <i class="fas fa-music logo-icon"></i>
-            <h1 class="app-title">CHAP2 Clean Search</h1>
-            <p class="app-subtitle">Modular Search Architecture</p>
+            <img src="~/img/kerk-logo.png" alt="Evangelie Kerk van Jesus Christus" class="logo-icon" />
+            <h1 class="app-title">Evangelie Kerk van Jesus Christus</h1>
+            <p class="app-subtitle">Clean Search</p>
         </div>
         <div class="header-actions">
             <a href="@Url.Action("Create")" class="btn-primary" target="_blank" onclick="openCreateWindow(event)">
@@ -69,6 +69,16 @@
 
 .logo-icon {
     font-size: 2em;
+}
+
+img.logo-icon {
+    width: 3rem;
+    height: 3rem;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    border-radius: 50%;
+    filter: var(--logo-filter, brightness(0) invert(1));
+    flex-shrink: 0;
 }
 
 .app-title {

@@ -6,49 +6,85 @@ class SettingsManager {
                 name: 'Default Purple',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                chorusBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             },
             dark: {
                 name: 'Dark Mode',
                 background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
+                chorusBackground: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             },
             navy: {
                 name: 'Navy Blue',
                 background: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)'
+                chorusBackground: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             },
             forest: {
                 name: 'Forest Green',
                 background: 'linear-gradient(135deg, #1a4d2e 0%, #2e7d55 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #1a4d2e 0%, #2e7d55 100%)'
+                chorusBackground: 'linear-gradient(135deg, #1a4d2e 0%, #2e7d55 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             },
             sunset: {
                 name: 'Sunset Orange',
                 background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
+                chorusBackground: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             },
             ocean: {
                 name: 'Ocean Blue',
                 background: 'linear-gradient(135deg, #0066cc 0%, #0099ff 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #0066cc 0%, #0099ff 100%)'
+                chorusBackground: 'linear-gradient(135deg, #0066cc 0%, #0099ff 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             },
             royal: {
                 name: 'Royal Purple',
                 background: 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)'
+                chorusBackground: 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            parchment: {
+                name: 'Parchment & Ink',
+                background: 'linear-gradient(135deg, #f5efe0 0%, #e8dcc4 100%)',
+                textColor: '#1a1a1a',
+                chorusBackground: 'linear-gradient(135deg, #f5efe0 0%, #e8dcc4 100%)',
+                logoFilter: 'none'
+            },
+            cathedralStone: {
+                name: 'Cathedral Stone',
+                background: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
+                textColor: '#f0ece2',
+                chorusBackground: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            doveDusk: {
+                name: 'Dove & Dusk',
+                background: 'linear-gradient(135deg, #0f1c2e 0%, #162638 100%)',
+                textColor: '#f2f0e8',
+                chorusBackground: 'linear-gradient(135deg, #0f1c2e 0%, #162638 100%)',
+                logoFilter: 'brightness(0) invert(1)'
+            },
+            classicSeal: {
+                name: 'Classic Seal',
+                background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                textColor: '#ffffff',
+                chorusBackground: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             },
             custom: {
                 name: 'Custom Theme',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 textColor: '#ffffff',
-                chorusBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                chorusBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                logoFilter: 'brightness(0) invert(1)'
             }
         };
 
@@ -581,21 +617,24 @@ class SettingsManager {
 
     applyTheme(settings) {
         const theme = settings.theme;
-        let background, textColor, chorusBackground;
+        let background, textColor, chorusBackground, logoFilter;
 
         if (theme === 'custom') {
             background = settings.customBackground;
             textColor = settings.customTextColor;
             chorusBackground = settings.customChorusBackground;
+            logoFilter = this.themes.custom.logoFilter;
         } else {
             background = this.themes[theme].background;
             textColor = this.themes[theme].textColor;
             chorusBackground = this.themes[theme].chorusBackground;
+            logoFilter = this.themes[theme].logoFilter || 'brightness(0) invert(1)';
         }
 
         // Apply to body (search page)
         document.body.style.background = background;
         document.body.style.color = textColor;
+        document.documentElement.style.setProperty('--logo-filter', logoFilter);
 
         // Apply to chorus display pages
         const chorusDisplayPage = document.querySelector('.chorus-display-page');

@@ -1,84 +1,115 @@
 #!/bin/bash
 
+set -e
+
+REMOTE_URL="https://chap2-web.onrender.com"
+LOCAL_URL="http://localhost:8080"
+LOCAL_SERVICE="chap2-webportal"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+REDEPLOY="false"
+for arg in "$@"; do
+    if [ "$arg" = "redeploy" ]; then
+        REDEPLOY="true"
+    fi
+done
+
+# --- Helpers ---------------------------------------------------------------
+
+open_url() {
+    local url="$1"
+    echo "Opening $url"
+    if command -v open >/dev/null 2>&1; then
+        open "$url"
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url" >/dev/null 2>&1 &
+    else
+        echo "(No browser opener found. Visit $url manually.)"
+    fi
+}
+
+# Pick the docker compose command form that exists on this system.
+if docker compose version >/dev/null 2>&1; then
+    COMPOSE="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE="docker-compose"
+else
+    echo "Error: neither 'docker compose' nor 'docker-compose' is available."
+    exit 1
+fi
+
+remote_is_reachable() {
+    curl -fsS --max-time 5 -o /dev/null "$REMOTE_URL" >/dev/null 2>&1
+}
+
+local_images_exist() {
+    # docker compose images prints nothing for services with no image.
+    local output
+    output="$($COMPOSE images -q "$LOCAL_SERVICE" 2>/dev/null || true)"
+    [ -n "$output" ]
+}
+
+wait_for_local_ready() {
+    local tries=30
+    while [ $tries -gt 0 ]; do
+        if curl -fsS --max-time 2 -o /dev/null "$LOCAL_URL"; then
+            return 0
+        fi
+        sleep 1
+        tries=$((tries - 1))
+    done
+    return 1
+}
+
+start_containers() {
+    local build_flag="$1"
+    echo "Stopping any existing containers..."
+    $COMPOSE down >/dev/null 2>&1 || true
+    echo "Starting services${build_flag:+ ($build_flag)}..."
+    $COMPOSE up -d $build_flag
+}
+
+# --- Main ------------------------------------------------------------------
+
 echo "========================================"
 echo "CHAP2 Linux/Mac Deployment"
 echo "========================================"
-echo
 
-echo "Checking Docker and Ollama..."
-docker --version
-if command -v ollama &> /dev/null; then
-    echo "Ollama found: $(ollama --version)"
-    echo "Available models:"
-    ollama list
-else
-    echo "Warning: Ollama not found. Please install Ollama first."
-    echo "Visit: https://ollama.ai/download"
+if [ "$REDEPLOY" = "true" ]; then
+    echo "Mode: redeploy (full rebuild, local)"
+    start_containers "--build"
+    echo "Waiting for local web portal..."
+    if wait_for_local_ready; then
+        open_url "$LOCAL_URL"
+    else
+        echo "Local web portal did not respond in time. Check: $COMPOSE logs -f"
+        exit 1
+    fi
+    exit 0
 fi
-echo
 
-echo "Stopping any existing containers..."
-docker-compose down
-echo
-
-echo "Building and starting services..."
-docker-compose up -d --build
-echo
-
-echo "Waiting 30 seconds for services to start..."
-sleep 30
-echo
-
-echo "Checking container status:"
-docker ps
-echo
-
-echo "Getting server IP address:"
-if command -v ip &> /dev/null; then
-    # Linux
-    ip route get 1.1.1.1 | awk '{print $7; exit}'
-elif command -v ifconfig &> /dev/null; then
-    # macOS
-    ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -1
-else
-    echo "Could not determine IP address automatically"
+echo "Checking remote ($REMOTE_URL)..."
+if remote_is_reachable; then
+    echo "Remote is up. Using hosted deployment."
+    open_url "$REMOTE_URL"
+    exit 0
 fi
-echo
 
-echo "Testing connections:"
-echo
+echo "Remote unreachable. Checking for local images..."
+if local_images_exist; then
+    echo "Local images found. Starting without rebuild."
+    start_containers ""
+    if wait_for_local_ready; then
+        open_url "$LOCAL_URL"
+    else
+        echo "Local web portal did not respond in time. Check: $COMPOSE logs -f"
+        exit 1
+    fi
+    exit 0
+fi
 
-echo "Testing Web Portal (port 8080):"
-curl -s -I http://localhost:8080
-echo
-
-echo "Testing API (port 5001):"
-curl -s -I http://localhost:5001
-echo
-
-echo "Testing LangChain Service (port 8000):"
-curl -s -I http://localhost:8000/health
-echo
-
-echo "Testing Qdrant (port 6333):"
-curl -s -I http://localhost:6333
-echo
-
-echo
-echo "Access URLs (replace SERVER_IP with your actual IP):"
-echo "- Web Portal: http://SERVER_IP:8080"
-echo "- API: http://SERVER_IP:5001"
-echo "- LangChain: http://SERVER_IP:8000"
-echo "- Qdrant: http://SERVER_IP:6333"
-echo
-
-echo "To view logs:"
-echo "docker-compose logs -f"
-echo
-
-echo "To stop services:"
-echo "docker-compose down"
-echo
-
-echo "Press any key to continue..."
-read -n 1 
+echo "No local images found. Run again with: $(basename "$0") redeploy"
+echo "That will build the images and start the local stack."
+exit 1

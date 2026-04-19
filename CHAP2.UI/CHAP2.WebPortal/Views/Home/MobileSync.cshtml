@@ -8,7 +8,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>CHAP2 Mobile Sync</title>
+    <title>Evangelie Kerk van Jesus Christus - Mobile Sync</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/responsive.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/mobile-chorus.css" asp-append-version="true" />
@@ -49,6 +49,16 @@
             margin-bottom: 1.5rem;
             opacity: 0.6;
             animation: pulse-waiting 2s ease-in-out infinite;
+        }
+
+        .mobile-sync-waiting__icon img {
+            width: 5rem;
+            height: 5rem;
+            aspect-ratio: 1 / 1;
+            object-fit: contain;
+            border-radius: 50%;
+            filter: brightness(0) invert(1);
+            display: block;
         }
 
         .mobile-sync-waiting__title {
@@ -102,9 +112,9 @@
     <!-- Waiting state (shown until a chorus is received) -->
     <div class="mobile-sync-waiting" id="syncWaiting">
         <div class="mobile-sync-waiting__icon">
-            <i class="fas fa-music"></i>
+            <img src="~/img/kerk-logo.png" alt="Evangelie Kerk van Jesus Christus" />
         </div>
-        <div class="mobile-sync-waiting__title">CHAP2 Mobile Sync</div>
+        <div class="mobile-sync-waiting__title">Evangelie Kerk van Jesus Christus</div>
         <div class="mobile-sync-waiting__subtitle">
             Waiting for a chorus to be displayed on the main screen...
         </div>
