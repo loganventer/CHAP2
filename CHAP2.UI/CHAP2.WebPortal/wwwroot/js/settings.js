@@ -649,10 +649,12 @@ class SettingsManager {
             }
         }
 
-        // Store for chorus display navigation
+        // Store for chorus display navigation (includes logoFilter so the
+        // ChorusDisplay iframe can tint the watermark correctly per theme).
         sessionStorage.setItem('currentTheme', JSON.stringify({
             background: chorusBackground,
-            textColor: textColor
+            textColor: textColor,
+            logoFilter: logoFilter
         }));
     }
 

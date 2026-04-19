@@ -154,21 +154,24 @@ class ChorusDisplay {
         if (flowingNotesContainer) flowingNotesContainer.style.display = 'none';
         if (logoWatermark) logoWatermark.style.display = 'none';
 
-        // Apply background color for all animations except color-shift
+        // Apply theme: background + logo filter (so the church-seal watermark
+        // tints correctly on both dark and light themes).
         const chorusDisplayPage = document.querySelector('.chorus-display-page');
-        if (chorusDisplayPage && chorusAnimation !== 'color-shift') {
-            // Get theme background from sessionStorage
+        try {
             const currentTheme = sessionStorage.getItem('currentTheme');
             if (currentTheme) {
-                try {
-                    const theme = JSON.parse(currentTheme);
+                const theme = JSON.parse(currentTheme);
+                if (theme && theme.logoFilter) {
+                    document.documentElement.style.setProperty('--logo-filter', theme.logoFilter);
+                }
+                if (chorusDisplayPage && chorusAnimation !== 'color-shift' && theme && theme.background) {
                     chorusDisplayPage.style.background = theme.background;
-                } catch (e) {
-                    console.warn('Failed to parse theme:', e);
                 }
             }
-        } else if (chorusDisplayPage && chorusAnimation === 'color-shift') {
-            // For color-shift, clear background
+        } catch (e) {
+            console.warn('Failed to parse theme:', e);
+        }
+        if (chorusDisplayPage && chorusAnimation === 'color-shift') {
             chorusDisplayPage.style.background = 'transparent';
         }
 
