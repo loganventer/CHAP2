@@ -124,7 +124,7 @@ img.logo-icon {
 .header-actions .btn-primary {
     padding: var(--spacing-md) var(--spacing-lg);
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: white;
+    color: var(--accent-text, #ffffff);
     border: none;
     border-radius: var(--radius-lg);
     font-size: var(--font-size-base);
@@ -141,7 +141,7 @@ img.logo-icon {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
     text-decoration: none;
-    color: white;
+    color: var(--accent-text, #ffffff);
 }
 
 .header-actions .btn-primary:active {

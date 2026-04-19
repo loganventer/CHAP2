@@ -9,7 +9,8 @@ class SettingsManager {
                 chorusBackground: 'linear-gradient(135deg, #f5efe0 0%, #e8dcc4 100%)',
                 logoFilter: 'none',
                 bodyClass: 'theme-paper-grain-dark',
-                motionClass: 'motion-gentle-breathe'
+                motionClass: 'motion-gentle-breathe',
+                accent: { bg: '#7a1e1e', hover: '#5a1414', text: '#fff5ea' }
             },
             cathedralStone: {
                 name: 'Cathedral Stone',
@@ -18,7 +19,8 @@ class SettingsManager {
                 chorusBackground: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
                 logoFilter: 'brightness(0) invert(1)',
                 bodyClass: 'theme-damask-tl',
-                motionClass: 'motion-warm-flicker'
+                motionClass: 'motion-warm-flicker',
+                accent: { bg: '#c9a24a', hover: '#a38336', text: '#1f1c18' }
             },
             doveDusk: {
                 name: 'Dove & Dusk',
@@ -26,7 +28,8 @@ class SettingsManager {
                 textColor: '#f2f0e8',
                 chorusBackground: 'linear-gradient(135deg, #0f1c2e 0%, #162638 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                motionClass: 'motion-cloud-drift'
+                motionClass: 'motion-cloud-drift',
+                accent: { bg: '#6b7d99', hover: '#4f5d74', text: '#0f1c2e' }
             },
             classicSeal: {
                 name: 'Classic Seal',
@@ -34,7 +37,8 @@ class SettingsManager {
                 textColor: '#ffffff',
                 chorusBackground: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-fleur-diagonal'
+                bodyClass: 'theme-fleur-diagonal',
+                accent: { bg: '#a31515', hover: '#7a0d0d', text: '#ffffff' }
             },
             stainedGlass: {
                 name: 'Stained Glass',
@@ -42,7 +46,8 @@ class SettingsManager {
                 textColor: '#f6ecff',
                 chorusBackground: 'radial-gradient(circle at 18% 22%, rgba(155, 34, 66, 0.35) 0%, transparent 55%), radial-gradient(circle at 82% 28%, rgba(34, 80, 155, 0.35) 0%, transparent 55%), radial-gradient(circle at 70% 82%, rgba(76, 34, 120, 0.35) 0%, transparent 55%), linear-gradient(160deg, #180a2a 0%, #2a123d 55%, #150720 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-glass-drift'
+                bodyClass: 'theme-glass-drift',
+                accent: { bg: '#c9a24a', hover: '#a08037', text: '#180a2a' }
             },
             goldenHour: {
                 name: 'Golden Hour',
@@ -50,7 +55,8 @@ class SettingsManager {
                 textColor: '#f5e7c8',
                 chorusBackground: 'radial-gradient(ellipse at 20% 10%, rgba(212, 162, 74, 0.35) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(139, 26, 26, 0.3) 0%, transparent 55%), linear-gradient(145deg, #2b1810 0%, #3d2817 50%, #1a0e08 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-golden-breathe'
+                bodyClass: 'theme-golden-breathe',
+                accent: { bg: '#d4a24a', hover: '#a88038', text: '#2b1810' }
             },
             sanctuary: {
                 name: 'Sanctuary',
@@ -59,7 +65,8 @@ class SettingsManager {
                 chorusBackground: 'radial-gradient(ellipse at 50% 35%, rgba(212, 162, 74, 0.25) 0%, transparent 65%), linear-gradient(180deg, #1a0808 0%, #3a0f12 55%, #180606 100%)',
                 logoFilter: 'brightness(0) invert(1)',
                 bodyClass: 'theme-small-cross-4corners',
-                motionClass: 'motion-warm-flicker'
+                motionClass: 'motion-warm-flicker',
+                accent: { bg: '#d4a24a', hover: '#a88038', text: '#1a0808' }
             },
             fresco: {
                 name: 'Fresco',
@@ -68,7 +75,8 @@ class SettingsManager {
                 chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(135deg, #e8d8b7 0%, #d4b896 50%, #c9a678 100%)',
                 logoFilter: 'none',
                 bodyClass: 'theme-paper-grain-dark',
-                motionClass: 'motion-gentle-breathe'
+                motionClass: 'motion-gentle-breathe',
+                accent: { bg: '#7a3e20', hover: '#5a2c15', text: '#f5ebdc' }
             },
             pentecost: {
                 name: 'Pentecost',
@@ -76,7 +84,8 @@ class SettingsManager {
                 textColor: '#ffe4c0',
                 chorusBackground: 'radial-gradient(circle at 30% 70%, rgba(255, 140, 30, 0.45) 0%, transparent 50%), radial-gradient(circle at 75% 35%, rgba(220, 50, 30, 0.35) 0%, transparent 55%), linear-gradient(180deg, #2a0a06 0%, #551408 55%, #2a0503 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-pentecost-fire'
+                bodyClass: 'theme-pentecost-fire',
+                accent: { bg: '#ff9933', hover: '#d47525', text: '#2a0503' }
             },
             advent: {
                 name: 'Advent',
@@ -84,7 +93,8 @@ class SettingsManager {
                 textColor: '#ece4c6',
                 chorusBackground: 'radial-gradient(ellipse at 80% 20%, rgba(214, 164, 76, 0.25) 0%, transparent 55%), radial-gradient(ellipse at 20% 85%, rgba(178, 48, 64, 0.25) 0%, transparent 55%), linear-gradient(155deg, #0e2a1a 0%, #1a3d2a 55%, #0b1e13 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                motionClass: 'motion-cloud-drift'
+                motionClass: 'motion-cloud-drift',
+                accent: { bg: '#d4a24a', hover: '#a88038', text: '#0b1e13' }
             },
             epiphany: {
                 name: 'Epiphany',
@@ -92,12 +102,14 @@ class SettingsManager {
                 textColor: '#eaf0ff',
                 chorusBackground: 'radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 25%), radial-gradient(circle at 70% 60%, rgba(212, 184, 110, 0.22) 0%, transparent 40%), radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.12) 0%, transparent 18%), linear-gradient(160deg, #07102a 0%, #0c1a3d 55%, #040820 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                motionClass: 'motion-star-twinkle'
+                motionClass: 'motion-star-twinkle',
+                accent: { bg: '#e0c97a', hover: '#b3a05a', text: '#07102a' }
             },
             easterDawn: {
                 name: 'Easter Dawn',
                 background: 'radial-gradient(ellipse at 30% 15%, rgba(255, 235, 215, 0.6) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(200, 150, 180, 0.35) 0%, transparent 55%), linear-gradient(160deg, #fce7e0 0%, #f5c6c0 50%, #e4a8bf 100%)',
                 motionClass: 'motion-gentle-breathe',
+                accent: { bg: '#9b3e5f', hover: '#752e47', text: '#fcefef' },
                 textColor: '#3c1020',
                 chorusBackground: 'radial-gradient(ellipse at 30% 15%, rgba(255, 235, 215, 0.6) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(200, 150, 180, 0.35) 0%, transparent 55%), linear-gradient(160deg, #fce7e0 0%, #f5c6c0 50%, #e4a8bf 100%)',
                 logoFilter: 'none'
@@ -109,7 +121,8 @@ class SettingsManager {
                 chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 240, 215, 0.55) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(170, 90, 50, 0.22) 0%, transparent 55%), linear-gradient(135deg, #e7d6b3 0%, #d4b486 50%, #b9945d 100%)',
                 logoFilter: 'none',
                 bodyClass: 'theme-paper-grain-dark',
-                motionClass: 'motion-warm-flicker'
+                motionClass: 'motion-warm-flicker',
+                accent: { bg: '#b9562a', hover: '#8c3e1d', text: '#fff1e0' }
             },
             galilee: {
                 name: 'Sea of Galilee',
@@ -117,7 +130,8 @@ class SettingsManager {
                 textColor: '#e4f2f5',
                 chorusBackground: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-galilee-caustic'
+                bodyClass: 'theme-galilee-caustic',
+                accent: { bg: '#5bb8c2', hover: '#418f98', text: '#0a2540' }
             },
             chapelMarble: {
                 name: 'Chapel Marble',
@@ -126,7 +140,8 @@ class SettingsManager {
                 chorusBackground: 'radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.35) 0%, transparent 55%), linear-gradient(160deg, #ece7df 0%, #d8d1c4 50%, #c9c1b2 100%)',
                 logoFilter: 'none',
                 bodyClass: 'theme-marble',
-                motionClass: 'motion-cloud-drift'
+                motionClass: 'motion-cloud-drift',
+                accent: { bg: '#6b6155', hover: '#4b453c', text: '#f5ede0' }
             },
             altarLinen: {
                 name: 'Altar Linen',
@@ -135,7 +150,8 @@ class SettingsManager {
                 chorusBackground: 'radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(150deg, #f5ede0 0%, #e8dcc4 55%, #d8c8a6 100%)',
                 logoFilter: 'none',
                 bodyClass: 'theme-linen',
-                motionClass: 'motion-gentle-breathe'
+                motionClass: 'motion-gentle-breathe',
+                accent: { bg: '#8a6b3f', hover: '#68512e', text: '#f5ede0' }
             },
             naveStonework: {
                 name: 'Nave Stonework',
@@ -144,7 +160,8 @@ class SettingsManager {
                 chorusBackground: 'radial-gradient(ellipse at 70% 30%, rgba(214, 164, 76, 0.15) 0%, transparent 55%), linear-gradient(165deg, #2a2824 0%, #3a3731 55%, #231f1a 100%)',
                 logoFilter: 'brightness(0) invert(1)',
                 bodyClass: 'theme-stonework',
-                motionClass: 'motion-warm-flicker'
+                motionClass: 'motion-warm-flicker',
+                accent: { bg: '#d4a24a', hover: '#a88038', text: '#231f1a' }
             },
             starlight: {
                 name: 'Starlight',
@@ -152,7 +169,8 @@ class SettingsManager {
                 textColor: '#eaf0ff',
                 chorusBackground: 'linear-gradient(170deg, #050920 0%, #0c1638 55%, #050920 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-starlight'
+                bodyClass: 'theme-starlight',
+                accent: { bg: '#9aa8dc', hover: '#6f7cb0', text: '#050920' }
             },
             candlelight: {
                 name: 'Candlelight',
@@ -160,7 +178,8 @@ class SettingsManager {
                 textColor: '#f5e2b8',
                 chorusBackground: 'linear-gradient(180deg, #140807 0%, #2a1208 55%, #140807 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-candlelight'
+                bodyClass: 'theme-candlelight',
+                accent: { bg: '#ffb858', hover: '#c8903f', text: '#140807' }
             },
             crossLattice: {
                 name: 'Cross Lattice',
@@ -168,7 +187,8 @@ class SettingsManager {
                 textColor: '#e8eef5',
                 chorusBackground: 'linear-gradient(160deg, #0c1a2a 0%, #16283e 55%, #0a1522 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-cross-lattice'
+                bodyClass: 'theme-cross-lattice',
+                accent: { bg: '#7a9bbd', hover: '#5a7598', text: '#0a1522' }
             },
             custom: {
                 name: 'Custom Theme',
@@ -714,7 +734,7 @@ class SettingsManager {
             theme = 'cathedralStone';
             settings.theme = theme;
         }
-        let background, textColor, chorusBackground, logoFilter, bodyClass, motionClass;
+        let background, textColor, chorusBackground, logoFilter, bodyClass, motionClass, accent;
 
         if (theme === 'custom') {
             background = settings.customBackground;
@@ -723,6 +743,7 @@ class SettingsManager {
             logoFilter = this.themes.custom.logoFilter;
             bodyClass = this.themes.custom.bodyClass || null;
             motionClass = this.themes.custom.motionClass || null;
+            accent = this.themes.custom.accent || null;
         } else {
             background = this.themes[theme].background;
             textColor = this.themes[theme].textColor;
@@ -730,12 +751,17 @@ class SettingsManager {
             logoFilter = this.themes[theme].logoFilter || 'brightness(0) invert(1)';
             bodyClass = this.themes[theme].bodyClass || null;
             motionClass = this.themes[theme].motionClass || null;
+            accent = this.themes[theme].accent || null;
         }
 
         // Apply to body (search page)
         document.body.style.background = background;
         document.body.style.color = textColor;
         document.documentElement.style.setProperty('--logo-filter', logoFilter);
+
+        // Apply button accent variables (fall back to site defaults if
+        // the theme doesn't define an accent).
+        this._applyAccent(accent);
 
         // Swap the body theme + motion classes (optional pattern and
         // optional independent animation overlay).
@@ -756,14 +782,15 @@ class SettingsManager {
 
         // Store for chorus display navigation (includes logoFilter so the
         // ChorusDisplay iframe can tint the watermark correctly per theme,
-        // and bodyClass / motionClass so the iframe applies the same
-        // pattern + animation overlays).
+        // bodyClass / motionClass for pattern + animation overlays, and
+        // accent so buttons inside the iframe take the same theme colour).
         sessionStorage.setItem('currentTheme', JSON.stringify({
             background: chorusBackground,
             textColor: textColor,
             logoFilter: logoFilter,
             bodyClass: bodyClass,
-            motionClass: motionClass
+            motionClass: motionClass,
+            accent: accent
         }));
     }
 
@@ -776,6 +803,26 @@ class SettingsManager {
         toRemove.forEach(c => document.body.classList.remove(c));
         if (bodyClass) document.body.classList.add(bodyClass);
         if (motionClass) document.body.classList.add(motionClass);
+    }
+
+    /**
+     * @private Push the theme's button accent into --primary-color,
+     * --primary-dark, and --accent-text on :root. Existing button CSS
+     * already references --primary-color / --primary-dark, so every
+     * button (header Create, setlist Launch, action buttons, settings,
+     * etc.) re-colours automatically.
+     */
+    _applyAccent(accent) {
+        const root = document.documentElement.style;
+        if (!accent) {
+            root.removeProperty('--primary-color');
+            root.removeProperty('--primary-dark');
+            root.removeProperty('--accent-text');
+            return;
+        }
+        if (accent.bg)      root.setProperty('--primary-color', accent.bg);
+        if (accent.hover)   root.setProperty('--primary-dark',  accent.hover);
+        if (accent.text)    root.setProperty('--accent-text',    accent.text);
     }
 
     showNotification(message, type = 'info') {

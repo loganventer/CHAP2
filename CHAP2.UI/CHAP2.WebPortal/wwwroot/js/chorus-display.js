@@ -166,6 +166,12 @@ class ChorusDisplay {
                 if (theme && theme.logoFilter) {
                     document.documentElement.style.setProperty('--logo-filter', theme.logoFilter);
                 }
+                if (theme && theme.accent) {
+                    const root = document.documentElement.style;
+                    if (theme.accent.bg)    root.setProperty('--primary-color', theme.accent.bg);
+                    if (theme.accent.hover) root.setProperty('--primary-dark',  theme.accent.hover);
+                    if (theme.accent.text)  root.setProperty('--accent-text',    theme.accent.text);
+                }
                 if (chorusDisplayPage) {
                     // Swap any previously applied theme-* / motion-* class.
                     const toRemove = [];

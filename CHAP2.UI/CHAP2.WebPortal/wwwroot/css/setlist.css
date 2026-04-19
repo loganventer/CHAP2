@@ -60,10 +60,10 @@
     gap: 12px;
 }
 
-/* Beautified Launch Setlist Button */
+/* Beautified Launch Setlist Button -- follows the current theme's accent. */
 #launchSetlistBtn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-color, #667eea) 0%, var(--primary-dark, #764ba2) 100%);
+    color: var(--accent-text, white);
     padding: 12px 24px;
     border: none;
     border-radius: 8px;
@@ -71,7 +71,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -79,8 +79,8 @@
 
 #launchSetlistBtn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-    background: linear-gradient(135deg, #7c8ff5 0%, #8b5cf6 100%);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.1);
 }
 
 #launchSetlistBtn:active:not(:disabled) {
