@@ -45,6 +45,50 @@ remote_is_reachable() {
     curl -fsS --max-time 5 -o /dev/null "$REMOTE_URL" >/dev/null 2>&1
 }
 
+docker_daemon_ready() {
+    docker info >/dev/null 2>&1
+}
+
+wait_for_docker() {
+    local tries=60
+    while [ $tries -gt 0 ]; do
+        if docker_daemon_ready; then return 0; fi
+        sleep 1
+        tries=$((tries - 1))
+    done
+    return 1
+}
+
+# Make sure the Docker daemon is available before we try to talk to it.
+# On macOS this auto-launches Docker Desktop and waits for it to be ready.
+ensure_docker_running() {
+    if docker_daemon_ready; then return 0; fi
+    case "$(uname -s)" in
+        Darwin)
+            echo "Docker daemon not reachable. Starting Docker Desktop..."
+            if ! open -a Docker >/dev/null 2>&1; then
+                echo "Could not launch Docker Desktop. Install it from https://www.docker.com/products/docker-desktop/"
+                return 1
+            fi
+            echo "Waiting for Docker to become ready..."
+            if wait_for_docker; then
+                echo "Docker is ready."
+                return 0
+            fi
+            echo "Docker did not become ready in time."
+            return 1
+            ;;
+        Linux)
+            echo "Docker daemon not reachable. Try: sudo systemctl start docker"
+            return 1
+            ;;
+        *)
+            echo "Docker daemon not reachable."
+            return 1
+            ;;
+    esac
+}
+
 local_images_exist() {
     # docker compose images prints nothing for services with no image.
     local output
@@ -139,6 +183,7 @@ install_desktop_shortcut
 
 if [ "$REDEPLOY" = "true" ]; then
     echo "Mode: redeploy (full rebuild, local)"
+    ensure_docker_running || exit 1
     run_local "--build"
     exit 0
 fi
@@ -150,7 +195,9 @@ if remote_is_reachable; then
     exit 0
 fi
 
-echo "Remote unreachable. Checking for local images..."
+echo "Remote unreachable. Falling back to local stack."
+ensure_docker_running || exit 1
+
 if local_images_exist; then
     echo "Local images found. Starting without rebuild."
     run_local ""
