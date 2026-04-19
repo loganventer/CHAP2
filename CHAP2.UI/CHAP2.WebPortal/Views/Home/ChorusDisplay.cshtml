@@ -17,6 +17,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="chorus-display-page">
+    <!-- Star field (CSS-hidden unless the active theme class activates it) -->
+    <div class="starlight-field" id="starlightField" aria-hidden="true"></div>
+
     <!-- Animated Background -->
     <div class="animated-background">
         <!-- Musical Staff Lines with Wave Effect -->
@@ -112,6 +115,7 @@
         };
     </script>
     <script src="~/js/utils.js" asp-append-version="true"></script>
+    <script src="~/js/starlight-field.js" asp-append-version="true"></script>
     <script src="~/js/chorus-display.js" asp-append-version="true"></script>
     <script src="~/lib/signalr/signalr.min.js"></script>
     <script src="~/js/chorus-sync-service.js" asp-append-version="true"></script>
