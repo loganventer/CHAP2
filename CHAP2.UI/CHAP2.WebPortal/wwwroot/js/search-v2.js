@@ -72,6 +72,15 @@ function initializeSearch() {
                 if (value.length >= minSearchLength) {
                     performTraditionalSearch(value);
                 }
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                // Jump into the result list on the first arrow-down from the search box.
+                const firstRow = document.querySelector('#resultsBody tr.result-row, #resultsMobileCards .mobile-result-card');
+                if (firstRow) {
+                    e.preventDefault();
+                    firstRow.focus();
+                }
             }
         });
     } else {
@@ -267,6 +276,26 @@ function createMobileResultCard(result, index) {
         window.location.href = '/sync?chorusId=' + result.id;
     });
 
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            card.click();
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            focusSiblingRow(card, 1);
+            return;
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            focusSiblingRow(card, -1);
+            return;
+        }
+    });
+
     return card;
 }
 
@@ -420,10 +449,40 @@ function createResultRow(result, index) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             row.click();
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            focusSiblingRow(row, 1);
+            return;
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            focusSiblingRow(row, -1);
+            return;
         }
     });
 
     return row;
+}
+
+/**
+ * Move keyboard focus to the next (direction=1) or previous (-1)
+ * focusable search result row. At the top end, return focus to the
+ * search input so the user can continue typing.
+ */
+function focusSiblingRow(currentRow, direction) {
+    const rows = Array.from(document.querySelectorAll('#resultsBody tr.result-row, #resultsMobileCards .mobile-result-card'));
+    const idx = rows.indexOf(currentRow);
+    if (idx === -1) return;
+    const nextIdx = idx + direction;
+    if (nextIdx < 0) {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.focus();
+        return;
+    }
+    if (nextIdx >= rows.length) return;
+    rows[nextIdx].focus();
 }
 
 // Highlight search term in text
