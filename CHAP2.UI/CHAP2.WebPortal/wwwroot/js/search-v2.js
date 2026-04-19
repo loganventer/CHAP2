@@ -26,30 +26,35 @@ function initializeSearch() {
         searchInput.addEventListener('input', function() {
             const value = this.value.trim();
             currentSearchTerm = value;
-            
+
             // Show/hide clear button
             if (value.length > 0) {
                 clearBtn.style.display = 'flex';
             } else {
                 clearBtn.style.display = 'none';
-                clearResults();
             }
-            
-            // Perform search automatically on every keystroke
+
+            if (value.length === 0) {
+                // Cancel any pending debounced search so the previous keystroke
+                // doesn't land after the field is empty.
+                clearTimeout(searchTimeout);
+                clearResults();
+                return;
+            }
+
             if (value.length >= minSearchLength) {
                 debouncedSearch(value);
-            } else if (value.length === 0) {
-                clearResults();
             } else if (value.length === 1) {
                 // Special handling for single character - treat as key search
                 debouncedSearch(value);
             }
         });
-        
+
         // Clear button functionality
         clearBtn.addEventListener('click', function() {
             searchInput.value = '';
             currentSearchTerm = '';
+            clearTimeout(searchTimeout);
             searchInput.focus();
             clearResults();
             this.style.display = 'none';
