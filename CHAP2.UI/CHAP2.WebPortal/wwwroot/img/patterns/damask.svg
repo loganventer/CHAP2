@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+    <g fill="none" stroke="#ffffff" stroke-width="1.1" stroke-opacity="0.65" stroke-linecap="round">
+        <!-- Quatrefoil: four overlapping circles, classic Gothic church motif -->
+        <circle cx="40" cy="18" r="12"/>
+        <circle cx="40" cy="62" r="12"/>
+        <circle cx="18" cy="40" r="12"/>
+        <circle cx="62" cy="40" r="12"/>
+        <!-- Subtle central diamond -->
+        <path d="M40 30 L50 40 L40 50 L30 40 Z"/>
+    </g>
+</svg>

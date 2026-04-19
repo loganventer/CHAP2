@@ -154,8 +154,10 @@ class ChorusDisplay {
         if (flowingNotesContainer) flowingNotesContainer.style.display = 'none';
         if (logoWatermark) logoWatermark.style.display = 'none';
 
-        // Apply theme: background + logo filter (so the church-seal watermark
-        // tints correctly on both dark and light themes).
+        // Apply theme: background + logo filter + body class (so the
+        // church-seal watermark tints correctly on both dark and light
+        // themes, and pattern/animation overlays from themes.css appear
+        // in the overlay too).
         const chorusDisplayPage = document.querySelector('.chorus-display-page');
         try {
             const currentTheme = sessionStorage.getItem('currentTheme');
@@ -163,6 +165,17 @@ class ChorusDisplay {
                 const theme = JSON.parse(currentTheme);
                 if (theme && theme.logoFilter) {
                     document.documentElement.style.setProperty('--logo-filter', theme.logoFilter);
+                }
+                if (chorusDisplayPage) {
+                    // Swap any previously applied theme-* class.
+                    const toRemove = [];
+                    for (const cls of chorusDisplayPage.classList) {
+                        if (cls.startsWith('theme-')) toRemove.push(cls);
+                    }
+                    toRemove.forEach(c => chorusDisplayPage.classList.remove(c));
+                    if (theme && theme.bodyClass) {
+                        chorusDisplayPage.classList.add(theme.bodyClass);
+                    }
                 }
                 if (chorusDisplayPage && chorusAnimation !== 'color-shift' && theme && theme.background) {
                     chorusDisplayPage.style.background = theme.background;

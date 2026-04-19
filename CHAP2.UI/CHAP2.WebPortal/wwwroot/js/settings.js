@@ -56,14 +56,16 @@ class SettingsManager {
                 background: 'linear-gradient(135deg, #f5efe0 0%, #e8dcc4 100%)',
                 textColor: '#1a1a1a',
                 chorusBackground: 'linear-gradient(135deg, #f5efe0 0%, #e8dcc4 100%)',
-                logoFilter: 'none'
+                logoFilter: 'none',
+                bodyClass: 'theme-paper-grain-dark'
             },
             cathedralStone: {
                 name: 'Cathedral Stone',
                 background: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
                 textColor: '#f0ece2',
                 chorusBackground: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-damask'
             },
             doveDusk: {
                 name: 'Dove & Dusk',
@@ -77,7 +79,8 @@ class SettingsManager {
                 background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
                 textColor: '#ffffff',
                 chorusBackground: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-fleur'
             },
             stainedGlass: {
                 name: 'Stained Glass',
@@ -98,14 +101,16 @@ class SettingsManager {
                 background: 'radial-gradient(ellipse at 50% 35%, rgba(212, 162, 74, 0.25) 0%, transparent 65%), linear-gradient(180deg, #1a0808 0%, #3a0f12 55%, #180606 100%)',
                 textColor: '#f2e4c5',
                 chorusBackground: 'radial-gradient(ellipse at 50% 35%, rgba(212, 162, 74, 0.25) 0%, transparent 65%), linear-gradient(180deg, #1a0808 0%, #3a0f12 55%, #180606 100%)',
-                logoFilter: 'brightness(0) invert(1)'
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-small-cross'
             },
             fresco: {
                 name: 'Fresco',
                 background: 'radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(135deg, #e8d8b7 0%, #d4b896 50%, #c9a678 100%)',
                 textColor: '#3a2410',
                 chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 55%), linear-gradient(135deg, #e8d8b7 0%, #d4b896 50%, #c9a678 100%)',
-                logoFilter: 'none'
+                logoFilter: 'none',
+                bodyClass: 'theme-paper-grain-dark'
             },
             pentecost: {
                 name: 'Pentecost',
@@ -140,7 +145,8 @@ class SettingsManager {
                 background: 'radial-gradient(ellipse at 25% 20%, rgba(255, 240, 215, 0.55) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(170, 90, 50, 0.22) 0%, transparent 55%), linear-gradient(135deg, #e7d6b3 0%, #d4b486 50%, #b9945d 100%)',
                 textColor: '#2e1a0a',
                 chorusBackground: 'radial-gradient(ellipse at 25% 20%, rgba(255, 240, 215, 0.55) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(170, 90, 50, 0.22) 0%, transparent 55%), linear-gradient(135deg, #e7d6b3 0%, #d4b486 50%, #b9945d 100%)',
-                logoFilter: 'none'
+                logoFilter: 'none',
+                bodyClass: 'theme-paper-grain-dark'
             },
             galilee: {
                 name: 'Sea of Galilee',
@@ -148,6 +154,30 @@ class SettingsManager {
                 textColor: '#e4f2f5',
                 chorusBackground: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
                 logoFilter: 'brightness(0) invert(1)'
+            },
+            starlight: {
+                name: 'Starlight',
+                background: 'linear-gradient(170deg, #050920 0%, #0c1638 55%, #050920 100%)',
+                textColor: '#eaf0ff',
+                chorusBackground: 'linear-gradient(170deg, #050920 0%, #0c1638 55%, #050920 100%)',
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-starlight'
+            },
+            candlelight: {
+                name: 'Candlelight',
+                background: 'linear-gradient(180deg, #140807 0%, #2a1208 55%, #140807 100%)',
+                textColor: '#f5e2b8',
+                chorusBackground: 'linear-gradient(180deg, #140807 0%, #2a1208 55%, #140807 100%)',
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-candlelight'
+            },
+            crossLattice: {
+                name: 'Cross Lattice',
+                background: 'linear-gradient(160deg, #0c1a2a 0%, #16283e 55%, #0a1522 100%)',
+                textColor: '#e8eef5',
+                chorusBackground: 'linear-gradient(160deg, #0c1a2a 0%, #16283e 55%, #0a1522 100%)',
+                logoFilter: 'brightness(0) invert(1)',
+                bodyClass: 'theme-cross-lattice'
             },
             custom: {
                 name: 'Custom Theme',
@@ -687,24 +717,29 @@ class SettingsManager {
 
     applyTheme(settings) {
         const theme = settings.theme;
-        let background, textColor, chorusBackground, logoFilter;
+        let background, textColor, chorusBackground, logoFilter, bodyClass;
 
         if (theme === 'custom') {
             background = settings.customBackground;
             textColor = settings.customTextColor;
             chorusBackground = settings.customChorusBackground;
             logoFilter = this.themes.custom.logoFilter;
+            bodyClass = this.themes.custom.bodyClass || null;
         } else {
             background = this.themes[theme].background;
             textColor = this.themes[theme].textColor;
             chorusBackground = this.themes[theme].chorusBackground;
             logoFilter = this.themes[theme].logoFilter || 'brightness(0) invert(1)';
+            bodyClass = this.themes[theme].bodyClass || null;
         }
 
         // Apply to body (search page)
         document.body.style.background = background;
         document.body.style.color = textColor;
         document.documentElement.style.setProperty('--logo-filter', logoFilter);
+
+        // Swap the body theme class (optional pattern / animation overlay).
+        this._applyBodyThemeClass(bodyClass);
 
         // Apply to chorus display pages
         const chorusDisplayPage = document.querySelector('.chorus-display-page');
@@ -720,12 +755,24 @@ class SettingsManager {
         }
 
         // Store for chorus display navigation (includes logoFilter so the
-        // ChorusDisplay iframe can tint the watermark correctly per theme).
+        // ChorusDisplay iframe can tint the watermark correctly per theme,
+        // and bodyClass so the iframe can apply the same pattern/animation overlay).
         sessionStorage.setItem('currentTheme', JSON.stringify({
             background: chorusBackground,
             textColor: textColor,
-            logoFilter: logoFilter
+            logoFilter: logoFilter,
+            bodyClass: bodyClass
         }));
+    }
+
+    /** @private Remove any previously-applied theme-* class and add the new one. */
+    _applyBodyThemeClass(bodyClass) {
+        const toRemove = [];
+        for (const cls of document.body.classList) {
+            if (cls.startsWith('theme-')) toRemove.push(cls);
+        }
+        toRemove.forEach(c => document.body.classList.remove(c));
+        if (bodyClass) document.body.classList.add(bodyClass);
     }
 
     showNotification(message, type = 'info') {

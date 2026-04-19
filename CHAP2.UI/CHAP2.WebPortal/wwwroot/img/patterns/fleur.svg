@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+    <g fill="#ffffff" fill-opacity="0.7">
+        <!-- Simplified fleur-de-lis: central petal plus two curled side petals on a horizontal band -->
+        <path d="M36 16 C33 22 33 28 36 32 C39 28 39 22 36 16 Z"/>
+        <path d="M36 32 C30 28 26 30 24 34 C26 36 32 36 36 34 Z"/>
+        <path d="M36 32 C42 28 46 30 48 34 C46 36 40 36 36 34 Z"/>
+        <rect x="22" y="36" width="28" height="2.5" rx="1"/>
+        <path d="M36 40 C33 46 34 52 36 56 C38 52 39 46 36 40 Z"/>
+    </g>
+</svg>
