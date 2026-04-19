@@ -30,6 +30,21 @@ class SystemRestart {
         restartBtn.style.right = '20px';
         restartBtn.style.zIndex = '9999';
         restartBtn.style.display = 'none'; // Hidden by default
+        // Minimal presence until hovered -- shrinks to a discreet corner
+        // dot; expands to the full button when the mouse approaches.
+        restartBtn.style.opacity = '0.18';
+        restartBtn.style.transformOrigin = 'bottom right';
+        restartBtn.style.transform = 'scale(0.28)';
+        restartBtn.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        restartBtn.addEventListener('mouseenter', () => {
+            restartBtn.style.opacity = '1';
+            restartBtn.style.transform = 'scale(1)';
+        });
+        restartBtn.addEventListener('mouseleave', () => {
+            if (restartBtn.disabled) return; // stay visible while restarting
+            restartBtn.style.opacity = '0.18';
+            restartBtn.style.transform = 'scale(0.28)';
+        });
 
         // Add click handler
         restartBtn.addEventListener('click', (e) => {
