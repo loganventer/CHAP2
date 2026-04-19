@@ -59,23 +59,11 @@ wait_for_docker() {
     return 1
 }
 
-# Docker Desktop can report the daemon as ready while its internal
-# network/DNS is still warming up, which makes `docker pull` fail with
-# "no such host". Probe the registry resolution until it works (or time out).
-wait_for_docker_network() {
-    local tries=30
-    while [ $tries -gt 0 ]; do
-        if docker run --rm --network bridge busybox nslookup mcr.microsoft.com >/dev/null 2>&1; then
-            return 0
-        fi
-        sleep 2
-        tries=$((tries - 1))
-    done
-    return 1
-}
-
 # Make sure the Docker daemon is available before we try to talk to it.
-# On macOS this auto-launches Docker Desktop and waits for it to be ready.
+# On macOS this auto-launches Docker Desktop and waits for it to be
+# ready. A short settle pause after startup lets the internal network
+# / DNS finish coming up; any remaining transient DNS failures during
+# the first build are caught by run_local's retry.
 ensure_docker_running() {
     local just_started=0
     if ! docker_daemon_ready; then
@@ -106,12 +94,9 @@ ensure_docker_running() {
         esac
     fi
 
-    # If we just started Docker, its network may still be settling.
     if [ $just_started -eq 1 ]; then
-        echo "Waiting for Docker network to settle..."
-        if ! wait_for_docker_network; then
-            echo "Warning: Docker network probe timed out; continuing anyway."
-        fi
+        echo "Letting Docker settle for a moment..."
+        sleep 8
     fi
     return 0
 }

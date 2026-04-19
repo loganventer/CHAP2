@@ -82,9 +82,10 @@ body.theme-starlight .starlight-field { display: block; }
     transform: translate(-50%, -50%) rotate(calc(var(--ray-angle) + 90deg));
 }
 @keyframes star-ray {
-    /* Rays appear only briefly at the star's peak and stay subtle. */
-    0%, 48%, 62%, 100% { opacity: 0;   width: 12px; }
-    55%                 { opacity: 0.7; width: 24px; }
+    /* Rays bloom visibly at the star's peak -- the hero moment of a
+       bright star. Window is widened so the flash is easy to spot. */
+    0%, 40%, 70%, 100% { opacity: 0;    width: 12px; }
+    55%                { opacity: 0.95; width: 34px; }
 }
 
 @keyframes star-twinkle {
