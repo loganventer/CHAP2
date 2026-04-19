@@ -187,6 +187,7 @@ class SettingsManager {
                                     <option value="aurora">Aurora Wave</option>
                                     <option value="aurora-borealis">Aurora Borealis (True)</option>
                                     <option value="color-shift">Celestial</option>
+                                    <option value="church-seal">Church Seal (Watermark)</option>
                                     <option value="none">None</option>
                                 </select>
                             </div>

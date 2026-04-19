@@ -147,10 +147,12 @@ class ChorusDisplay {
         // Get animation elements
         const musicalStaff = document.querySelector('.musical-staff-background');
         const flowingNotesContainer = document.getElementById('flowingNotesContainer');
+        const logoWatermark = document.getElementById('logoWatermark');
 
         // Hide all animations first
         if (musicalStaff) musicalStaff.style.display = 'none';
         if (flowingNotesContainer) flowingNotesContainer.style.display = 'none';
+        if (logoWatermark) logoWatermark.style.display = 'none';
 
         // Apply background color for all animations except color-shift
         const chorusDisplayPage = document.querySelector('.chorus-display-page');
@@ -209,6 +211,11 @@ class ChorusDisplay {
             case 'color-shift':
                 // Show color shifting animation
                 this.initColorShift();
+                break;
+
+            case 'church-seal':
+                // Show the church seal as a centered low-opacity watermark.
+                if (logoWatermark) logoWatermark.style.display = 'block';
                 break;
 
             case 'none':

@@ -19,6 +19,24 @@
     pointer-events: none;
 }
 
+/* Church seal watermark: centered behind the lyrics, low contrast. */
+.logo-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(80vmin, 700px);
+    height: min(80vmin, 700px);
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    opacity: 0.08;
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+    display: none;
+    /* Theme-aware tint; defaults to white on dark bg. */
+    filter: var(--logo-filter, brightness(0) invert(1));
+}
+
 .staff-line {
     stroke: rgba(255, 255, 255, 0.9);
     stroke-width: 5;
