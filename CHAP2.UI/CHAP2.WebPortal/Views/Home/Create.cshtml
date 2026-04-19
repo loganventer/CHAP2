@@ -125,5 +125,18 @@
     </div>
 
     <script src="~/js/form.js" asp-append-version="true"></script>
+    <script src="~/js/textarea-smart-quotes.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ta = document.querySelector('textarea[name="ChorusText"]');
+            if (ta && window.TextareaSmartQuotes) {
+                window.TextareaSmartQuotes.attach(ta);
+            }
+            const nameEl = document.querySelector('input[name="Name"]');
+            if (nameEl && window.TextareaSmartQuotes) {
+                window.TextareaSmartQuotes.attach(nameEl);
+            }
+        });
+    </script>
 </body>
 </html> 

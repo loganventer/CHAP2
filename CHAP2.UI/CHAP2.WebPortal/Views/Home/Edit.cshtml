@@ -192,6 +192,22 @@
     </div>
 
     <script src="~/js/form.js" asp-append-version="true"></script>
+    <script src="~/js/textarea-smart-quotes.js" asp-append-version="true"></script>
+    <script>
+        // Strip macOS smart-quote substitution from the lyrics textarea so
+        // what the user types is what gets stored (ASCII apostrophes/quotes).
+        document.addEventListener('DOMContentLoaded', function () {
+            const ta = document.getElementById('chorusTextArea')
+                || document.querySelector('textarea[name="ChorusText"]');
+            if (ta && window.TextareaSmartQuotes) {
+                window.TextareaSmartQuotes.attach(ta);
+            }
+            const nameEl = document.querySelector('input[name="Name"]');
+            if (nameEl && window.TextareaSmartQuotes) {
+                window.TextareaSmartQuotes.attach(nameEl);
+            }
+        });
+    </script>
     <script>
         // Chorus Navigation for Edit Page
         (function() {
