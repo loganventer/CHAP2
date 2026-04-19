@@ -7,19 +7,20 @@
         <div class="logo-section">
             <img src="~/img/kerk-logo.png" alt="Evangelie Kerk van Jesus Christus" class="logo-icon" />
             <h1 class="app-title">Evangelie Kerk van Jesus Christus</h1>
-            <p class="app-subtitle">Chorus Search</p>
         </div>
         <div class="header-actions">
+            <div class="header-actions-row">
+                <a href="@Url.Action("Create")" class="btn-primary header-create-btn" target="_blank" onclick="openCreateWindow(event)">
+                    <i class="fas fa-plus"></i> Create New
+                </a>
+                <button class="settings-button" id="settingsButton">
+                    <i class="fas fa-cog"></i> Settings
+                </button>
+            </div>
             <div class="mobile-sync-label" id="mobileSyncLabel">
                 <i class="fas fa-mobile-alt"></i>
                 <span id="mobileSyncUrl">Detecting network...</span>
             </div>
-            <a href="@Url.Action("Create")" class="btn-primary header-create-btn" target="_blank" onclick="openCreateWindow(event)">
-                <i class="fas fa-plus"></i> Create New
-            </a>
-            <button class="settings-button" id="settingsButton">
-                <i class="fas fa-cog"></i> Settings
-            </button>
         </div>
         <div class="search-status" id="searchStatus">
             <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
