@@ -1,0 +1,196 @@
+/* Per-role button theming -- each button type owns its own base colour,
+   texture and hover animation, while still shifting tone with the
+   current theme via color-mix(). Depends on --primary-color /
+   --primary-dark / --accent-text set by settings.applyTheme.
+
+   Role base colours (these are the "identity" of each button and stay
+   recognisable across themes, but are blended with the theme accent so
+   they feel native to whichever theme is active).                      */
+:root {
+    --btn-role-add:      #2f8d4a;  /* green  -- Add to setlist          */
+    --btn-role-view:     #3a75c4;  /* blue   -- External link / eye     */
+    --btn-role-edit:     #c48a2a;  /* amber  -- Edit                    */
+    --btn-role-copy:     #5a6573;  /* slate  -- Copy lyrics             */
+    --btn-role-delete:   #a8342a;  /* red    -- Delete                  */
+    --btn-role-neutral:  #485160;  /* slate dark -- default neutral     */
+    --btn-role-launch:   var(--primary-color, #6366f1);
+    --btn-role-clear:    #7a3a3a;  /* muted red -- Clear all            */
+
+    /* Subtle surface texture applied to every textured button via
+       background-image. Inline SVG noise keeps load cost tiny.         */
+    --btn-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ---------------- Shared animations ---------------- */
+/* A diagonal shine sweep across the button on hover. The button itself
+   has ::before as the shine layer; the rest of the button is its
+   normal content. pointer-events:none keeps clicks flowing.            */
+.btn-textured,
+.action-btn,
+#launchSetlistBtn,
+#clearSetlistBtn,
+.header-actions .btn-primary,
+.setlist-footer-btn,
+.settings-button {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.btn-textured::before,
+.action-btn::before,
+#launchSetlistBtn::before,
+#clearSetlistBtn::before,
+.header-actions .btn-primary::before,
+.setlist-footer-btn::before,
+.settings-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        var(--btn-texture) repeat,
+        linear-gradient(140deg, rgba(255, 255, 255, 0.18) 0%, transparent 40%, transparent 60%, rgba(0, 0, 0, 0.12) 100%);
+    opacity: 0.9;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.btn-textured::after,
+.action-btn::after,
+#launchSetlistBtn::after,
+#clearSetlistBtn::after,
+.header-actions .btn-primary::after,
+.setlist-footer-btn::after,
+.settings-button::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -140%;
+    width: 60%;
+    background: linear-gradient(110deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.35) 50%,
+        transparent 100%);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.btn-textured:hover::after,
+.action-btn:hover::after,
+#launchSetlistBtn:hover:not(:disabled)::after,
+#clearSetlistBtn:hover:not(:disabled)::after,
+.header-actions .btn-primary:hover::after,
+.setlist-footer-btn:hover::after,
+.settings-button:hover::after {
+    left: 140%;
+}
+
+/* Icon bounces subtly when you press a button. */
+.action-btn:active i,
+#launchSetlistBtn:active:not(:disabled) i,
+.header-actions .btn-primary:active i,
+.settings-button:active i {
+    animation: btn-icon-bounce 0.25s ease;
+}
+@keyframes btn-icon-bounce {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.25) rotate(-5deg); }
+    100% { transform: scale(1); }
+}
+
+/* Launch Setlist gently pulses at rest to draw the eye. */
+#launchSetlistBtn:not(:disabled):not(:hover) {
+    animation: btn-launch-pulse 2.6s ease-in-out infinite;
+}
+@keyframes btn-launch-pulse {
+    0%, 100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); }
+    50%      { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 0 4px color-mix(in oklab, var(--primary-color, #6366f1) 35%, transparent); }
+}
+
+/* ---------------- Role colour: action buttons in search results ---------------- */
+/* Each action button blends its role colour with the theme accent so
+   it stays recognisable (green = add, red = delete) while feeling at
+   home in every theme. Fallback to raw role colour if color-mix is
+   unsupported.                                                          */
+.action-btn {
+    background: var(--btn-role-neutral);
+    background: color-mix(in oklab, var(--btn-role-neutral) 75%, var(--primary-color, #6366f1) 25%);
+    color: #ffffff;
+    border: none;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.action-btn:hover {
+    transform: translateY(-2px) scale(1.06);
+    filter: brightness(1.15);
+}
+.action-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Buttons declare their role via an explicit class (assigned in the
+   markup). CSS styles by role -- no :has()/icon-child hacks. */
+.action-btn-add,
+.action-btn-add-setlist {   /* legacy alias */
+    background: var(--btn-role-add);
+    background: color-mix(in oklab, var(--btn-role-add) 78%, var(--primary-color, #6366f1) 22%);
+}
+.action-btn-delete,
+.action-btn-danger {        /* legacy alias */
+    background: var(--btn-role-delete);
+    background: color-mix(in oklab, var(--btn-role-delete) 82%, var(--primary-color, #6366f1) 18%);
+}
+.action-btn-view,
+.action-btn-open {
+    background: var(--btn-role-view);
+    background: color-mix(in oklab, var(--btn-role-view) 78%, var(--primary-color, #6366f1) 22%);
+}
+.action-btn-copy {
+    background: var(--btn-role-copy);
+    background: color-mix(in oklab, var(--btn-role-copy) 78%, var(--primary-color, #6366f1) 22%);
+}
+.action-btn-edit {
+    background: var(--btn-role-edit);
+    background: color-mix(in oklab, var(--btn-role-edit) 78%, var(--primary-color, #6366f1) 22%);
+}
+
+/* ---------------- Role colour: setlist-level buttons ---------------- */
+#clearSetlistBtn {
+    background: var(--btn-role-clear) !important;
+    background: color-mix(in oklab, var(--btn-role-clear) 80%, var(--primary-color, #6366f1) 20%) !important;
+    color: #ffffff !important;
+    border: 2px solid transparent !important;
+}
+#clearSetlistBtn:hover:not(:disabled) {
+    filter: brightness(1.15);
+    background: color-mix(in oklab, var(--btn-role-clear) 85%, #ffffff 15%) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+.setlist-footer-btn {
+    background: color-mix(in oklab, var(--btn-role-neutral) 70%, var(--primary-color, #6366f1) 30%);
+    color: #ffffff;
+    border: none;
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+.setlist-footer-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+}
+.setlist-footer-btn-save {
+    background: color-mix(in oklab, var(--btn-role-add) 70%, var(--primary-color, #6366f1) 30%);
+}
+
+/* ---------------- Settings button: neutral but animated ---------------- */
+.settings-button {
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+.settings-button:hover i {
+    animation: btn-settings-spin 0.8s ease;
+}
+@keyframes btn-settings-spin {
+    from { transform: rotate(0); }
+    to   { transform: rotate(90deg); }
+}

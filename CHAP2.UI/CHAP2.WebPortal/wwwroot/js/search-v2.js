@@ -267,10 +267,10 @@ function createMobileResultCard(result, index) {
             <span class="mobile-result-time">${getTimeSignatureDisplay(result.timeSignature)}</span>
         </div>
         <div class="mobile-result-actions">
-            <button class="action-btn action-btn-add-setlist" onclick="event.stopPropagation(); addToSetlistFromSearch('${result.id}')" aria-label="Add to Setlist">
+            <button class="action-btn action-btn-add" onclick="event.stopPropagation(); addToSetlistFromSearch('${result.id}')" aria-label="Add to Setlist">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="action-btn" onclick="event.stopPropagation(); window.location.href='/sync?chorusId=${result.id}'" aria-label="View">
+            <button class="action-btn action-btn-view" onclick="event.stopPropagation(); window.location.href='/sync?chorusId=${result.id}'" aria-label="View">
                 <i class="fas fa-eye"></i>
             </button>
         </div>
@@ -414,19 +414,19 @@ function createResultRow(result, index) {
         <td class="result-time">${getTimeSignatureDisplay(result.timeSignature)}</td>
         <td class="result-context">${utils.truncateText(result.chorusText, 80)}</td>
         <td class="result-actions">
-            <button class="action-btn action-btn-add-setlist" onclick="addToSetlistFromSearch('${result.id}')" data-tooltip="Add to Setlist">
+            <button class="action-btn action-btn-add" onclick="addToSetlistFromSearch('${result.id}')" data-tooltip="Add to Setlist">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="action-btn" onclick="openInNewWindow('${result.id}')" data-tooltip="Open in New Window">
+            <button class="action-btn action-btn-open" onclick="openInNewWindow('${result.id}')" data-tooltip="Open in New Window">
                 <i class="fas fa-external-link-alt"></i>
             </button>
-            <button class="action-btn" onclick="showDetail('${result.id}')" data-tooltip="View Details">
+            <button class="action-btn action-btn-view" onclick="showDetail('${result.id}')" data-tooltip="View Details">
                 <i class="fas fa-eye"></i>
             </button>
-            <button class="action-btn" onclick="copyChorusText('${result.id}')" data-tooltip="Copy Lyrics">
+            <button class="action-btn action-btn-copy" onclick="copyChorusText('${result.id}')" data-tooltip="Copy Lyrics">
                 <i class="fas fa-copy"></i>
             </button>
-            <button class="action-btn action-btn-danger" onclick="showDeleteConfirmation('${result.id}', '${window.escapeHtml(result.name || '').replace(/'/g, "&#39;")}')" data-tooltip="Delete Chorus">
+            <button class="action-btn action-btn-delete" onclick="showDeleteConfirmation('${result.id}', '${window.escapeHtml(result.name || '').replace(/'/g, "&#39;")}')" data-tooltip="Delete Chorus">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
