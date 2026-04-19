@@ -65,7 +65,7 @@ class SettingsManager {
                 textColor: '#f0ece2',
                 chorusBackground: 'linear-gradient(135deg, #2d2a26 0%, #1f1c18 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-damask'
+                bodyClass: 'theme-damask-tl'
             },
             doveDusk: {
                 name: 'Dove & Dusk',
@@ -80,7 +80,7 @@ class SettingsManager {
                 textColor: '#ffffff',
                 chorusBackground: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-fleur'
+                bodyClass: 'theme-fleur-diagonal'
             },
             stainedGlass: {
                 name: 'Stained Glass',
@@ -102,7 +102,7 @@ class SettingsManager {
                 textColor: '#f2e4c5',
                 chorusBackground: 'radial-gradient(ellipse at 50% 35%, rgba(212, 162, 74, 0.25) 0%, transparent 65%), linear-gradient(180deg, #1a0808 0%, #3a0f12 55%, #180606 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-small-cross'
+                bodyClass: 'theme-small-cross-4corners'
             },
             fresco: {
                 name: 'Fresco',

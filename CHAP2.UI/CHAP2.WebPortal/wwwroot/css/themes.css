@@ -1,12 +1,34 @@
 /* Class-based theme effects: pseudo-element overlays and keyframe
    animations that simple gradient backgrounds can't express. Paired
    with the bodyClass field on theme definitions in settings.js so the
-   ThemeManager only has to add/remove a class. */
+   ThemeManager only has to add/remove a class.
+
+   Design principle: motifs (damask, fleur, cross) are edge DECORATIONS --
+   they use a radial mask so the pattern fades out toward the centre of
+   the viewport. Texture (paper-grain) is full-page because a texture
+   naturally blankets a surface. Animated overlays (starlight,
+   candlelight) also stay full-viewport since they are atmospheric, not
+   decorative. */
+
+:root {
+    /* Edge-decoration mask: transparent in the middle, opaque at the
+       very edges -- pattern reads only as a frame around the content. */
+    --pattern-edge-mask: radial-gradient(ellipse 75% 75% at center, transparent 30%, black 92%);
+
+    /* Corner placements: opaque only inside the named corner, transparent
+       everywhere else, so the motif reads as an accent rather than a frame. */
+    --pattern-corner-tl:       radial-gradient(ellipse 40% 40% at 0% 0%, black 0%, transparent 85%);
+    --pattern-corner-br:       radial-gradient(ellipse 40% 40% at 100% 100%, black 0%, transparent 85%);
+    --pattern-corner-diagonal: radial-gradient(ellipse 35% 35% at 100% 0%, black 0%, transparent 85%),
+                               radial-gradient(ellipse 35% 35% at 0% 100%, black 0%, transparent 85%);
+    --pattern-corner-4:        radial-gradient(ellipse 28% 28% at 0% 0%,   black 0%, transparent 85%),
+                               radial-gradient(ellipse 28% 28% at 100% 0%, black 0%, transparent 85%),
+                               radial-gradient(ellipse 28% 28% at 0% 100%, black 0%, transparent 85%),
+                               radial-gradient(ellipse 28% 28% at 100% 100%, black 0%, transparent 85%);
+}
 
 /* ---------------- Starlight: twinkling stars on deep blue ---------------- */
-body.theme-starlight {
-    position: relative;
-}
+body.theme-starlight { position: relative; }
 body.theme-starlight::after {
     content: '';
     position: fixed;
@@ -32,9 +54,7 @@ body.theme-starlight::after {
 }
 
 /* ---------------- Candlelight: warm halo with soft flicker ---------------- */
-body.theme-candlelight {
-    position: relative;
-}
+body.theme-candlelight { position: relative; }
 body.theme-candlelight::after {
     content: '';
     position: fixed;
@@ -51,28 +71,8 @@ body.theme-candlelight::after {
     55%      { opacity: 0.9;  transform: scale(0.99); }
 }
 
-/* ---------------- Cross Lattice: repeating cross motif ---------------- */
-body.theme-cross-lattice {
-    position: relative;
-}
-body.theme-cross-lattice::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background-image: url('/img/patterns/cross-lattice.svg');
-    background-size: 56px 56px;
-    opacity: 0.22;
-}
-
-/* ---------------- Shared pattern overlay machinery ---------------- */
-/*
-    Each pattern class paints a small repeating SVG on top of the theme's
-    gradient. Kept subtle so lyrics + controls remain legible; drop in
-    any new pattern by filing it under /img/patterns and duplicating the
-    block below.
-*/
+/* ---------------- Paper grain: full-page texture ---------------- */
+/* A true surface texture blankets the whole page; it's not a motif. */
 body.theme-paper-grain { position: relative; }
 body.theme-paper-grain::after {
     content: '';
@@ -83,41 +83,100 @@ body.theme-paper-grain::after {
     mix-blend-mode: multiply;
 }
 
-body.theme-damask { position: relative; }
-body.theme-damask::after {
-    content: '';
-    position: fixed; inset: 0; z-index: 1; pointer-events: none;
-    background-image: url('/img/patterns/damask.svg');
-    background-size: 80px 80px;
-    opacity: 0.14;
-}
-
-body.theme-fleur { position: relative; }
-body.theme-fleur::after {
-    content: '';
-    position: fixed; inset: 0; z-index: 1; pointer-events: none;
-    background-image: url('/img/patterns/fleur.svg');
-    background-size: 72px 72px;
-    opacity: 0.12;
-}
-
+/* ---------------- Motif patterns: edge-framed, not full-page ---------------- */
+/* Each motif class reuses --pattern-edge-mask so the pattern is visible
+   only around the outer frame and fades away behind the main content. */
+body.theme-damask,
+body.theme-fleur,
+body.theme-cross-lattice,
 body.theme-small-cross { position: relative; }
+
+body.theme-damask::after,
+body.theme-fleur::after,
+body.theme-cross-lattice::after,
 body.theme-small-cross::after {
     content: '';
     position: fixed; inset: 0; z-index: 1; pointer-events: none;
-    background-image: url('/img/patterns/small-cross.svg');
-    background-size: 36px 36px;
-    opacity: 0.18;
+    mask-image: var(--pattern-edge-mask);
+    -webkit-mask-image: var(--pattern-edge-mask);
 }
 
-/* Light-background variants: invert the white SVG patterns to dark ink
-   and use a subtler multiply blend so they read on cream/stone. */
-body.theme-paper-grain-dark,
+body.theme-damask::after {
+    background-image: url('/img/patterns/damask.svg');
+    background-size: 80px 80px;
+    opacity: 0.22;
+}
+body.theme-fleur::after {
+    background-image: url('/img/patterns/fleur.svg');
+    background-size: 72px 72px;
+    opacity: 0.2;
+}
+body.theme-cross-lattice::after {
+    background-image: url('/img/patterns/cross-lattice.svg');
+    background-size: 56px 56px;
+    opacity: 0.32;
+}
+body.theme-small-cross::after {
+    background-image: url('/img/patterns/small-cross.svg');
+    background-size: 36px 36px;
+    opacity: 0.28;
+}
+
+/* ---------------- Corner-only motif variants ---------------- */
+/* Same SVG patterns, but placed as corner accents rather than a full
+   edge frame. Mix-and-match these for variety across themes. */
+body.theme-damask-tl,
+body.theme-fleur-diagonal,
+body.theme-small-cross-4corners { position: relative; }
+
+body.theme-damask-tl::after,
+body.theme-fleur-diagonal::after,
+body.theme-small-cross-4corners::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+}
+
+body.theme-damask-tl::after {
+    background-image: url('/img/patterns/damask.svg');
+    background-size: 80px 80px;
+    opacity: 0.32;
+    mask-image: var(--pattern-corner-tl);
+    -webkit-mask-image: var(--pattern-corner-tl);
+}
+body.theme-fleur-diagonal::after {
+    background-image: url('/img/patterns/fleur.svg');
+    background-size: 72px 72px;
+    opacity: 0.3;
+    mask-image: var(--pattern-corner-diagonal);
+    -webkit-mask-image: var(--pattern-corner-diagonal);
+}
+body.theme-small-cross-4corners::after {
+    background-image: url('/img/patterns/small-cross.svg');
+    background-size: 36px 36px;
+    opacity: 0.4;
+    mask-image: var(--pattern-corner-4);
+    -webkit-mask-image: var(--pattern-corner-4);
+}
+
+/* ---------------- Light-background variants ---------------- */
+/* Invert the white motifs to dark ink and tone them down; the edge
+   mask still applies. Paper-grain-dark is a full-page texture with no
+   mask (same rationale as the dark sibling). */
+body.theme-paper-grain-dark { position: relative; }
+body.theme-paper-grain-dark::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: url('/img/patterns/paper-grain.svg');
+    background-size: 200px 200px;
+    opacity: 0.4;
+    filter: invert(1);
+    mix-blend-mode: multiply;
+}
+
 body.theme-damask-dark,
 body.theme-fleur-dark,
 body.theme-small-cross-dark { position: relative; }
 
-body.theme-paper-grain-dark::after,
 body.theme-damask-dark::after,
 body.theme-fleur-dark::after,
 body.theme-small-cross-dark::after {
@@ -125,8 +184,10 @@ body.theme-small-cross-dark::after {
     position: fixed; inset: 0; z-index: 1; pointer-events: none;
     filter: invert(1);
     mix-blend-mode: multiply;
+    mask-image: var(--pattern-edge-mask);
+    -webkit-mask-image: var(--pattern-edge-mask);
 }
-body.theme-paper-grain-dark::after  { background-image: url('/img/patterns/paper-grain.svg');  background-size: 200px 200px; opacity: 0.4; }
-body.theme-damask-dark::after       { background-image: url('/img/patterns/damask.svg');       background-size: 80px  80px;  opacity: 0.14; }
-body.theme-fleur-dark::after        { background-image: url('/img/patterns/fleur.svg');        background-size: 72px  72px;  opacity: 0.1; }
-body.theme-small-cross-dark::after  { background-image: url('/img/patterns/small-cross.svg');  background-size: 36px  36px;  opacity: 0.2; }
+
+body.theme-damask-dark::after       { background-image: url('/img/patterns/damask.svg');       background-size: 80px 80px; opacity: 0.22; }
+body.theme-fleur-dark::after        { background-image: url('/img/patterns/fleur.svg');        background-size: 72px 72px; opacity: 0.18; }
+body.theme-small-cross-dark::after  { background-image: url('/img/patterns/small-cross.svg');  background-size: 36px 36px; opacity: 0.3; }
