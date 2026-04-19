@@ -24,11 +24,11 @@
     position: fixed;
     top: 50%;
     left: 50%;
-    width: min(80vmin, 700px);
-    height: min(80vmin, 700px);
+    width: min(75vmin, 650px);
+    height: min(75vmin, 650px);
     transform: translate(-50%, -50%);
     object-fit: contain;
-    opacity: 0.08;
+    opacity: 0.14;
     z-index: 0;
     pointer-events: none;
     user-select: none;

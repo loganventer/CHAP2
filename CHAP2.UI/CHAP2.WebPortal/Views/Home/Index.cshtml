@@ -10,6 +10,9 @@
         </div>
         <div class="header-actions">
             <div class="header-actions-row">
+                <div class="search-status" id="searchStatus" title="API connectivity">
+                    <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
+                </div>
                 <a href="@Url.Action("Create")" class="btn-primary header-create-btn" target="_blank" onclick="openCreateWindow(event)">
                     <i class="fas fa-plus"></i> Create New
                 </a>
@@ -21,9 +24,6 @@
                 <i class="fas fa-mobile-alt"></i>
                 <span id="mobileSyncUrl">Detecting network...</span>
             </div>
-        </div>
-        <div class="search-status" id="searchStatus">
-            <i class="fas fa-circle status-indicator" id="statusIndicator"></i>
         </div>
     </div>
 
