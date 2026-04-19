@@ -617,12 +617,18 @@ function clearResults() {
     const resultsTable = document.getElementById('resultsTable');
     const resultsHeader = document.getElementById('resultsHeader');
     const resultsBody = document.getElementById('resultsBody');
+    const resultsMobileCards = document.getElementById('resultsMobileCards');
+    const resultsCount = document.getElementById('resultsCount');
     const noResults = document.getElementById('noResults');
-    
-    resultsTable.style.display = 'none';
-    resultsHeader.style.display = 'none';
-    noResults.style.display = 'none';
-    resultsBody.innerHTML = '';
+    const loading = document.getElementById('loading');
+
+    if (resultsTable) resultsTable.style.display = 'none';
+    if (resultsHeader) resultsHeader.style.display = 'none';
+    if (resultsBody) resultsBody.innerHTML = '';
+    if (resultsMobileCards) resultsMobileCards.innerHTML = '';
+    if (resultsCount) resultsCount.textContent = '';
+    if (noResults) noResults.style.display = 'none';
+    if (loading) loading.style.display = 'none';
     searchResults = [];
 }
 
