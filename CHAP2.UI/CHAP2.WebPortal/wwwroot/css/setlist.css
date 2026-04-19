@@ -1,5 +1,49 @@
 /* Setlist Styles */
 
+/* Combined view: setlist panel sits directly below the search results. */
+.setlist-panel {
+    margin-top: var(--spacing-xl, 32px);
+    padding-top: var(--spacing-lg, 24px);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.setlist-title {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.setlist-count {
+    font-size: 14px;
+    color: #666;
+    margin-left: 10px;
+}
+
+.setlist-items {
+    /* JS toggles visibility via style.display; no base rules needed. */
+}
+
+.setlist-empty-icon {
+    font-size: 48px;
+    color: #ccc;
+    margin-bottom: 15px;
+}
+
+.setlist-empty-title {
+    color: #666;
+    font-size: 16px;
+    margin: 0 0 6px;
+}
+
+.setlist-empty-subtitle {
+    color: #999;
+    font-size: 14px;
+    margin: 0;
+}
+
 .setlist-header {
     display: flex;
     justify-content: space-between;

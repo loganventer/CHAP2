@@ -1859,8 +1859,9 @@
     display: none !important;
 }
 
-/* Traditional Search Specific Styles */
-#regularSearch .search-box {
+/* Search box styles (applies to both traditional and AI search boxes) */
+.search-input-container > .search-box,
+.search-input-container .search-section .search-box {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -1870,7 +1871,8 @@
     margin-bottom: 1rem;
 }
 
-#regularSearch .search-input {
+.search-input-container > .search-box .search-input,
+.search-input-container .search-section .search-box .search-input {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -1879,17 +1881,20 @@
     color: white;
 }
 
-#regularSearch .search-input:focus {
+.search-input-container > .search-box .search-input:focus,
+.search-input-container .search-section .search-box .search-input:focus {
     background: rgba(255, 255, 255, 0.15);
     border-color: rgba(255, 255, 255, 0.4);
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
-#regularSearch .search-info {
+.search-input-container > .search-info,
+.search-input-container .search-section .search-info {
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.85rem;
     margin-top: 0.5rem;
-} 
+}
+
 
 /* Auto-resize textarea styles */
 .search-input.auto-resize {

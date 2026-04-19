@@ -1,0 +1,38 @@
+@*
+    Setlist panel: always-visible list under the search results.
+    State is managed by SetlistManager (setlist.js) against #setlistItems / #setlistEmpty.
+*@
+<section class="setlist-panel" aria-label="My setlist">
+    <div class="setlist-header">
+        <h3 class="setlist-title">
+            <i class="fas fa-list-ul"></i> My Setlist
+            <span class="setlist-count" id="setlistCount">(0 choruses)</span>
+        </h3>
+        <div class="setlist-actions">
+            <button class="btn-primary setlist-launch-btn" id="launchSetlistBtn" hidden>
+                <i class="fas fa-play"></i> Launch Setlist
+            </button>
+            <button class="btn-secondary setlist-clear-btn" id="clearSetlistBtn" hidden>
+                <i class="fas fa-trash"></i> Clear All
+            </button>
+        </div>
+    </div>
+
+    <div id="setlistContainer" class="setlist-container">
+        <div class="setlist-empty" id="setlistEmpty">
+            <i class="fas fa-list-ul setlist-empty-icon"></i>
+            <p class="setlist-empty-title">Your setlist is empty</p>
+            <p class="setlist-empty-subtitle">Search for choruses above and click "Add to Setlist" to build your list</p>
+        </div>
+        <div id="setlistItems" class="setlist-items" hidden></div>
+    </div>
+
+    <div class="setlist-footer-actions">
+        <button class="setlist-footer-btn setlist-footer-btn-save" id="saveSetlistBtn" hidden>
+            <i class="fas fa-save"></i> Save Setlist
+        </button>
+        <button class="setlist-footer-btn setlist-footer-btn-load" id="loadSetlistBtn">
+            <i class="fas fa-folder-open"></i> Load Setlist
+        </button>
+    </div>
+</section>

@@ -14,6 +14,9 @@
                 <i class="fas fa-mobile-alt"></i>
                 <span id="mobileSyncUrl">Detecting network...</span>
             </div>
+            <a href="@Url.Action("Create")" class="btn-primary header-create-btn" target="_blank" onclick="openCreateWindow(event)">
+                <i class="fas fa-plus"></i> Create New
+            </a>
             <button class="settings-button" id="settingsButton">
                 <i class="fas fa-cog"></i> Settings
             </button>
@@ -24,81 +27,26 @@
     </div>
 
     <div class="search-input-container">
-        <div class="search-tabs">
-            <button class="tab-button active" data-tab="regular">
-                <i class="fas fa-search"></i> Regular Search
-            </button>
-            <button class="tab-button" data-tab="setlist">
-                <i class="fas fa-list-ul"></i> My Setlist
-            </button>
-            <a href="@Url.Action("Create")" class="tab-button tab-button-create" target="_blank" onclick="openCreateWindow(event)" style="text-decoration: none; margin-left: auto;">
-                <i class="fas fa-plus"></i> Create New
-            </a>
-            <!-- AI Search disabled temporarily -->
-            <!--<button class="tab-button" data-tab="ai">
-                <i class="fas fa-robot"></i> AI Search
-            </button>-->
-        </div>
-        
-        <!-- Regular Search -->
-        <div class="search-section active" id="regularSearch">
-            <div class="search-box">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text"
-                       id="searchInput"
-                       class="search-input"
-                       placeholder="Search choruses by name, text, or musical key..."
-                       aria-label="Search choruses by name, text, or musical key"
-                       autocomplete="off">
-                <div class="search-actions">
-                    <button class="clear-btn" id="clearBtn" style="display: none;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="search-info">
-                <span class="search-delay-info">Search triggers after typing stops (300ms delay)</span>
-                <span class="min-length-info">Minimum 2 characters</span>
-            </div>
-        </div>
-        
-        <!-- Setlist -->
-        <div class="search-section" id="setlistSearch" style="display: none;">
-            <div class="setlist-header">
-                <h3 style="margin: 0; color: #333; font-size: 18px;">
-                    <i class="fas fa-list-ul"></i> My Setlist
-                    <span id="setlistCount" style="font-size: 14px; color: #666; margin-left: 10px;">(0 choruses)</span>
-                </h3>
-                <div class="setlist-actions">
-                    <button class="btn-primary" id="launchSetlistBtn" style="display: none;">
-                        <i class="fas fa-play"></i> Launch Setlist
-                    </button>
-                    <button class="btn-secondary" id="clearSetlistBtn" style="display: none;">
-                        <i class="fas fa-trash"></i> Clear All
-                    </button>
-                </div>
-            </div>
-
-            <div id="setlistContainer" class="setlist-container">
-                <div class="setlist-empty" id="setlistEmpty">
-                    <i class="fas fa-list-ul" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
-                    <p style="color: #666; font-size: 16px;">Your setlist is empty</p>
-                    <p style="color: #999; font-size: 14px;">Search for choruses and click "Add to Setlist" to build your list</p>
-                </div>
-                <div id="setlistItems" style="display: none;"></div>
-            </div>
-
-            <div class="setlist-footer-actions">
-                <button class="setlist-footer-btn setlist-footer-btn-save" id="saveSetlistBtn" style="display: none;">
-                    <i class="fas fa-save"></i> Save Setlist
-                </button>
-                <button class="setlist-footer-btn setlist-footer-btn-load" id="loadSetlistBtn">
-                    <i class="fas fa-folder-open"></i> Load Setlist
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text"
+                   id="searchInput"
+                   class="search-input"
+                   placeholder="Search choruses by name, text, or musical key..."
+                   aria-label="Search choruses by name, text, or musical key"
+                   autocomplete="off">
+            <div class="search-actions">
+                <button class="clear-btn" id="clearBtn" style="display: none;">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
         </div>
+        <div class="search-info">
+            <span class="search-delay-info">Search triggers after typing stops (300ms delay)</span>
+            <span class="min-length-info">Minimum 2 characters</span>
+        </div>
 
-        <!-- AI Search -->
+        <!-- AI Search (disabled) -->
         <div class="search-section" id="aiSearch" style="display: none;">
             <div class="search-box">
                 <i class="fas fa-robot search-icon"></i>
@@ -253,16 +201,13 @@
             </div>
         </div>
 
-        <!-- Setlist Results -->
-        <div class="results-section" id="setlistResults" style="display: none;">
-            <!-- Content managed by setlist JavaScript -->
-        </div>
-
         <!-- AI Search Results -->
         <div class="results-section" id="aiResults" style="display: none;">
             <div id="aiSearchResults"></div>
         </div>
     </div>
+
+    @await Html.PartialAsync("_SetlistPanel")
 
     <div class="search-tips">
         <div class="tips-header">
@@ -364,107 +309,7 @@
                     }
                 }, 100);
             }
-
-            // Set up tab switching
-            setupTabSwitching();
         });
-        
-        function setupTabSwitching() {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const searchSections = document.querySelectorAll('.search-section');
-            
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const targetTab = button.getAttribute('data-tab');
-
-                    // Cancel AI search if it's running
-                    if (window.aiSearch && typeof window.aiSearch.cancelCurrentSearch === 'function') {
-                        window.aiSearch.cancelCurrentSearch();
-                    }
-                    
-                    // Clear regular search results
-                    const resultsTable = document.getElementById('resultsTable');
-                    const resultsBody = document.getElementById('resultsBody');
-                    const resultsHeader = document.getElementById('resultsHeader');
-                    const resultsCount = document.getElementById('resultsCount');
-                    const noResults = document.getElementById('noResults');
-                    const loading = document.getElementById('loading');
-                    
-                    if (resultsBody) resultsBody.innerHTML = '';
-                    if (resultsHeader) resultsHeader.style.display = 'none';
-                    if (resultsCount) resultsCount.textContent = '';
-                    if (noResults) noResults.style.display = 'none';
-                    if (loading) loading.style.display = 'none';
-                    if (resultsTable) resultsTable.style.display = 'none';
-                    
-                    // Clear AI search results
-                    const aiSearchResults = document.getElementById('aiSearchResults');
-                    const aiResults = document.getElementById('aiResults');
-                    const aiAnalysis = document.getElementById('aiAnalysis');
-                    
-                    if (aiSearchResults) {
-                        aiSearchResults.innerHTML = '';
-                        aiSearchResults.style.display = 'none';
-                    }
-                    
-                    if (aiResults) {
-                        aiResults.style.display = 'none';
-                    }
-                    
-                    if (aiAnalysis) {
-                        aiAnalysis.style.display = 'none';
-                    }
-                    
-                    // Hide results sections
-                    const regularResults = document.getElementById('regularResults');
-                    const aiResultsSection = document.getElementById('aiResults');
-                    
-                    if (regularResults) regularResults.style.display = 'none';
-                    if (aiResultsSection) aiResultsSection.style.display = 'none';
-                    
-                    // Update active tab button
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    
-                    // Update active search section
-                    searchSections.forEach(section => {
-                        section.classList.remove('active');
-                        section.style.display = 'none';
-                    });
-                    
-                    const targetSection = document.getElementById(targetTab + 'Search');
-                    if (targetSection) {
-                        targetSection.classList.add('active');
-                        targetSection.style.display = 'block';
-                    }
-                    
-                    // Show appropriate results section
-                    if (targetTab === 'regular') {
-                        const regularResults = document.getElementById('regularResults');
-                        if (regularResults) regularResults.style.display = 'block';
-                    } else if (targetTab === 'setlist') {
-                        const setlistResults = document.getElementById('setlistResults');
-                        if (setlistResults) setlistResults.style.display = 'block';
-                        // Refresh setlist display if needed
-                        if (typeof window.refreshSetlistDisplay === 'function') {
-                            window.refreshSetlistDisplay();
-                        }
-                    } else if (targetTab === 'ai') {
-                        const aiResults = document.getElementById('aiResults');
-                        if (aiResults) aiResults.style.display = 'block';
-                    }
-
-                    // Re-initialize search if switching to regular search
-                    if (targetTab === 'regular') {
-                        setTimeout(() => {
-                            if (typeof initializeSearch === 'function') {
-                                initializeSearch();
-                            }
-                        }, 100);
-                    }
-                });
-            });
-        }
 
         // Browse All Choruses function
         async function browseAllChoruses() {
