@@ -285,6 +285,7 @@ class MobileChorusView {
 
         this._currentIndex = newIndex;
         sessionStorage.setItem('currentChorusId', chorus.id);
+        this._rememberSetlistPosition(chorus.id);
 
         // Broadcast to other clients (desktop will navigate)
         if (this._syncService) {
@@ -293,6 +294,21 @@ class MobileChorusView {
 
         // Fetch and display the new chorus locally
         this._fetchAndDisplayChorus(chorus.id);
+    }
+
+    /** @private Bookmark this chorus id if it belongs to the user's saved setlist. */
+    _rememberSetlistPosition(chorusId) {
+        if (!chorusId) return;
+        try {
+            const saved = localStorage.getItem('chap2_setlist');
+            if (!saved) return;
+            const list = JSON.parse(saved);
+            if (Array.isArray(list) && list.some(c => c && c.id === chorusId)) {
+                localStorage.setItem('chap2_setlist_last_chorus_id', chorusId);
+            }
+        } catch (e) {
+            // Non-fatal.
+        }
     }
 
     /** @private Handle a chorus change event from another client. */

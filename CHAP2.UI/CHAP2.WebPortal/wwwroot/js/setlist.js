@@ -85,6 +85,7 @@ class SetlistManager {
         if (confirm(`Are you sure you want to remove all ${this.setlist.length} choruses from your setlist?`)) {
             this.setlist = [];
             this.saveToLocalStorage();
+            localStorage.removeItem('chap2_setlist_last_chorus_id');
             this.refreshDisplay();
             this.showNotification('Setlist cleared', 'info');
         }
@@ -97,17 +98,24 @@ class SetlistManager {
             return;
         }
 
+        // Resume from the last-viewed chorus in this setlist if we've
+        // bookmarked one and it's still part of the list; otherwise
+        // start from the top.
+        const lastId = localStorage.getItem('chap2_setlist_last_chorus_id');
+        const startChorus = (lastId && this.setlist.find(c => c.id === lastId)) || this.setlist[0];
+
         // Store setlist in sessionStorage for chorus navigation
         sessionStorage.setItem('chorusList', JSON.stringify(this.setlist));
-        sessionStorage.setItem('currentChorusId', this.setlist[0].id);
+        sessionStorage.setItem('currentChorusId', startChorus.id);
 
-        // Open first chorus in the in-page overlay (falls back to full navigation).
+        // Open in the in-page overlay (falls back to full navigation).
         if (window.chorusOverlay && typeof window.chorusOverlay.openChorus === 'function') {
-            window.chorusOverlay.openChorus(this.setlist[0].id);
+            window.chorusOverlay.openChorus(startChorus.id);
         } else {
-            window.location.href = `/Home/ChorusDisplay/${this.setlist[0].id}`;
+            window.location.href = `/Home/ChorusDisplay/${startChorus.id}`;
         }
-        this.showNotification('Launching setlist...', 'success');
+        const resumed = startChorus.id !== this.setlist[0].id;
+        this.showNotification(resumed ? `Resuming at "${startChorus.name}"...` : 'Launching setlist...', 'success');
     }
 
     // Refresh the setlist display

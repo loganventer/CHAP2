@@ -82,6 +82,9 @@ class ChorusDisplay {
         // Process initial chorus data if available
         if (window.chorusData) {
             this.updateDisplay(window.chorusData);
+            // If the chorus we just opened belongs to the saved setlist,
+            // bookmark it so the next launch resumes here.
+            this._rememberSetlistPosition(window.chorusData.id);
         }
 
         // Only update navigation buttons if we're on a chorus display page
@@ -1143,9 +1146,28 @@ class ChorusDisplay {
         // Update sessionStorage with new current chorus ID before navigating
         sessionStorage.setItem('currentChorusId', chorus.id);
 
+        // If this chorus is part of the saved setlist, remember it so the
+        // next setlist launch resumes here instead of restarting at #1.
+        this._rememberSetlistPosition(chorus.id);
+
         // Navigate to the new chorus URL (full page load)
         // This is necessary because the chorus data comes from the server render
         window.location.href = `/Home/ChorusDisplay/${chorus.id}`;
+    }
+
+    /** @private Persist the last-viewed chorus id if it belongs to the user's saved setlist. */
+    _rememberSetlistPosition(chorusId) {
+        if (!chorusId) return;
+        try {
+            const saved = localStorage.getItem('chap2_setlist');
+            if (!saved) return;
+            const list = JSON.parse(saved);
+            if (Array.isArray(list) && list.some(c => c && c.id === chorusId)) {
+                localStorage.setItem('chap2_setlist_last_chorus_id', chorusId);
+            }
+        } catch (e) {
+            // Storage errors are non-fatal for navigation.
+        }
     }
 
     // Set the chorus list for navigation (can be called from UI)
