@@ -72,6 +72,19 @@ start_containers() {
     $COMPOSE up -d $build_flag
 }
 
+# Bring the local stack up (optionally rebuilding), wait for it, and open the browser.
+run_local() {
+    local build_flag="$1"
+    start_containers "$build_flag"
+    echo "Waiting for local web portal..."
+    if wait_for_local_ready; then
+        open_url "$LOCAL_URL"
+    else
+        echo "Local web portal did not respond in time. Check: $COMPOSE logs -f"
+        exit 1
+    fi
+}
+
 # (Re)create the desktop launcher that runs this script when double-clicked.
 # macOS: a .command shell file (optionally with a custom icon via `fileicon`).
 # Linux: a .desktop entry pointing at this script with the kerk-logo icon.
@@ -126,14 +139,7 @@ install_desktop_shortcut
 
 if [ "$REDEPLOY" = "true" ]; then
     echo "Mode: redeploy (full rebuild, local)"
-    start_containers "--build"
-    echo "Waiting for local web portal..."
-    if wait_for_local_ready; then
-        open_url "$LOCAL_URL"
-    else
-        echo "Local web portal did not respond in time. Check: $COMPOSE logs -f"
-        exit 1
-    fi
+    run_local "--build"
     exit 0
 fi
 
@@ -147,16 +153,10 @@ fi
 echo "Remote unreachable. Checking for local images..."
 if local_images_exist; then
     echo "Local images found. Starting without rebuild."
-    start_containers ""
-    if wait_for_local_ready; then
-        open_url "$LOCAL_URL"
-    else
-        echo "Local web portal did not respond in time. Check: $COMPOSE logs -f"
-        exit 1
-    fi
+    run_local ""
     exit 0
 fi
 
-echo "No local images found. Run again with: $(basename "$0") redeploy"
-echo "That will build the images and start the local stack."
-exit 1
+echo "No local images found. Building and starting the local stack..."
+run_local "--build"
+exit 0
