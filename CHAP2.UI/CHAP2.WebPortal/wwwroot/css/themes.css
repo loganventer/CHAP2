@@ -40,55 +40,69 @@
 body.theme-starlight .starlight-field { display: block; }
 
 .starlight-field .star {
+    /* Per-star random tokens set inline by StarlightField.js. */
+    --star-color: #ffffff;
+    --ray-angle: 0deg;
+
     position: absolute;
     width: 2px; height: 2px;
-    background: #ffffff;
+    background: var(--star-color);
     border-radius: 50%;
-    box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 3px var(--star-color);
     opacity: 0.2;
     animation-name: star-twinkle;
     animation-iteration-count: infinite;
     animation-timing-function: ease-in-out;
     /* animation-delay + animation-duration set per-star inline in JS. */
 }
+
+/* Bright stars glow harder + flash a visible ray cross at their peak.
+   Two pseudo-elements are the two perpendicular rays; each star's
+   --ray-angle rotates the whole cross so they all point different ways. */
 .starlight-field .star.star--bright {
-    box-shadow: 0 0 6px rgba(255, 255, 255, 1), 0 0 10px rgba(180, 200, 255, 0.7);
+    box-shadow: 0 0 6px var(--star-color), 0 0 12px color-mix(in oklab, var(--star-color) 60%, transparent);
 }
+.starlight-field .star.star--bright::before,
+.starlight-field .star.star--bright::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--star-color), transparent);
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--ray-angle));
+    animation-name: star-ray;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    animation-duration: inherit;
+    animation-delay: inherit;
+    pointer-events: none;
+}
+.starlight-field .star.star--bright::after {
+    transform: translate(-50%, -50%) rotate(calc(var(--ray-angle) + 90deg));
+}
+@keyframes star-ray {
+    0%, 22%, 36%, 100% { opacity: 0;   width: 10px; }
+    28%                 { opacity: 0.9; width: 30px; }
+}
+
 @keyframes star-twinkle {
-    /* Real stars: mostly dim, with sudden bright spikes at uneven moments. */
-    0%   { opacity: 0.1;  transform: scale(0.6); }
+    /* Real stars: mostly dim, with two uneven bright spikes per cycle
+       at different heights, so independent randomized phases land at
+       different moments in the viewport. */
+    0%   { opacity: 0.08; transform: scale(0.55); }
     20%  { opacity: 0.2;  transform: scale(0.65); }
-    28%  { opacity: 1;    transform: scale(1.4); }
+    28%  { opacity: 1;    transform: scale(1.5); }
     32%  { opacity: 0.15; transform: scale(0.7); }
-    60%  { opacity: 0.25; transform: scale(0.8); }
-    65%  { opacity: 0.9;  transform: scale(1.25); }
-    70%  { opacity: 0.2;  transform: scale(0.7); }
-    100% { opacity: 0.1;  transform: scale(0.6); }
+    58%  { opacity: 0.25; transform: scale(0.8); }
+    64%  { opacity: 0.85; transform: scale(1.25); }
+    68%  { opacity: 0.18; transform: scale(0.7); }
+    100% { opacity: 0.08; transform: scale(0.55); }
 }
 
 body.theme-starlight { position: relative; }
-/* ::before keeps the shooting-star streak only. */
-body.theme-starlight::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 1; pointer-events: none;
-    background: linear-gradient(110deg,
-        transparent 0%,
-        transparent 48%,
-        rgba(255, 255, 255, 0.9) 49%,
-        rgba(200, 220, 255, 0.5) 50%,
-        transparent 51%,
-        transparent 100%);
-    background-size: 260% 260%;
-    background-position: 140% -40%;
-    animation: starlight-shoot 9s linear infinite;
-    opacity: 0;
-}
-@keyframes starlight-shoot {
-    0%   { background-position: 140% -40%; opacity: 0; }
-    8%   {                                  opacity: 1; }
-    18%  { background-position: -40% 140%;  opacity: 0; }
-    100% { background-position: -40% 140%;  opacity: 0; }
-}
+/* Starlight intentionally has no diagonal shooting-star streak -- the
+   per-star field is the whole effect. */
 /* Occasional shooting star streaking across the sky. */
 body.theme-starlight::before {
     content: '';

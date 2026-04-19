@@ -1,16 +1,27 @@
 /**
  * StarlightField - one responsibility: populate #starlightField with
- * N individual star spans, each randomized in position, size, phase
- * and duration so they blink independently like real stars.
+ * N individual star spans, each randomized in position, size, colour,
+ * ray angle, phase and duration so they blink truly independently.
  *
- * The field is CSS-hidden unless body carries the .theme-starlight
- * class, so it costs nothing on other themes. No teardown needed on
- * theme switch -- just toggles visibility.
+ * Each star exposes its random values as CSS custom properties
+ * (--star-color, --ray-angle) which the .star rules in themes.css
+ * consume. The field is CSS-hidden unless body carries .theme-starlight.
  */
 class StarlightField {
-    constructor(containerId = 'starlightField', count = 50) {
+    constructor(containerId = 'starlightField', count = 55) {
         this._containerId = containerId;
         this._count = count;
+        // A palette of subtle star temperatures so the field doesn't read
+        // as a wall of identical white dots.
+        this._palette = [
+            '#ffffff',   // pure white
+            '#f8f5ff',   // cool
+            '#e8f0ff',   // pale blue
+            '#fff4d6',   // warm ivory
+            '#ffe7b0',   // amber
+            '#e0d4ff',   // lilac
+            '#d6eaff'    // soft blue
+        ];
     }
 
     init() {
@@ -30,15 +41,25 @@ class StarlightField {
         s.className = 'star';
         s.style.top = (Math.random() * 100).toFixed(2) + '%';
         s.style.left = (Math.random() * 100).toFixed(2) + '%';
-        // Negative delays pin each star's starting phase randomly in the cycle.
+
+        // Each star blinks on its OWN clock: negative delay pins the
+        // phase randomly; duration varies 1.2s..5s so some flicker fast
+        // and others slowly pulse.
         s.style.animationDelay = (-Math.random() * 6).toFixed(2) + 's';
-        // Vary durations so they aren't locked in step.
-        s.style.animationDuration = (1.6 + Math.random() * 3.2).toFixed(2) + 's';
-        const size = (0.8 + Math.random() * 2.2).toFixed(2);
+        s.style.animationDuration = (1.2 + Math.random() * 3.8).toFixed(2) + 's';
+
+        // Random size -- tiny dust to prominent beacons.
+        const size = (0.8 + Math.random() * 2.4).toFixed(2);
         s.style.width = size + 'px';
         s.style.height = size + 'px';
-        // A few brighter "showy" stars get a stronger glow.
-        if (Math.random() < 0.25) {
+
+        // Random colour temperature + random ray-cross angle.
+        const colour = this._palette[Math.floor(Math.random() * this._palette.length)];
+        s.style.setProperty('--star-color', colour);
+        s.style.setProperty('--ray-angle', Math.floor(Math.random() * 180) + 'deg');
+
+        // ~22% of stars get a stronger glow + visible ray cross at peak.
+        if (Math.random() < 0.22) {
             s.classList.add('star--bright');
         }
         return s;
