@@ -76,7 +76,7 @@ class SettingsManager {
                 textColor: '#ffe4c0',
                 chorusBackground: 'radial-gradient(circle at 30% 70%, rgba(255, 140, 30, 0.45) 0%, transparent 50%), radial-gradient(circle at 75% 35%, rgba(220, 50, 30, 0.35) 0%, transparent 55%), linear-gradient(180deg, #2a0a06 0%, #551408 55%, #2a0503 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-pentecost-flame'
+                bodyClass: 'theme-pentecost-fire'
             },
             advent: {
                 name: 'Advent',
@@ -117,7 +117,7 @@ class SettingsManager {
                 textColor: '#e4f2f5',
                 chorusBackground: 'radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.22) 0%, transparent 45%), radial-gradient(ellipse at 75% 75%, rgba(180, 220, 220, 0.28) 0%, transparent 50%), linear-gradient(170deg, #0a2540 0%, #104764 50%, #0b2a3a 100%)',
                 logoFilter: 'brightness(0) invert(1)',
-                bodyClass: 'theme-galilee-shimmer'
+                bodyClass: 'theme-galilee-caustic'
             },
             chapelMarble: {
                 name: 'Chapel Marble',
