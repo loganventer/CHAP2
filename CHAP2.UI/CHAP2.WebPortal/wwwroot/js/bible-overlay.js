@@ -107,8 +107,10 @@
 
     // ---------- auto-hide header ----------
     // After a brief delay the header collapses to a thin always-present
-    // strip; CSS :hover / :focus-within on the header re-expands it
-    // (the rest is CSS-only -- see .bible-overlay--header-hidden).
+    // hover strip; CSS :hover / :focus-within on the header re-expands
+    // it (the reveal is CSS-only -- see .bible-overlay--header-hidden).
+    // Scrolling the chapter body also triggers an immediate hide so the
+    // user can read without the chrome competing for attention.
     const HEADER_HIDE_MS = 3500;
     let headerHideTimer = 0;
     function showHeader() {
@@ -118,6 +120,11 @@
         headerHideTimer = setTimeout(function () {
             els.overlay.classList.add('bible-overlay--header-hidden');
         }, HEADER_HIDE_MS);
+    }
+    function hideHeaderNow() {
+        clearTimeout(headerHideTimer);
+        if (els.overlay.hidden) return;
+        els.overlay.classList.add('bible-overlay--header-hidden');
     }
 
     // ---------- compact mode ----------
@@ -487,6 +494,11 @@
         els.fontPlus.addEventListener('click', function () { bumpFontScale(FONT_STEP); });
         if (els.compactBtn) els.compactBtn.addEventListener('click', toggleCompact);
         if (els.resetBtn)   els.resetBtn.addEventListener('click', resetTextSettings);
+
+        // Reading-mode trigger: any scroll inside the chapter body
+        // collapses the header now (don't make the user wait out the
+        // initial show timer). Passive listener so we don't block scroll.
+        if (els.body) els.body.addEventListener('scroll', hideHeaderNow, { passive: true });
 
         els.bookSelect.addEventListener('change', function () {
             const book = booksById[els.bookSelect.value];
