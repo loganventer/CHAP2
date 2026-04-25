@@ -9,10 +9,12 @@ namespace CHAP2.Application.Services;
 
 public class BibleReferenceParser : IBibleReferenceParser
 {
-    // Matches: optional book number + book name (letters), optional chapter, optional ":verse".
-    // Examples it accepts: "Joh 3:16", "1 Kor 13", "psalms23:1", "1joh4:8", "matteus".
+    // Matches: optional book number + book name (letters), optional chapter,
+    // optional verse separated by ':', '.', or whitespace.
+    // Examples it accepts: "Joh 3:16", "Joh 3 16", "Joh 3.16", "1 Kor 13",
+    // "psalms23:1", "1joh4:8", "matteus", "psalms 23 1".
     private static readonly Regex ReferenceShape = new(
-        @"^\s*(?<book>(?:\d+\s*)?[a-zA-Z]+)\s*(?:(?<chapter>\d+)(?:\s*[:.]\s*(?<verse>\d+))?)?\s*$",
+        @"^\s*(?<book>(?:\d+\s*)?[a-zA-Z]+)\s*(?:(?<chapter>\d+)(?:\s*[:.\s]\s*(?<verse>\d+))?)?\s*$",
         RegexOptions.Compiled);
 
     private static readonly Dictionary<string, string> Abbreviations = new(StringComparer.OrdinalIgnoreCase)

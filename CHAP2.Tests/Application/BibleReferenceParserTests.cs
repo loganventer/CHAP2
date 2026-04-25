@@ -31,11 +31,16 @@ public class BibleReferenceParserTests
     }
 
     [TestCase("Joh 3:16", "johannes", 3, 16)]
+    [TestCase("Joh 3 16", "johannes", 3, 16)]
+    [TestCase("Joh 3.16", "johannes", 3, 16)]
+    [TestCase("Joh 3 : 16", "johannes", 3, 16)]
     [TestCase("johannes 3:16", "johannes", 3, 16)]
     [TestCase("joh3:16", "johannes", 3, 16)]
     [TestCase("Psalms 23", "psalms", 23, null)]
+    [TestCase("Psalms 23 1", "psalms", 23, 1)]
     [TestCase("ps 23:1", "psalms", 23, 1)]
     [TestCase("1joh 4:8", "1-johannes", 4, 8)]
+    [TestCase("1 joh 4 8", "1-johannes", 4, 8)]
     [TestCase("1 joh 4", "1-johannes", 4, null)]
     [TestCase("1 kor 13:4", "1-korintiers", 13, 4)]
     [TestCase("openbaring 22:21", "openbaring", 22, 21)]
