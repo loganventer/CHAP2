@@ -8,6 +8,10 @@
  *   chap2:api-wait-start   detail = { delayMs?, message? }
  *   chap2:api-wait-end     no detail
  *   chap2:api-fail         detail = { message }
+ *   chap2:api-probe        detail = { message? }
+ *       -- enter "probing" mode: keep overlay visible and poll the
+ *          health endpoint until the API answers, then dispatch
+ *          'chap2:api-recovered' so the caller can re-run its action.
  *
  * Callers (search-v2.js, browse-all, etc.) dispatch the events; the
  * indicator subscribes. No two-way coupling, no shared global -- the
@@ -18,6 +22,8 @@ class ApiStatusIndicator {
     constructor() {
         this._el = null;
         this._timer = null;
+        this._probeTimer = null;
+        this._probeUrl = '/Home/TestConnectivity';
     }
 
     init() {
@@ -32,6 +38,16 @@ class ApiStatusIndicator {
             this._beginWaiting(delayMs, message);
         });
         document.addEventListener('chap2:api-wait-end', () => this._cancel());
+        // When a request fails because the API isn't reachable, switch
+        // into probing mode: keep the overlay visible and poll the
+        // health endpoint until we get a real answer back. Once we do,
+        // the overlay closes and chap2:api-recovered fires for callers
+        // (e.g. search-v2) to re-run their last query.
+        document.addEventListener('chap2:api-probe', (e) => {
+            const message = (e.detail && e.detail.message)
+                || 'Server still waking up — checking connection...';
+            this._beginProbing(message);
+        });
         document.addEventListener('chap2:api-fail', (e) => {
             const message = (e.detail && e.detail.message)
                 || "Couldn't reach the server. It may still be waking up — please try again in a moment.";
@@ -69,8 +85,47 @@ class ApiStatusIndicator {
         this._timer = setTimeout(() => this._show(message), delayMs);
     }
 
+    /**
+     * Enter probing mode: overlay stays visible while we poll the
+     * health endpoint. Once the API answers OK we hide the overlay
+     * and dispatch chap2:api-recovered so callers can re-run their
+     * last action (e.g. search). Lazy reconnect -- no traffic until
+     * a user action triggers the probe.
+     */
+    _beginProbing(message) {
+        this._cancelProbing();
+        this._show(message);
+        // Probe immediately, then on a slow interval.
+        this._probeOnce();
+        this._probeTimer = setInterval(() => this._probeOnce(), 4000);
+    }
+
+    async _probeOnce() {
+        try {
+            const resp = await fetch(this._probeUrl, {
+                method: 'GET',
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!resp.ok) return;
+            const data = await resp.json().catch(() => ({}));
+            if (data && data.connected) {
+                this._cancelProbing();
+                this._cancel();
+                document.dispatchEvent(new Event('chap2:api-recovered'));
+            }
+        } catch {
+            // Probe failed -- stay in probing mode, will try again on tick.
+        }
+    }
+
+    _cancelProbing() {
+        if (this._probeTimer) { clearInterval(this._probeTimer); this._probeTimer = null; }
+    }
+
     _cancel() {
         if (this._timer) { clearTimeout(this._timer); this._timer = null; }
+        this._cancelProbing();
         if (this._el) this._el.hidden = true;
     }
 

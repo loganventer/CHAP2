@@ -10,6 +10,7 @@ namespace CHAP2.WebPortal.Services;
 public class ChorusApiService : IChorusApiService
 {
     private readonly HttpClient _httpClient;
+    private readonly HttpClient _probeClient;
     private readonly ILogger<ChorusApiService> _logger;
     private readonly IVectorSearchService _vectorSearchService;
     private readonly JsonSerializerOptions _jsonOptions;
@@ -17,6 +18,8 @@ public class ChorusApiService : IChorusApiService
     public ChorusApiService(IHttpClientFactory httpClientFactory, ILogger<ChorusApiService> logger, IVectorSearchService vectorSearchService)
     {
         _httpClient = httpClientFactory.CreateClient("CHAP2API");
+        // Fast no-retry no-breaker client used only for health probes.
+        _probeClient = httpClientFactory.CreateClient("CHAP2API-Probe");
         _logger = logger;
         _vectorSearchService = vectorSearchService;
 
@@ -31,10 +34,10 @@ public class ChorusApiService : IChorusApiService
     {
         try
         {
-            _logger.LogInformation("=== API CONNECTIVITY TEST START ===");
-            _logger.LogInformation("HTTP Client Base Address: {BaseAddress}", _httpClient.BaseAddress);
-            
-            var response = await _httpClient.GetAsync("/api/health/ping", cancellationToken);
+            // Probe via the fast probe client: short timeout, no retry,
+            // no circuit breaker. Gives a quick yes/no for "is the API
+            // reachable right now?".
+            var response = await _probeClient.GetAsync("/api/health/ping", cancellationToken);
             _logger.LogInformation("Connectivity test response status: {StatusCode}", response.StatusCode);
             
             if (response.IsSuccessStatusCode)

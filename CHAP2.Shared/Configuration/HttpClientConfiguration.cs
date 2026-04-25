@@ -41,7 +41,34 @@ public static class HttpClientConfiguration
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-        });
+        })
+        // Recycle the underlying handler/connection pool more often than
+        // the default 2 minutes so that when the API restarts behind
+        // Render and gets a new internal IP, we don't hold a stale
+        // connection that keeps failing.
+        .SetHandlerLifetime(TimeSpan.FromSeconds(45));
+
+        // Fast probe client -- intentionally NO retry, NO circuit breaker,
+        // short timeout. Used by health/ping calls that ask "is the API
+        // up?". Going through the resilience pipeline would defeat the
+        // point: a probe should give a quick yes/no, not retry for a
+        // minute. Sharing the breaker would also force probes to
+        // fail-fast while it's open, which is exactly what we DON'T want
+        // -- we want probes to actually attempt the call to detect recovery.
+        services.AddHttpClient("CHAP2API-Probe", client =>
+        {
+            var apiBaseUrl = Environment.GetEnvironmentVariable("ApiService__BaseUrl")
+                ?? configuration[ConfigSections.ApiBaseUrl]
+                ?? SharedApiSettings.DefaultApiBaseUrl;
+            client.BaseAddress = new Uri(apiBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(6);
+            client.DefaultRequestHeaders.Add("User-Agent", "CHAP2-WebPortal-Probe/1.0");
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        })
+        .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
         return services;
     }

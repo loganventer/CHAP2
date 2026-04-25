@@ -205,15 +205,32 @@ async function performTraditionalSearch(searchTerm) {
     } catch (error) {
         console.error('Traditional search error:', error);
         showError('Search failed. ' + (error.message || error));
-        document.dispatchEvent(new CustomEvent('chap2:api-fail', {
-            detail: { message: "Couldn't reach the server. It may still be waking up — please try again in a moment." }
+        // Switch the overlay into probing mode so it stays visible
+        // and polls /Home/TestConnectivity until the API actually
+        // responds. We do NOT fire api-wait-end here -- the overlay
+        // closes itself once chap2:api-recovered fires, at which
+        // point the listener below re-runs this same search.
+        document.dispatchEvent(new CustomEvent('chap2:api-probe', {
+            detail: { message: 'Server still waking up — checking connection...' }
         }));
-    } finally {
         isSearching = false;
         hideLoading();
-        document.dispatchEvent(new Event('chap2:api-wait-end'));
+        return;
     }
+
+    isSearching = false;
+    hideLoading();
+    document.dispatchEvent(new Event('chap2:api-wait-end'));
 }
+
+// When the indicator detects the API is back, re-run whatever the
+// user last typed -- so the failed search recovers automatically
+// without requiring them to re-trigger it.
+document.addEventListener('chap2:api-recovered', () => {
+    if (currentSearchTerm && currentSearchTerm.length >= 1) {
+        performTraditionalSearch(currentSearchTerm);
+    }
+});
 
 // Sort search results similar to console app
 function sortSearchResults(results, searchTerm) {
