@@ -1,54 +1,41 @@
 /* Bible UI: lookup modal + chapter overlay.
-   All colors / spacing / radius come from the existing theme tokens
-   in site.css and themes.css so the Bible UI stays readable in any
-   theme (light, dark, starlight, etc.). */
+   The overlay floats above the home page (which uses a dark themed
+   background regardless of light/dark setting because of the starlight
+   field). The original site --bg-primary token is hardcoded to white,
+   which clashes against the dark page, so the Bible UI ships its own
+   dark-theme palette here -- still derived from the existing primary
+   accent so the visual identity matches. */
 
 :root {
-    /* Reading scale for the chapter overlay. JS rewrites this on the
-       overlay element when the user clicks A− / A+. */
     --bible-font-scale: 1;
+
+    /* Bible-specific surface tokens (dark, glassy) */
+    --bible-surface:        rgba(28, 30, 44, 0.92);
+    --bible-surface-raised: rgba(40, 42, 60, 0.96);
+    --bible-surface-input:  rgba(255, 255, 255, 0.08);
+    --bible-text:           #f0ece2;
+    --bible-text-muted:     rgba(240, 236, 226, 0.65);
+    --bible-border:         rgba(255, 255, 255, 0.10);
+    --bible-accent:         var(--primary-color);
+    --bible-accent-soft:    rgba(99, 102, 241, 0.22);
+    --bible-error:          #ff6b6b;
 }
 
-/* -------- Search bar trigger button --------
-   Visually prominent so users notice scripture lookup is here.
-   Uses the theme's primary accent and a soft tinted pill so it
-   reads as a primary action, not just another icon. */
-.bible-trigger {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark, var(--primary-color)));
-    border: 1px solid transparent;
-    color: #ffffff;
-    cursor: pointer;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    justify-content: center;
+/* -------- Header trigger --------
+   The Bible icon lives in the header-actions row alongside Settings /
+   Sign-out, so it picks up .settings-button's full theme treatment
+   automatically. We only override the icon size so the book glyph
+   reads as a primary entry point even with no text label. */
+.bible-header-btn i {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+.bible-header-btn {
+    /* Slightly tighter padding since there's no text — keep the
+       click target at 44px+ via line-height + min-width. */
     min-width: 44px;
-    min-height: 44px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    box-shadow: var(--shadow-md);
-    letter-spacing: 0.02em;
-}
-.bible-trigger i { font-size: 1rem; }
-.bible-trigger .bible-trigger__label {
-    /* Hidden on very narrow viewports to keep the search bar usable. */
-}
-.bible-trigger:hover {
-    filter: brightness(1.08);
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-1px);
-}
-.bible-trigger:active { transform: translateY(0); }
-.bible-trigger:focus-visible {
-    outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
-}
-@media (max-width: 600px) {
-    .bible-trigger .bible-trigger__label { display: none; }
-    .bible-trigger { padding: var(--spacing-sm); }
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
 }
 
 /* -------- Inline reference suggestion (above chorus results) -------- */
@@ -173,28 +160,31 @@
     position: fixed;
     inset: 0;
     z-index: 1100;
-    background: var(--bg-modal);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
     display: flex;
     flex-direction: column;
     align-items: stretch;
     padding: 0;
-    color: var(--text-primary);
+    color: var(--bible-text);
 }
 .bible-overlay[hidden] { display: none; }
 
 .bible-overlay__sheet {
-    margin: var(--spacing-lg) auto;
-    width: min(820px, calc(100% - 2 * var(--spacing-lg)));
-    max-height: calc(100vh - 2 * var(--spacing-lg));
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-color);
+    /* 10px gutter from the window edge horizontally (user request);
+       small vertical breathing room. */
+    margin: 10px;
+    width: calc(100% - 20px);
+    max-height: calc(100vh - 20px);
+    background: var(--bible-surface);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--bible-border);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    color: var(--bible-text);
     animation: fadeIn var(--transition-normal) ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -207,8 +197,9 @@
     gap: var(--spacing-md);
     align-items: center;
     padding: var(--spacing-md) var(--spacing-lg);
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--bible-border);
+    background: var(--bible-surface-raised);
+    color: var(--bible-text);
     position: sticky;
     top: 0;
     z-index: 1;
@@ -216,7 +207,7 @@
 .bible-overlay__title {
     font-size: var(--font-size-lg);
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--bible-text);
     margin: 0;
 }
 .bible-overlay__nav {
@@ -227,7 +218,7 @@
 .bible-overlay__icon-btn {
     background: none;
     border: 1px solid transparent;
-    color: var(--text-secondary);
+    color: var(--bible-text-muted);
     cursor: pointer;
     padding: var(--spacing-sm);
     border-radius: var(--radius-sm);
@@ -240,13 +231,13 @@
 }
 .bible-overlay__icon-btn:hover,
 .bible-overlay__icon-btn:focus-visible {
-    color: var(--text-primary);
-    background: var(--bg-tertiary);
+    color: var(--bible-text);
+    background: var(--bible-surface-input);
     outline: none;
-    border-color: var(--border-color);
+    border-color: var(--bible-border);
 }
 .bible-overlay__icon-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
 }
 .bible-overlay__font-size {
@@ -254,7 +245,7 @@
     align-items: center;
     gap: 2px;
     font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    color: var(--bible-text-muted);
 }
 .bible-overlay__font-size button { font-weight: 600; }
 
@@ -264,15 +255,15 @@
     grid-template-columns: 1.5fr 1fr 0.8fr 1.4fr;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--bible-border);
+    background: var(--bible-surface-raised);
 }
 @media (max-width: 720px) {
     .bible-overlay__lookup { grid-template-columns: 1fr 1fr; }
 }
 .bible-overlay__lookup label {
     font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    color: var(--bible-text-muted);
     margin-bottom: 2px;
     display: block;
 }
@@ -280,22 +271,30 @@
 .bible-overlay__lookup input {
     width: 100%;
     padding: 6px var(--spacing-sm);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--bible-border);
     border-radius: var(--radius-sm);
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    background: var(--bible-surface-input);
+    color: var(--bible-text);
     font: inherit;
     min-height: 36px;
 }
+.bible-overlay__lookup select option {
+    /* Native option lists fall back to OS-rendered colors; force a
+       readable scheme so dropdown options match the dark sheet. */
+    color: #1a1a1a;
+    background: #ffffff;
+}
 .bible-overlay__lookup select:focus,
 .bible-overlay__lookup input:focus {
-    outline: 2px solid var(--border-focus);
+    outline: 2px solid var(--bible-accent);
     outline-offset: 1px;
 }
+.bible-overlay__lookup input::placeholder { color: var(--bible-text-muted); }
+
 .bible-overlay__inline-results {
     grid-column: 1 / -1;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
+    background: var(--bible-surface);
+    border: 1px solid var(--bible-border);
     border-radius: var(--radius-sm);
     max-height: 220px;
     overflow-y: auto;
@@ -306,8 +305,9 @@
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-xl) var(--spacing-2xl);
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    background: transparent;
+    color: var(--bible-text);
+    min-height: 200px;
 }
 @media (max-width: 600px) {
     .bible-overlay__body { padding: var(--spacing-lg); }
@@ -321,23 +321,23 @@
     white-space: pre-wrap;
     line-height: 1.7;
     font-size: calc(var(--font-size-base) * var(--bible-font-scale));
-    max-width: 70ch;
+    max-width: 80ch;
     margin: 0 auto;
-    color: var(--text-primary);
+    color: var(--bible-text);
 }
 
 .bible-overlay__verse-num {
     font-size: 0.7em;
     vertical-align: super;
     line-height: 0;
-    color: var(--text-muted);
-    margin-right: 2px;
-    font-weight: 600;
+    color: var(--bible-accent);
+    margin-right: 3px;
+    font-weight: 700;
 }
 
 .bible-overlay__verse[aria-current="true"] {
-    background: rgba(99, 102, 241, 0.10);
-    border-left: 3px solid var(--primary-color);
+    background: var(--bible-accent-soft);
+    border-left: 3px solid var(--bible-accent);
     padding-left: var(--spacing-sm);
     border-radius: var(--radius-sm);
 }
@@ -352,12 +352,12 @@
 .bible-overlay__skeleton {
     display: grid;
     gap: var(--spacing-sm);
-    max-width: 70ch;
+    max-width: 80ch;
     margin: 0 auto;
 }
 .bible-overlay__skeleton-line {
     height: 1em;
-    background: linear-gradient(90deg, var(--bg-tertiary), var(--bg-secondary), var(--bg-tertiary));
+    background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.12), rgba(255,255,255,0.04));
     background-size: 200% 100%;
     animation: bibleSkeletonShimmer 1.4s ease-in-out infinite;
     border-radius: var(--radius-sm);
@@ -370,6 +370,23 @@
 }
 @media (prefers-reduced-motion: reduce) {
     .bible-overlay__skeleton-line { animation: none; }
+}
+
+/* Visible empty / error state inside the chapter body so deployment /
+   network failures don't leave a confusing blank panel. */
+.bible-overlay__notice {
+    max-width: 60ch;
+    margin: var(--spacing-2xl) auto;
+    padding: var(--spacing-lg);
+    text-align: center;
+    border-radius: var(--radius-md);
+    background: var(--bible-surface-input);
+    border: 1px solid var(--bible-border);
+    color: var(--bible-text);
+}
+.bible-overlay__notice--error {
+    border-color: var(--bible-error);
+    color: var(--bible-error);
 }
 
 .bible-overlay__live {

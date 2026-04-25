@@ -92,7 +92,11 @@
         els.chapterEl.innerHTML = '<div class="bible-overlay__skeleton">' + lines + '</div>';
     }
     function renderError(message) {
-        els.chapterEl.innerHTML = '<p class="bible-modal-error">' + escapeHtml(message) + '</p>';
+        els.chapterEl.innerHTML = '<div class="bible-overlay__notice bible-overlay__notice--error" role="alert">'
+            + escapeHtml(message) + '</div>';
+    }
+    function renderNotice(message) {
+        els.chapterEl.innerHTML = '<div class="bible-overlay__notice">' + escapeHtml(message) + '</div>';
     }
     function renderChapter(dto, targetVerse) {
         // Verses render inline (the traditional Bible-page layout); each
