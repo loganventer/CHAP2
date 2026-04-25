@@ -31,7 +31,13 @@ WORKDIR "/src/CHAP2.UI/CHAP2.WebPortal"
 RUN dotnet build "CHAP2.Web.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "CHAP2.Web.csproj" -c Release -o /app/publish
+# Pre-compile assemblies to native code so the first request doesn't
+# pay JIT cost on Render's free tier. See Dockerfile.api.simple for
+# the same rationale on the API side.
+RUN dotnet publish "CHAP2.Web.csproj" \
+    -c Release \
+    -p:PublishReadyToRun=true \
+    -o /app/publish
 
 FROM base AS final
 WORKDIR /app

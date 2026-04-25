@@ -25,7 +25,16 @@ COPY . .
 RUN dotnet build "CHAP2.Chorus.Api/CHAP2.Chorus.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "CHAP2.Chorus.Api/CHAP2.Chorus.Api.csproj" -c Release -o /app/publish
+# PublishReadyToRun pre-compiles all assemblies to native code at
+# publish time so they don't have to JIT on first request. On Render's
+# free tier (1 CPU, 512MB) the JIT pass on a cold container was the
+# single largest contributor to the ~30-60s wake-up. With R2R the
+# assemblies are mmap-ready and the first HTTP request is served
+# without waiting for JIT compilation.
+RUN dotnet publish "CHAP2.Chorus.Api/CHAP2.Chorus.Api.csproj" \
+    -c Release \
+    -p:PublishReadyToRun=true \
+    -o /app/publish
 
 FROM base AS final
 WORKDIR /app
