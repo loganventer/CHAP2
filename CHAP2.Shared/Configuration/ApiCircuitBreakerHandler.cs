@@ -33,6 +33,23 @@ public sealed class ApiCircuitBreakerHandler : DelegatingHandler
     private static int _consecutiveFailures = 0;
     private static DateTime _openUntilUtc = DateTime.MinValue;
 
+    /// <summary>
+    /// Externally signal that the API is reachable -- typically called
+    /// after a successful health probe outside this pipeline. Forces
+    /// the breaker back to Closed so the next real call no longer
+    /// fast-fails. Probe FAILURES are intentionally NOT exposed: a
+    /// probe is a recovery check, it shouldn't trip the breaker.
+    /// </summary>
+    public static void NotifyExternalSuccess()
+    {
+        lock (_gate)
+        {
+            _state = State.Closed;
+            _consecutiveFailures = 0;
+            _openUntilUtc = DateTime.MinValue;
+        }
+    }
+
     private readonly ILogger<ApiCircuitBreakerHandler> _logger;
     private readonly int _failureThreshold;
     private readonly TimeSpan _openDuration;

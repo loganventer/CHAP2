@@ -81,7 +81,16 @@ class ApiStatusIndicator {
     }
 
     _beginWaiting(delayMs, message) {
-        this._cancel();
+        if (this._timer) { clearTimeout(this._timer); this._timer = null; }
+        this._cancelProbing();
+        // If the overlay is already up (e.g. we just handed off from
+        // probe-success to an auto-retry), refresh the message in place
+        // -- never let it flash off and back on. Only when starting cold
+        // do we delay so quick responses don't flash the overlay.
+        if (this._el && !this._el.hidden) {
+            this._show(message);
+            return;
+        }
         this._timer = setTimeout(() => this._show(message), delayMs);
     }
 
@@ -110,8 +119,12 @@ class ApiStatusIndicator {
             if (!resp.ok) return;
             const data = await resp.json().catch(() => ({}));
             if (data && data.connected) {
+                // API is reachable -- stop probing but KEEP the overlay
+                // up. The caller will re-run its action; the overlay
+                // only closes when that action actually succeeds
+                // (via chap2:api-wait-end).
                 this._cancelProbing();
-                this._cancel();
+                this._show('Server is back — fetching your results...');
                 document.dispatchEvent(new Event('chap2:api-recovered'));
             }
         } catch {

@@ -1,6 +1,7 @@
 using CHAP2.WebPortal.Interfaces;
 using CHAP2.WebPortal.DTOs;
 using CHAP2.Domain.Entities;
+using CHAP2.Shared.Configuration;
 using CHAP2.Shared.DTOs;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
@@ -38,25 +39,22 @@ public class ChorusApiService : IChorusApiService
             // no circuit breaker. Gives a quick yes/no for "is the API
             // reachable right now?".
             var response = await _probeClient.GetAsync("/api/health/ping", cancellationToken);
-            _logger.LogInformation("Connectivity test response status: {StatusCode}", response.StatusCode);
-            
+
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogInformation("Connectivity test response content: {Content}", content);
+                // The API answered -- forcibly close the search-side
+                // circuit breaker so the next user request goes
+                // through immediately instead of waiting out the
+                // breaker's 20s open window.
+                ApiCircuitBreakerHandler.NotifyExternalSuccess();
             }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogError("Connectivity test failed: {Error}", errorContent);
-            }
-            
-            _logger.LogInformation("=== API CONNECTIVITY TEST END - SUCCESS: {Success} ===", response.IsSuccessStatusCode);
+
+            _logger.LogInformation("API probe: {StatusCode}", response.StatusCode);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to test API connectivity. Exception: {ExceptionType}", ex.GetType().Name);
+            _logger.LogDebug(ex, "API probe failed: {ExceptionType}", ex.GetType().Name);
             return false;
         }
     }
