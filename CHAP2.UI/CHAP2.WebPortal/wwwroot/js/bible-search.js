@@ -98,13 +98,29 @@
         const html = verses.map(function (v) {
             const ref = escapeHtml(v.bookName) + ' ' + v.chapter + ':' + v.verse;
             const snippet = highlight(escapeHtml(v.text), needle);
-            return '<button type="button" class="bible-search-result" role="listitem"'
+            const addBtn = '<button type="button" class="bible-search-result__add"'
+                + ' data-book="' + escapeAttr(v.bookId) + '"'
+                + ' data-book-name="' + escapeAttr(v.bookName) + '"'
+                + ' data-chapter="' + v.chapter + '"'
+                + ' data-verse="' + v.verse + '"'
+                + ' data-text="' + escapeAttr(v.text) + '"'
+                + ' aria-label="Add ' + escapeAttr(v.bookName + ' ' + v.chapter + ':' + v.verse) + ' to setlist"'
+                + ' title="Add to setlist">'
+                + '<i class="fas fa-plus"></i></button>';
+            return '<div class="bible-search-result" role="listitem"'
                 + ' data-book="' + escapeAttr(v.bookId) + '"'
                 + ' data-chapter="' + v.chapter + '"'
                 + ' data-verse="' + v.verse + '">'
+                + '<button type="button" class="bible-search-result__open"'
+                + ' data-book="' + escapeAttr(v.bookId) + '"'
+                + ' data-chapter="' + v.chapter + '"'
+                + ' data-verse="' + v.verse + '"'
+                + ' aria-label="Open ' + escapeAttr(v.bookName + ' ' + v.chapter + ':' + v.verse) + '">'
                 + '<span class="bible-search-result__ref">' + ref + '</span>'
                 + '<span class="bible-search-result__text">' + snippet + '</span>'
-                + '</button>';
+                + '</button>'
+                + addBtn
+                + '</div>';
         }).join('');
         list.innerHTML = html;
         if (countEl) countEl.textContent = verses.length === 1 ? '1 verse' : verses.length + ' verses';
@@ -150,6 +166,10 @@
         if (!input) return;
         const q = (input.value || '').trim();
         if (q.length < MIN_CHARS) {
+            // Bumping seq invalidates any in-flight fetch from before the
+            // clear, so a slow earlier response can't repaint the results
+            // we just cleared.
+            seq++;
             clearSuggestion();
             hideVerseResults();
             return;
@@ -182,18 +202,39 @@
             });
         }
 
-        // Click-delegation on the results list -- one listener instead of
-        // wiring per-row click handlers as the list re-renders.
+        // Click-delegation on the results list. Two buttons per row:
+        //  - .bible-search-result__open  -> open the verse in the overlay
+        //  - .bible-search-result__add   -> add the verse to the setlist
         const list = getBibleResultsList();
         if (list) {
             list.addEventListener('click', function (e) {
-                const btn = e.target.closest('.bible-search-result');
-                if (!btn) return;
-                openOverlay(
-                    btn.getAttribute('data-book'),
-                    parseInt(btn.getAttribute('data-chapter'), 10),
-                    parseInt(btn.getAttribute('data-verse'), 10)
-                );
+                const addBtn = e.target.closest('.bible-search-result__add');
+                if (addBtn) {
+                    e.stopPropagation();
+                    window.dispatchEvent(new CustomEvent('chap2:add-verse-to-setlist', {
+                        detail: {
+                            bookId: addBtn.getAttribute('data-book'),
+                            bookName: addBtn.getAttribute('data-book-name'),
+                            chapter: parseInt(addBtn.getAttribute('data-chapter'), 10),
+                            verse: parseInt(addBtn.getAttribute('data-verse'), 10),
+                            text: addBtn.getAttribute('data-text') || '',
+                        },
+                    }));
+                    const row = addBtn.closest('.bible-search-result');
+                    if (row) {
+                        row.classList.add('bible-search-result--just-added');
+                        setTimeout(function () { row.classList.remove('bible-search-result--just-added'); }, 600);
+                    }
+                    return;
+                }
+                const openBtn = e.target.closest('.bible-search-result__open');
+                if (openBtn) {
+                    openOverlay(
+                        openBtn.getAttribute('data-book'),
+                        parseInt(openBtn.getAttribute('data-chapter'), 10),
+                        parseInt(openBtn.getAttribute('data-verse'), 10)
+                    );
+                }
             });
         }
     });

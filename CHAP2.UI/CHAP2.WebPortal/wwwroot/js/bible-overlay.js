@@ -116,13 +116,26 @@
         // text-indent gives the e-Sword-style indented verse number with
         // wrapped lines flowing back to the margin). The target verse is
         // both aria-current (visual highlight) and pre-selected (bold).
+        // Each verse also gets a small "Add to setlist" button on the right.
+        const bookId = (current && current.book && current.book.id) || (dto.book && dto.book.id);
+        const bookName = (current && current.book && current.book.name) || (dto.book && dto.book.name) || '';
         const parts = dto.verses.map(function (v) {
             const isTarget = targetVerse && v.verse === targetVerse;
             const classes = 'bible-overlay__verse' + (isTarget ? ' bible-overlay__verse--selected' : '');
             const ariaCurrent = isTarget ? ' aria-current="true"' : '';
+            const addBtn = '<button type="button" class="bible-overlay__verse-add" '
+                + 'data-book="' + escapeAttr(bookId || '') + '" '
+                + 'data-book-name="' + escapeAttr(bookName) + '" '
+                + 'data-chapter="' + dto.chapter + '" '
+                + 'data-verse="' + v.verse + '" '
+                + 'data-text="' + escapeAttr(v.text) + '" '
+                + 'aria-label="Add ' + escapeAttr(bookName + ' ' + dto.chapter + ':' + v.verse) + ' to setlist" '
+                + 'title="Add to setlist (A)">'
+                + '<i class="fas fa-plus"></i></button>';
             return '<span class="' + classes + '" id="v' + v.verse + '"' + ariaCurrent + '>'
                 +    '<span class="bible-overlay__verse-num">' + v.verse + '</span>'
                 +    escapeHtml(v.text)
+                +    addBtn
                 + '</span>';
         });
         els.chapterEl.innerHTML = parts.join('');
@@ -332,6 +345,7 @@
             if (e.key === 'ArrowRight') { e.preventDefault(); gotoNext(); return; }
             if (e.key === '+' || e.key === '=') { e.preventDefault(); bumpFontScale(FONT_STEP); return; }
             if (e.key === '-' || e.key === '_') { e.preventDefault(); bumpFontScale(-FONT_STEP); return; }
+            if (e.key === 'a' || e.key === 'A') { addSelectedVerseToSetlist(); e.preventDefault(); return; }
         }
         // Ctrl/Cmd variants still work even when focus is on a control,
         // matching browser-native zoom UX expectations.
@@ -345,6 +359,31 @@
         els.live.textContent = '';
         // Force re-announce by toggling content on next tick.
         setTimeout(function () { els.live.textContent = msg; }, 30);
+    }
+
+    // ---------- add-to-setlist ----------
+    function addVerseFromButton(btn) {
+        if (!btn) return;
+        const detail = {
+            bookId: btn.getAttribute('data-book'),
+            bookName: btn.getAttribute('data-book-name'),
+            chapter: parseInt(btn.getAttribute('data-chapter'), 10),
+            verse: parseInt(btn.getAttribute('data-verse'), 10),
+            text: btn.getAttribute('data-text') || '',
+        };
+        window.dispatchEvent(new CustomEvent('chap2:add-verse-to-setlist', { detail: detail }));
+        // Brief pulse so the user gets feedback; respects reduced motion.
+        const verseEl = btn.closest('.bible-overlay__verse');
+        if (verseEl) {
+            verseEl.classList.add('bible-overlay__verse--just-added');
+            setTimeout(function () { verseEl.classList.remove('bible-overlay__verse--just-added'); }, 600);
+        }
+    }
+    function addSelectedVerseToSetlist() {
+        const selected = els.chapterEl && els.chapterEl.querySelector('.bible-overlay__verse--selected');
+        if (!selected) return;
+        const btn = selected.querySelector('.bible-overlay__verse-add');
+        if (btn) addVerseFromButton(btn);
     }
 
     async function open(ref) {
@@ -419,9 +458,18 @@
             }
         });
 
-        // Single-verse click selection: tapping a verse bolds it; tapping
-        // another verse moves the bold to the new one.
+        // Click delegation on the chapter body:
+        //  - clicking the per-verse "+" button adds that verse to the setlist
+        //    (handled first so it doesn't also fire the selection toggle)
+        //  - clicking anywhere else inside a verse toggles its selection
+        //    (single-select; tapping another verse moves the bold)
         els.chapterEl.addEventListener('click', function (e) {
+            const addBtn = e.target.closest('.bible-overlay__verse-add');
+            if (addBtn) {
+                e.stopPropagation();
+                addVerseFromButton(addBtn);
+                return;
+            }
             const verseEl = e.target.closest('.bible-overlay__verse');
             if (!verseEl) return;
             const prev = els.chapterEl.querySelector('.bible-overlay__verse--selected');

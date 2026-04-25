@@ -98,27 +98,37 @@
     padding: 0 var(--spacing-md);
 }
 .bible-search-result {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--primary-color);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast), transform var(--transition-fast);
+    overflow: hidden;
+}
+.bible-search-result:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(2px);
+}
+.bible-search-result__open {
+    flex: 1;
     display: grid;
     grid-template-columns: minmax(8rem, max-content) 1fr;
     gap: var(--spacing-md);
     align-items: baseline;
     padding: var(--spacing-sm) var(--spacing-md);
     text-align: left;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-left: 3px solid var(--primary-color);
-    border-radius: var(--radius-md);
+    background: transparent;
+    border: none;
     color: var(--text-primary);
     cursor: pointer;
     font: inherit;
     font-size: var(--font-size-sm);
-    transition: background var(--transition-fast), transform var(--transition-fast);
 }
-.bible-search-result:hover,
-.bible-search-result:focus-visible {
-    background: var(--bg-tertiary);
-    outline: none;
-    transform: translateX(2px);
+.bible-search-result__open:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
 }
 .bible-search-result__ref {
     font-weight: 600;
@@ -129,14 +139,44 @@
     color: var(--text-secondary);
     line-height: 1.5;
 }
-.bible-search-result mark {
+.bible-search-result__open mark {
     background: rgba(99, 102, 241, 0.22);
     color: inherit;
     padding: 0 2px;
     border-radius: 2px;
 }
+.bible-search-result__add {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    transition: background var(--transition-fast), transform var(--transition-fast);
+}
+.bible-search-result__add:hover,
+.bible-search-result__add:focus-visible {
+    background: rgba(99, 102, 241, 0.12);
+    transform: scale(1.05);
+    outline: none;
+}
+.bible-search-result--just-added {
+    animation: bibleSearchResultAddedPulse 600ms ease-out;
+}
+@keyframes bibleSearchResultAddedPulse {
+    0%   { background: rgba(99, 102, 241, 0.25); }
+    100% { background: var(--bg-secondary); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .bible-search-result--just-added { animation: none; }
+}
 @media (max-width: 600px) {
-    .bible-search-result { grid-template-columns: 1fr; gap: 2px; }
+    .bible-search-result__open { grid-template-columns: 1fr; gap: 2px; }
 }
 
 /* -------- Inline reference suggestion (above chorus results) -------- */
@@ -436,9 +476,62 @@
     border-left: 3px solid transparent;
     border-radius: var(--radius-sm);
     transition: background var(--transition-fast);
+    position: relative;
 }
 .bible-overlay__verse:hover {
     background: rgba(255, 255, 255, 0.04);
+}
+
+/* Per-verse "Add to setlist" button. Inline with the verse text, no
+   text-indent on its own. Visible on parent hover (mouse) and always
+   on touch. Click is intercepted by JS so the verse selection toggle
+   doesn't also fire. */
+.bible-overlay__verse-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.4em;
+    width: 1.6em;
+    height: 1.6em;
+    padding: 0;
+    text-indent: 0;
+    border: 1px solid var(--bible-border);
+    border-radius: 50%;
+    background: var(--bible-surface-input);
+    color: var(--bible-accent);
+    cursor: pointer;
+    font-size: 0.55em;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity var(--transition-fast), transform var(--transition-fast), background var(--transition-fast);
+    vertical-align: middle;
+}
+.bible-overlay__verse:hover .bible-overlay__verse-add,
+.bible-overlay__verse:focus-within .bible-overlay__verse-add,
+.bible-overlay__verse--selected .bible-overlay__verse-add {
+    opacity: 1;
+}
+.bible-overlay__verse-add:hover,
+.bible-overlay__verse-add:focus-visible {
+    background: var(--bible-accent-soft);
+    transform: scale(1.1);
+    outline: none;
+}
+@media (hover: none) {
+    /* Touch: always visible since there's no hover state to gate it. */
+    .bible-overlay__verse-add { opacity: 1; }
+}
+
+/* Brief pulse when a verse was just added to the setlist. */
+.bible-overlay__verse--just-added {
+    animation: bibleVerseAddedPulse 600ms ease-out;
+}
+@keyframes bibleVerseAddedPulse {
+    0%   { background: var(--bible-accent-soft); }
+    100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .bible-overlay__verse--just-added { animation: none; }
 }
 
 .bible-overlay__verse-num {

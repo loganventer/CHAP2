@@ -212,6 +212,27 @@
     align-items: center;
 }
 
+/* ---- Verse-typed setlist items ---- */
+.setlist-item--verse {
+    /* Same row layout as chorus items, just a different left accent so
+       the user can scan kinds at a glance. */
+    border-left: 3px solid var(--primary-color, #6366f1);
+}
+.setlist-item-kind-icon {
+    color: var(--primary-color, #6366f1);
+    margin-right: 6px;
+}
+.setlist-item-meta--verse {
+    /* The verse text snippet -- single line, ellipsised, muted. */
+    display: block;
+    font-style: italic;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
 .btn-icon {
     background: white;
     border: 1px solid #ddd;
