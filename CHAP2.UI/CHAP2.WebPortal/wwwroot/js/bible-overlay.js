@@ -73,6 +73,9 @@
     let lastFocus = null;
     let searchTimer = 0;
     let searchSeq = 0;
+    // When the overlay was opened from a setlist runner, the prev/next
+    // chevrons advance the setlist instead of navigating chapters.
+    let setlistContext = null;
 
     // ---------- font scale ----------
     // Browsers with strict tracking prevention (Edge in default mode for
@@ -209,16 +212,22 @@
     }
 
     function canGoPrev() {
+        if (inSetlistMode()) return true;   // wraps, always enabled
         if (!current) return false;
         if (current.chapter > 1) return true;
         return current.book.ordinal > 1;
     }
     function canGoNext() {
+        if (inSetlistMode()) return true;   // wraps, always enabled
         if (!current) return false;
         if (current.chapter < current.book.chapterCount) return true;
         return current.book.ordinal < 66;
     }
+    function inSetlistMode() {
+        return setlistContext && window.setlistManager && window.setlistManager.isRunnerActive();
+    }
     function gotoPrev() {
+        if (inSetlistMode()) { window.setlistManager.advance(-1); return; }
         if (!current) return;
         if (current.chapter > 1) {
             navigate({ bookId: current.book.id, chapter: current.chapter - 1 });
@@ -228,6 +237,7 @@
         if (prev) navigate({ bookId: prev.id, chapter: prev.chapterCount });
     }
     function gotoNext() {
+        if (inSetlistMode()) { window.setlistManager.advance(+1); return; }
         if (!current) return;
         if (current.chapter < current.book.chapterCount) {
             navigate({ bookId: current.book.id, chapter: current.chapter + 1 });
@@ -405,6 +415,9 @@
 
     async function open(ref) {
         if (!ref || !ref.bookId || !ref.chapter) return;
+        // Caller may pass setlistContext to switch the prev/next chevrons
+        // into "advance the setlist" mode (vs. the default chapter nav).
+        setlistContext = ref.setlistContext || null;
         try { books = books.length ? books : await getBooks(); }
         catch (_) {
             // Books unavailable — open the overlay anyway with an error.

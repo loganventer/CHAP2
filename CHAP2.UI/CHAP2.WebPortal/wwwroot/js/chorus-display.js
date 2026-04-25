@@ -1115,6 +1115,26 @@ class ChorusDisplay {
         debug('Choruses length:', this.choruses ? this.choruses.length : 'null');
         debug('Current chorus index:', this.currentChorusIndex);
 
+        // When this page is loaded inside the chorus-overlay iframe and
+        // the parent has an active setlist runner with mixed kinds,
+        // defer to it -- the parent's advance() walks chorus + verse
+        // items uniformly and routes the right surface for each.
+        try {
+            const parentMgr = window.parent && window.parent !== window ? window.parent.setlistManager : null;
+            if (parentMgr && typeof parentMgr.isRunnerActive === 'function' && parentMgr.isRunnerActive()) {
+                const hasVerse = parentMgr.setlist.some(i => i && i.kind === 'verse');
+                if (hasVerse) {
+                    debug('Mixed setlist runner detected; deferring nav to parent.setlistManager.advance');
+                    parentMgr.advance(direction);
+                    return;
+                }
+            }
+        } catch (e) {
+            // Cross-frame access errors are non-fatal -- fall back to
+            // the chorus-only navigation below.
+            debug('Parent setlistManager check failed, falling back to local nav', e);
+        }
+
         if (!this.choruses || this.choruses.length <= 1) {
             debug('Not enough choruses to navigate');
             this.showNotification('No other choruses available', 'info');

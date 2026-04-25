@@ -8,6 +8,10 @@
 class SetlistManager {
     constructor() {
         this.setlist = [];
+        // Index of the item currently being shown via openItem(). Used by
+        // advance()/retreat() so prev/next chips on either surface (chorus
+        // iframe or Bible overlay) walk the same mixed-kind list.
+        this.runnerIndex = -1;
         this.loadFromLocalStorage();
         this.initializeEventListeners();
         this.listenForVerseAdds();
@@ -143,20 +147,36 @@ class SetlistManager {
 
     // ---------- launch / view ----------
     // Open one item in its proper UI (chorus iframe or Bible overlay).
+    // Updates runnerIndex so subsequent advance/retreat calls walk
+    // forward/backward through the mixed-kind setlist.
     openItem(item) {
         if (!item) return;
+        const idx = this.setlist.findIndex(i => i === item || SetlistManager.keyOf(i) === SetlistManager.keyOf(item));
+        if (idx >= 0) this.runnerIndex = idx;
+
         if (item.kind === 'verse') {
+            // Close any open chorus iframe so the two surfaces don't stack.
+            if (window.chorusOverlay && typeof window.chorusOverlay.close === 'function') {
+                window.chorusOverlay.close();
+            }
             if (window.bibleOverlay && typeof window.bibleOverlay.open === 'function') {
                 window.bibleOverlay.open({
                     bookId: item.bookId,
                     chapter: item.chapter,
                     verse: item.verse,
+                    setlistContext: { hasItems: this.setlist.length > 1 },
                 });
             }
             return;
         }
-        // Chorus: feed chorus-display only the chorus-typed items so its
-        // internal prev/next stays sane (it doesn't know about verses).
+        // Chorus: close the Bible overlay if it was up, then load the
+        // chorus iframe. Feed chorus-display the chorus-only items via
+        // the legacy `chorusList` key (so its internal id-based lookup
+        // works), but we'll override its prev/next via the parent-side
+        // advance() so cross-kind navigation still flows correctly.
+        if (window.bibleOverlay && typeof window.bibleOverlay.close === 'function') {
+            window.bibleOverlay.close();
+        }
         const chorusItems = this.setlist.filter(i => i.kind === 'chorus');
         sessionStorage.setItem('chorusList', JSON.stringify(chorusItems));
         sessionStorage.setItem('currentChorusId', item.id);
@@ -166,6 +186,22 @@ class SetlistManager {
             window.location.href = `/Home/ChorusDisplay/${item.id}`;
         }
     }
+
+    // Move forward/backward through the full mixed setlist. Wraps at
+    // the ends so the user can keep clicking next without dead-ends.
+    // direction: +1 (next) or -1 (prev).
+    advance(direction) {
+        if (!this.setlist.length) return;
+        const dir = direction >= 0 ? 1 : -1;
+        // If we don't have a current position (e.g. user is mid-browsing),
+        // assume we're "before the first" so +1 lands on item 0.
+        const start = this.runnerIndex >= 0 ? this.runnerIndex : (dir > 0 ? -1 : this.setlist.length);
+        let nextIdx = start + dir;
+        if (nextIdx < 0) nextIdx = this.setlist.length - 1;
+        if (nextIdx >= this.setlist.length) nextIdx = 0;
+        this.openItem(this.setlist[nextIdx]);
+    }
+    isRunnerActive() { return this.runnerIndex >= 0 && this.setlist.length > 1; }
 
     launchSetlist() {
         if (this.setlist.length === 0) {
