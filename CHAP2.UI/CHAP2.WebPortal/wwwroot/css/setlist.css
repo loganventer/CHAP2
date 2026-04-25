@@ -223,13 +223,14 @@
     margin-right: 6px;
 }
 .setlist-item-meta--verse {
-    /* The verse text snippet -- single line, ellipsised, muted. */
+    /* The verse text snippet wraps onto as many lines as the verse needs;
+       projection use likes seeing the whole verse at a glance. */
     display: block;
     font-style: italic;
     color: #666;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.4;
     max-width: 100%;
 }
 

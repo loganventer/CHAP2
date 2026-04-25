@@ -1116,23 +1116,38 @@ class ChorusDisplay {
         debug('Current chorus index:', this.currentChorusIndex);
 
         // When this page is loaded inside the chorus-overlay iframe and
-        // the parent has an active setlist runner with mixed kinds,
-        // defer to it -- the parent's advance() walks chorus + verse
-        // items uniformly and routes the right surface for each.
+        // the parent has an active setlist runner that contains *any*
+        // verse items, defer to it -- the parent's advance() walks
+        // chorus + verse items uniformly and routes the right surface
+        // for each. Tagged logs left in to make this easy to diagnose
+        // from a browser console if the bridge ever drops a beat again.
         try {
-            const parentMgr = window.parent && window.parent !== window ? window.parent.setlistManager : null;
-            if (parentMgr && typeof parentMgr.isRunnerActive === 'function' && parentMgr.isRunnerActive()) {
-                const hasVerse = parentMgr.setlist.some(i => i && i.kind === 'verse');
-                if (hasVerse) {
-                    debug('Mixed setlist runner detected; deferring nav to parent.setlistManager.advance');
-                    parentMgr.advance(direction);
-                    return;
-                }
+            const sameWindow = window.parent === window;
+            const parentMgr = !sameWindow ? window.parent.setlistManager : null;
+            const setlist = parentMgr && Array.isArray(parentMgr.setlist) ? parentMgr.setlist : null;
+            const hasVerse = setlist ? setlist.some(i => i && i.kind === 'verse') : false;
+            const runnerActive = parentMgr && typeof parentMgr.isRunnerActive === 'function' && parentMgr.isRunnerActive();
+            console.log('[setlist-bridge] navigateChorus check', {
+                direction,
+                sameWindow,
+                hasParentMgr: !!parentMgr,
+                runnerActive,
+                runnerIndex: parentMgr ? parentMgr.runnerIndex : 'n/a',
+                setlistLength: setlist ? setlist.length : 'n/a',
+                kinds: setlist ? setlist.map(i => i && i.kind) : 'n/a',
+            });
+            if (parentMgr && hasVerse) {
+                // We bridge any time the parent's setlist contains a verse,
+                // even if runnerIndex hasn't been seeded yet (e.g. user
+                // navigated internally before triggering an openItem). The
+                // advance() helper handles the unseeded case by treating it
+                // as "before the first item".
+                console.log('[setlist-bridge] deferring to parent.setlistManager.advance');
+                parentMgr.advance(direction);
+                return;
             }
         } catch (e) {
-            // Cross-frame access errors are non-fatal -- fall back to
-            // the chorus-only navigation below.
-            debug('Parent setlistManager check failed, falling back to local nav', e);
+            console.log('[setlist-bridge] parent check failed, local nav fallback', e);
         }
 
         if (!this.choruses || this.choruses.length <= 1) {
