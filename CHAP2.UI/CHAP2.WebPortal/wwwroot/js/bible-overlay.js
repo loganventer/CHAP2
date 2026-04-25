@@ -82,7 +82,7 @@
     // chapter / dropdowns.
     // Default scale matches --bible-font-scale in bible.css. Returned only
     // when the user has no saved preference; existing saved values win.
-    const DEFAULT_FONT_SCALE = 2.5;
+    const DEFAULT_FONT_SCALE = 5;
     function readFontScale() {
         try {
             const v = parseFloat(localStorage.getItem(FONT_SCALE_KEY) || '');

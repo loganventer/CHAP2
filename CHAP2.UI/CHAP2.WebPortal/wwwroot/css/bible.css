@@ -10,7 +10,7 @@
     /* XXL by default -- this app is projected at ~480p where smaller
        text is unreadable. Users can shrink with A− if they want denser
        text on a desktop screen. */
-    --bible-font-scale: 2.5;
+    --bible-font-scale: 5;
 
     /* Bible-specific surface tokens (dark, glassy) */
     --bible-surface:        rgba(28, 30, 44, 0.92);
