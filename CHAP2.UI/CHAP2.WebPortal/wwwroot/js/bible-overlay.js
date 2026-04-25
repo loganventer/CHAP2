@@ -17,10 +17,11 @@
     const DEFAULT_REFERENCE = { bookId: 'efesiers', chapter: 4, verse: 5 };
 
     const FONT_SCALE_KEY = 'chap2.bible.fontScale';
-    // 480p projection target -- defaults pushed high; allow further
-    // growth for users who want even larger projection text.
+    // 480p projection target -- defaults pushed high. Min is clamped so
+    // text stays legible; max is unbounded so users can crank it as
+    // large as their projector / screen needs.
     const FONT_MIN = 0.8;
-    const FONT_MAX = 3.5;
+    const FONT_MAX = Infinity;
     const FONT_STEP = 0.15;
     const SEARCH_DEBOUNCE_MS = 300;
     const SEARCH_MIN_CHARS = 2;
