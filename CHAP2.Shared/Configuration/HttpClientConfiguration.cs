@@ -61,7 +61,12 @@ public static class HttpClientConfiguration
                 ?? configuration[ConfigSections.ApiBaseUrl]
                 ?? SharedApiSettings.DefaultApiBaseUrl;
             client.BaseAddress = new Uri(apiBaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(8);
+            // Probe timeout has to be longer than a Render free-tier
+            // cold start (~30s typical, ~60s worst). If it's shorter
+            // than the wake-up, every probe times out, the API never
+            // sees a request long enough to respond, and the loop
+            // never recovers.
+            client.Timeout = TimeSpan.FromSeconds(45);
             client.DefaultRequestHeaders.Add("User-Agent", "CHAP2-WebPortal-Probe/1.0");
         })
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
