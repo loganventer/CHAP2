@@ -333,9 +333,9 @@
     position: relative;
 }
 
-/* 20px frosted-glass fades at the top and bottom of the sheet so verse
+/* 40px frosted-glass fades at the top and bottom of the sheet so verse
    text doesn't slam into the chrome edges. The mask gradient makes the
-   blur strongest at the very edge and fade to nothing 20px in.
+   blur strongest at the very edge and fade to nothing 40px in.
    z-index 1 places the fades above the body content (z auto) but below
    the header (z 3) so the header's chrome stays crisp. */
 .bible-overlay__sheet::before,
@@ -344,7 +344,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    height: 20px;
+    height: 40px;
     pointer-events: none;
     z-index: 1;
     backdrop-filter: blur(8px) saturate(115%);
@@ -359,6 +359,21 @@
     bottom: 0;
     mask-image: linear-gradient(to top, black, transparent);
     -webkit-mask-image: linear-gradient(to top, black, transparent);
+}
+
+/* Church-logo watermark behind the verse text. Painted at z-index 0
+   on the sheet so it sits below the body's transparent background and
+   the header's chrome (z 3). Force-white silhouette via brightness(0)
+   + invert(1) so the original colors don't fight the dark theme; very
+   low opacity keeps it readable but never competing for attention. */
+.bible-overlay__watermark {
+    position: absolute;
+    inset: 0;
+    background: url('/img/kerk-logo.png') center center / min(55%, 380px) no-repeat;
+    opacity: 0.04;
+    filter: brightness(0) invert(1);
+    pointer-events: none;
+    z-index: 0;
 }
 @media (prefers-reduced-motion: reduce) {
     .bible-overlay__sheet { animation: none; }
