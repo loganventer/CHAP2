@@ -327,6 +327,10 @@
     overflow: hidden;
     color: var(--bible-text);
     animation: fadeIn var(--transition-normal) ease-out;
+    /* Reference frame for the absolutely-positioned header in the
+       hidden state -- lets the chapter body occupy the full sheet
+       while the hover strip overlays the top. */
+    position: relative;
 }
 @media (prefers-reduced-motion: reduce) {
     .bible-overlay__sheet { animation: none; }
@@ -352,10 +356,14 @@
     transition: max-height 0.4s ease, opacity 0.45s ease;
 }
 .bible-overlay--header-hidden .bible-overlay__header {
-    /* Leaves a 40px hover-target strip -- big enough that the user
-       doesn't have to pixel-aim the very top of the sheet. The strip
-       is fully transparent so it reads as part of the chapter body
-       background. */
+    /* Lift the header out of flex flow so the chapter body fills the
+       entire sheet (verse text reaches the top edge). The 40px strip
+       stays as an invisible overlaid hover-target. */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
     max-height: 40px;
     opacity: 0;
     border-bottom-color: transparent;

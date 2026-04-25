@@ -495,10 +495,15 @@
         if (els.compactBtn) els.compactBtn.addEventListener('click', toggleCompact);
         if (els.resetBtn)   els.resetBtn.addEventListener('click', resetTextSettings);
 
-        // Reading-mode trigger: any scroll inside the chapter body
-        // collapses the header now (don't make the user wait out the
-        // initial show timer). Passive listener so we don't block scroll.
-        if (els.body) els.body.addEventListener('scroll', hideHeaderNow, { passive: true });
+        // Reading-mode trigger: any user-driven scroll inside the chapter
+        // body collapses the header now (don't make the user wait out the
+        // initial show timer). Wheel + touch only -- the generic 'scroll'
+        // event also fires on programmatic scrollIntoView() during open,
+        // which would race with the initial show timer.
+        if (els.body) {
+            els.body.addEventListener('wheel', hideHeaderNow, { passive: true });
+            els.body.addEventListener('touchmove', hideHeaderNow, { passive: true });
+        }
 
         els.bookSelect.addEventListener('change', function () {
             const book = booksById[els.bookSelect.value];
