@@ -72,9 +72,16 @@
     let searchSeq = 0;
 
     // ---------- font scale ----------
+    // Browsers with strict tracking prevention (Edge in default mode for
+    // some sites) throw on any localStorage access. Both read and write
+    // need try/catch -- without it, an unhandled throw inside open()
+    // skips the rest of the function and the overlay never loads its
+    // chapter / dropdowns.
     function readFontScale() {
-        const v = parseFloat(localStorage.getItem(FONT_SCALE_KEY) || '');
-        return Number.isFinite(v) ? Math.min(FONT_MAX, Math.max(FONT_MIN, v)) : 1;
+        try {
+            const v = parseFloat(localStorage.getItem(FONT_SCALE_KEY) || '');
+            return Number.isFinite(v) ? Math.min(FONT_MAX, Math.max(FONT_MIN, v)) : 1;
+        } catch (_) { return 1; }
     }
     function applyFontScale(scale) {
         const clamped = Math.min(FONT_MAX, Math.max(FONT_MIN, scale));
@@ -246,22 +253,27 @@
     }
     async function runSearch(q) {
         const seq = ++searchSeq;
-        // Try reference resolution first (cheap), then text search.
-        try {
-            const resolveResp = await fetch('/Home/BibleResolve?ref=' + encodeURIComponent(q), { credentials: 'same-origin' });
-            if (seq !== searchSeq) return;
-            if (resolveResp.ok) {
-                const ref = await resolveResp.json();
-                renderInlineResults([{
-                    bookId: ref.bookId,
-                    bookName: ref.bookName,
-                    chapter: ref.chapter,
-                    verse: ref.verse || 1,
-                    text: 'Spring na ' + ref.bookName + ' ' + ref.chapter + (ref.verse ? ':' + ref.verse : ''),
-                }]);
-                return;
-            }
-        } catch (_) { /* fall through to text search */ }
+        // Try reference resolution first only when the input has a digit
+        // (references look like "Joh 3:16" / "Psalms 23"). Skipping the
+        // resolve call for partial words ("liefd...") avoids per-keystroke
+        // 404 spam in the console.
+        if (/\d/.test(q)) {
+            try {
+                const resolveResp = await fetch('/Home/BibleResolve?ref=' + encodeURIComponent(q), { credentials: 'same-origin' });
+                if (seq !== searchSeq) return;
+                if (resolveResp.ok) {
+                    const ref = await resolveResp.json();
+                    renderInlineResults([{
+                        bookId: ref.bookId,
+                        bookName: ref.bookName,
+                        chapter: ref.chapter,
+                        verse: ref.verse || 1,
+                        text: 'Spring na ' + ref.bookName + ' ' + ref.chapter + (ref.verse ? ':' + ref.verse : ''),
+                    }]);
+                    return;
+                }
+            } catch (_) { /* fall through to text search */ }
+        }
 
         try {
             const resp = await fetch('/Home/BibleSearch?q=' + encodeURIComponent(q) + '&max=' + SEARCH_MAX_RESULTS, { credentials: 'same-origin' });

@@ -85,7 +85,10 @@
         const input = getInput();
         if (!input) return;
         const q = (input.value || '').trim();
-        if (q.length < MIN_CHARS) {
+        // Only attempt reference resolution if the typed text has a digit
+        // (a chapter/verse number) -- otherwise it's not a reference and
+        // calling resolve just spams 404s into the console.
+        if (q.length < MIN_CHARS || !/\d/.test(q)) {
             clearSuggestion();
             return;
         }

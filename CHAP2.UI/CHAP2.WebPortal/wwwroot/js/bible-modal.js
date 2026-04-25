@@ -123,22 +123,25 @@
     }
     async function runSearch(q) {
         const seq = ++searchSeq;
-        // Try reference resolve first.
-        try {
-            const rr = await fetch('/Home/BibleResolve?ref=' + encodeURIComponent(q), { credentials: 'same-origin' });
-            if (seq !== searchSeq) return;
-            if (rr.ok) {
-                const ref = await rr.json();
-                renderResults([{
-                    bookId: ref.bookId,
-                    bookName: ref.bookName,
-                    chapter: ref.chapter,
-                    verse: ref.verse || 1,
-                    text: 'Spring na ' + ref.bookName + ' ' + ref.chapter + (ref.verse ? ':' + ref.verse : ''),
-                }]);
-                return;
-            }
-        } catch (_) { /* fall through */ }
+        // Only try reference resolve if the input has a digit -- partial
+        // words don't parse as references and would noisily 404.
+        if (/\d/.test(q)) {
+            try {
+                const rr = await fetch('/Home/BibleResolve?ref=' + encodeURIComponent(q), { credentials: 'same-origin' });
+                if (seq !== searchSeq) return;
+                if (rr.ok) {
+                    const ref = await rr.json();
+                    renderResults([{
+                        bookId: ref.bookId,
+                        bookName: ref.bookName,
+                        chapter: ref.chapter,
+                        verse: ref.verse || 1,
+                        text: 'Spring na ' + ref.bookName + ' ' + ref.chapter + (ref.verse ? ':' + ref.verse : ''),
+                    }]);
+                    return;
+                }
+            } catch (_) { /* fall through */ }
+        }
 
         try {
             const r = await fetch('/Home/BibleSearch?q=' + encodeURIComponent(q) + '&max=' + SEARCH_MAX_RESULTS, { credentials: 'same-origin' });
