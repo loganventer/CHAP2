@@ -17,6 +17,7 @@
     const DEFAULT_REFERENCE = { bookId: 'efesiers', chapter: 4, verse: 5 };
 
     const FONT_SCALE_KEY = 'chap2.bible.fontScale';
+    const COMPACT_KEY = 'chap2.bible.compact';
     // 480p projection target -- defaults pushed high. Min is clamped so
     // text stays legible; max is unbounded so users can crank it as
     // large as their projector / screen needs.
@@ -59,6 +60,8 @@
         els.nextBtn     = document.getElementById('bibleOverlayNext');
         els.fontMinus   = document.getElementById('bibleOverlayFontMinus');
         els.fontPlus    = document.getElementById('bibleOverlayFontPlus');
+        els.compactBtn  = document.getElementById('bibleOverlayCompact');
+        els.resetBtn    = document.getElementById('bibleOverlayReset');
         els.searchInput = document.getElementById('bibleOverlaySearch');
         els.bookSelect  = document.getElementById('bibleOverlayBook');
         els.chSelect    = document.getElementById('bibleOverlayChapter');
@@ -100,6 +103,24 @@
     function bumpFontScale(delta) {
         const cur = parseFloat(getComputedStyle(els.overlay).getPropertyValue('--bible-font-scale')) || 1;
         applyFontScale(cur + delta);
+    }
+
+    // ---------- compact mode ----------
+    function readCompact() {
+        try { return localStorage.getItem(COMPACT_KEY) === '1'; }
+        catch (_) { return false; }
+    }
+    function applyCompact(on) {
+        els.overlay.classList.toggle('bible-overlay--compact', !!on);
+        if (els.compactBtn) els.compactBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        try { localStorage.setItem(COMPACT_KEY, on ? '1' : '0'); } catch (_) { /* ignore */ }
+    }
+    function toggleCompact() { applyCompact(!els.overlay.classList.contains('bible-overlay--compact')); }
+
+    // ---------- reset all text settings ----------
+    function resetTextSettings() {
+        applyFontScale(DEFAULT_FONT_SCALE);
+        applyCompact(false);
     }
 
     // ---------- rendering ----------
@@ -279,7 +300,23 @@
         };
         syncHeaderToCurrent();
         renderChapter(dto, ref.verse);
-        announce(resolvedBook.name + ' hoofstuk ' + dto.chapter + ' oopgemaak');
+
+        // If the user asked for a specific verse and the loaded chapter
+        // doesn't have it, surface that clearly above the chapter text
+        // (the chapter still renders so they can see the available range).
+        if (ref.verse && !dto.verses.some(function (v) { return v.verse === ref.verse; })) {
+            const lastVerse = dto.verses.length ? dto.verses[dto.verses.length - 1].verse : 0;
+            const notice = document.createElement('div');
+            notice.className = 'bible-overlay__notice bible-overlay__notice--warning';
+            notice.setAttribute('role', 'alert');
+            notice.textContent = 'Vers ' + ref.verse + ' bestaan nie in '
+                + resolvedBook.name + ' ' + dto.chapter
+                + ' nie. Laaste vers: ' + lastVerse + '.';
+            els.chapterEl.insertBefore(notice, els.chapterEl.firstChild);
+            announce(notice.textContent);
+        } else {
+            announce(resolvedBook.name + ' hoofstuk ' + dto.chapter + ' oopgemaak');
+        }
     }
 
     // ---------- search inside the overlay ----------
@@ -398,6 +435,7 @@
         els.overlay.hidden = false;
         document.body.classList.add('bible-overlay-open');
         applyFontScale(readFontScale());
+        applyCompact(readCompact());
 
         await navigate(ref);
         // Move focus to the close button so Esc/Tab cycle from a known anchor.
@@ -431,6 +469,8 @@
         els.nextBtn.addEventListener('click', gotoNext);
         els.fontMinus.addEventListener('click', function () { bumpFontScale(-FONT_STEP); });
         els.fontPlus.addEventListener('click', function () { bumpFontScale(FONT_STEP); });
+        if (els.compactBtn) els.compactBtn.addEventListener('click', toggleCompact);
+        if (els.resetBtn)   els.resetBtn.addEventListener('click', resetTextSettings);
 
         els.bookSelect.addEventListener('change', function () {
             const book = booksById[els.bookSelect.value];

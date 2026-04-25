@@ -497,6 +497,28 @@
     font-weight: 700;
 }
 
+/* -------- Compact mode --------
+   Toggled via the compress-alt button in the overlay header. Inter-line
+   and inter-verse whitespace shrinks to ~25% of the default so more
+   verses fit on screen for sermon scanning, while font-size stays at
+   whatever the user chose with A− / A+. */
+.bible-overlay--compact .bible-overlay__chapter {
+    /* Default 1.7 line-height has ~0.7 of "extra" leading; collapsing
+       that by 75% leaves 0.175 -> 1.175. */
+    line-height: 1.175;
+}
+.bible-overlay--compact .bible-overlay__verse {
+    /* Default verse-block margin 0.45em -> 25% = ~0.11em. */
+    margin-bottom: 0.11em;
+}
+/* Visual "on" state for any aria-pressed toggle button in the overlay
+   (compact mode today; any future toggles inherit the same style). */
+.bible-overlay__icon-btn[aria-pressed="true"] {
+    color: var(--bible-text);
+    background: var(--bible-accent-soft);
+    border-color: var(--bible-accent);
+}
+
 .bible-overlay__skeleton {
     display: grid;
     gap: var(--spacing-sm);
@@ -535,6 +557,14 @@
 .bible-overlay__notice--error {
     border-color: var(--bible-error);
     color: var(--bible-error);
+}
+.bible-overlay__notice--warning {
+    /* Stronger than the neutral notice but softer than --error so the
+       user reads it as "your reference loaded a chapter, but the verse
+       you typed isn't here", not "everything broke". */
+    border-color: var(--bible-accent);
+    color: var(--bible-text);
+    background: var(--bible-accent-soft);
 }
 
 .bible-overlay__live {
