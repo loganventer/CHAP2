@@ -61,6 +61,15 @@
     opacity: 1;
 }
 
+/* The shared .settings-button:hover i rule spins the gear icon 90deg
+   (btn-settings-spin). We share that class for theming but the Bible
+   button's icon must not rotate -- explicitly cancel the inherited
+   animation so the crossfade is the only motion. */
+.bible-header-btn:hover .bible-header-btn__icon,
+.bible-header-btn:focus-visible .bible-header-btn__icon {
+    animation: none;
+}
+
 /* -------- Inline reference suggestion (above chorus results) -------- */
 .bible-inline-suggestion {
     display: flex;

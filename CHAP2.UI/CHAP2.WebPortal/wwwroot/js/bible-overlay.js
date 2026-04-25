@@ -185,18 +185,24 @@
             return;
         }
         for (let i = 1; i <= count; i++) {
-            opts.push('<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + i + '</option>');
+            opts.push('<option value="' + i + '">' + i + '</option>');
         }
         els.chSelect.innerHTML = opts.join('');
+        // Force the displayed selection -- innerHTML with `selected` is
+        // unreliable across browsers when the element was previously empty.
+        if (selected) els.chSelect.value = String(selected);
         blog('populateChapterSelect set', opts.length, 'options; chSelect.options.length now',
-             els.chSelect.options.length);
+             els.chSelect.options.length, 'value=', els.chSelect.value,
+             'selectedIndex=', els.chSelect.selectedIndex,
+             'innerHTML.length=', els.chSelect.innerHTML.length);
     }
     function populateVerseSelect(verseCount, selected) {
         const opts = [];
         for (let i = 1; i <= verseCount; i++) {
-            opts.push('<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + i + '</option>');
+            opts.push('<option value="' + i + '">' + i + '</option>');
         }
         els.vSelect.innerHTML = opts.join('');
+        if (selected) els.vSelect.value = String(selected);
     }
 
     function syncHeaderToCurrent() {
