@@ -65,11 +65,25 @@ public sealed class ChorusGitSync : IChorusGitSync, IDisposable
         });
     }
 
+    private const string TargetBranch = "main";
+
     private async Task SyncAsync(Guid chorusId, string chorusName, bool deleted)
     {
         await _gate.WaitAsync();
         try
         {
+            // Refuse to sync from any branch other than main so chorus
+            // edits never accidentally land on a feature branch.
+            var currentBranch = await GetCurrentBranchAsync();
+            if (!string.Equals(currentBranch, TargetBranch, StringComparison.Ordinal))
+            {
+                _logger.LogWarning(
+                    "ChorusGitSync skipped: working tree is on branch '{Current}', not '{Target}'. " +
+                    "Chorus {ChorusId} change saved to disk but not committed.",
+                    currentBranch ?? "(detached)", TargetBranch, chorusId);
+                return;
+            }
+
             var relPath = Path.GetRelativePath(_repoRoot!, Path.Combine(_dataFolder, $"{chorusId}.json"))
                 .Replace(Path.DirectorySeparatorChar, '/');
             var action = deleted ? "Delete" : "Update";
@@ -96,20 +110,30 @@ public sealed class ChorusGitSync : IChorusGitSync, IDisposable
                 return;
             }
 
-            var push = await _git.RunAsync(_repoRoot!, "push");
+            // Explicit refspec so we push HEAD to origin/main no matter
+            // what the local push.default / branch.<name>.remote config
+            // happens to be.
+            var push = await _git.RunAsync(_repoRoot!, "push", "origin", $"HEAD:{TargetBranch}");
             if (push.ExitCode != 0)
             {
                 _logger.LogWarning("git push failed for {ChorusId}: {StdErr}", chorusId, push.StdErr);
                 return;
             }
 
-            _logger.LogInformation("Git-synced chorus {ChorusId} ({Action}: {ChorusName})",
-                chorusId, action, safeName);
+            _logger.LogInformation("Git-synced chorus {ChorusId} ({Action}: {ChorusName}) to origin/{Branch}",
+                chorusId, action, safeName, TargetBranch);
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    private async Task<string?> GetCurrentBranchAsync()
+    {
+        var result = await _git.RunAsync(_repoRoot!, "symbolic-ref", "--short", "HEAD");
+        if (result.ExitCode != 0) return null;
+        return result.StdOut.Trim();
     }
 
     public void Dispose() => _gate.Dispose();
