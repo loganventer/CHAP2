@@ -147,10 +147,16 @@ async function performTraditionalSearch(searchTerm) {
 
     currentSearchTerm = searchTerm;
     isSearching = true;
-    
+
     // Show loading state
     showLoading();
-    
+    // Tell the status indicator to surface a "starting up" overlay if
+    // the request takes longer than the delay (Render free-tier cold
+    // start). Decoupled via document events -- the indicator listens.
+    document.dispatchEvent(new CustomEvent('chap2:api-wait-start', {
+        detail: { delayMs: 1500 }
+    }));
+
     try {
         // Determine search type based on term length and content
         let searchUrl = `/Home/Search?q=${encodeURIComponent(searchTerm)}`;
@@ -199,9 +205,13 @@ async function performTraditionalSearch(searchTerm) {
     } catch (error) {
         console.error('Traditional search error:', error);
         showError('Search failed. ' + (error.message || error));
+        document.dispatchEvent(new CustomEvent('chap2:api-fail', {
+            detail: { message: "Couldn't reach the server. It may still be waking up — please try again in a moment." }
+        }));
     } finally {
         isSearching = false;
         hideLoading();
+        document.dispatchEvent(new Event('chap2:api-wait-end'));
     }
 }
 
