@@ -107,12 +107,15 @@ class ApiStatusIndicator {
         if (this._timer) { clearTimeout(this._timer); this._timer = null; }
         this._cancelProbing();
         this._show(message);
-        // Probe immediately, then on a slow interval. The flag prevents
-        // overlapping probe requests when one takes longer than the
-        // interval (e.g. an 8s timeout on a sleeping API).
+        // Probe immediately, then on a tight interval so the moment the
+        // API answers we see it. The _probing flag suppresses
+        // overlapping requests while a single probe is still in flight
+        // (probe HttpClient timeout is 45s for cold starts), so a 2s
+        // tick is fine -- it just controls the latency between the API
+        // becoming reachable and our next attempt to detect that.
         this._probing = false;
         this._probeOnce();
-        this._probeTimer = setInterval(() => this._probeOnce(), 4000);
+        this._probeTimer = setInterval(() => this._probeOnce(), 2000);
     }
 
     async _probeOnce() {
