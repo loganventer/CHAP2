@@ -102,23 +102,37 @@ class ApiStatusIndicator {
      * a user action triggers the probe.
      */
     _beginProbing(message) {
+        // Kill any pending wait-start timer so its delayed message
+        // doesn't overwrite the probing message a second after we set it.
+        if (this._timer) { clearTimeout(this._timer); this._timer = null; }
         this._cancelProbing();
         this._show(message);
-        // Probe immediately, then on a slow interval.
+        // Probe immediately, then on a slow interval. The flag prevents
+        // overlapping probe requests when one takes longer than the
+        // interval (e.g. an 8s timeout on a sleeping API).
+        this._probing = false;
         this._probeOnce();
         this._probeTimer = setInterval(() => this._probeOnce(), 4000);
     }
 
     async _probeOnce() {
+        if (this._probing) return;
+        this._probing = true;
         try {
             const resp = await fetch(this._probeUrl, {
                 method: 'GET',
                 cache: 'no-store',
+                redirect: 'manual',                  // catch auth redirects
                 headers: { 'Accept': 'application/json' }
             });
+            // A 302 / login redirect / any non-2xx counts as "not up yet".
             if (!resp.ok) return;
-            const data = await resp.json().catch(() => ({}));
-            if (data && data.connected) {
+            // Defensive: if the response isn't actually JSON (e.g. an
+            // HTML login page handed back with 200), treat as failure.
+            const ct = resp.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) return;
+            const data = await resp.json().catch(() => null);
+            if (data && data.connected === true) {
                 // API is reachable -- stop probing but KEEP the overlay
                 // up. The caller will re-run its action; the overlay
                 // only closes when that action actually succeeds
@@ -129,6 +143,8 @@ class ApiStatusIndicator {
             }
         } catch {
             // Probe failed -- stay in probing mode, will try again on tick.
+        } finally {
+            this._probing = false;
         }
     }
 
