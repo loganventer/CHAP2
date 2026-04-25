@@ -332,6 +332,34 @@
        while the hover strip overlays the top. */
     position: relative;
 }
+
+/* 20px frosted-glass fades at the top and bottom of the sheet so verse
+   text doesn't slam into the chrome edges. The mask gradient makes the
+   blur strongest at the very edge and fade to nothing 20px in.
+   z-index 1 places the fades above the body content (z auto) but below
+   the header (z 3) so the header's chrome stays crisp. */
+.bible-overlay__sheet::before,
+.bible-overlay__sheet::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 20px;
+    pointer-events: none;
+    z-index: 1;
+    backdrop-filter: blur(8px) saturate(115%);
+    -webkit-backdrop-filter: blur(8px) saturate(115%);
+}
+.bible-overlay__sheet::before {
+    top: 0;
+    mask-image: linear-gradient(to bottom, black, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+}
+.bible-overlay__sheet::after {
+    bottom: 0;
+    mask-image: linear-gradient(to top, black, transparent);
+    -webkit-mask-image: linear-gradient(to top, black, transparent);
+}
 @media (prefers-reduced-motion: reduce) {
     .bible-overlay__sheet { animation: none; }
 }
@@ -347,7 +375,7 @@
     color: var(--bible-text);
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 3;   /* above the ::before / ::after frosted-edge fades */
     /* Auto-hide: opacity fade + height collapse. Opacity transition is
        the dominant motion ("fade in / fade out"); the height change
        reclaims space behind it so the chapter body fills the sheet. */
@@ -364,7 +392,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 2;
+    z-index: 3;
     max-height: 80px;
     opacity: 0;
     border-bottom-color: transparent;
