@@ -25,6 +25,8 @@
 
     let timer = 0;
     let seq = 0;
+    let lastQuery = '';   // remembered so we can re-run after the API
+                          // wakes up (chap2:api-recovered)
 
     function getInput() { return document.getElementById('searchInput'); }
     function getResultsContainer() {
@@ -147,10 +149,24 @@
         try {
             const r = await fetch('/Home/BibleSearch?q=' + encodeURIComponent(query) + '&max=' + MAX_RESULTS, { credentials: 'same-origin' });
             if (my !== seq) return;
+            if (r.status === 503) {
+                // API asleep / waking. Co-opt the chorus side's probe loop so
+                // the existing "API starting up" overlay surfaces and we get
+                // notified via chap2:api-recovered when it's back.
+                document.dispatchEvent(new CustomEvent('chap2:api-probe', {
+                    detail: { message: 'Server still waking up — checking connection...' },
+                }));
+                return;
+            }
             if (!r.ok) { hideVerseResults(); return; }
             const data = await r.json();
             renderVerseResults(query, data.results || []);
-        } catch (_) { hideVerseResults(); }
+        } catch (_) {
+            // Network error -- same probe path so the overlay can recover us.
+            document.dispatchEvent(new CustomEvent('chap2:api-probe', {
+                detail: { message: 'Server still waking up — checking connection...' },
+            }));
+        }
     }
 
     function openOverlay(bookId, chapter, verse) {
@@ -175,6 +191,7 @@
             return;
         }
         seq++;
+        lastQuery = q;
         timer = setTimeout(function () {
             // Reference resolve only when the input has a digit (cheap
             // heuristic to skip per-keystroke 404s).
@@ -184,6 +201,17 @@
             runVerseSearch(q);
         }, DEBOUNCE_MS);
     }
+
+    // When the chorus side's probe detects the API is back up, re-run
+    // our last verse search so the user sees fresh results without
+    // re-typing.
+    document.addEventListener('chap2:api-recovered', function () {
+        if (lastQuery && lastQuery.length >= MIN_CHARS) {
+            seq++;
+            if (/\d/.test(lastQuery)) tryResolve(lastQuery);
+            runVerseSearch(lastQuery);
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
         const input = getInput();

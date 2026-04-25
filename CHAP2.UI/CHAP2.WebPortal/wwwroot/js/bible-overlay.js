@@ -238,7 +238,11 @@
     }
 
     // ---------- navigation ----------
+    let lastNavRef = null;   // remember the last open ref so we can retry
+                             // after the API wakes up (chap2:api-recovered)
+
     async function navigate(ref) {
+        lastNavRef = ref;
         const book = booksById[ref.bookId];
         if (!book) {
             renderError('Boek nie gevind nie.');
@@ -248,10 +252,23 @@
         let dto;
         try {
             const resp = await fetch('/Home/BibleChapter?bookId=' + encodeURIComponent(book.id) + '&chapter=' + ref.chapter, { credentials: 'same-origin' });
+            if (resp.status === 503) {
+                // API asleep / waking. Co-opt the existing probe loop so
+                // the "API starting up" overlay surfaces and chap2:api-recovered
+                // brings us back here.
+                renderNotice('Server still waking up — checking connection...');
+                document.dispatchEvent(new CustomEvent('chap2:api-probe', {
+                    detail: { message: 'Server still waking up — checking connection...' },
+                }));
+                return;
+            }
             if (!resp.ok) throw new Error('chapter-fetch-failed');
             dto = await resp.json();
         } catch (err) {
             renderError('Kon nie hoofstuk laai nie.');
+            document.dispatchEvent(new CustomEvent('chap2:api-probe', {
+                detail: { message: 'Server still waking up — checking connection...' },
+            }));
             return;
         }
 
@@ -490,6 +507,13 @@
         });
 
         document.addEventListener('keydown', onKeyDown);
+
+        // After a Render cold-start the chorus side's probe loop fires
+        // chap2:api-recovered; if the overlay is open and was showing an
+        // error / wake-up notice, retry the last chapter load.
+        document.addEventListener('chap2:api-recovered', function () {
+            if (!els.overlay.hidden && lastNavRef) navigate(lastNavRef);
+        });
     });
 
     window.bibleOverlay = { open: open, close: close };
