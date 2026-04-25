@@ -1,0 +1,31 @@
+{
+  "bookId": "psalms",
+  "bookName": "Psalms",
+  "chapter": 150,
+  "verses": [
+    {
+      "verse": 1,
+      "text": "Halleluja! Loof God in sy heiligdom, loof Hom in sy sterk uitspansel! "
+    },
+    {
+      "verse": 2,
+      "text": "Loof Hom oor sy magtige dade, loof Hom na die volheid van sy grootheid! "
+    },
+    {
+      "verse": 3,
+      "text": "Loof Hom met basuingeklank, loof Hom met harp en siter; "
+    },
+    {
+      "verse": 4,
+      "text": "loof Hom met tamboeryn en koordans, loof Hom met snarespel en fluit; "
+    },
+    {
+      "verse": 5,
+      "text": "loof Hom met helder simbale, loof Hom met klinkende simbale! "
+    },
+    {
+      "verse": 6,
+      "text": "Laat alles wat asem het, die HERE loof! Halleluja! "
+    }
+  ]
+}
