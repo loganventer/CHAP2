@@ -1,0 +1,596 @@
+[
+  {
+    "id": "genesis",
+    "name": "Genesis",
+    "englishName": "Genesis",
+    "ordinal": 1,
+    "testament": "Old",
+    "chapterCount": 50,
+    "directory": "01-genesis"
+  },
+  {
+    "id": "eksodus",
+    "name": "Eksodus",
+    "englishName": "Exodus",
+    "ordinal": 2,
+    "testament": "Old",
+    "chapterCount": 40,
+    "directory": "02-eksodus"
+  },
+  {
+    "id": "levitikus",
+    "name": "Levitikus",
+    "englishName": "Leviticus",
+    "ordinal": 3,
+    "testament": "Old",
+    "chapterCount": 27,
+    "directory": "03-levitikus"
+  },
+  {
+    "id": "numeri",
+    "name": "Numeri",
+    "englishName": "Numbers",
+    "ordinal": 4,
+    "testament": "Old",
+    "chapterCount": 36,
+    "directory": "04-numeri"
+  },
+  {
+    "id": "deuteronomium",
+    "name": "Deuteronomium",
+    "englishName": "Deuteronomy",
+    "ordinal": 5,
+    "testament": "Old",
+    "chapterCount": 34,
+    "directory": "05-deuteronomium"
+  },
+  {
+    "id": "josua",
+    "name": "Josua",
+    "englishName": "Joshua",
+    "ordinal": 6,
+    "testament": "Old",
+    "chapterCount": 24,
+    "directory": "06-josua"
+  },
+  {
+    "id": "rigters",
+    "name": "Rigters",
+    "englishName": "Judges",
+    "ordinal": 7,
+    "testament": "Old",
+    "chapterCount": 21,
+    "directory": "07-rigters"
+  },
+  {
+    "id": "rut",
+    "name": "Rut",
+    "englishName": "Ruth",
+    "ordinal": 8,
+    "testament": "Old",
+    "chapterCount": 4,
+    "directory": "08-rut"
+  },
+  {
+    "id": "1-samuel",
+    "name": "1 Samuel",
+    "englishName": "1 Samuel",
+    "ordinal": 9,
+    "testament": "Old",
+    "chapterCount": 31,
+    "directory": "09-1-samuel"
+  },
+  {
+    "id": "2-samuel",
+    "name": "2 Samuel",
+    "englishName": "2 Samuel",
+    "ordinal": 10,
+    "testament": "Old",
+    "chapterCount": 24,
+    "directory": "10-2-samuel"
+  },
+  {
+    "id": "1-konings",
+    "name": "1 Konings",
+    "englishName": "1 Kings",
+    "ordinal": 11,
+    "testament": "Old",
+    "chapterCount": 22,
+    "directory": "11-1-konings"
+  },
+  {
+    "id": "2-konings",
+    "name": "2 Konings",
+    "englishName": "2 Kings",
+    "ordinal": 12,
+    "testament": "Old",
+    "chapterCount": 25,
+    "directory": "12-2-konings"
+  },
+  {
+    "id": "1-kronieke",
+    "name": "1 Kronieke",
+    "englishName": "1 Chronicles",
+    "ordinal": 13,
+    "testament": "Old",
+    "chapterCount": 29,
+    "directory": "13-1-kronieke"
+  },
+  {
+    "id": "2-kronieke",
+    "name": "2 Kronieke",
+    "englishName": "2 Chronicles",
+    "ordinal": 14,
+    "testament": "Old",
+    "chapterCount": 36,
+    "directory": "14-2-kronieke"
+  },
+  {
+    "id": "esra",
+    "name": "Esra",
+    "englishName": "Ezra",
+    "ordinal": 15,
+    "testament": "Old",
+    "chapterCount": 10,
+    "directory": "15-esra"
+  },
+  {
+    "id": "nehemia",
+    "name": "Nehemia",
+    "englishName": "Nehemiah",
+    "ordinal": 16,
+    "testament": "Old",
+    "chapterCount": 13,
+    "directory": "16-nehemia"
+  },
+  {
+    "id": "ester",
+    "name": "Ester",
+    "englishName": "Esther",
+    "ordinal": 17,
+    "testament": "Old",
+    "chapterCount": 10,
+    "directory": "17-ester"
+  },
+  {
+    "id": "job",
+    "name": "Job",
+    "englishName": "Job",
+    "ordinal": 18,
+    "testament": "Old",
+    "chapterCount": 42,
+    "directory": "18-job"
+  },
+  {
+    "id": "psalms",
+    "name": "Psalms",
+    "englishName": "Psalms",
+    "ordinal": 19,
+    "testament": "Old",
+    "chapterCount": 150,
+    "directory": "19-psalms"
+  },
+  {
+    "id": "spreuke",
+    "name": "Spreuke",
+    "englishName": "Proverbs",
+    "ordinal": 20,
+    "testament": "Old",
+    "chapterCount": 31,
+    "directory": "20-spreuke"
+  },
+  {
+    "id": "prediker",
+    "name": "Prediker",
+    "englishName": "Ecclesiastes",
+    "ordinal": 21,
+    "testament": "Old",
+    "chapterCount": 12,
+    "directory": "21-prediker"
+  },
+  {
+    "id": "hooglied",
+    "name": "Hooglied",
+    "englishName": "Song of Solomon",
+    "ordinal": 22,
+    "testament": "Old",
+    "chapterCount": 8,
+    "directory": "22-hooglied"
+  },
+  {
+    "id": "jesaja",
+    "name": "Jesaja",
+    "englishName": "Isaiah",
+    "ordinal": 23,
+    "testament": "Old",
+    "chapterCount": 66,
+    "directory": "23-jesaja"
+  },
+  {
+    "id": "jeremia",
+    "name": "Jeremia",
+    "englishName": "Jeremiah",
+    "ordinal": 24,
+    "testament": "Old",
+    "chapterCount": 52,
+    "directory": "24-jeremia"
+  },
+  {
+    "id": "klaagliedere",
+    "name": "Klaagliedere",
+    "englishName": "Lamentations",
+    "ordinal": 25,
+    "testament": "Old",
+    "chapterCount": 5,
+    "directory": "25-klaagliedere"
+  },
+  {
+    "id": "esegel",
+    "name": "Esegël",
+    "englishName": "Ezekiel",
+    "ordinal": 26,
+    "testament": "Old",
+    "chapterCount": 48,
+    "directory": "26-esegel"
+  },
+  {
+    "id": "daniel",
+    "name": "Daniël",
+    "englishName": "Daniel",
+    "ordinal": 27,
+    "testament": "Old",
+    "chapterCount": 12,
+    "directory": "27-daniel"
+  },
+  {
+    "id": "hosea",
+    "name": "Hosea",
+    "englishName": "Hosea",
+    "ordinal": 28,
+    "testament": "Old",
+    "chapterCount": 14,
+    "directory": "28-hosea"
+  },
+  {
+    "id": "joel",
+    "name": "Joël",
+    "englishName": "Joel",
+    "ordinal": 29,
+    "testament": "Old",
+    "chapterCount": 3,
+    "directory": "29-joel"
+  },
+  {
+    "id": "amos",
+    "name": "Amos",
+    "englishName": "Amos",
+    "ordinal": 30,
+    "testament": "Old",
+    "chapterCount": 9,
+    "directory": "30-amos"
+  },
+  {
+    "id": "obadja",
+    "name": "Obadja",
+    "englishName": "Obadiah",
+    "ordinal": 31,
+    "testament": "Old",
+    "chapterCount": 1,
+    "directory": "31-obadja"
+  },
+  {
+    "id": "jona",
+    "name": "Jona",
+    "englishName": "Jonah",
+    "ordinal": 32,
+    "testament": "Old",
+    "chapterCount": 4,
+    "directory": "32-jona"
+  },
+  {
+    "id": "miga",
+    "name": "Miga",
+    "englishName": "Micah",
+    "ordinal": 33,
+    "testament": "Old",
+    "chapterCount": 7,
+    "directory": "33-miga"
+  },
+  {
+    "id": "nahum",
+    "name": "Nahum",
+    "englishName": "Nahum",
+    "ordinal": 34,
+    "testament": "Old",
+    "chapterCount": 3,
+    "directory": "34-nahum"
+  },
+  {
+    "id": "habakuk",
+    "name": "Habakuk",
+    "englishName": "Habakkuk",
+    "ordinal": 35,
+    "testament": "Old",
+    "chapterCount": 3,
+    "directory": "35-habakuk"
+  },
+  {
+    "id": "sefanja",
+    "name": "Sefanja",
+    "englishName": "Zephaniah",
+    "ordinal": 36,
+    "testament": "Old",
+    "chapterCount": 3,
+    "directory": "36-sefanja"
+  },
+  {
+    "id": "haggai",
+    "name": "Haggai",
+    "englishName": "Haggai",
+    "ordinal": 37,
+    "testament": "Old",
+    "chapterCount": 2,
+    "directory": "37-haggai"
+  },
+  {
+    "id": "sagaria",
+    "name": "Sagaria",
+    "englishName": "Zechariah",
+    "ordinal": 38,
+    "testament": "Old",
+    "chapterCount": 14,
+    "directory": "38-sagaria"
+  },
+  {
+    "id": "maleagi",
+    "name": "Maleagi",
+    "englishName": "Malachi",
+    "ordinal": 39,
+    "testament": "Old",
+    "chapterCount": 4,
+    "directory": "39-maleagi"
+  },
+  {
+    "id": "matteus",
+    "name": "Matteus",
+    "englishName": "Matthew",
+    "ordinal": 40,
+    "testament": "New",
+    "chapterCount": 28,
+    "directory": "40-matteus"
+  },
+  {
+    "id": "markus",
+    "name": "Markus",
+    "englishName": "Mark",
+    "ordinal": 41,
+    "testament": "New",
+    "chapterCount": 16,
+    "directory": "41-markus"
+  },
+  {
+    "id": "lukas",
+    "name": "Lukas",
+    "englishName": "Luke",
+    "ordinal": 42,
+    "testament": "New",
+    "chapterCount": 24,
+    "directory": "42-lukas"
+  },
+  {
+    "id": "johannes",
+    "name": "Johannes",
+    "englishName": "John",
+    "ordinal": 43,
+    "testament": "New",
+    "chapterCount": 21,
+    "directory": "43-johannes"
+  },
+  {
+    "id": "handelinge",
+    "name": "Handelinge",
+    "englishName": "Acts",
+    "ordinal": 44,
+    "testament": "New",
+    "chapterCount": 28,
+    "directory": "44-handelinge"
+  },
+  {
+    "id": "romeine",
+    "name": "Romeine",
+    "englishName": "Romans",
+    "ordinal": 45,
+    "testament": "New",
+    "chapterCount": 16,
+    "directory": "45-romeine"
+  },
+  {
+    "id": "1-korintiers",
+    "name": "1 Korintiërs",
+    "englishName": "1 Corinthians",
+    "ordinal": 46,
+    "testament": "New",
+    "chapterCount": 16,
+    "directory": "46-1-korintiers"
+  },
+  {
+    "id": "2-korintiers",
+    "name": "2 Korintiërs",
+    "englishName": "2 Corinthians",
+    "ordinal": 47,
+    "testament": "New",
+    "chapterCount": 13,
+    "directory": "47-2-korintiers"
+  },
+  {
+    "id": "galasiers",
+    "name": "Galasiërs",
+    "englishName": "Galatians",
+    "ordinal": 48,
+    "testament": "New",
+    "chapterCount": 6,
+    "directory": "48-galasiers"
+  },
+  {
+    "id": "efesiers",
+    "name": "Efesiërs",
+    "englishName": "Ephesians",
+    "ordinal": 49,
+    "testament": "New",
+    "chapterCount": 6,
+    "directory": "49-efesiers"
+  },
+  {
+    "id": "filippense",
+    "name": "Filippense",
+    "englishName": "Philippians",
+    "ordinal": 50,
+    "testament": "New",
+    "chapterCount": 4,
+    "directory": "50-filippense"
+  },
+  {
+    "id": "kolossense",
+    "name": "Kolossense",
+    "englishName": "Colossians",
+    "ordinal": 51,
+    "testament": "New",
+    "chapterCount": 4,
+    "directory": "51-kolossense"
+  },
+  {
+    "id": "1-tessalonisense",
+    "name": "1 Tessalonisense",
+    "englishName": "1 Thessalonians",
+    "ordinal": 52,
+    "testament": "New",
+    "chapterCount": 5,
+    "directory": "52-1-tessalonisense"
+  },
+  {
+    "id": "2-tessalonisense",
+    "name": "2 Tessalonisense",
+    "englishName": "2 Thessalonians",
+    "ordinal": 53,
+    "testament": "New",
+    "chapterCount": 3,
+    "directory": "53-2-tessalonisense"
+  },
+  {
+    "id": "1-timoteus",
+    "name": "1 Timoteus",
+    "englishName": "1 Timothy",
+    "ordinal": 54,
+    "testament": "New",
+    "chapterCount": 6,
+    "directory": "54-1-timoteus"
+  },
+  {
+    "id": "2-timoteus",
+    "name": "2 Timoteus",
+    "englishName": "2 Timothy",
+    "ordinal": 55,
+    "testament": "New",
+    "chapterCount": 4,
+    "directory": "55-2-timoteus"
+  },
+  {
+    "id": "titus",
+    "name": "Titus",
+    "englishName": "Titus",
+    "ordinal": 56,
+    "testament": "New",
+    "chapterCount": 3,
+    "directory": "56-titus"
+  },
+  {
+    "id": "filemon",
+    "name": "Filemon",
+    "englishName": "Philemon",
+    "ordinal": 57,
+    "testament": "New",
+    "chapterCount": 1,
+    "directory": "57-filemon"
+  },
+  {
+    "id": "hebreers",
+    "name": "Hebreërs",
+    "englishName": "Hebrews",
+    "ordinal": 58,
+    "testament": "New",
+    "chapterCount": 13,
+    "directory": "58-hebreers"
+  },
+  {
+    "id": "jakobus",
+    "name": "Jakobus",
+    "englishName": "James",
+    "ordinal": 59,
+    "testament": "New",
+    "chapterCount": 5,
+    "directory": "59-jakobus"
+  },
+  {
+    "id": "1-petrus",
+    "name": "1 Petrus",
+    "englishName": "1 Peter",
+    "ordinal": 60,
+    "testament": "New",
+    "chapterCount": 5,
+    "directory": "60-1-petrus"
+  },
+  {
+    "id": "2-petrus",
+    "name": "2 Petrus",
+    "englishName": "2 Peter",
+    "ordinal": 61,
+    "testament": "New",
+    "chapterCount": 3,
+    "directory": "61-2-petrus"
+  },
+  {
+    "id": "1-johannes",
+    "name": "1 Johannes",
+    "englishName": "1 John",
+    "ordinal": 62,
+    "testament": "New",
+    "chapterCount": 5,
+    "directory": "62-1-johannes"
+  },
+  {
+    "id": "2-johannes",
+    "name": "2 Johannes",
+    "englishName": "2 John",
+    "ordinal": 63,
+    "testament": "New",
+    "chapterCount": 1,
+    "directory": "63-2-johannes"
+  },
+  {
+    "id": "3-johannes",
+    "name": "3 Johannes",
+    "englishName": "3 John",
+    "ordinal": 64,
+    "testament": "New",
+    "chapterCount": 1,
+    "directory": "64-3-johannes"
+  },
+  {
+    "id": "judas",
+    "name": "Judas",
+    "englishName": "Jude",
+    "ordinal": 65,
+    "testament": "New",
+    "chapterCount": 1,
+    "directory": "65-judas"
+  },
+  {
+    "id": "openbaring",
+    "name": "Openbaring",
+    "englishName": "Revelation",
+    "ordinal": 66,
+    "testament": "New",
+    "chapterCount": 22,
+    "directory": "66-openbaring"
+  }
+]

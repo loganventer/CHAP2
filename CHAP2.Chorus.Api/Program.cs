@@ -5,6 +5,7 @@ using CHAP2.Application.EventHandlers;
 using CHAP2.Domain.Events;
 using CHAP2.Infrastructure.Git;
 using CHAP2.Infrastructure.Repositories;
+using CHAP2.Infrastructure.Repositories.Bible;
 using CHAP2.Shared.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.Configure<ChorusResourceOptions>(
     builder.Configuration.GetSection("ChorusResource"));
+builder.Services.Configure<BibleResourceOptions>(
+    builder.Configuration.GetSection("BibleResource"));
 builder.Services.Configure<ApiSettings>(
     builder.Configuration.GetSection("ApiSettings"));
 builder.Services.Configure<SearchSettings>(
@@ -59,6 +62,23 @@ builder.Services.AddSingleton<IChorusRepository>(provider =>
     var logger = provider.GetRequiredService<ILogger<CachedChorusRepository>>();
     return new CachedChorusRepository(innerRepository, cache, logger);
 });
+
+// Bible repositories — disk reader wrapped by an in-memory caching decorator.
+builder.Services.AddSingleton<DiskBibleRepository>(provider =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BibleResourceOptions>>().Value;
+    var logger = provider.GetRequiredService<ILogger<DiskBibleRepository>>();
+    return new DiskBibleRepository(options.FolderPath, logger);
+});
+builder.Services.AddSingleton<IBibleRepository>(provider =>
+{
+    var inner = provider.GetRequiredService<DiskBibleRepository>();
+    var cache = provider.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+    var logger = provider.GetRequiredService<ILogger<CachedBibleRepository>>();
+    return new CachedBibleRepository(inner, cache, logger);
+});
+builder.Services.AddScoped<IBibleReferenceParser, BibleReferenceParser>();
+builder.Services.AddScoped<IBibleQueryService, BibleQueryService>();
 
 builder.Services.AddScoped<IAiSearchService, AiSearchService>();
 builder.Services.AddScoped<ISearchService, ChorusSearchService>();

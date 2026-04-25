@@ -45,6 +45,9 @@
                    aria-label="Search choruses by name, text, or musical key"
                    autocomplete="off">
             <div class="search-actions">
+                <button class="bible-trigger" id="bibleTrigger" type="button" aria-label="Open Bible lookup" title="Bybel (AOV 1933/1953)">
+                    <i class="fas fa-book"></i>
+                </button>
                 <button class="clear-btn" id="clearBtn" style="display: none;">
                     <i class="fas fa-times"></i>
                 </button>
@@ -295,6 +298,94 @@
     </div>
 </div>
 
+<!-- Bible Lookup Modal -->
+<div class="modal-overlay" id="bibleModal" role="dialog" aria-modal="true" aria-labelledby="bibleModalTitle" hidden>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 id="bibleModalTitle"><i class="fas fa-book"></i> Bybel (AOV 1933/1953)</h2>
+            <button class="modal-close" id="bibleModalClose" type="button" aria-label="Maak toe" title="Toemaak (Esc)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <div class="bible-modal-form">
+                <div>
+                    <label for="bibleModalSearch">Soek of verwysing</label>
+                    <input type="text" id="bibleModalSearch" autocomplete="off"
+                           placeholder="bv. Joh 3:16, Psalms 23, of soek 'n teks…" />
+                </div>
+                <div class="bible-modal-row-3">
+                    <div>
+                        <label for="bibleModalBook">Boek</label>
+                        <select id="bibleModalBook"></select>
+                    </div>
+                    <div>
+                        <label for="bibleModalChapter">Hoofstuk</label>
+                        <select id="bibleModalChapter"></select>
+                    </div>
+                    <div>
+                        <label for="bibleModalVerse">Vers</label>
+                        <select id="bibleModalVerse"></select>
+                    </div>
+                </div>
+                <div class="bible-modal-results" id="bibleModalResults" role="listbox" aria-label="Soekresultate"></div>
+                <div class="bible-modal-actions">
+                    <button type="button" class="btn-secondary" id="bibleModalCancel">Kanselleer</button>
+                    <button type="button" class="btn-primary" id="bibleModalOpen">Maak oop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bible Chapter Overlay -->
+<div class="bible-overlay" id="bibleOverlay" role="dialog" aria-modal="true" aria-labelledby="bibleOverlayTitle" hidden>
+    <div class="bible-overlay__sheet">
+        <div class="bible-overlay__header">
+            <div class="bible-overlay__nav">
+                <button class="bible-overlay__icon-btn" id="bibleOverlayPrev" type="button" aria-label="Vorige hoofstuk" title="Vorige hoofstuk (←)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="bible-overlay__icon-btn" id="bibleOverlayNext" type="button" aria-label="Volgende hoofstuk" title="Volgende hoofstuk (→)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <h2 class="bible-overlay__title" id="bibleOverlayTitle">Bybel</h2>
+            <div class="bible-overlay__font-size" role="group" aria-label="Lettergrootte">
+                <button class="bible-overlay__icon-btn" id="bibleOverlayFontMinus" type="button" aria-label="Kleiner lettergrootte" title="Kleiner (Ctrl+−)">A−</button>
+                <button class="bible-overlay__icon-btn" id="bibleOverlayFontPlus" type="button" aria-label="Groter lettergrootte" title="Groter (Ctrl++)">A+</button>
+            </div>
+            <button class="bible-overlay__icon-btn" id="bibleOverlayClose" type="button" aria-label="Maak toe" title="Toemaak (Esc)">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="bible-overlay__lookup">
+                <div>
+                    <label for="bibleOverlaySearch">Soek of verwysing</label>
+                    <input type="text" id="bibleOverlaySearch" autocomplete="off" placeholder="bv. Joh 3:16 of 'liefde'" />
+                </div>
+                <div>
+                    <label for="bibleOverlayBook">Boek</label>
+                    <select id="bibleOverlayBook"></select>
+                </div>
+                <div>
+                    <label for="bibleOverlayChapter">Hoofstuk</label>
+                    <select id="bibleOverlayChapter"></select>
+                </div>
+                <div>
+                    <label for="bibleOverlayVerse">Vers</label>
+                    <select id="bibleOverlayVerse"></select>
+                </div>
+                <div class="bible-overlay__inline-results" id="bibleOverlayResults" role="listbox" aria-label="Soekresultate"></div>
+            </div>
+        </div>
+        <div class="bible-overlay__body" id="bibleOverlayBody">
+            <div class="bible-overlay__chapter" id="bibleOverlayChapter"></div>
+        </div>
+    </div>
+    <div class="bible-overlay__live" id="bibleOverlayLive" aria-live="polite"></div>
+</div>
+
 <!-- Chorus Display Overlay (iframe-based, fullscreen above the home page) -->
 <div class="chorus-overlay" id="chorusOverlay" hidden>
     <button class="chorus-overlay__close" id="chorusOverlayClose" type="button" aria-label="Close chorus display" title="Close (Esc)">
@@ -305,6 +396,9 @@
 
 @section Scripts {
     <script src="~/js/chorus-overlay.js" asp-append-version="true"></script>
+    <script src="~/js/bible-overlay.js" asp-append-version="true"></script>
+    <script src="~/js/bible-modal.js" asp-append-version="true"></script>
+    <script src="~/js/bible-search.js" asp-append-version="true"></script>
     <script src="~/js/browser-exit-guard.js" asp-append-version="true"></script>
     <script src="~/js/starlight-field.js" asp-append-version="true"></script>
     <script src="~/js/chorus-display.js" asp-append-version="true"></script>

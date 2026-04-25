@@ -12,3 +12,6 @@ obj/
 
 # Data files
 data/chorus/*.json .work/CodeQuality.Agents/
+
+# Per-user Claude Code session state
+.claude/

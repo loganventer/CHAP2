@@ -19,10 +19,11 @@ public class HomeController : Controller
     private readonly ITraditionalSearchWithAiService _traditionalSearchWithAiService;
     private readonly IIntelligentSearchService _intelligentSearchService;
     private readonly ISearchService _searchService;
+    private readonly IBibleApiService _bibleApiService;
     private readonly ILogger<HomeController> _logger;
 
     public HomeController(
-        IChorusApiService chorusApiService, 
+        IChorusApiService chorusApiService,
         IChorusApplicationService chorusApplicationService,
         IVectorSearchService vectorSearchService,
         IOllamaService ollamaService,
@@ -30,6 +31,7 @@ public class HomeController : Controller
         ITraditionalSearchWithAiService traditionalSearchWithAiService,
         IIntelligentSearchService intelligentSearchService,
         ISearchService searchService,
+        IBibleApiService bibleApiService,
         ILogger<HomeController> logger)
     {
         _chorusApiService = chorusApiService;
@@ -40,6 +42,7 @@ public class HomeController : Controller
         _traditionalSearchWithAiService = traditionalSearchWithAiService;
         _intelligentSearchService = intelligentSearchService;
         _searchService = searchService;
+        _bibleApiService = bibleApiService;
         _logger = logger;
     }
 
@@ -121,6 +124,74 @@ public class HomeController : Controller
         {
             _logger.LogError(ex, "Error during search for term: {SearchTerm}", q);
             return Json(new { results = new List<object>(), error = "Search failed" });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BibleBooks(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var books = await _bibleApiService.GetBooksAsync(cancellationToken);
+            return Json(books);
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Bible API unavailable for books listing");
+            return StatusCode(503, new { error = "api-unavailable" });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BibleChapter(string bookId, int chapter, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _bibleApiService.GetChapterAsync(bookId, chapter, cancellationToken);
+            if (result is null)
+                return NotFound();
+            return Json(result);
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Bible API unavailable for chapter {Book} {Chapter}", bookId, chapter);
+            return StatusCode(503, new { error = "api-unavailable" });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BibleSearch(string q, int max = 100, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return Json(new CHAP2.Shared.DTOs.BibleSearchResponseDto { Query = string.Empty, MaxResults = max });
+        try
+        {
+            var result = await _bibleApiService.SearchAsync(q, max, cancellationToken);
+            return Json(result);
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Bible API unavailable for search: {Query}", q);
+            return StatusCode(503, new { error = "api-unavailable" });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BibleResolve(string @ref, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(@ref))
+            return BadRequest();
+        try
+        {
+            var result = await _bibleApiService.ResolveReferenceAsync(@ref, cancellationToken);
+            if (result is null)
+                return NotFound();
+            return Json(result);
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Bible API unavailable for resolve: {Ref}", @ref);
+            return StatusCode(503, new { error = "api-unavailable" });
         }
     }
 

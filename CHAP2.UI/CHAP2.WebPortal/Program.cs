@@ -70,6 +70,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<LangChainSett
 
 // Register services
 builder.Services.AddScoped<IChorusApiService, ChorusApiService>();
+builder.Services.AddScoped<IBibleApiService, BibleApiService>();
 builder.Services.AddScoped<IChorusApplicationService, ChorusApplicationService>();
 builder.Services.AddScoped<IChorusCommandService, ChorusCommandService>();
 builder.Services.AddScoped<IChorusQueryService, ChorusQueryService>();
