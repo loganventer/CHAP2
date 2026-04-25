@@ -1,3 +1,4 @@
+using CHAP2.Application.Models;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.ValueObjects;
 
@@ -8,5 +9,6 @@ public interface IBibleQueryService
     Task<IReadOnlyList<BibleBook>> GetBooksAsync(CancellationToken cancellationToken = default);
     Task<BibleChapter?> GetChapterAsync(string bookId, int chapter, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<BibleVerse>> SearchAsync(string query, int max, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<BibleVerseSearchHit> StreamSearchAsync(string query, CancellationToken cancellationToken = default);
     Task<BibleReference?> ResolveReferenceAsync(string input, CancellationToken cancellationToken = default);
 }

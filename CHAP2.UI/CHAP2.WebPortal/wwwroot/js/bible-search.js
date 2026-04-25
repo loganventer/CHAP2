@@ -25,8 +25,9 @@
 
     let timer = 0;
     let seq = 0;
-    let lastQuery = '';   // remembered so we can re-run after the API
-                          // wakes up (chap2:api-recovered)
+    let lastQuery = '';        // remembered so we can re-run after the API
+                               // wakes up (chap2:api-recovered)
+    let currentStream = null;  // EventSource for the in-flight verse search
 
     function getInput() { return document.getElementById('searchInput'); }
     function getResultsContainer() {
@@ -87,13 +88,16 @@
         const count = getBibleResultsCount();
         if (count) count.textContent = '';
     }
-    function renderVerseResults(query, verses) {
+    function renderVerseResults(query, verses, done) {
         const section = getBibleResults();
         const list = getBibleResultsList();
         const countEl = getBibleResultsCount();
         if (!section || !list) return;
         if (!verses || !verses.length) {
-            hideVerseResults();
+            // While streaming and still empty, keep the section visible so
+            // the spinner / count message is visible. Only fully hide once
+            // the stream has finished with no results.
+            if (done) hideVerseResults();
             return;
         }
         const needle = (query || '').trim().toLowerCase();
@@ -125,48 +129,152 @@
                 + '</div>';
         }).join('');
         list.innerHTML = html;
-        if (countEl) countEl.textContent = verses.length === 1 ? '1 verse' : verses.length + ' verses';
+        if (countEl) {
+            const base = verses.length === 1 ? '1 verse' : verses.length + ' verses';
+            countEl.textContent = done ? base : base + ' (loading…)';
+        }
         section.hidden = false;
     }
     function highlight(safeText, needle) {
         if (!needle) return safeText;
-        // needle is plain user input; safeText is already HTML-escaped, so
-        // we can do a simple case-insensitive search-and-wrap on the text.
+        // Highlight (a) the contiguous phrase if present and (b) each
+        // individual query word. Without (b), in-order / out-of-order
+        // matches surfaced no <mark> at all because the words weren't
+        // contiguous in the verse text. Spans are merged so adjacent or
+        // overlapping hits never get double-wrapped.
+        const phrase = needle.trim();
+        const words = phrase.split(/\s+/).filter(Boolean);
+        if (!words.length) return safeText;
+        const targets = words.length > 1 ? [phrase, ...words] : words;
+
         const lower = safeText.toLowerCase();
-        const out = [];
-        let i = 0;
-        while (i < safeText.length) {
-            const hit = lower.indexOf(needle, i);
-            if (hit === -1) { out.push(safeText.slice(i)); break; }
-            out.push(safeText.slice(i, hit));
-            out.push('<mark>' + safeText.slice(hit, hit + needle.length) + '</mark>');
-            i = hit + needle.length;
+        const spans = [];
+        for (const t of targets) {
+            if (!t) continue;
+            let from = 0;
+            while (from < lower.length) {
+                const hit = lower.indexOf(t, from);
+                if (hit === -1) break;
+                spans.push([hit, hit + t.length]);
+                from = hit + 1; // overlapping single-word hits handled by the merge below
+            }
         }
+        if (!spans.length) return safeText;
+
+        spans.sort(function (a, b) { return a[0] - b[0] || b[1] - a[1]; });
+        const merged = [];
+        for (const span of spans) {
+            const top = merged.length ? merged[merged.length - 1] : null;
+            if (top && span[0] <= top[1]) {
+                if (span[1] > top[1]) top[1] = span[1];
+            } else {
+                merged.push([span[0], span[1]]);
+            }
+        }
+
+        const out = [];
+        let cursor = 0;
+        for (const [s, e] of merged) {
+            out.push(safeText.slice(cursor, s));
+            out.push('<mark>');
+            out.push(safeText.slice(s, e));
+            out.push('</mark>');
+            cursor = e;
+        }
+        out.push(safeText.slice(cursor));
         return out.join('');
     }
-    async function runVerseSearch(query) {
+    function closeStream() {
+        if (currentStream) {
+            try { currentStream.close(); } catch (_) { /* ignore */ }
+            currentStream = null;
+        }
+    }
+
+    /**
+     * Stream-based verse search. Opens an EventSource against the
+     * SSE proxy; renders rows incrementally as they arrive, re-sorting
+     * the in-memory list by relevance every time so higher-scored
+     * matches naturally bubble to the top mid-stream. DOM updates are
+     * coalesced via requestAnimationFrame so a fast burst of events
+     * doesn't churn layout.
+     */
+    function runVerseSearch(query) {
+        closeStream();
         const my = seq;
+        const hits = [];           // sorted in-memory result list
+        let firstReceived = false; // gates the api-wait-end event
+        let doneReceived = false;
+        let renderScheduled = false;
+
+        function scheduleRender() {
+            if (renderScheduled) return;
+            renderScheduled = true;
+            requestAnimationFrame(function () {
+                renderScheduled = false;
+                if (my !== seq) return;
+                renderVerseResults(query, hits, doneReceived);
+            });
+        }
+
+        document.dispatchEvent(new CustomEvent('chap2:api-wait-start', {
+            detail: { delayMs: 1500 },
+        }));
+
+        const url = '/Home/BibleSearchStream?q=' + encodeURIComponent(query);
+        let es;
         try {
-            const r = await fetch('/Home/BibleSearch?q=' + encodeURIComponent(query) + '&max=' + MAX_RESULTS, { credentials: 'same-origin' });
-            if (my !== seq) return;
-            if (r.status === 503) {
-                // API asleep / waking. Co-opt the chorus side's probe loop so
-                // the existing "API starting up" overlay surfaces and we get
-                // notified via chap2:api-recovered when it's back.
-                document.dispatchEvent(new CustomEvent('chap2:api-probe', {
-                    detail: { message: 'Server still waking up — checking connection...' },
-                }));
-                return;
-            }
-            if (!r.ok) { hideVerseResults(); return; }
-            const data = await r.json();
-            renderVerseResults(query, data.results || []);
-        } catch (_) {
-            // Network error -- same probe path so the overlay can recover us.
+            es = new EventSource(url, { withCredentials: true });
+        } catch (e) {
             document.dispatchEvent(new CustomEvent('chap2:api-probe', {
                 detail: { message: 'Server still waking up — checking connection...' },
             }));
+            return;
         }
+        currentStream = es;
+
+        es.onmessage = function (e) {
+            if (my !== seq) return;
+            if (!firstReceived) {
+                firstReceived = true;
+                document.dispatchEvent(new Event('chap2:api-wait-end'));
+            }
+            let v;
+            try { v = JSON.parse(e.data); } catch (_) { return; }
+
+            hits.push(v);
+            // Score desc, then verse-text length asc (denser hit). Array.sort
+            // is stable, so within ties the canonical emit order from the
+            // server (book ordinal -> chapter -> verse) is preserved.
+            hits.sort(function (a, b) {
+                return (b.score || 0) - (a.score || 0)
+                    || (a.text ? a.text.length : 0) - (b.text ? b.text.length : 0);
+            });
+            if (hits.length > MAX_RESULTS) hits.length = MAX_RESULTS;
+            scheduleRender();
+        };
+
+        es.addEventListener('done', function () {
+            if (my !== seq) return;
+            doneReceived = true;
+            if (!firstReceived) {
+                document.dispatchEvent(new Event('chap2:api-wait-end'));
+            }
+            scheduleRender();
+            closeStream();
+        });
+
+        es.onerror = function () {
+            if (my !== seq) return;
+            // EventSource auto-reconnects; we don't want that during a
+            // cold-start because the auth cookie / probe machinery handle
+            // recovery. Close and co-opt the api-probe loop -- when the
+            // API answers, chap2:api-recovered re-runs the search.
+            closeStream();
+            document.dispatchEvent(new CustomEvent('chap2:api-probe', {
+                detail: { message: 'Server still waking up — checking connection...' },
+            }));
+        };
     }
 
     function openOverlay(bookId, chapter, verse) {
@@ -182,10 +290,11 @@
         if (!input) return;
         const q = (input.value || '').trim();
         if (q.length < MIN_CHARS) {
-            // Bumping seq invalidates any in-flight fetch from before the
+            // Bumping seq invalidates any in-flight stream from before the
             // clear, so a slow earlier response can't repaint the results
             // we just cleared.
             seq++;
+            closeStream();
             clearSuggestion();
             hideVerseResults();
             return;
@@ -225,6 +334,7 @@
             clearBtn.addEventListener('click', function () {
                 seq++;
                 clearTimeout(timer);
+                closeStream();
                 clearSuggestion();
                 hideVerseResults();
             });

@@ -176,6 +176,45 @@ public class HomeController : Controller
         }
     }
 
+    /// <summary>
+    /// SSE proxy: forwards the raw event-stream from the API to the
+    /// browser without buffering. Browser EventSource targets this URL
+    /// (same-origin) so the user's auth cookie is honored before we
+    /// open the upstream connection.
+    /// </summary>
+    [HttpGet]
+    public async Task BibleSearchStream(string q, CancellationToken cancellationToken)
+    {
+        Response.Headers.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            Response.StatusCode = 400;
+            await Response.WriteAsync("event: error\ndata: {\"error\":\"q required\"}\n\n", cancellationToken);
+            return;
+        }
+
+        try
+        {
+            await _bibleApiService.StreamSearchAsync(q, Response.Body, cancellationToken);
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Bible API unavailable for streaming search: {Query}", q);
+            // 503 only works if no bytes have been sent yet; if the
+            // upstream failed mid-stream we just stop -- the browser's
+            // EventSource onerror handler picks it up.
+            if (!Response.HasStarted)
+                Response.StatusCode = 503;
+        }
+        catch (OperationCanceledException)
+        {
+            // Browser closed the connection -- nothing to do.
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> BibleResolve(string @ref, CancellationToken cancellationToken)
     {

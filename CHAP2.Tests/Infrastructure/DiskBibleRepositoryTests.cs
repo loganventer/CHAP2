@@ -150,4 +150,75 @@ public class DiskBibleRepositoryTests
 
         results.Should().BeEmpty();
     }
+
+    [Test]
+    public async Task StreamSearchAsync_YieldsHitsInCanonicalOrder()
+    {
+        var sut = CreateSut();
+
+        var hits = new List<(string BookId, int Chapter, int Verse, int Score)>();
+        await foreach (var hit in sut.StreamSearchAsync("een geloof"))
+        {
+            hits.Add((hit.Verse.BookId, hit.Verse.Chapter, hit.Verse.Verse, hit.Score));
+        }
+
+        hits.Should().NotBeEmpty();
+        // The streaming variant is canonical-order (book ordinal -> chapter
+        // -> verse). It is NOT score-sorted -- that's a client/batched
+        // concern. Confirm by checking the (chapter, verse) pairs within
+        // each book ascend.
+        var byBook = hits.GroupBy(h => h.BookId);
+        foreach (var grp in byBook)
+        {
+            var sorted = grp.OrderBy(h => h.Chapter).ThenBy(h => h.Verse).ToList();
+            grp.Should().Equal(sorted, "verses inside {0} should arrive in canonical order", grp.Key);
+        }
+    }
+
+    [Test]
+    public async Task StreamSearchAsync_TagsEachHitWithItsScore()
+    {
+        var sut = CreateSut();
+
+        var hits = new List<CHAP2.Application.Models.BibleVerseSearchHit>();
+        await foreach (var hit in sut.StreamSearchAsync("een geloof"))
+            hits.Add(hit);
+
+        hits.Should().NotBeEmpty();
+        // At least one hit should be the exact-phrase tier (score 3) --
+        // Efesi\u00ebrs 4:5 contains "een geloof" verbatim.
+        hits.Should().Contain(h => h.Score == 3);
+        // All scores must be in the documented range.
+        hits.Should().OnlyContain(h => h.Score >= 1 && h.Score <= 3);
+    }
+
+    [Test]
+    public async Task StreamSearchAsync_EmptyQueryYieldsNothing()
+    {
+        var sut = CreateSut();
+
+        var any = false;
+        await foreach (var _ in sut.StreamSearchAsync(""))
+            any = true;
+
+        any.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task SearchVersesAsync_AndStreamSearchAsync_ReturnSameMatchingVerses()
+    {
+        var sut = CreateSut();
+
+        // Pull all stream hits into a set; pull all batched results too;
+        // confirm the sets match (batched is just stream + sort + take(max)).
+        var streamed = new HashSet<string>();
+        await foreach (var hit in sut.StreamSearchAsync("een geloof"))
+            streamed.Add($"{hit.Verse.BookId}:{hit.Verse.Chapter}:{hit.Verse.Verse}");
+
+        var batched = (await sut.SearchVersesAsync("een geloof", int.MaxValue))
+            .Select(v => $"{v.BookId}:{v.Chapter}:{v.Verse}")
+            .ToHashSet();
+
+        batched.Should().BeEquivalentTo(streamed);
+    }
 }

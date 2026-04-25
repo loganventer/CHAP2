@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CHAP2.Application.Helpers;
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Entities;
@@ -62,6 +63,66 @@ public class BibleController : ChapControllerAbstractBase
             MaxResults = max,
             Results = results.Select(ToDto).ToList(),
         });
+    }
+
+    /// <summary>
+    /// Server-Sent Events stream of search hits in canonical order, each
+    /// tagged with its score. Lets the client render the first row in
+    /// tens of milliseconds even on a cold disk cache. Disconnect (or
+    /// the user typing another character) cancels the disk walk via the
+    /// request cancellation token.
+    /// </summary>
+    [HttpGet("search/stream")]
+    public async Task SearchStream(
+        [FromQuery] string? q = null,
+        CancellationToken cancellationToken = default)
+    {
+        Response.StatusCode = string.IsNullOrWhiteSpace(q) ? 400 : 200;
+        Response.Headers.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        // Render's edge proxy buffers responses by default; this header
+        // tells nginx-style proxies to stream rather than buffer.
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            await Response.WriteAsync("event: error\ndata: {\"error\":\"q required\"}\n\n", cancellationToken);
+            return;
+        }
+
+        var sanitized = InputSanitizer.SanitizeSearchQuery(q);
+        LogAction("BibleSearchStream", new { sanitized });
+
+        var json = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var count = 0;
+        try
+        {
+            await foreach (var hit in _bibleQueryService.StreamSearchAsync(sanitized, cancellationToken))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var dto = new BibleVerseDto
+                {
+                    BookId = hit.Verse.BookId,
+                    BookName = hit.Verse.BookName,
+                    Chapter = hit.Verse.Chapter,
+                    Verse = hit.Verse.Verse,
+                    Text = hit.Verse.Text,
+                    Score = hit.Score,
+                };
+                var payload = JsonSerializer.Serialize(dto, json);
+                await Response.WriteAsync($"data: {payload}\n\n", cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+                count++;
+            }
+            var donePayload = JsonSerializer.Serialize(new { count }, json);
+            await Response.WriteAsync($"event: done\ndata: {donePayload}\n\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Client disconnected -- nothing to do, the response has
+            // already been written incrementally.
+        }
     }
 
     [HttpGet("resolve")]

@@ -1,6 +1,8 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using CHAP2.Application.Helpers;
 using CHAP2.Application.Interfaces;
+using CHAP2.Application.Models;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.ValueObjects;
 using CHAP2.Infrastructure.DTOs;
@@ -109,23 +111,55 @@ public class DiskBibleRepository : IBibleRepository
     private const int ScoreInOrderWords  = 2;
     private const int ScoreOutOfOrder    = 1;
 
+    /// <summary>
+    /// Top-N by relevance. Drains the streaming variant into memory,
+    /// sorts (score desc, normalized verse length asc, then canonical
+    /// reading order), then truncates. Existing callers see no behavior
+    /// change; the streaming method is the new low-level path.
+    /// </summary>
     public async Task<IReadOnlyList<BibleVerse>> SearchVersesAsync(string query, int max, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query) || max <= 0)
             return Array.Empty<BibleVerse>();
 
-        // Normalize once. The query becomes a lower-cased, diacritic-free,
-        // single-space-collapsed string; words are the same string split
-        // on spaces. Both representations are needed for the three scoring
-        // tiers (exact phrase / in-order / out-of-order).
+        var collected = new List<ScoredVerse>();
+        await foreach (var hit in StreamSearchAsync(query, cancellationToken))
+        {
+            collected.Add(new ScoredVerse(
+                hit.Verse,
+                hit.Score,
+                BibleTextNormalizer.SearchableText(hit.Verse.Text).Length,
+                BookOrdinalFor(hit.Verse.BookId)));
+        }
+
+        return collected
+            .OrderByDescending(s => s.Score)
+            .ThenBy(s => s.NormalizedTextLength)
+            .ThenBy(s => s.BookOrdinal)
+            .ThenBy(s => s.Verse.Chapter)
+            .ThenBy(s => s.Verse.Verse)
+            .Take(max)
+            .Select(s => s.Verse)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Yields hits in canonical (book ordinal -> chapter -> verse) order
+    /// as they're found. The disk walk is single-pass so the first hit
+    /// surfaces within milliseconds even on a cold cache.
+    /// </summary>
+    public async IAsyncEnumerable<BibleVerseSearchHit> StreamSearchAsync(
+        string query,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query)) yield break;
+
         var needle = BibleTextNormalizer.SearchableText(query);
-        if (needle.Length == 0)
-            return Array.Empty<BibleVerse>();
+        if (needle.Length == 0) yield break;
         var queryWords = needle.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (queryWords.Length == 0) yield break;
 
-        var scored = new List<ScoredVerse>();
         var dtos = await ReadBooksIndexAsync(cancellationToken);
-
         foreach (var bookDto in dtos)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -133,9 +167,9 @@ public class DiskBibleRepository : IBibleRepository
             if (!Directory.Exists(bookDir))
                 continue;
 
-            var book = bookDto.ToEntity();
             for (var ch = 1; ch <= bookDto.ChapterCount; ch++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var chapterPath = Path.Combine(bookDir, $"{ch:D3}.json");
                 if (!File.Exists(chapterPath))
                     continue;
@@ -159,26 +193,12 @@ public class DiskBibleRepository : IBibleRepository
                     var normalizedText = BibleTextNormalizer.SearchableText(verse.Text);
                     var score = ScoreVerse(normalizedText, needle, queryWords);
                     if (score == 0) continue;
-                    scored.Add(new ScoredVerse(
-                        new BibleVerse(book.Id, book.Name, chapterDto.Chapter, verse.Verse, verse.Text),
-                        score,
-                        normalizedText.Length,
-                        bookDto.Ordinal));
+                    yield return new BibleVerseSearchHit(
+                        new BibleVerse(bookDto.Id, bookDto.Name, chapterDto.Chapter, verse.Verse, verse.Text),
+                        score);
                 }
             }
         }
-
-        // Top by relevance, then shorter verses (denser hit), then
-        // canonical reading order (book ordinal -> chapter -> verse).
-        return scored
-            .OrderByDescending(s => s.Score)
-            .ThenBy(s => s.NormalizedTextLength)
-            .ThenBy(s => s.BookOrdinal)
-            .ThenBy(s => s.Verse.Chapter)
-            .ThenBy(s => s.Verse.Verse)
-            .Take(max)
-            .Select(s => s.Verse)
-            .ToList();
     }
 
     /// <summary>
@@ -211,6 +231,18 @@ public class DiskBibleRepository : IBibleRepository
             cursor = hit + words[i].Length;
         }
         return true;
+    }
+
+    /// <summary>
+    /// Look up a book's canonical ordinal without re-hitting disk. Falls
+    /// back to int.MaxValue when missing so unknown books sort last
+    /// (shouldn't happen for streamed hits, but defensive).
+    /// </summary>
+    private int BookOrdinalFor(string bookId)
+    {
+        var dtos = ReadBooksIndexAsync(CancellationToken.None).GetAwaiter().GetResult();
+        var hit = dtos.FirstOrDefault(d => string.Equals(d.Id, bookId, StringComparison.OrdinalIgnoreCase));
+        return hit?.Ordinal ?? int.MaxValue;
     }
 
     private readonly record struct ScoredVerse(BibleVerse Verse, int Score, int NormalizedTextLength, int BookOrdinal);

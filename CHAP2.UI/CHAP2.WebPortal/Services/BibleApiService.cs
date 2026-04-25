@@ -59,6 +59,43 @@ public class BibleApiService : IBibleApiService
             ?? new BibleSearchResponseDto { Query = query, MaxResults = max };
     }
 
+    public async Task StreamSearchAsync(string query, Stream destination, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return;
+
+        var url = $"/api/bible/search/stream?q={Uri.EscapeDataString(query)}";
+        HttpResponseMessage response;
+        try
+        {
+            // ResponseHeadersRead is critical -- without it, HttpClient
+            // buffers the full response before returning, defeating the
+            // whole point of streaming.
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
+        {
+            _logger.LogWarning(ex, "Bible API unreachable for streaming search");
+            throw new ApiUnavailableException("Bible API unreachable for streaming search.", ex);
+        }
+
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Bible API streaming search returned {Status}", (int)response.StatusCode);
+                throw new ApiUnavailableException($"Bible API responded {(int)response.StatusCode} for streaming search.");
+            }
+
+            await using var apiStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            // CopyToAsync forwards bytes as they arrive. The destination
+            // (HttpResponse.Body of the WebPortal request) is also
+            // unbuffered for SSE, so this stays end-to-end streaming.
+            await apiStream.CopyToAsync(destination, cancellationToken);
+        }
+    }
+
     public async Task<BibleReferenceDto?> ResolveReferenceAsync(string reference, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(reference))

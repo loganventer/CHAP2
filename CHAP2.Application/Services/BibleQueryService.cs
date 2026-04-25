@@ -1,4 +1,5 @@
 using CHAP2.Application.Interfaces;
+using CHAP2.Application.Models;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -48,6 +49,25 @@ public class BibleQueryService : IBibleQueryService
 
         var clamped = max <= 0 ? DefaultMaxResults : Math.Min(max, HardCapMaxResults);
         return _bibleRepository.SearchVersesAsync(query, clamped, cancellationToken);
+    }
+
+    /// <summary>
+    /// Stream hits as they're found. No max -- the SSE consumer is
+    /// responsible for capping its display. Empty / blank queries yield
+    /// nothing.
+    /// </summary>
+    public IAsyncEnumerable<BibleVerseSearchHit> StreamSearchAsync(string query, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return EmptyHits();
+
+        return _bibleRepository.StreamSearchAsync(query, cancellationToken);
+    }
+
+    private static async IAsyncEnumerable<BibleVerseSearchHit> EmptyHits()
+    {
+        await Task.CompletedTask;
+        yield break;
     }
 
     public Task<BibleReference?> ResolveReferenceAsync(string input, CancellationToken cancellationToken = default)

@@ -1,4 +1,5 @@
 using CHAP2.Application.Interfaces;
+using CHAP2.Application.Models;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.ValueObjects;
 using Microsoft.Extensions.Caching.Memory;
@@ -89,4 +90,13 @@ public class CachedBibleRepository : IBibleRepository
         _cache.Set(key, results, SearchExpiration);
         return results;
     }
+
+    /// <summary>
+    /// Streaming pass-through. Caching only fits the batched path -- a
+    /// stream is single-consumer and we don't want to memoize an entire
+    /// (potentially large) result list just to replay it on the next
+    /// keystroke. The disk read is fast enough uncached.
+    /// </summary>
+    public IAsyncEnumerable<BibleVerseSearchHit> StreamSearchAsync(string query, CancellationToken cancellationToken = default)
+        => _inner.StreamSearchAsync(query, cancellationToken);
 }
