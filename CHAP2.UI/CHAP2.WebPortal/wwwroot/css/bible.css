@@ -376,6 +376,17 @@
     opacity: 1;
     cursor: default;
 }
+
+/* "Suppressed" overrides hover-reveal so a user-driven scroll always
+   collapses the header even if the cursor happens to be over it.
+   Cleared on mouseleave from the header so re-entering with the
+   cursor still reveals it again. Focus-within (keyboard) is honored
+   even while suppressed -- otherwise tab navigation breaks. */
+.bible-overlay--header-hidden.bible-overlay--header-suppressed .bible-overlay__header:hover {
+    max-height: 80px;
+    opacity: 0;
+    cursor: pointer;
+}
 @media (prefers-reduced-motion: reduce) {
     .bible-overlay__header { transition: none; }
 }

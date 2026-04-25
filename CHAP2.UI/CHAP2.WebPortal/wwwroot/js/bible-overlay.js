@@ -125,6 +125,11 @@
         clearTimeout(headerHideTimer);
         if (els.overlay.hidden) return;
         els.overlay.classList.add('bible-overlay--header-hidden');
+        // Force the hide even if the cursor is already over the header
+        // (CSS :hover would otherwise keep it expanded). Suppression
+        // clears the next time the cursor leaves the header so a fresh
+        // hover still reveals it.
+        els.overlay.classList.add('bible-overlay--header-suppressed');
     }
 
     // ---------- compact mode ----------
@@ -506,6 +511,14 @@
         if (els.sheet) {
             els.sheet.addEventListener('wheel', hideHeaderNow, { passive: true });
             els.sheet.addEventListener('touchmove', hideHeaderNow, { passive: true });
+        }
+        // Clear the hover-suppression flag once the cursor leaves the
+        // header so a subsequent re-entry can still reveal it.
+        const headerEl = els.sheet && els.sheet.querySelector('.bible-overlay__header');
+        if (headerEl) {
+            headerEl.addEventListener('mouseleave', function () {
+                els.overlay.classList.remove('bible-overlay--header-suppressed');
+            });
         }
 
         els.bookSelect.addEventListener('change', function () {
