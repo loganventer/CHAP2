@@ -1,4 +1,5 @@
 using System.Text.Json;
+using CHAP2.Application.Helpers;
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.ValueObjects;
@@ -104,13 +105,25 @@ public class DiskBibleRepository : IBibleRepository
         return new BibleChapter(book, dto.Chapter, verses);
     }
 
+    private const int ScoreExactPhrase   = 3;
+    private const int ScoreInOrderWords  = 2;
+    private const int ScoreOutOfOrder    = 1;
+
     public async Task<IReadOnlyList<BibleVerse>> SearchVersesAsync(string query, int max, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query) || max <= 0)
             return Array.Empty<BibleVerse>();
 
-        var needle = query.Trim();
-        var results = new List<BibleVerse>();
+        // Normalize once. The query becomes a lower-cased, diacritic-free,
+        // single-space-collapsed string; words are the same string split
+        // on spaces. Both representations are needed for the three scoring
+        // tiers (exact phrase / in-order / out-of-order).
+        var needle = BibleTextNormalizer.SearchableText(query);
+        if (needle.Length == 0)
+            return Array.Empty<BibleVerse>();
+        var queryWords = needle.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var scored = new List<ScoredVerse>();
         var dtos = await ReadBooksIndexAsync(cancellationToken);
 
         foreach (var bookDto in dtos)
@@ -143,17 +156,64 @@ public class DiskBibleRepository : IBibleRepository
 
                 foreach (var verse in chapterDto.Verses)
                 {
-                    if (verse.Text.Contains(needle, StringComparison.OrdinalIgnoreCase))
-                    {
-                        results.Add(new BibleVerse(book.Id, book.Name, chapterDto.Chapter, verse.Verse, verse.Text));
-                        if (results.Count >= max)
-                            return results;
-                    }
+                    var normalizedText = BibleTextNormalizer.SearchableText(verse.Text);
+                    var score = ScoreVerse(normalizedText, needle, queryWords);
+                    if (score == 0) continue;
+                    scored.Add(new ScoredVerse(
+                        new BibleVerse(book.Id, book.Name, chapterDto.Chapter, verse.Verse, verse.Text),
+                        score,
+                        normalizedText.Length,
+                        bookDto.Ordinal));
                 }
             }
         }
-        return results;
+
+        // Top by relevance, then shorter verses (denser hit), then
+        // canonical reading order (book ordinal -> chapter -> verse).
+        return scored
+            .OrderByDescending(s => s.Score)
+            .ThenBy(s => s.NormalizedTextLength)
+            .ThenBy(s => s.BookOrdinal)
+            .ThenBy(s => s.Verse.Chapter)
+            .ThenBy(s => s.Verse.Verse)
+            .Take(max)
+            .Select(s => s.Verse)
+            .ToList();
     }
+
+    /// <summary>
+    /// 3 = exact normalized phrase, 2 = all words present in order,
+    /// 1 = all words present out of order, 0 = at least one word missing.
+    /// </summary>
+    private static int ScoreVerse(string normalizedText, string needle, string[] queryWords)
+    {
+        if (normalizedText.Length == 0 || queryWords.Length == 0)
+            return 0;
+        if (normalizedText.Contains(needle, StringComparison.Ordinal))
+            return ScoreExactPhrase;
+        if (AllWordsPresentInOrder(normalizedText, queryWords))
+            return ScoreInOrderWords;
+        for (var i = 0; i < queryWords.Length; i++)
+        {
+            if (!normalizedText.Contains(queryWords[i], StringComparison.Ordinal))
+                return 0;
+        }
+        return ScoreOutOfOrder;
+    }
+
+    private static bool AllWordsPresentInOrder(string text, string[] words)
+    {
+        var cursor = 0;
+        for (var i = 0; i < words.Length; i++)
+        {
+            var hit = text.IndexOf(words[i], cursor, StringComparison.Ordinal);
+            if (hit < 0) return false;
+            cursor = hit + words[i].Length;
+        }
+        return true;
+    }
+
+    private readonly record struct ScoredVerse(BibleVerse Verse, int Score, int NormalizedTextLength, int BookOrdinal);
 
     private async Task<List<BibleBookDto>> ReadBooksIndexAsync(CancellationToken cancellationToken)
     {

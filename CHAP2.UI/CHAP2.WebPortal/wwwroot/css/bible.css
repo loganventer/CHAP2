@@ -482,57 +482,6 @@
     background: rgba(255, 255, 255, 0.04);
 }
 
-/* Per-verse "Add to setlist" button. Inline with the verse text, no
-   text-indent on its own. Visible on parent hover (mouse) and always
-   on touch. Click is intercepted by JS so the verse selection toggle
-   doesn't also fire. */
-.bible-overlay__verse-add {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 0.4em;
-    width: 1.6em;
-    height: 1.6em;
-    padding: 0;
-    text-indent: 0;
-    border: 1px solid var(--bible-border);
-    border-radius: 50%;
-    background: var(--bible-surface-input);
-    color: var(--bible-accent);
-    cursor: pointer;
-    font-size: 0.55em;
-    line-height: 1;
-    opacity: 0;
-    transition: opacity var(--transition-fast), transform var(--transition-fast), background var(--transition-fast);
-    vertical-align: middle;
-}
-.bible-overlay__verse:hover .bible-overlay__verse-add,
-.bible-overlay__verse:focus-within .bible-overlay__verse-add,
-.bible-overlay__verse--selected .bible-overlay__verse-add {
-    opacity: 1;
-}
-.bible-overlay__verse-add:hover,
-.bible-overlay__verse-add:focus-visible {
-    background: var(--bible-accent-soft);
-    transform: scale(1.1);
-    outline: none;
-}
-@media (hover: none) {
-    /* Touch: always visible since there's no hover state to gate it. */
-    .bible-overlay__verse-add { opacity: 1; }
-}
-
-/* Brief pulse when a verse was just added to the setlist. */
-.bible-overlay__verse--just-added {
-    animation: bibleVerseAddedPulse 600ms ease-out;
-}
-@keyframes bibleVerseAddedPulse {
-    0%   { background: var(--bible-accent-soft); }
-    100% { background: transparent; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .bible-overlay__verse--just-added { animation: none; }
-}
 
 .bible-overlay__verse-num {
     color: var(--bible-accent);

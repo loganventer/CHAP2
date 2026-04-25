@@ -1,6 +1,6 @@
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
+using CHAP2.Application.Helpers;
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.ValueObjects;
@@ -104,21 +104,5 @@ public class BibleReferenceParser : IBibleReferenceParser
         return prefixCount == 1 ? prefixHit!.Id : null;
     }
 
-    private static string Normalize(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return string.Empty;
-
-        var decomposed = value.Normalize(NormalizationForm.FormKD);
-        var sb = new StringBuilder(decomposed.Length);
-        foreach (var ch in decomposed)
-        {
-            var category = CharUnicodeInfo.GetUnicodeCategory(ch);
-            if (category == UnicodeCategory.NonSpacingMark)
-                continue;
-            if (char.IsLetterOrDigit(ch))
-                sb.Append(char.ToLowerInvariant(ch));
-        }
-        return sb.ToString();
-    }
+    private static string Normalize(string value) => BibleTextNormalizer.Identifier(value);
 }
