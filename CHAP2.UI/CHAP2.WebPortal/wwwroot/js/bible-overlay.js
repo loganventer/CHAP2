@@ -368,8 +368,12 @@
         // input or interacting with a dropdown.
         const inForm = isTypingInForm(e.target);
         if (!inForm) {
-            if (e.key === 'ArrowLeft')  { e.preventDefault(); gotoPrev(); return; }
-            if (e.key === 'ArrowRight') { e.preventDefault(); gotoNext(); return; }
+            // ←/→ and ↑/↓ both navigate -- in setlist mode they walk the
+            // mixed setlist, otherwise they paginate chapters. ↑/↓ pairs
+            // with chorus-display's chorus-nav keys so the muscle memory
+            // is the same on either surface.
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')   { e.preventDefault(); gotoPrev(); return; }
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); gotoNext(); return; }
             if (e.key === '+' || e.key === '=') { e.preventDefault(); bumpFontScale(FONT_STEP); return; }
             if (e.key === '-' || e.key === '_') { e.preventDefault(); bumpFontScale(-FONT_STEP); return; }
             if (e.key === 'a' || e.key === 'A') { addSelectedVerseToSetlist(); e.preventDefault(); return; }
