@@ -344,6 +344,30 @@
     position: sticky;
     top: 0;
     z-index: 1;
+    /* Auto-hide: collapse to zero height + fade. The body uses flex
+       layout so it grows to fill the freed space; max-height transition
+       keeps the collapse smooth (display:none is unanimatable). */
+    max-height: 600px;
+    overflow: hidden;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.bible-overlay--header-hidden .bible-overlay__header {
+    /* Leave a thin always-visible strip so the user has a hover target;
+       opacity drops the visible chrome but the strip still receives
+       the cursor enter event. */
+    max-height: 8px;
+    opacity: 0;
+    border-bottom-color: transparent;
+    cursor: pointer;
+}
+.bible-overlay--header-hidden .bible-overlay__header:hover,
+.bible-overlay--header-hidden .bible-overlay__header:focus-within {
+    max-height: 600px;
+    opacity: 1;
+    cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+    .bible-overlay__header { transition: none; }
 }
 .bible-overlay__title {
     font-size: var(--font-size-lg);

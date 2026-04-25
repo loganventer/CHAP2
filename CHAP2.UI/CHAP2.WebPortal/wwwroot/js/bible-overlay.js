@@ -105,6 +105,21 @@
         applyFontScale(cur + delta);
     }
 
+    // ---------- auto-hide header ----------
+    // After a brief delay the header collapses to a thin always-present
+    // strip; CSS :hover / :focus-within on the header re-expands it
+    // (the rest is CSS-only -- see .bible-overlay--header-hidden).
+    const HEADER_HIDE_MS = 3500;
+    let headerHideTimer = 0;
+    function showHeader() {
+        clearTimeout(headerHideTimer);
+        els.overlay.classList.remove('bible-overlay--header-hidden');
+        if (els.overlay.hidden) return;
+        headerHideTimer = setTimeout(function () {
+            els.overlay.classList.add('bible-overlay--header-hidden');
+        }, HEADER_HIDE_MS);
+    }
+
     // ---------- compact mode ----------
     function readCompact() {
         try { return localStorage.getItem(COMPACT_KEY) === '1'; }
@@ -436,6 +451,7 @@
         document.body.classList.add('bible-overlay-open');
         applyFontScale(readFontScale());
         applyCompact(readCompact());
+        showHeader();
 
         await navigate(ref);
         // Move focus to the close button so Esc/Tab cycle from a known anchor.
