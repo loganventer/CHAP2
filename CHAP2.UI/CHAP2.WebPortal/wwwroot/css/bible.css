@@ -24,18 +24,50 @@
 /* -------- Header trigger --------
    The Bible icon lives in the header-actions row alongside Settings /
    Sign-out, so it picks up .settings-button's full theme treatment
-   automatically. We only override the icon size so the book glyph
-   reads as a primary entry point even with no text label. */
-.bible-header-btn i {
-    font-size: 1.4rem;
-    line-height: 1;
-}
+   automatically. The book "opens" on hover/focus: the closed-bible
+   glyph fades out while the open-book glyph fades in, with a tiny
+   3D tilt for the page-turning feel. */
 .bible-header-btn {
-    /* Slightly tighter padding since there's no text — keep the
-       click target at 44px+ via line-height + min-width. */
     min-width: 44px;
     padding-left: var(--spacing-md);
     padding-right: var(--spacing-md);
+}
+.bible-header-btn__icons {
+    position: relative;
+    display: inline-block;
+    width: 1.4em;
+    height: 1.4em;
+    line-height: 1;
+    perspective: 400px;
+}
+.bible-header-btn__icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    line-height: 1;
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+    backface-visibility: hidden;
+    transform-origin: left center;
+}
+.bible-header-btn__icon--closed { opacity: 1; transform: rotateY(0); }
+.bible-header-btn__icon--open   { opacity: 0; transform: rotateY(-60deg); }
+
+.bible-header-btn:hover .bible-header-btn__icon--closed,
+.bible-header-btn:focus-visible .bible-header-btn__icon--closed {
+    opacity: 0;
+    transform: rotateY(60deg);
+}
+.bible-header-btn:hover .bible-header-btn__icon--open,
+.bible-header-btn:focus-visible .bible-header-btn__icon--open {
+    opacity: 1;
+    transform: rotateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bible-header-btn__icon { transition: opacity var(--transition-fast); transform: none !important; }
 }
 
 /* -------- Inline reference suggestion (above chorus results) -------- */
