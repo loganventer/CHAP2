@@ -77,6 +77,13 @@ builder.Services.AddSingleton<IBibleRepository>(provider =>
     var logger = provider.GetRequiredService<ILogger<CachedBibleRepository>>();
     return new CachedBibleRepository(inner, cache, logger);
 });
+// Forward the segregated interfaces to the same composite instance so
+// consumers (e.g. BibleReferenceParser) can depend on the narrowest
+// interface they need without DI failing to resolve them.
+builder.Services.AddSingleton<IBibleBookRepository>(p => p.GetRequiredService<IBibleRepository>());
+builder.Services.AddSingleton<IBibleChapterRepository>(p => p.GetRequiredService<IBibleRepository>());
+builder.Services.AddSingleton<IBibleVerseSearchRepository>(p => p.GetRequiredService<IBibleRepository>());
+
 builder.Services.AddScoped<IBibleReferenceParser, BibleReferenceParser>();
 builder.Services.AddScoped<IBibleQueryService, BibleQueryService>();
 
