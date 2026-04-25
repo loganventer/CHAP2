@@ -11,4 +11,7 @@ obj/
 .DS_Store
 
 # Data files
-data/chorus/*.json .work/CodeQuality.Agents/
+data/chorus/*.json
+
+# Local working notes -- never commit
+.work/
