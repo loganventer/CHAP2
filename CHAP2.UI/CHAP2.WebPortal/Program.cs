@@ -1,3 +1,4 @@
+using CHAP2.WebPortal.Auth;
 using CHAP2.WebPortal.Interfaces;
 using CHAP2.WebPortal.Services;
 using CHAP2.WebPortal.Hubs;
@@ -6,6 +7,8 @@ using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Infrastructure.Repositories;
 using CHAP2.WebPortal.Configuration;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
@@ -24,6 +27,36 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 
 // Configure HttpClient for API communication using shared configuration
 builder.Services.AddCHAP2ApiClient(builder.Configuration);
+
+// --- Single-user portal auth ---------------------------------------
+// Username + password hash come from configuration (Auth:Username,
+// Auth:PasswordHash) so the secret never appears in served HTML/JS.
+// Cookie auth keeps the session across requests via an httpOnly cookie.
+builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
+builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "chap2-auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.SlidingExpiration = true;
+    });
+
+// Every endpoint requires authentication unless it explicitly opts out
+// with [AllowAnonymous] (Login, etc.).
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // Configure settings
 builder.Services.Configure<QdrantSettings>(builder.Configuration.GetSection("Qdrant"));
@@ -145,7 +178,13 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();
 
-app.MapHub<ChorusHub>("/chorusHub");
+// Auth must come AFTER routing and BEFORE endpoint mapping so the
+// fallback authorize policy (set above) gates every controller route
+// except those marked [AllowAnonymous].
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapHub<ChorusHub>("/chorusHub").RequireAuthorization();
 
 app.MapControllerRoute(
     name: "sync",

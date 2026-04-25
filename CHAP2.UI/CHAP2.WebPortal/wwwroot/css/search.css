@@ -121,6 +121,12 @@ img.logo-icon {
     gap: var(--spacing-md);
 }
 
+.header-logout-form {
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+}
+
 .header-actions .btn-primary {
     padding: var(--spacing-md) var(--spacing-lg);
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
