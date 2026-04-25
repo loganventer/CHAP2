@@ -7,7 +7,10 @@
    accent so the visual identity matches. */
 
 :root {
-    --bible-font-scale: 1;
+    /* XXL by default -- this app is projected at ~480p where smaller
+       text is unreadable. Users can shrink with A− if they want denser
+       text on a desktop screen. */
+    --bible-font-scale: 2.5;
 
     /* Bible-specific surface tokens (dark, glassy) */
     --bible-surface:        rgba(28, 30, 44, 0.92);
@@ -346,36 +349,41 @@
 }
 
 .bible-overlay__chapter {
-    /* white-space: pre-wrap preserves the source whitespace per the
-       importer (verses include their natural trailing spaces and any
-       embedded newlines), so the chapter reads as flowing prose
-       exactly like the source set it. */
-    white-space: pre-wrap;
     line-height: 1.7;
-    font-size: calc(var(--font-size-base) * var(--bible-font-scale));
+    font-size: calc(var(--font-size-lg) * var(--bible-font-scale));
     max-width: 80ch;
     margin: 0 auto;
     color: var(--bible-text);
 }
 
+/* e-Sword-ish: each verse is its own block, with the verse number
+   slightly indented at the start of the line; wrapped lines flow back
+   to the left margin. white-space: pre-wrap preserves the source's
+   trailing spaces / embedded newlines verbatim. */
+.bible-overlay__verse {
+    display: block;
+    cursor: pointer;
+    padding: 2px 6px 2px 0;
+    margin: 0 0 0.45em 0;
+    text-indent: 1.6em;
+    white-space: pre-wrap;
+    border-left: 3px solid transparent;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+.bible-overlay__verse:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
 .bible-overlay__verse-num {
-    font-size: 0.7em;
-    vertical-align: super;
-    line-height: 0;
     color: var(--bible-accent);
-    margin-right: 3px;
     font-weight: 700;
+    margin-right: 0.4em;
 }
 
 .bible-overlay__verse[aria-current="true"] {
     background: var(--bible-accent-soft);
-    border-left: 3px solid var(--bible-accent);
-    padding-left: var(--spacing-sm);
-    border-radius: var(--radius-sm);
-}
-
-.bible-overlay__verse {
-    cursor: pointer;
+    border-left-color: var(--bible-accent);
 }
 .bible-overlay__verse--selected {
     font-weight: 700;

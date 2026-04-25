@@ -17,9 +17,11 @@
     const DEFAULT_REFERENCE = { bookId: 'efesiers', chapter: 4, verse: 5 };
 
     const FONT_SCALE_KEY = 'chap2.bible.fontScale';
-    const FONT_MIN = 0.85;
-    const FONT_MAX = 2.0;
-    const FONT_STEP = 0.1;
+    // 480p projection target -- defaults pushed high; allow further
+    // growth for users who want even larger projection text.
+    const FONT_MIN = 0.8;
+    const FONT_MAX = 3.5;
+    const FONT_STEP = 0.15;
     const SEARCH_DEBOUNCE_MS = 300;
     const SEARCH_MIN_CHARS = 2;
     const SEARCH_MAX_RESULTS = 50;
@@ -77,11 +79,14 @@
     // need try/catch -- without it, an unhandled throw inside open()
     // skips the rest of the function and the overlay never loads its
     // chapter / dropdowns.
+    // Default scale matches --bible-font-scale in bible.css. Returned only
+    // when the user has no saved preference; existing saved values win.
+    const DEFAULT_FONT_SCALE = 2.5;
     function readFontScale() {
         try {
             const v = parseFloat(localStorage.getItem(FONT_SCALE_KEY) || '');
-            return Number.isFinite(v) ? Math.min(FONT_MAX, Math.max(FONT_MIN, v)) : 1;
-        } catch (_) { return 1; }
+            return Number.isFinite(v) ? Math.min(FONT_MAX, Math.max(FONT_MIN, v)) : DEFAULT_FONT_SCALE;
+        } catch (_) { return DEFAULT_FONT_SCALE; }
     }
     function applyFontScale(scale) {
         const clamped = Math.min(FONT_MAX, Math.max(FONT_MIN, scale));
@@ -106,14 +111,16 @@
         els.chapterEl.innerHTML = '<div class="bible-overlay__notice">' + escapeHtml(message) + '</div>';
     }
     function renderChapter(dto, targetVerse) {
-        // Verses render inline (the traditional Bible-page layout); each
-        // verse is wrapped in a <span> so we can highlight + scroll to one.
-        // white-space: pre-wrap on the container preserves the source whitespace.
+        // Each verse is its own block (CSS `display: block` + first-line
+        // text-indent gives the e-Sword-style indented verse number with
+        // wrapped lines flowing back to the margin). The target verse is
+        // both aria-current (visual highlight) and pre-selected (bold).
         const parts = dto.verses.map(function (v) {
             const isTarget = targetVerse && v.verse === targetVerse;
+            const classes = 'bible-overlay__verse' + (isTarget ? ' bible-overlay__verse--selected' : '');
             const ariaCurrent = isTarget ? ' aria-current="true"' : '';
-            return '<span class="bible-overlay__verse" id="v' + v.verse + '"' + ariaCurrent + '>'
-                +    '<sup class="bible-overlay__verse-num">' + v.verse + '</sup>'
+            return '<span class="' + classes + '" id="v' + v.verse + '"' + ariaCurrent + '>'
+                +    '<span class="bible-overlay__verse-num">' + v.verse + '</span>'
                 +    escapeHtml(v.text)
                 + '</span>';
         });
@@ -307,11 +314,26 @@
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
 
+    function isTypingInForm(target) {
+        if (!target) return false;
+        const tag = target.tagName;
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+    }
     function onKeyDown(e) {
         if (els.overlay.hidden) return;
         if (e.key === 'Escape') { e.preventDefault(); close(); return; }
-        if (e.key === 'ArrowLeft' && (e.target === document.body || e.target === els.overlay)) { e.preventDefault(); gotoPrev(); return; }
-        if (e.key === 'ArrowRight' && (e.target === document.body || e.target === els.overlay)) { e.preventDefault(); gotoNext(); return; }
+
+        // Don't hijack shortcuts while the user is typing in the search
+        // input or interacting with a dropdown.
+        const inForm = isTypingInForm(e.target);
+        if (!inForm) {
+            if (e.key === 'ArrowLeft')  { e.preventDefault(); gotoPrev(); return; }
+            if (e.key === 'ArrowRight') { e.preventDefault(); gotoNext(); return; }
+            if (e.key === '+' || e.key === '=') { e.preventDefault(); bumpFontScale(FONT_STEP); return; }
+            if (e.key === '-' || e.key === '_') { e.preventDefault(); bumpFontScale(-FONT_STEP); return; }
+        }
+        // Ctrl/Cmd variants still work even when focus is on a control,
+        // matching browser-native zoom UX expectations.
         if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) { e.preventDefault(); bumpFontScale(FONT_STEP); return; }
         if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_')) { e.preventDefault(); bumpFontScale(-FONT_STEP); return; }
         trapTab(e);
