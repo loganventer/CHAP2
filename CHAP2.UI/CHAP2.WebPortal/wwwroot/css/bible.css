@@ -357,14 +357,15 @@
 }
 .bible-overlay--header-hidden .bible-overlay__header {
     /* Lift the header out of flex flow so the chapter body fills the
-       entire sheet (verse text reaches the top edge). The 40px strip
-       stays as an invisible overlaid hover-target. */
+       entire sheet (verse text reaches the top edge). The 80px strip
+       stays as an invisible overlaid hover-target -- doubled from 40px
+       so it's an easier target without aiming. */
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     z-index: 2;
-    max-height: 40px;
+    max-height: 80px;
     opacity: 0;
     border-bottom-color: transparent;
     cursor: pointer;
@@ -482,7 +483,13 @@
     background: transparent;
     color: var(--bible-text);
     min-height: 200px;
+    /* Hide the visible scrollbar -- scrolling still works via wheel,
+       touch, and keyboard. Less chrome competing with the verse text
+       in projection / reading mode. */
+    scrollbar-width: none;            /* Firefox */
+    -ms-overflow-style: none;         /* legacy Edge/IE */
 }
+.bible-overlay__body::-webkit-scrollbar { display: none; }  /* WebKit */
 @media (max-width: 600px) {
     .bible-overlay__body { padding: var(--spacing-lg); }
 }

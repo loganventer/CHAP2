@@ -495,14 +495,17 @@
         if (els.compactBtn) els.compactBtn.addEventListener('click', toggleCompact);
         if (els.resetBtn)   els.resetBtn.addEventListener('click', resetTextSettings);
 
-        // Reading-mode trigger: any user-driven scroll inside the chapter
-        // body collapses the header now (don't make the user wait out the
-        // initial show timer). Wheel + touch only -- the generic 'scroll'
-        // event also fires on programmatic scrollIntoView() during open,
-        // which would race with the initial show timer.
-        if (els.body) {
-            els.body.addEventListener('wheel', hideHeaderNow, { passive: true });
-            els.body.addEventListener('touchmove', hideHeaderNow, { passive: true });
+        // Reading-mode trigger: any user-driven scroll inside the overlay
+        // collapses the header now. Listen on the sheet (not just the
+        // body) so wheel events whose cursor happens to be over the
+        // header strip also count -- otherwise the user has to click
+        // into the body before scroll-to-hide starts working.
+        // Wheel + touch only -- the generic 'scroll' event also fires on
+        // programmatic scrollIntoView() during open, which would race
+        // with the initial show timer.
+        if (els.sheet) {
+            els.sheet.addEventListener('wheel', hideHeaderNow, { passive: true });
+            els.sheet.addEventListener('touchmove', hideHeaderNow, { passive: true });
         }
 
         els.bookSelect.addEventListener('change', function () {
