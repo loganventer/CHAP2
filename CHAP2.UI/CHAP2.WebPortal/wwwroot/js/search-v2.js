@@ -100,6 +100,12 @@ function initializeSearch() {
                 }
             }
         });
+
+        // Focus the search box on every page load -- so the user can
+        // start typing immediately after a refresh without first
+        // clicking the input.
+        try { searchInput.focus({ preventScroll: true }); }
+        catch { searchInput.focus(); }
     } else {
         console.error('Search input not found!');
     }

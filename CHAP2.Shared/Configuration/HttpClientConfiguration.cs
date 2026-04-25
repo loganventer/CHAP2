@@ -48,22 +48,24 @@ public static class HttpClientConfiguration
         // connection that keeps failing.
         .SetHandlerLifetime(TimeSpan.FromSeconds(45));
 
-        // Fast probe client -- intentionally NO retry, NO circuit breaker,
-        // short timeout. Used by health/ping calls that ask "is the API
-        // up?". Going through the resilience pipeline would defeat the
-        // point: a probe should give a quick yes/no, not retry for a
-        // minute. Sharing the breaker would also force probes to
-        // fail-fast while it's open, which is exactly what we DON'T want
-        // -- we want probes to actually attempt the call to detect recovery.
+        // Probe client -- shares the SAME circuit breaker as the search
+        // pipeline (the breaker is process-wide via static state in
+        // ApiCircuitBreakerHandler). A green probe therefore means
+        // "the search client can actually call the API right now" --
+        // not "the API answered some other endpoint".
+        //
+        // No retry handler: a probe should give a quick yes/no, not
+        // loop for tens of seconds. Short timeout for the same reason.
         services.AddHttpClient("CHAP2API-Probe", client =>
         {
             var apiBaseUrl = Environment.GetEnvironmentVariable("ApiService__BaseUrl")
                 ?? configuration[ConfigSections.ApiBaseUrl]
                 ?? SharedApiSettings.DefaultApiBaseUrl;
             client.BaseAddress = new Uri(apiBaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(6);
+            client.Timeout = TimeSpan.FromSeconds(8);
             client.DefaultRequestHeaders.Add("User-Agent", "CHAP2-WebPortal-Probe/1.0");
         })
+        .AddHttpMessageHandler<ApiCircuitBreakerHandler>()
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
