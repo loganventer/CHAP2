@@ -97,7 +97,22 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Render terminates HTTPS at its edge; trust X-Forwarded-* so the
+// in-app scheme reflects the real client request.
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+        Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Forwarded headers must be the first middleware so subsequent ones
+// see the corrected scheme and remote IP.
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
@@ -119,7 +134,13 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseHttpsRedirection();
+// Skip HTTPS redirection in production: Render handles HTTPS at the
+// edge and the container only listens on HTTP, so an in-app redirect
+// would loop or break health checks.
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();

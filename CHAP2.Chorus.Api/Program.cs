@@ -94,14 +94,42 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddResponseCompression();
 
+// Render terminates HTTPS at its edge proxy and forwards traffic to
+// the container as plain HTTP, with the original scheme in the
+// X-Forwarded-Proto header. UseForwardedHeaders teaches Kestrel to
+// trust that header so HttpsRedirection (and Request.Scheme generally)
+// reflect the real client scheme instead of treating every request as
+// HTTP and redirecting endlessly.
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+        Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    // Render's proxy is on the same Docker network; we cannot enumerate
+    // its addresses up-front, so trust any proxy.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Forwarded headers must be the FIRST middleware so subsequent ones
+// see the corrected scheme and remote IP.
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+// Skip HTTPS redirection in production: Render handles HTTPS at the
+// edge and the container only listens on HTTP, so an in-app redirect
+// would loop or break health checks.
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 app.UseResponseCompression();
 app.MapControllers();
