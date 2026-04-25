@@ -61,23 +61,42 @@ public class ChorusApiService : IChorusApiService
 
     public async Task<List<Chorus>> SearchChorusesAsync(string searchTerm, string searchMode = "Contains", string searchIn = "all", CancellationToken cancellationToken = default)
     {
+        HttpResponseMessage response;
         try
         {
             _logger.LogInformation("Searching choruses with term: {SearchTerm}, mode: {SearchMode}, in: {SearchIn}", searchTerm, searchMode, searchIn);
-            
-            var url = $"/api/choruses/search?q={Uri.EscapeDataString(searchTerm)}&searchIn={searchIn}&searchMode={searchMode}";
-            _logger.LogInformation("Search URL: {Url}", url);
-            
-            var response = await _httpClient.GetAsync(url, cancellationToken);
-            _logger.LogInformation("Search API response status: {StatusCode}", response.StatusCode);
 
-            if (response.IsSuccessStatusCode)
+            var url = $"/api/choruses/search?q={Uri.EscapeDataString(searchTerm)}&searchIn={searchIn}&searchMode={searchMode}";
+            response = await _httpClient.GetAsync(url, cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
+        {
+            // Transport-level failure (cold start, timeout, breaker open,
+            // DNS, etc.). Surface as a typed exception so the controller
+            // can return 503 and the UI can react -- instead of silently
+            // pretending the API answered with zero results.
+            throw new ApiUnavailableException("Chorus API unreachable for search.", ex);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning("Search API responded {Status}: {Error}", (int)response.StatusCode, errorContent);
+            throw new ApiUnavailableException(
+                $"Chorus API responded {(int)response.StatusCode} for search.");
+        }
+
+        try
+        {
+            // We've already thrown on transport / non-2xx above, so we
+            // know the API answered with success. From here on, an
+            // empty list legitimately means "no matches".
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("Search API response content: {Content}", content);
-                
+
                 var searchResponse = JsonSerializer.Deserialize<ApiSearchResponseDto>(content, _jsonOptions);
-                
+
                 if (searchResponse?.Results != null)
                 {
                     _logger.LogInformation("Found {Count} search results", searchResponse.Results.Count);
@@ -152,17 +171,20 @@ public class ChorusApiService : IChorusApiService
                     _logger.LogWarning("Search response or results is null");
                 }
             }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogError("Search API failed: {Error}", errorContent);
-            }
 
             return new List<Chorus>();
         }
+        catch (ApiUnavailableException)
+        {
+            // Already shaped correctly; let it propagate to the controller.
+            throw;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to search choruses with term: {SearchTerm}", searchTerm);
+            _logger.LogError(ex, "Failed to parse search response for term: {SearchTerm}", searchTerm);
+            // Parsing failure is a server-side data shape issue, not an
+            // API outage -- return empty so the UI shows "no results"
+            // without triggering recovery flow.
             return new List<Chorus>();
         }
     }

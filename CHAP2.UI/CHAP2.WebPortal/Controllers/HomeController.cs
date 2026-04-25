@@ -89,12 +89,11 @@ public class HomeController : Controller
                 return Json(new { results = new List<object>() });
             }
 
-            _logger.LogInformation("Performing search with request: Query={Query}, Mode={Mode}, Scope={Scope}", 
+            _logger.LogInformation("Performing search with request: Query={Query}, Mode={Mode}, Scope={Scope}",
                 q, searchMode, searchIn);
 
-            // Use the API service instead of local search service
             var choruses = await _chorusApiService.SearchChorusesAsync(q, searchMode, searchIn);
-            
+
             _logger.LogInformation("Search completed successfully. Found {Count} results", choruses.Count);
 
             var response = choruses.Select(r => new
@@ -109,6 +108,14 @@ public class HomeController : Controller
             });
 
             return Json(new { results = response });
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            // Surface API outages as 503 so the browser can flip into
+            // probe / overlay mode instead of silently rendering an
+            // empty result page.
+            _logger.LogWarning(ex, "Chorus API unavailable for search: {SearchTerm}", q);
+            return StatusCode(503, new { error = "api-unavailable", message = "Chorus service is starting up." });
         }
         catch (Exception ex)
         {

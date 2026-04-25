@@ -25,6 +25,12 @@
                 <button class="settings-button" id="settingsButton">
                     <i class="fas fa-cog"></i> Settings
                 </button>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="header-logout-form">
+                    @Html.AntiForgeryToken()
+                    <button class="settings-button" type="submit" title="Sign out">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
