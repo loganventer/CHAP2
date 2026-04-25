@@ -12,6 +12,10 @@
 (function () {
     'use strict';
 
+    // Default landing passage when the user clicks the Bible trigger
+    // with no prior context: Efesi\u00ebrs 4:5 — "een Here, een geloof, een doop".
+    const DEFAULT_REFERENCE = { bookId: 'efesiers', chapter: 4, verse: 5 };
+
     const FONT_SCALE_KEY = 'chap2.bible.fontScale';
     const FONT_MIN = 0.85;
     const FONT_MAX = 2.0;
@@ -333,6 +337,11 @@
         cacheDom();
         if (!els.overlay) return;
 
+        const trigger = document.getElementById('bibleTrigger');
+        if (trigger) {
+            trigger.addEventListener('click', function () { open(DEFAULT_REFERENCE); });
+        }
+
         els.closeBtn.addEventListener('click', close);
         els.overlay.addEventListener('click', function (e) {
             // Click on the dim backdrop (outside the sheet) closes.
@@ -363,6 +372,16 @@
                 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
                 target.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
             }
+        });
+
+        // Single-verse click selection: tapping a verse bolds it; tapping
+        // another verse moves the bold to the new one.
+        els.chapterEl.addEventListener('click', function (e) {
+            const verseEl = e.target.closest('.bible-overlay__verse');
+            if (!verseEl) return;
+            const prev = els.chapterEl.querySelector('.bible-overlay__verse--selected');
+            if (prev && prev !== verseEl) prev.classList.remove('bible-overlay__verse--selected');
+            verseEl.classList.toggle('bible-overlay__verse--selected');
         });
 
         els.searchInput.addEventListener('input', debouncedSearch);

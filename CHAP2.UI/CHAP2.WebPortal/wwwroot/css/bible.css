@@ -9,26 +9,46 @@
     --bible-font-scale: 1;
 }
 
-/* -------- Search bar trigger button -------- */
+/* -------- Search bar trigger button --------
+   Visually prominent so users notice scripture lookup is here.
+   Uses the theme's primary accent and a soft tinted pill so it
+   reads as a primary action, not just another icon. */
 .bible-trigger {
-    background: none;
-    border: none;
-    color: var(--text-muted);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark, var(--primary-color)));
+    border: 1px solid transparent;
+    color: #ffffff;
     cursor: pointer;
-    padding: var(--spacing-sm);
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-fast);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
     display: inline-flex;
     align-items: center;
+    gap: var(--spacing-xs);
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    letter-spacing: 0.02em;
 }
-.bible-trigger:hover,
+.bible-trigger i { font-size: 1rem; }
+.bible-trigger .bible-trigger__label {
+    /* Hidden on very narrow viewports to keep the search bar usable. */
+}
+.bible-trigger:hover {
+    filter: brightness(1.08);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+}
+.bible-trigger:active { transform: translateY(0); }
 .bible-trigger:focus-visible {
-    color: var(--primary-color);
-    background: var(--bg-tertiary);
-    outline: none;
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+@media (max-width: 600px) {
+    .bible-trigger .bible-trigger__label { display: none; }
+    .bible-trigger { padding: var(--spacing-sm); }
 }
 
 /* -------- Inline reference suggestion (above chorus results) -------- */
@@ -320,6 +340,13 @@
     border-left: 3px solid var(--primary-color);
     padding-left: var(--spacing-sm);
     border-radius: var(--radius-sm);
+}
+
+.bible-overlay__verse {
+    cursor: pointer;
+}
+.bible-overlay__verse--selected {
+    font-weight: 700;
 }
 
 .bible-overlay__skeleton {

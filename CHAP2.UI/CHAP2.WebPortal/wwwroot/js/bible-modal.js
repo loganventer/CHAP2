@@ -13,7 +13,6 @@
 
     const els = {};
     function cacheDom() {
-        els.trigger    = document.getElementById('bibleTrigger');
         els.modal      = document.getElementById('bibleModal');
         els.container  = els.modal && els.modal.querySelector('.modal-container');
         els.closeBtn   = document.getElementById('bibleModalClose');
@@ -217,9 +216,8 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         cacheDom();
-        if (!els.modal || !els.trigger) return;
+        if (!els.modal) return;
 
-        els.trigger.addEventListener('click', open);
         els.closeBtn.addEventListener('click', close);
         els.cancelBtn.addEventListener('click', close);
         els.modal.addEventListener('click', function (e) {
