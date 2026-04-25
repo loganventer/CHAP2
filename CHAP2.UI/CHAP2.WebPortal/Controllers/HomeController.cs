@@ -591,8 +591,16 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    [Microsoft.AspNetCore.Authorization.AllowAnonymous]
     public async Task<IActionResult> TestConnectivity()
     {
+        // Public health probe used by the JS api-status-indicator while
+        // the user is staring at the "starting up" overlay. It must NOT
+        // require auth -- otherwise the global authorize policy 302s it
+        // to /Account/Login, the fetch follows that, and the indicator
+        // sees HTML where it expected {connected:true|false} and can
+        // never detect recovery. The endpoint only reports a yes/no, no
+        // chorus data is exposed.
         try
         {
             var isConnected = await _chorusApiService.TestConnectivityAsync();
