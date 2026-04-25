@@ -230,15 +230,24 @@
             return;
         }
 
+        // Prefer the chapter response's book payload (it's the authoritative
+        // copy that arrived with this very chapter). Fall back to the
+        // books-index lookup. If anything is missing on the index entry
+        // (older cached fetch, partial response), dto.book makes us
+        // resilient -- in particular it always carries chapterCount, which
+        // populateChapterSelect needs.
+        const resolvedBook = dto.book || book;
+        // Keep booksById in sync so prev/next navigation has fresh data.
+        if (dto.book) booksById[dto.book.id] = dto.book;
         current = {
-            book: book,
+            book: resolvedBook,
             chapter: dto.chapter,
             verse: ref.verse || null,
             verseCount: dto.verses.length,
         };
         syncHeaderToCurrent();
         renderChapter(dto, ref.verse);
-        announce(book.name + ' hoofstuk ' + dto.chapter + ' oopgemaak');
+        announce(resolvedBook.name + ' hoofstuk ' + dto.chapter + ' oopgemaak');
     }
 
     // ---------- search inside the overlay ----------
