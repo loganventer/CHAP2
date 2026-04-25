@@ -24,16 +24,32 @@
     const SEARCH_MIN_CHARS = 2;
     const SEARCH_MAX_RESULTS = 50;
 
+    // Bump on each meaningful change so we can confirm in console that
+    // the deployed JS matches what we expect.
+    const BIBLE_OVERLAY_VERSION = 'bible-overlay-v3-diag';
+    function blog() {
+        try { console.log.apply(console, ['[bible]'].concat([].slice.call(arguments))); } catch (_) {}
+    }
+    blog('script loaded', BIBLE_OVERLAY_VERSION);
+
     // ---------- shared book-list cache (used by modal + search too) ----------
     let booksPromise = null;
     function getBooks() {
         if (!booksPromise) {
+            blog('fetching /Home/BibleBooks');
             booksPromise = fetch('/Home/BibleBooks', { credentials: 'same-origin' })
                 .then(function (r) {
+                    blog('books fetch returned status', r.status);
                     if (!r.ok) throw new Error('books-fetch-failed');
                     return r.json();
                 })
+                .then(function (json) {
+                    blog('books JSON length', Array.isArray(json) ? json.length : 'not-array',
+                         'sample[efesiers]', Array.isArray(json) ? json.find(function (b) { return b && b.id === 'efesiers'; }) : null);
+                    return json;
+                })
                 .catch(function (err) {
+                    blog('books fetch ERROR', err && err.message);
                     booksPromise = null;
                     throw err;
                 });
@@ -159,11 +175,21 @@
         }).join('');
     }
     function populateChapterSelect(book, selected) {
+        blog('populateChapterSelect called with book=', book, 'selected=', selected,
+             'chSelect=', els.chSelect, 'chapterCount typeof=', typeof (book && book.chapterCount),
+             'value=', book && book.chapterCount);
         const opts = [];
-        for (let i = 1; i <= book.chapterCount; i++) {
+        const count = book && Number(book.chapterCount);
+        if (!Number.isFinite(count) || count < 1) {
+            blog('populateChapterSelect ABORTING: invalid chapterCount', count);
+            return;
+        }
+        for (let i = 1; i <= count; i++) {
             opts.push('<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + i + '</option>');
         }
         els.chSelect.innerHTML = opts.join('');
+        blog('populateChapterSelect set', opts.length, 'options; chSelect.options.length now',
+             els.chSelect.options.length);
     }
     function populateVerseSelect(verseCount, selected) {
         const opts = [];
@@ -174,13 +200,16 @@
     }
 
     function syncHeaderToCurrent() {
-        if (!current) return;
+        blog('syncHeaderToCurrent START current=', current);
+        if (!current) { blog('syncHeaderToCurrent EARLY-RETURN: no current'); return; }
         els.title.textContent = current.book.name + ' ' + current.chapter;
         if (els.bookSelect.value !== current.book.id) els.bookSelect.value = current.book.id;
         populateChapterSelect(current.book, current.chapter);
         populateVerseSelect(current.verseCount || 1, current.verse || 1);
         els.prevBtn.disabled = !canGoPrev();
         els.nextBtn.disabled = !canGoNext();
+        blog('syncHeaderToCurrent DONE; chSelect.options.length=', els.chSelect.options.length,
+             'vSelect.options.length=', els.vSelect.options.length);
     }
 
     function canGoPrev() {
@@ -214,30 +243,35 @@
 
     // ---------- navigation ----------
     async function navigate(ref) {
+        blog('navigate START ref=', ref, 'booksById has', Object.keys(booksById).length, 'entries');
         const book = booksById[ref.bookId];
+        blog('navigate booksById lookup for', ref.bookId, '=>', book);
         if (!book) {
+            blog('navigate FAILING: book missing in booksById');
             renderError('Boek nie gevind nie.');
             return;
         }
         renderSkeleton();
         let dto;
         try {
-            const resp = await fetch('/Home/BibleChapter?bookId=' + encodeURIComponent(book.id) + '&chapter=' + ref.chapter, { credentials: 'same-origin' });
+            const url = '/Home/BibleChapter?bookId=' + encodeURIComponent(book.id) + '&chapter=' + ref.chapter;
+            blog('navigate fetching', url);
+            const resp = await fetch(url, { credentials: 'same-origin' });
+            blog('navigate chapter fetch returned status', resp.status);
             if (!resp.ok) throw new Error('chapter-fetch-failed');
             dto = await resp.json();
+            blog('navigate dto received: chapter=', dto && dto.chapter,
+                 'verses.length=', dto && dto.verses && dto.verses.length,
+                 'dto.book=', dto && dto.book);
         } catch (err) {
+            blog('navigate chapter fetch ERROR', err && err.message);
             renderError('Kon nie hoofstuk laai nie.');
             return;
         }
 
-        // Prefer the chapter response's book payload (it's the authoritative
-        // copy that arrived with this very chapter). Fall back to the
-        // books-index lookup. If anything is missing on the index entry
-        // (older cached fetch, partial response), dto.book makes us
-        // resilient -- in particular it always carries chapterCount, which
-        // populateChapterSelect needs.
         const resolvedBook = dto.book || book;
-        // Keep booksById in sync so prev/next navigation has fresh data.
+        blog('navigate resolvedBook=', resolvedBook,
+             'chapterCount=', resolvedBook && resolvedBook.chapterCount);
         if (dto.book) booksById[dto.book.id] = dto.book;
         current = {
             book: resolvedBook,
@@ -245,9 +279,11 @@
             verse: ref.verse || null,
             verseCount: dto.verses.length,
         };
+        blog('navigate calling syncHeaderToCurrent with current=', current);
         syncHeaderToCurrent();
         renderChapter(dto, ref.verse);
         announce(resolvedBook.name + ' hoofstuk ' + dto.chapter + ' oopgemaak');
+        blog('navigate DONE');
     }
 
     // ---------- search inside the overlay ----------
@@ -328,14 +364,17 @@
     }
 
     async function open(ref) {
-        if (!ref || !ref.bookId || !ref.chapter) return;
+        blog('open START ref=', ref, 'cached books count=', books.length);
+        if (!ref || !ref.bookId || !ref.chapter) { blog('open EARLY-RETURN: bad ref'); return; }
         try { books = books.length ? books : await getBooks(); }
-        catch (_) {
-            // Books unavailable — open the overlay anyway with an error.
+        catch (e) {
+            blog('open getBooks failed', e && e.message);
             books = [];
         }
+        blog('open after getBooks: books.length=', books.length);
         booksById = Object.create(null);
         books.forEach(function (b) { booksById[b.id] = b; });
+        blog('open booksById built; sample efesiers=', booksById['efesiers']);
 
         if (els.bookSelect && !els.bookSelect.options.length && books.length) populateBookSelect();
 
