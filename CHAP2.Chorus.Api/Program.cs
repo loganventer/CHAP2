@@ -124,7 +124,18 @@ builder.Services.AddSingleton<IChorusGitHubSync>(provider =>
         remotePathPrefix: opts.Value.RemotePathPrefix,
         authorName: opts.Value.AuthorName,
         authorEmail: opts.Value.AuthorEmail,
-        tokenAccessor: () => opts.Value.GitHubToken,
+        // Late-bound token: tries the structured config binding first,
+        // then falls back to whichever common GitHub-PAT env var Render
+        // has set. Means the existing secret on the dashboard works
+        // regardless of the exact env-var name.
+        tokenAccessor: () =>
+            FirstNonEmpty(
+                opts.Value.GitHubToken,
+                Environment.GetEnvironmentVariable("GitSync__GitHubToken"),
+                Environment.GetEnvironmentVariable("GITHUB_TOKEN"),
+                Environment.GetEnvironmentVariable("GITHUB_PAT"),
+                Environment.GetEnvironmentVariable("GH_TOKEN"),
+                Environment.GetEnvironmentVariable("GH_PAT")),
         logger: logger);
 });
 
@@ -202,3 +213,9 @@ app.UseCors();
 app.UseResponseCompression();
 app.MapControllers();
 app.Run();
+
+static string? FirstNonEmpty(params string?[] values)
+{
+    foreach (var v in values) if (!string.IsNullOrWhiteSpace(v)) return v;
+    return null;
+}

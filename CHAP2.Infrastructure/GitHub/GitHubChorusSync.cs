@@ -111,6 +111,24 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
             ? Directory.EnumerateFiles(localDirectory, "*.json", SearchOption.TopDirectoryOnly).ToList()
             : new List<string>();
 
+        // Safety / self-heal: if the disk is empty but the remote has
+        // files, the previous bootstrap almost certainly failed (rate
+        // limit, no PAT yet, etc). Mirroring in this state would push
+        // a "delete every chorus" commit and wipe the repo. Instead,
+        // pull everything and exit -- the daily cycle will mirror normally
+        // once the disk is populated.
+        if (local.Count == 0 && remote.Count > 0)
+        {
+            _logger.LogWarning(
+                "Disk is empty but GitHub has {Count} chorus file(s); refusing to mirror as deletes -- bootstrapping instead",
+                remote.Count);
+            Report(progress, ChorusGitSyncStage.Pulling,
+                $"Disk empty; bootstrapping {remote.Count} file(s) from GitHub");
+            await BootstrapAsync(localDirectory, cancellationToken);
+            Report(progress, ChorusGitSyncStage.Done, $"Bootstrapped {remote.Count} file(s); nothing to push");
+            return ChorusMirrorResult.NoChange(refSha);
+        }
+
         var changes = new List<TreeChange>();
         var created = 0;
         var updated = 0;
