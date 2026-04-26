@@ -17,10 +17,14 @@ services:
         value: http://0.0.0.0:10000
       - key: ASPNETCORE_Kestrel__Endpoints__Http__Url
         value: http://0.0.0.0:10000
-      # Chorus data lives on the persistent disk so edits survive
-      # redeploys.
+      # Persistent layout on the disk:
+      #   /var/data/repo/                     <- sparse + blobless clone
+      #   /var/data/repo/.git/                <- refs + trees only (~MB)
+      #   /var/data/repo/data/chorus/{guid}.json   <- the only checked-out slice
+      # Chorus reads/writes use the data/chorus path; git operations
+      # run at the working-tree root so add/commit/push see the slice.
       - key: ChorusResource__FolderPath
-        value: /var/data/chorus
+        value: /var/data/repo/data/chorus
       # Daily git sync (pull + commit + push) at 03:00 UTC. Disabled
       # by default in the code; only Render flips it on so a local
       # `docker run` of this image stays offline-safe.
@@ -29,7 +33,9 @@ services:
       - key: GitSync__ScheduleUtc
         value: "03:00"
       - key: GitSync__DataDirectory
-        value: /var/data/chorus
+        value: /var/data/repo
+      - key: GitSync__SparseCheckoutPath
+        value: data/chorus
       - key: GitSync__ImageSeedDirectory
         value: /app/data/chorus
       - key: GitSync__RemoteUrl

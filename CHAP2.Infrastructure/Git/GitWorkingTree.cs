@@ -19,6 +19,7 @@ public sealed class GitWorkingTree : IGitWorkingTree
     private readonly string _authorName;
     private readonly string _authorEmail;
     private readonly string? _githubToken;
+    private readonly string? _sparsePath;
     private readonly IGitCommandRunner _runner;
     private readonly ILogger<GitWorkingTree> _logger;
 
@@ -29,6 +30,7 @@ public sealed class GitWorkingTree : IGitWorkingTree
         string authorName,
         string authorEmail,
         string? githubToken,
+        string? sparseCheckoutPath,
         IGitCommandRunner runner,
         ILogger<GitWorkingTree> logger)
     {
@@ -42,6 +44,7 @@ public sealed class GitWorkingTree : IGitWorkingTree
         _authorName = !string.IsNullOrWhiteSpace(authorName) ? authorName : "CHAP2 API";
         _authorEmail = !string.IsNullOrWhiteSpace(authorEmail) ? authorEmail : "chap2-api@noreply.local";
         _githubToken = string.IsNullOrWhiteSpace(githubToken) ? null : githubToken;
+        _sparsePath = string.IsNullOrWhiteSpace(sparseCheckoutPath) ? null : sparseCheckoutPath;
         _runner = runner ?? throw new ArgumentNullException(nameof(runner));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -144,9 +147,28 @@ public sealed class GitWorkingTree : IGitWorkingTree
 
     private async Task CloneInto(string targetDir, CancellationToken cancellationToken)
     {
-        var args = new List<string> { "clone", "--depth", "1", "--branch", _branch, BuildAuthRemoteUrl(), targetDir };
+        // Sparse + blobless: keeps the working tree to just the slice
+        // we mutate (data/chorus) and the .git store to refs+trees only
+        // (no blob history). Disk footprint stays a few MB even though
+        // the source repo is much larger.
+        var args = new List<string>
+        {
+            "clone",
+            "--depth", "1",
+            "--filter=blob:none",
+            "--sparse",
+            "--branch", _branch,
+            BuildAuthRemoteUrl(),
+            targetDir,
+        };
         var result = await _runner.RunAsync(Directory.GetParent(targetDir)?.FullName ?? "/", args.ToArray());
         if (result.ExitCode != 0) ThrowGit("clone", result);
+
+        if (_sparsePath is not null)
+        {
+            var sparse = await _runner.RunAsync(targetDir, "sparse-checkout", "set", _sparsePath);
+            if (sparse.ExitCode != 0) ThrowGit("sparse-checkout", sparse);
+        }
     }
 
     private async Task ConfigureIdentity()

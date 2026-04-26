@@ -120,6 +120,7 @@ builder.Services.AddSingleton<IGitWorkingTree>(provider =>
         authorName: opts.AuthorName,
         authorEmail: opts.AuthorEmail,
         githubToken: opts.GitHubToken,
+        sparseCheckoutPath: opts.SparseCheckoutPath,
         runner: runner,
         logger: logger);
 });

@@ -180,6 +180,13 @@ public class DiskBibleRepository : IBibleRepository
                     await using var stream = File.OpenRead(chapterPath);
                     chapterDto = await JsonSerializer.DeserializeAsync<BibleChapterDto>(stream, _jsonOptions, cancellationToken);
                 }
+                catch (OperationCanceledException)
+                {
+                    // The caller (typically a SSE stream) cancelled the
+                    // request -- propagate so the enumeration ends, not
+                    // a "corrupt file" warning per skipped chapter.
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Skipping unreadable chapter file {Path}", chapterPath);

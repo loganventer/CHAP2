@@ -12,8 +12,20 @@ public sealed class GitSyncOptions
     /// <summary>HH:mm UTC time-of-day for the daily sync (e.g. "03:00").</summary>
     public string ScheduleUtc { get; set; } = "03:00";
 
-    /// <summary>Absolute path on disk where the chorus working tree lives.</summary>
+    /// <summary>
+    /// Absolute path on disk where the git working tree (the cloned
+    /// repo) lives. The actual chorus JSONs live one level deeper at
+    /// <c>{DataDirectory}/{SparseCheckoutPath}</c>; ChorusResource
+    /// points there.
+    /// </summary>
     public string DataDirectory { get; set; } = "data/chorus";
+
+    /// <summary>
+    /// Subset of the repo we actually need on disk -- the rest is
+    /// excluded via sparse checkout so the working tree stays small.
+    /// Empty string means "everything" (sparse disabled).
+    /// </summary>
+    public string SparseCheckoutPath { get; set; } = "data/chorus";
 
     /// <summary>Absolute path inside the image for fallback seeding when Enabled=false.</summary>
     public string ImageSeedDirectory { get; set; } = "/app/data/chorus";
