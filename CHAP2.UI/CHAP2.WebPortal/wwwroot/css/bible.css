@@ -333,9 +333,9 @@
     position: relative;
 }
 
-/* 40px frosted-glass fades at the top and bottom of the sheet so verse
+/* 60px frosted-glass fades at the top and bottom of the sheet so verse
    text doesn't slam into the chrome edges. The mask gradient makes the
-   blur strongest at the very edge and fade to nothing 40px in.
+   blur strongest at the very edge and fade to nothing 60px in.
    z-index 1 places the fades above the body content (z auto) but below
    the header (z 3) so the header's chrome stays crisp. */
 .bible-overlay__sheet::before,
@@ -344,7 +344,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    height: 40px;
+    height: 60px;
     pointer-events: none;
     z-index: 1;
     backdrop-filter: blur(8px) saturate(115%);
