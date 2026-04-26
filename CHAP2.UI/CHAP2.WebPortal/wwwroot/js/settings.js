@@ -359,6 +359,25 @@ class SettingsManager {
                                 </div>
                             </div>
                         </div>
+
+                        <div class="settings-section">
+                            <div class="settings-section-title">
+                                <i class="fab fa-github"></i>
+                                Sync to GitHub
+                            </div>
+                            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+                                Pushes any chorus edits made since the last sync to GitHub. Runs automatically once a day; this button forces it now.
+                            </p>
+                            <button class="mass-edit-btn" id="syncForceBtn" style="width: 100%;">
+                                <i class="fas fa-cloud-upload-alt"></i> Sync now
+                            </button>
+                            <div id="syncProgressContainer" class="sync-progress" hidden>
+                                <div class="sync-progress__bar">
+                                    <div class="sync-progress__fill" id="syncProgressFill"></div>
+                                </div>
+                                <div class="sync-progress__status" id="syncProgressStatus">Starting…</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="settings-footer">
@@ -488,6 +507,117 @@ class SettingsManager {
         const massEditBtn = document.getElementById('massEditBtn');
         if (massEditBtn) {
             massEditBtn.addEventListener('click', () => this.enterMassEditMode());
+        }
+
+        // Force-sync button
+        const syncBtn = document.getElementById('syncForceBtn');
+        if (syncBtn) {
+            syncBtn.addEventListener('click', () => this.runForceSync());
+        }
+    }
+
+    /**
+     * Force a chorus git-sync now and stream stage-by-stage progress
+     * into the progress bar. Server emits SSE events:
+     *   data: {stage:"Pulling"|"Staging"|"Committing"|"Pushing"|"Failed", message, atUtc}
+     *   event: done    data: {pulled,filesCommitted,pushed,error}
+     */
+    async runForceSync() {
+        const btn = document.getElementById('syncForceBtn');
+        const container = document.getElementById('syncProgressContainer');
+        const fill = document.getElementById('syncProgressFill');
+        const status = document.getElementById('syncProgressStatus');
+        if (!btn || !container || !fill || !status) return;
+
+        // Stage -> percentage so the bar climbs as the worker progresses.
+        const stagePercent = {
+            'Pulling':    20,
+            'Staging':    40,
+            'Committing': 65,
+            'Pushing':    85,
+            'Done':       100,
+            'Skipped':    100,
+            'Failed':     100,
+        };
+
+        btn.disabled = true;
+        container.hidden = false;
+        fill.style.width = '5%';
+        fill.classList.remove('sync-progress__fill--error');
+        status.textContent = 'Starting…';
+
+        try {
+            const response = await fetch('/Home/SyncForce', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'text/event-stream' },
+            });
+            if (!response.ok || !response.body) {
+                throw new Error(response.status === 503 ? 'Sync is disabled in this environment.' : `HTTP ${response.status}`);
+            }
+
+            // Manual SSE parse over fetch's ReadableStream so we can use
+            // POST (EventSource only supports GET).
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let lastError = null;
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                let newlineIx;
+                while ((newlineIx = buffer.indexOf('\n\n')) !== -1) {
+                    const event = buffer.slice(0, newlineIx);
+                    buffer = buffer.slice(newlineIx + 2);
+                    const lines = event.split('\n');
+                    let evtName = 'message';
+                    let dataStr = '';
+                    for (const line of lines) {
+                        if (line.startsWith('event:')) evtName = line.slice(6).trim();
+                        else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+                    }
+                    if (!dataStr) continue;
+                    try {
+                        const payload = JSON.parse(dataStr);
+                        if (evtName === 'error') {
+                            lastError = payload.error || 'Sync failed';
+                        } else if (evtName === 'done') {
+                            // Final summary
+                            if (payload.error) {
+                                lastError = payload.error;
+                            } else {
+                                fill.style.width = '100%';
+                                status.textContent = payload.pushed
+                                    ? `Pushed ${payload.filesCommitted} file${payload.filesCommitted === 1 ? '' : 's'}`
+                                    : 'Already up to date';
+                            }
+                        } else {
+                            // Progress event
+                            const stageName = typeof payload.stage === 'number'
+                                ? Object.keys(stagePercent)[payload.stage]   // numeric enum from server
+                                : payload.stage;
+                            const pct = stagePercent[stageName] ?? 50;
+                            fill.style.width = pct + '%';
+                            status.textContent = payload.message || stageName || 'Working…';
+                            if (stageName === 'Failed') {
+                                lastError = payload.message || 'Sync failed';
+                            }
+                        }
+                    } catch (_) { /* skip malformed event */ }
+                }
+            }
+            if (lastError) {
+                fill.style.width = '100%';
+                fill.classList.add('sync-progress__fill--error');
+                status.textContent = lastError;
+            }
+        } catch (err) {
+            fill.style.width = '100%';
+            fill.classList.add('sync-progress__fill--error');
+            status.textContent = (err && err.message) || 'Sync failed';
+        } finally {
+            btn.disabled = false;
         }
     }
 

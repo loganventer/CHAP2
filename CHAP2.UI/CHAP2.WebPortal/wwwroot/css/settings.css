@@ -321,3 +321,29 @@
         justify-content: center;
     }
 }
+
+/* Force-sync progress bar (settings panel) */
+.sync-progress {
+    margin-top: 12px;
+}
+.sync-progress[hidden] { display: none; }
+.sync-progress__bar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.sync-progress__fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary-color, #6366f1);
+    transition: width 0.25s ease;
+}
+.sync-progress__fill--error {
+    background: var(--error-color, #ef4444);
+}
+.sync-progress__status {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #555;
+}

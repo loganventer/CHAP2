@@ -20,6 +20,7 @@ public class HomeController : Controller
     private readonly IIntelligentSearchService _intelligentSearchService;
     private readonly ISearchService _searchService;
     private readonly IBibleApiService _bibleApiService;
+    private readonly ISyncApiService _syncApiService;
     private readonly ILogger<HomeController> _logger;
 
     public HomeController(
@@ -32,6 +33,7 @@ public class HomeController : Controller
         IIntelligentSearchService intelligentSearchService,
         ISearchService searchService,
         IBibleApiService bibleApiService,
+        ISyncApiService syncApiService,
         ILogger<HomeController> logger)
     {
         _chorusApiService = chorusApiService;
@@ -43,6 +45,7 @@ public class HomeController : Controller
         _intelligentSearchService = intelligentSearchService;
         _searchService = searchService;
         _bibleApiService = bibleApiService;
+        _syncApiService = syncApiService;
         _logger = logger;
     }
 
@@ -213,6 +216,34 @@ public class HomeController : Controller
         {
             // Browser closed the connection -- nothing to do.
         }
+    }
+
+    /// <summary>
+    /// SSE proxy that forwards the API's force-sync stream to the
+    /// browser. Auth gate fires here before we open the upstream
+    /// connection; bytes copy through unbuffered.
+    /// </summary>
+    [HttpPost]
+    public async Task SyncForce(CancellationToken cancellationToken)
+    {
+        Response.Headers.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        try
+        {
+            await _syncApiService.ForceSyncAsync(Response.Body, cancellationToken);
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Sync API unavailable for force sync");
+            if (!Response.HasStarted)
+            {
+                Response.StatusCode = 503;
+                await Response.WriteAsync("event: error\ndata: {\"error\":\"api-unavailable\"}\n\n", cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) { /* client disconnected */ }
     }
 
     [HttpGet]

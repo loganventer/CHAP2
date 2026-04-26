@@ -2,6 +2,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 5001
 
+# git is needed at runtime for the daily chorus sync (clone / pull /
+# commit / push against /var/data/chorus). ca-certificates is needed
+# for HTTPS to github.com.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 

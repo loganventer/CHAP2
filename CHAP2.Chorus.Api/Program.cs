@@ -1,4 +1,5 @@
 using CHAP2.Chorus.Api.Configuration;
+using CHAP2.Chorus.Api.HostedServices;
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Application.EventHandlers;
@@ -45,6 +46,8 @@ builder.Services.Configure<SearchSettings>(
     builder.Configuration.GetSection("SearchSettings"));
 builder.Services.Configure<SlideConversionSettings>(
     builder.Configuration.GetSection("SlideConversionSettings"));
+builder.Services.Configure<GitSyncOptions>(
+    builder.Configuration.GetSection("GitSync"));
 
 // Register the base repository
 builder.Services.AddSingleton<DiskChorusRepository>(provider =>
@@ -98,20 +101,37 @@ builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreate
 builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedEventHandler>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedEventHandler>();
 
-// Git sync: pushes chorus changes to the remote so local edits survive Render redeploys.
+// Git sync: a single working tree at GitSync.DataDirectory. The
+// background service syncs once a day at GitSync.ScheduleUtc; the
+// SyncController exposes a force-sync SSE endpoint. When
+// GitSync.Enabled is false (default; off in dev / offline Docker) the
+// background service no-ops and the bootstrapper seeds from baked-in
+// image data instead of cloning.
 builder.Services.AddSingleton<IGitCommandRunner, GitCommandRunner>();
-builder.Services.AddSingleton<IGitRepositoryLocator, GitRepositoryLocator>();
-builder.Services.AddSingleton<IChorusGitSync>(provider =>
+builder.Services.AddSingleton<IGitWorkingTree>(provider =>
 {
-    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChorusResourceOptions>>().Value;
+    var opts = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitSyncOptions>>().Value;
     var runner = provider.GetRequiredService<IGitCommandRunner>();
-    var locator = provider.GetRequiredService<IGitRepositoryLocator>();
-    var logger = provider.GetRequiredService<ILogger<ChorusGitSync>>();
-    return new ChorusGitSync(options.FolderPath, runner, locator, logger);
+    var logger = provider.GetRequiredService<ILogger<GitWorkingTree>>();
+    return new GitWorkingTree(
+        treePath: opts.DataDirectory,
+        remoteUrl: opts.RemoteUrl,
+        branch: opts.Branch,
+        authorName: opts.AuthorName,
+        authorEmail: opts.AuthorEmail,
+        githubToken: opts.GitHubToken,
+        runner: runner,
+        logger: logger);
 });
-builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreatedGitSyncHandler>();
-builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedGitSyncHandler>();
-builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedGitSyncHandler>();
+builder.Services.AddSingleton<IChorusGitSyncOrchestrator, ChorusGitSyncOrchestrator>();
+builder.Services.AddSingleton<IChorusDiskBootstrapper>(provider =>
+{
+    var opts = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitSyncOptions>>().Value;
+    var tree = provider.GetRequiredService<IGitWorkingTree>();
+    var logger = provider.GetRequiredService<ILogger<ChorusDiskBootstrapper>>();
+    return new ChorusDiskBootstrapper(opts.Enabled, opts.DataDirectory, opts.ImageSeedDirectory, tree, logger);
+});
+builder.Services.AddHostedService<ChorusGitSyncBackgroundService>();
 
 builder.Services.AddControllers(options =>
 {
@@ -139,6 +159,16 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
 });
 
 var app = builder.Build();
+
+// Bootstrap the chorus disk before serving traffic so the very first
+// request finds a populated working tree (clones the remote when git
+// sync is enabled, seeds from the image otherwise). Idempotent.
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider
+        .GetRequiredService<IChorusDiskBootstrapper>()
+        .EnsureReadyAsync();
+}
 
 // Forwarded headers must be the FIRST middleware so subsequent ones
 // see the corrected scheme and remote IP.
