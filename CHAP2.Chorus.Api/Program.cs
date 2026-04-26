@@ -4,7 +4,7 @@ using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Application.EventHandlers;
 using CHAP2.Domain.Events;
-using CHAP2.Infrastructure.Git;
+using CHAP2.Infrastructure.GitHub;
 using CHAP2.Infrastructure.Repositories;
 using CHAP2.Infrastructure.Repositories.Bible;
 using CHAP2.Shared.Configuration;
@@ -101,36 +101,46 @@ builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreate
 builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedEventHandler>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedEventHandler>();
 
-// Git sync: a single working tree at GitSync.DataDirectory. The
-// background service syncs once a day at GitSync.ScheduleUtc; the
-// SyncController exposes a force-sync SSE endpoint. When
-// GitSync.Enabled is false (default; off in dev / offline Docker) the
-// background service no-ops and the bootstrapper seeds from baked-in
-// image data instead of cloning.
-builder.Services.AddSingleton<IGitCommandRunner, GitCommandRunner>();
-builder.Services.AddSingleton<IGitWorkingTree>(provider =>
+// Chorus sync over the GitHub Git Data API. Mirrors /var/data/{id}.json
+// to {RemotePathPrefix}/{id}.json on the configured branch. One commit
+// per sync regardless of file count. No git binary, no .git on disk.
+//
+// The token accessor re-reads the PAT from options on every request so
+// a future PAT-rotation flow takes effect immediately.
+builder.Services.AddHttpClient(nameof(GitHubChorusSync), client =>
 {
-    var opts = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitSyncOptions>>().Value;
-    var runner = provider.GetRequiredService<IGitCommandRunner>();
-    var logger = provider.GetRequiredService<ILogger<GitWorkingTree>>();
-    return new GitWorkingTree(
-        treePath: opts.DataDirectory,
-        remoteUrl: opts.RemoteUrl,
-        branch: opts.Branch,
-        authorName: opts.AuthorName,
-        authorEmail: opts.AuthorEmail,
-        githubToken: opts.GitHubToken,
-        sparseCheckoutPath: opts.SparseCheckoutPath,
-        runner: runner,
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+builder.Services.AddSingleton<IChorusGitHubSync>(provider =>
+{
+    var http = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(GitHubChorusSync));
+    var opts = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitSyncOptions>>();
+    var logger = provider.GetRequiredService<ILogger<GitHubChorusSync>>();
+    return new GitHubChorusSync(
+        httpClient: http,
+        owner: opts.Value.Owner,
+        repo: opts.Value.Repo,
+        branch: opts.Value.Branch,
+        remotePathPrefix: opts.Value.RemotePathPrefix,
+        authorName: opts.Value.AuthorName,
+        authorEmail: opts.Value.AuthorEmail,
+        tokenAccessor: () => opts.Value.GitHubToken,
         logger: logger);
 });
-builder.Services.AddSingleton<IChorusGitSyncOrchestrator, ChorusGitSyncOrchestrator>();
+
+builder.Services.AddSingleton<IChorusGitSyncOrchestrator>(provider =>
+{
+    var opts = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitSyncOptions>>().Value;
+    var sync = provider.GetRequiredService<IChorusGitHubSync>();
+    var logger = provider.GetRequiredService<ILogger<ChorusGitSyncOrchestrator>>();
+    return new ChorusGitSyncOrchestrator(sync, opts.DataDirectory, logger);
+});
 builder.Services.AddSingleton<IChorusDiskBootstrapper>(provider =>
 {
     var opts = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitSyncOptions>>().Value;
-    var tree = provider.GetRequiredService<IGitWorkingTree>();
+    var sync = provider.GetRequiredService<IChorusGitHubSync>();
     var logger = provider.GetRequiredService<ILogger<ChorusDiskBootstrapper>>();
-    return new ChorusDiskBootstrapper(opts.Enabled, opts.DataDirectory, opts.ImageSeedDirectory, tree, logger);
+    return new ChorusDiskBootstrapper(opts.Enabled, opts.DataDirectory, opts.ImageSeedDirectory, sync, logger);
 });
 builder.Services.AddHostedService<ChorusGitSyncBackgroundService>();
 

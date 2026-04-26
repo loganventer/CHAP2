@@ -17,37 +17,35 @@ services:
         value: http://0.0.0.0:10000
       - key: ASPNETCORE_Kestrel__Endpoints__Http__Url
         value: http://0.0.0.0:10000
-      # Persistent layout on the disk:
-      #   /var/data/repo/                     <- sparse + blobless clone
-      #   /var/data/repo/.git/                <- refs + trees only (~MB)
-      #   /var/data/repo/data/chorus/{guid}.json   <- the only checked-out slice
-      # Chorus reads/writes use the data/chorus path; git operations
-      # run at the working-tree root so add/commit/push see the slice.
+      # Disk layout: chorus JSONs live FLAT at /var/data/{id}.json.
+      # No git on disk -- the daily sync uses the GitHub Git Data API
+      # to mirror the directory to data/chorus/ in the repo.
       - key: ChorusResource__FolderPath
-        value: /var/data/repo/data/chorus
-      # Daily git sync (pull + commit + push) at 03:00 UTC. Disabled
-      # by default in the code; only Render flips it on so a local
-      # `docker run` of this image stays offline-safe.
+        value: /var/data
+      # Daily GitHub mirror at 03:00 UTC. Disabled by default in the
+      # code so a local `docker run` of this image stays offline-safe.
       - key: GitSync__Enabled
         value: "true"
       - key: GitSync__ScheduleUtc
         value: "03:00"
       - key: GitSync__DataDirectory
-        value: /var/data/repo
-      - key: GitSync__SparseCheckoutPath
-        value: data/chorus
+        value: /var/data
       - key: GitSync__ImageSeedDirectory
         value: /app/data/chorus
-      - key: GitSync__RemoteUrl
-        value: https://github.com/loganventer/CHAP2.git
+      - key: GitSync__Owner
+        value: loganventer
+      - key: GitSync__Repo
+        value: CHAP2
       - key: GitSync__Branch
         value: main
+      - key: GitSync__RemotePathPrefix
+        value: data/chorus
       - key: GitSync__AuthorName
         value: CHAP2 API
       - key: GitSync__AuthorEmail
         value: chap2-api@noreply.local
       - key: GitSync__GitHubToken
-        sync: false   # set as a Render secret; reuse the existing PAT
+        sync: false   # set as a Render secret; the existing PAT
 
   - type: web
     name: chap2-web

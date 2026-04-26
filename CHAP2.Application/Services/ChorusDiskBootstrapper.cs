@@ -6,36 +6,36 @@ namespace CHAP2.Application.Services;
 /// <summary>
 /// First-start setup of the chorus data directory. Idempotent.
 ///
-/// When git-sync is enabled the bootstrapper composes
-/// <see cref="IGitWorkingTree"/> to clone the remote into the data
-/// directory. When disabled (offline / dev container) it falls back to
-/// copying the baked-in image data into the directory if the directory
-/// is empty.
+/// Two paths depending on whether GitHub sync is enabled:
+///   - Enabled: pull every chorus JSON from the configured remote
+///     into the data directory via <see cref="IChorusGitHubSync"/>.
+///   - Disabled (offline / dev container): seed from the baked-in
+///     image data when the data directory is empty.
 ///
-/// One responsibility (Single Responsibility): get the disk to a usable
-/// state. The orchestrator handles ongoing sync.
+/// Composition over inheritance: depends on the narrow sync contract
+/// and the file system; doesn't know about HTTP, git, or schedules.
 /// </summary>
 public sealed class ChorusDiskBootstrapper : IChorusDiskBootstrapper
 {
-    private readonly bool _gitSyncEnabled;
+    private readonly bool _gitHubSyncEnabled;
     private readonly string _dataDirectory;
     private readonly string _imageSeedDirectory;
-    private readonly IGitWorkingTree _tree;
+    private readonly IChorusGitHubSync _sync;
     private readonly ILogger<ChorusDiskBootstrapper> _logger;
 
     public ChorusDiskBootstrapper(
-        bool gitSyncEnabled,
+        bool gitHubSyncEnabled,
         string dataDirectory,
         string imageSeedDirectory,
-        IGitWorkingTree tree,
+        IChorusGitHubSync sync,
         ILogger<ChorusDiskBootstrapper> logger)
     {
-        _gitSyncEnabled = gitSyncEnabled;
+        _gitHubSyncEnabled = gitHubSyncEnabled;
         _dataDirectory = !string.IsNullOrWhiteSpace(dataDirectory)
             ? dataDirectory
             : throw new ArgumentException("dataDirectory required", nameof(dataDirectory));
         _imageSeedDirectory = imageSeedDirectory ?? string.Empty;
-        _tree = tree ?? throw new ArgumentNullException(nameof(tree));
+        _sync = sync ?? throw new ArgumentNullException(nameof(sync));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -43,21 +43,23 @@ public sealed class ChorusDiskBootstrapper : IChorusDiskBootstrapper
     {
         Directory.CreateDirectory(_dataDirectory);
 
-        if (_gitSyncEnabled)
+        if (_gitHubSyncEnabled)
         {
-            if (await _tree.IsClonedAsync(cancellationToken))
+            try
             {
-                _logger.LogDebug("Chorus disk already a git working tree at {Path}", _dataDirectory);
+                await _sync.BootstrapAsync(_dataDirectory, cancellationToken);
                 return;
             }
-            _logger.LogInformation("Cloning chorus repo into {Path}", _dataDirectory);
-            await _tree.EnsureCloneAsync(cancellationToken);
-            return;
+            catch (Exception ex)
+            {
+                // Bootstrap is best-effort; never crash the process. The
+                // daily worker / force-sync UI will retry, and the disk
+                // is still usable with whatever was already there.
+                _logger.LogError(ex, "GitHub bootstrap failed; continuing with whatever's on disk");
+                return;
+            }
         }
 
-        // Git-sync disabled (e.g. local dev / offline Docker). Seed from
-        // the baked-in image data only when the disk is empty -- never
-        // clobber existing files.
         if (Directory.EnumerateFileSystemEntries(_dataDirectory).Any())
         {
             _logger.LogDebug("Chorus disk already populated; skipping image seed");
@@ -65,7 +67,7 @@ public sealed class ChorusDiskBootstrapper : IChorusDiskBootstrapper
         }
         if (!Directory.Exists(_imageSeedDirectory))
         {
-            _logger.LogWarning("No image-seed directory found at {Path}; chorus disk left empty", _imageSeedDirectory);
+            _logger.LogWarning("No image-seed directory at {Path}; chorus disk left empty", _imageSeedDirectory);
             return;
         }
         var copied = SeedFromImage(_imageSeedDirectory, _dataDirectory);

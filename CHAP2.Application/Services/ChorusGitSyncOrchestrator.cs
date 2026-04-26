@@ -1,4 +1,3 @@
-using CHAP2.Application.Helpers;
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Models;
 using Microsoft.Extensions.Logging;
@@ -6,29 +5,35 @@ using Microsoft.Extensions.Logging;
 namespace CHAP2.Application.Services;
 
 /// <summary>
-/// The only place in the codebase that knows the *order* of operations
-/// for a chorus sync. Composes <see cref="IGitWorkingTree"/> for the
-/// git plumbing -- doesn't shell out itself, doesn't read configuration,
-/// doesn't know the schedule.
+/// The only place that knows the *order* of operations for a chorus
+/// sync. Composes <see cref="IChorusGitHubSync"/> for the GitHub side
+/// and the configured local data directory. Pure composition -- no
+/// HTTP, no disk plumbing, no schedule.
 /// </summary>
 public sealed class ChorusGitSyncOrchestrator : IChorusGitSyncOrchestrator
 {
-    private readonly IGitWorkingTree _tree;
+    private readonly IChorusGitHubSync _gitHub;
+    private readonly string _localDirectory;
     private readonly Func<DateTime> _utcNow;
     private readonly ILogger<ChorusGitSyncOrchestrator> _logger;
 
     public ChorusGitSyncOrchestrator(
-        IGitWorkingTree tree,
+        IChorusGitHubSync gitHub,
+        string localDirectory,
         ILogger<ChorusGitSyncOrchestrator> logger)
-        : this(tree, () => DateTime.UtcNow, logger) { }
+        : this(gitHub, localDirectory, () => DateTime.UtcNow, logger) { }
 
-    /// <summary>Test seam: lets unit tests inject a fake clock.</summary>
+    /// <summary>Test seam.</summary>
     internal ChorusGitSyncOrchestrator(
-        IGitWorkingTree tree,
+        IChorusGitHubSync gitHub,
+        string localDirectory,
         Func<DateTime> utcNow,
         ILogger<ChorusGitSyncOrchestrator> logger)
     {
-        _tree = tree ?? throw new ArgumentNullException(nameof(tree));
+        _gitHub = gitHub ?? throw new ArgumentNullException(nameof(gitHub));
+        _localDirectory = !string.IsNullOrWhiteSpace(localDirectory)
+            ? localDirectory
+            : throw new ArgumentException("localDirectory required", nameof(localDirectory));
         _utcNow = utcNow ?? throw new ArgumentNullException(nameof(utcNow));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -39,54 +44,34 @@ public sealed class ChorusGitSyncOrchestrator : IChorusGitSyncOrchestrator
     {
         try
         {
-            await _tree.EnsureCloneAsync(cancellationToken);
+            var message = $"Chorus sync — {_utcNow():yyyy-MM-dd HH:mm} UTC";
+            var mirror = await _gitHub.MirrorAsync(_localDirectory, message, progress, cancellationToken);
 
-            Report(progress, ChorusGitSyncStage.Pulling, "Pulling latest from origin (local wins on conflict)");
-            await _tree.PullLocalWinsAsync(cancellationToken);
-
-            Report(progress, ChorusGitSyncStage.Staging, "Staging local changes");
-            await _tree.StageAllAsync(cancellationToken);
-
-            var committed = false;
-            var fileCount = 0;
-            if (await _tree.HasStagedChangesAsync(cancellationToken))
+            if (!mirror.Succeeded)
             {
-                fileCount = await _tree.StagedFileCountAsync(cancellationToken);
-                var message = $"Daily chorus sync — {_utcNow():yyyy-MM-dd HH:mm} UTC ({fileCount} file{(fileCount == 1 ? "" : "s")})";
-                Report(progress, ChorusGitSyncStage.Committing, message);
-                await _tree.CommitAsync(message, cancellationToken);
-                committed = true;
+                return ChorusGitSyncResult.Failure(mirror.Error ?? "unknown");
             }
 
-            var pushed = false;
-            if (committed || await _tree.LocalIsAheadOfRemoteAsync(cancellationToken))
-            {
-                Report(progress, ChorusGitSyncStage.Pushing, "Pushing to origin");
-                await _tree.PushAsync(cancellationToken);
-                pushed = true;
-            }
+            _logger.LogInformation(
+                "Chorus sync complete: {Created} new, {Updated} updated, {Deleted} deleted",
+                mirror.Created, mirror.Updated, mirror.Deleted);
 
-            var summary = pushed
-                ? $"Pushed {fileCount} file{(fileCount == 1 ? "" : "s")} to GitHub"
-                : "Already up to date";
-            Report(progress, ChorusGitSyncStage.Done, summary);
-            _logger.LogInformation("Chorus git sync complete: {Summary}", summary);
-            return new ChorusGitSyncResult(Pulled: true, FilesCommitted: fileCount, Pushed: pushed, Error: null);
+            return new ChorusGitSyncResult(
+                Pulled: true,
+                FilesCommitted: mirror.Created + mirror.Updated + mirror.Deleted,
+                Pushed: mirror.TotalChanges > 0,
+                Error: null);
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Chorus git sync cancelled");
+            _logger.LogInformation("Chorus sync cancelled");
             throw;
         }
         catch (Exception ex)
         {
-            var sanitized = SecretMask.Apply(ex.Message);
-            _logger.LogError(ex, "Chorus git sync failed: {Reason}", sanitized);
-            Report(progress, ChorusGitSyncStage.Failed, sanitized);
-            return ChorusGitSyncResult.Failure(sanitized);
+            _logger.LogError(ex, "Chorus sync failed: {Reason}", ex.Message);
+            progress?.Report(new ChorusGitSyncProgress(ChorusGitSyncStage.Failed, ex.Message, DateTime.UtcNow));
+            return ChorusGitSyncResult.Failure(ex.Message);
         }
     }
-
-    private static void Report(IProgress<ChorusGitSyncProgress>? sink, ChorusGitSyncStage stage, string message)
-        => sink?.Report(new ChorusGitSyncProgress(stage, message, DateTime.UtcNow));
 }
