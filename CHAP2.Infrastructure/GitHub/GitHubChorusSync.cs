@@ -71,6 +71,8 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
         var entries = await ListChorusTreeAsync(treeSha, cancellationToken);
 
         _logger.LogInformation("Bootstrapping {Count} chorus file(s) from GitHub into {Path}", entries.Count, localDirectory);
+        var downloaded = 0;
+        var skipped = 0;
         foreach (var entry in entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -79,11 +81,17 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
             if (File.Exists(localPath))
             {
                 var existing = await File.ReadAllBytesAsync(localPath, cancellationToken);
-                if (GitBlobHasher.Compute(existing) == entry.Sha) continue;   // already up-to-date
+                if (GitBlobHasher.Compute(existing) == entry.Sha) { skipped++; continue; }
             }
-            var content = await DownloadBlobAsync(entry.Sha, cancellationToken);
+            // Download from raw.githubusercontent.com (CDN). This does not
+            // count against the GitHub REST API rate limit (60/hr anon,
+            // 5000/hr authed), which would otherwise throttle us out
+            // around the 60th file on a fresh disk before a PAT is set.
+            var content = await DownloadRawAsync(entry.Path, cancellationToken);
             await File.WriteAllBytesAsync(localPath, content, cancellationToken);
+            downloaded++;
         }
+        _logger.LogInformation("Bootstrap complete: {Downloaded} downloaded, {Skipped} already current", downloaded, skipped);
     }
 
     public async Task<ChorusMirrorResult> MirrorAsync(
@@ -202,15 +210,24 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
         return entries;
     }
 
-    private async Task<byte[]> DownloadBlobAsync(string blobSha, CancellationToken ct)
+    private async Task<byte[]> DownloadRawAsync(string repoPath, CancellationToken ct)
     {
-        using var req = NewRequest(HttpMethod.Get, $"/repos/{_owner}/{_repo}/git/blobs/{blobSha}");
-        var doc = await SendJsonAsync(req, ct);
-        var encoded = doc.RootElement.GetProperty("content").GetString() ?? string.Empty;
-        var encoding = doc.RootElement.GetProperty("encoding").GetString();
-        if (encoding != "base64")
-            throw new InvalidOperationException($"Unexpected GitHub blob encoding: {encoding}");
-        return Convert.FromBase64String(encoded.Replace("\n", string.Empty));
+        // raw.githubusercontent.com serves the file as-is, no API quota.
+        // Public repos require no auth; private repos accept the same
+        // Bearer token via the optional Authorization header.
+        var url = $"https://raw.githubusercontent.com/{_owner}/{_repo}/{_branch}/{repoPath}";
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        var token = _readToken();
+        if (!string.IsNullOrWhiteSpace(token))
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var resp = await _http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var body = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(
+                $"raw.githubusercontent.com GET {repoPath} returned {(int)resp.StatusCode}: {Truncate(body, 200)}");
+        }
+        return await resp.Content.ReadAsByteArrayAsync(ct);
     }
 
     private async Task<string> CreateBlobAsync(byte[] content, CancellationToken ct)
