@@ -66,6 +66,12 @@ services:
       - key: Identity__RefreshTokenExpiration
         value: "14.00:00:00"
 
+      # --- Rate limiting (per-IP, anonymous auth endpoints) ---
+      - key: RateLimit__AuthRequestsPerMinute
+        value: "10"
+      - key: RateLimit__AuthQueueLimit
+        value: "0"
+
       # --- Email (SMTP) for password recovery + email confirmation ---
       # Leave Host blank to disable outbound email (sends drop with a warning).
       - key: Email__Host

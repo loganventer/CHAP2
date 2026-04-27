@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using CHAP2.Chorus.Api.RateLimiting;
 using CHAP2.Infrastructure.Identity;
 using CHAP2.Shared.DTOs;
 using Microsoft.AspNetCore.Authentication.BearerToken;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 
@@ -18,12 +20,12 @@ public static class IdentityEndpoints
     {
         var group = routes.MapGroup("/identity");
 
-        group.MapPost("/register", RegisterAsync).AllowAnonymous();
-        group.MapPost("/login", LoginAsync).AllowAnonymous();
-        group.MapPost("/refresh", RefreshAsync).AllowAnonymous();
-        group.MapPost("/forgot-password", ForgotPasswordAsync).AllowAnonymous();
-        group.MapPost("/reset-password", ResetPasswordAsync).AllowAnonymous();
-        group.MapPost("/confirm-email", ConfirmEmailAsync).AllowAnonymous();
+        group.MapPost("/register", RegisterAsync).AllowAnonymous().RequireRateLimiting(RateLimitPolicyNames.AuthAnonymous);
+        group.MapPost("/login", LoginAsync).AllowAnonymous().RequireRateLimiting(RateLimitPolicyNames.AuthAnonymous);
+        group.MapPost("/refresh", RefreshAsync).AllowAnonymous().RequireRateLimiting(RateLimitPolicyNames.AuthAnonymous);
+        group.MapPost("/forgot-password", ForgotPasswordAsync).AllowAnonymous().RequireRateLimiting(RateLimitPolicyNames.AuthAnonymous);
+        group.MapPost("/reset-password", ResetPasswordAsync).AllowAnonymous().RequireRateLimiting(RateLimitPolicyNames.AuthAnonymous);
+        group.MapPost("/confirm-email", ConfirmEmailAsync).AllowAnonymous().RequireRateLimiting(RateLimitPolicyNames.AuthAnonymous);
 
         group.MapGet("/me", GetMeAsync).RequireAuthorization();
         group.MapPost("/change-password", ChangePasswordAsync).RequireAuthorization();

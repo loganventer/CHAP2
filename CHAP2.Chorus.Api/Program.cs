@@ -1,6 +1,7 @@
 using CHAP2.Chorus.Api.Configuration;
 using CHAP2.Chorus.Api.HostedServices;
 using CHAP2.Chorus.Api.Identity;
+using CHAP2.Chorus.Api.RateLimiting;
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Application.EventHandlers;
@@ -125,6 +126,8 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.Admin))
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
+builder.Services.AddChap2RateLimiting(builder.Configuration);
+
 builder.Services.AddHttpClient(nameof(GitHubChorusSync), client =>
 {
     client.Timeout = TimeSpan.FromSeconds(60);
@@ -218,6 +221,7 @@ app.UseResponseCompression();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapChap2Identity();
 
