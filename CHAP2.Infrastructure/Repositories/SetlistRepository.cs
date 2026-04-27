@@ -29,6 +29,11 @@ public class SetlistRepository : ISetlistRepository
         return rows;
     }
 
+    public Task<Setlist?> GetWorkingDraftAsync(string ownerId, CancellationToken cancellationToken = default) =>
+        _db.Setlists
+            .Include(nameof(Setlist.Items))
+            .FirstOrDefaultAsync(s => s.OwnerId == ownerId && s.IsWorkingDraft, cancellationToken);
+
     public async Task<Setlist> AddAsync(Setlist setlist, CancellationToken cancellationToken = default)
     {
         await _db.Setlists.AddAsync(setlist, cancellationToken);

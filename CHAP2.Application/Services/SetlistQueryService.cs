@@ -27,7 +27,8 @@ public class SetlistQueryService : ISetlistQueryService
     {
         var ownerId = _currentUser.UserId;
         _logger.LogInformation("Loading setlists for owner {OwnerId}", ownerId);
-        return await _repository.GetByOwnerAsync(ownerId, cancellationToken);
+        var all = await _repository.GetByOwnerAsync(ownerId, cancellationToken);
+        return all.Where(s => !s.IsWorkingDraft).ToList();
     }
 
     public async Task<Setlist?> GetByIdAsync(Guid setlistId, CancellationToken cancellationToken = default)
@@ -37,4 +38,7 @@ public class SetlistQueryService : ISetlistQueryService
         _ownership.EnsureCanAccess(setlist);
         return setlist;
     }
+
+    public Task<Setlist?> GetWorkingDraftAsync(CancellationToken cancellationToken = default) =>
+        _repository.GetWorkingDraftAsync(_currentUser.UserId, cancellationToken);
 }

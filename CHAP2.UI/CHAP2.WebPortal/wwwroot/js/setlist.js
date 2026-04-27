@@ -12,9 +12,19 @@ class SetlistManager {
         // advance()/retreat() so prev/next chips on either surface (chorus
         // iframe or Bible overlay) walk the same mixed-kind list.
         this.runnerIndex = -1;
+        // Debounced auto-save handle. Every mutation calls
+        // saveToLocalStorage() which schedules a server-side flush of the
+        // current setlist as the user's "working draft" (per-user, single
+        // record, replaces all items atomically).
+        this._autoSaveTimer = null;
+        this._suppressAutoSave = false;
         this.loadFromLocalStorage();
         this.initializeEventListeners();
         this.listenForVerseAdds();
+        // Async, no await: pulls the user's server-side working draft
+        // and overlays it onto localStorage so the setlist roams between
+        // sessions/devices.
+        this._loadWorkingDraft();
     }
 
     // ---------- item identity ----------
@@ -69,6 +79,65 @@ class SetlistManager {
             debug(`Saved ${this.setlist.length} setlist items to localStorage`);
         } catch (e) {
             console.error('Error saving setlist to localStorage:', e);
+        }
+        if (!this._suppressAutoSave) this._scheduleAutoSave();
+    }
+
+    // ---------- working draft (per-user, server-side, auto) ----------
+    _scheduleAutoSave() {
+        if (this._autoSaveTimer) clearTimeout(this._autoSaveTimer);
+        this._autoSaveTimer = setTimeout(() => this._autoSaveNow(), 800);
+    }
+
+    async _autoSaveNow() {
+        this._autoSaveTimer = null;
+        const payload = {
+            items: this.setlist.map(SetlistManager.toServerPayload).filter(Boolean),
+        };
+        try {
+            await fetch('/Setlists/SaveWorking', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload),
+            });
+        } catch (e) {
+            console.warn('Working draft auto-save failed', e);
+        }
+    }
+
+    async _loadWorkingDraft() {
+        try {
+            const response = await fetch('/Setlists/Working', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            // 204 = user has no saved draft yet. If we have local items,
+            // push them up so other devices pick them up next time.
+            if (response.status === 204) {
+                if (this.setlist.length > 0) this._scheduleAutoSave();
+                return;
+            }
+            if (!response.ok) return;
+            const setlist = await response.json();
+            const items = (setlist.items || []).map(SetlistManager.fromServerItem).filter(Boolean);
+            if (items.length === 0) {
+                if (this.setlist.length > 0) this._scheduleAutoSave();
+                return;
+            }
+            // Server is source of truth — replace local. Suppress the
+            // auto-save round-trip (we just got these from the server).
+            this.setlist = items;
+            this.runnerIndex = -1;
+            this._suppressAutoSave = true;
+            try {
+                localStorage.setItem('chap2_setlist', JSON.stringify(this.setlist));
+            } catch (_) { /* quota/private mode — ignore */ }
+            this._suppressAutoSave = false;
+            this.refreshDisplay();
+        } catch (e) {
+            console.warn('Working draft load failed', e);
         }
     }
 

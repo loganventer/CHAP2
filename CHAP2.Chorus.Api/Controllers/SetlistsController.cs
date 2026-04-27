@@ -78,6 +78,34 @@ public class SetlistsController : ChapControllerAbstractBase
         catch (DomainException ex) { return BadRequest(ex.Message); }
     }
 
+    /// <summary>
+    /// The current user's auto-saved working setlist. Returns 204 if the
+    /// user hasn't accumulated any items yet.
+    /// </summary>
+    [HttpGet("working")]
+    public async Task<IActionResult> GetWorkingDraft(CancellationToken cancellationToken = default)
+    {
+        var draft = await _query.GetWorkingDraftAsync(cancellationToken);
+        if (draft is null) return NoContent();
+        return Ok(await MapToDtoAsync(draft, cancellationToken));
+    }
+
+    /// <summary>
+    /// Replaces the current user's working setlist atomically. Body is just
+    /// the items array; name is server-managed.
+    /// </summary>
+    [HttpPut("working")]
+    public async Task<IActionResult> SaveWorkingDraft([FromBody] SaveWorkingDraftRequestDto request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var payloads = (request.Items ?? Array.Empty<SetlistItemPayloadDto>()).Select(MapToPayload).ToList();
+            var draft = await _command.SaveWorkingDraftAsync(payloads, cancellationToken);
+            return Ok(await MapToDtoAsync(draft, cancellationToken));
+        }
+        catch (DomainException ex) { return BadRequest(ex.Message); }
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Rename(Guid id, [FromBody] RenameSetlistRequestDto request, CancellationToken cancellationToken = default)
     {

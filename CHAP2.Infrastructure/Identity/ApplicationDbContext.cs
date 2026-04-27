@@ -28,6 +28,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             builder.Property(s => s.Name).IsRequired().HasMaxLength(120);
             builder.Property(s => s.CreatedAt);
             builder.Property(s => s.UpdatedAt);
+            builder.Property(s => s.IsWorkingDraft).HasDefaultValue(false);
+            builder.HasIndex(s => new { s.OwnerId, s.IsWorkingDraft });
 
             builder.HasMany(s => s.Items)
                 .WithOne()

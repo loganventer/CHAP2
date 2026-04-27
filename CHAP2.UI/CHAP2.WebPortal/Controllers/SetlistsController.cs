@@ -48,4 +48,19 @@ public sealed class SetlistsController : ControllerBase
         var ok = await _api.DeleteAsync(id, cancellationToken);
         return ok ? NoContent() : StatusCode(502);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Working(CancellationToken cancellationToken = default)
+    {
+        var draft = await _api.GetWorkingDraftAsync(cancellationToken);
+        if (draft is null) return NoContent();
+        return Ok(draft);
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> SaveWorking([FromBody] SaveWorkingDraftRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var draft = await _api.SaveWorkingDraftAsync(request.Items, cancellationToken);
+        return draft is null ? StatusCode(502) : Ok(draft);
+    }
 }

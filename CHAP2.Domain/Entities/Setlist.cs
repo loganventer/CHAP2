@@ -11,6 +11,12 @@ public class Setlist : IEquatable<Setlist>
     public string Name { get; private set; } = string.Empty;
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
+    /// <summary>
+    /// True for the per-user auto-saved working setlist that the JS UI
+    /// continuously syncs. Hidden from the named list shown to the user.
+    /// At most one per owner.
+    /// </summary>
+    public bool IsWorkingDraft { get; private set; }
 
     private readonly List<SetlistItem> _items = new();
     public IReadOnlyList<SetlistItem> Items => _items.AsReadOnly();
@@ -27,6 +33,7 @@ public class Setlist : IEquatable<Setlist>
         string name,
         DateTime createdAt,
         DateTime? updatedAt,
+        bool isWorkingDraft,
         IEnumerable<SetlistItem> items)
     {
         var setlist = new Setlist
@@ -36,6 +43,7 @@ public class Setlist : IEquatable<Setlist>
             Name = name,
             CreatedAt = createdAt,
             UpdatedAt = updatedAt,
+            IsWorkingDraft = isWorkingDraft,
         };
         setlist._items.AddRange(items.OrderBy(i => i.Position));
         return setlist;
@@ -54,6 +62,23 @@ public class Setlist : IEquatable<Setlist>
             OwnerId = ownerId,
             Name = name.Trim(),
             CreatedAt = DateTime.UtcNow,
+        };
+        setlist._domainEvents.Add(new SetlistCreatedEvent(setlist.Id, setlist.OwnerId, setlist.Name));
+        return setlist;
+    }
+
+    public static Setlist CreateWorkingDraft(string ownerId)
+    {
+        if (string.IsNullOrWhiteSpace(ownerId))
+            throw new DomainException("Owner ID cannot be empty.");
+
+        var setlist = new Setlist
+        {
+            Id = Guid.NewGuid(),
+            OwnerId = ownerId,
+            Name = "(working draft)",
+            CreatedAt = DateTime.UtcNow,
+            IsWorkingDraft = true,
         };
         setlist._domainEvents.Add(new SetlistCreatedEvent(setlist.Id, setlist.OwnerId, setlist.Name));
         return setlist;

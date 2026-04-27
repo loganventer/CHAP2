@@ -81,6 +81,27 @@ public class SetlistCommandService : ISetlistCommandService
         await DispatchAndClearAsync(setlist, cancellationToken);
     }
 
+    public async Task<Setlist> SaveWorkingDraftAsync(IReadOnlyList<SetlistItemPayload> items, CancellationToken cancellationToken = default)
+    {
+        var ownerId = _currentUser.UserId;
+        var existing = await _repository.GetWorkingDraftAsync(ownerId, cancellationToken);
+        var payloads = items ?? Array.Empty<SetlistItemPayload>();
+
+        if (existing is not null)
+        {
+            existing.ReplaceItems(payloads);
+            await _repository.UpdateAsync(existing, cancellationToken);
+            await DispatchAndClearAsync(existing, cancellationToken);
+            return existing;
+        }
+
+        var draft = Setlist.CreateWorkingDraft(ownerId);
+        draft.ReplaceItems(payloads);
+        await _repository.AddAsync(draft, cancellationToken);
+        await DispatchAndClearAsync(draft, cancellationToken);
+        return draft;
+    }
+
     public async Task<Setlist> SaveByNameAsync(string name, IReadOnlyList<SetlistItemPayload> items, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name))

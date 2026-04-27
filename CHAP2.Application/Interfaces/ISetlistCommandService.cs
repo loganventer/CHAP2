@@ -17,4 +17,10 @@ public interface ISetlistCommandService
     /// of an existing same-named setlist, or creates a new one. Atomic.
     /// </summary>
     Task<Setlist> SaveByNameAsync(string name, IReadOnlyList<SetlistItemPayload> items, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Replaces the current user's working draft items (or creates the
+    /// draft if none exists). Used by the JS UI's debounced auto-save.
+    /// </summary>
+    Task<Setlist> SaveWorkingDraftAsync(IReadOnlyList<SetlistItemPayload> items, CancellationToken cancellationToken = default);
 }

@@ -45,4 +45,20 @@ public class SetlistApiService : ISetlistApiService
         var response = await _http.DeleteAsync($"/api/setlists/{id}", cancellationToken);
         return response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound;
     }
+
+    public async Task<SetlistDto?> GetWorkingDraftAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await _http.GetAsync("/api/setlists/working", cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NoContent) return null;
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
+    }
+
+    public async Task<SetlistDto?> SaveWorkingDraftAsync(IReadOnlyList<SetlistItemPayloadDto> items, CancellationToken cancellationToken = default)
+    {
+        var request = new SaveWorkingDraftRequestDto { Items = items ?? Array.Empty<SetlistItemPayloadDto>() };
+        var response = await _http.PutAsJsonAsync("/api/setlists/working", request, JsonOptions, cancellationToken);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
+    }
 }
