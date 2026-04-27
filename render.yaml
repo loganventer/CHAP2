@@ -58,6 +58,9 @@ services:
         value: ekvjc@chap2.local
       - key: Identity__SeedAdminInitialPassword
         sync: false   # Render secret; rotated by admin on first login
+      # One-shot recovery: set true, redeploy, log in, set back to false.
+      - key: Identity__ForceReseedAdmin
+        value: "false"
       - key: Identity__BearerTokenExpiration
         value: "01:00:00"
       - key: Identity__RefreshTokenExpiration

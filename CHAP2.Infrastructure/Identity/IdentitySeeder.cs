@@ -56,7 +56,14 @@ public class IdentitySeeder : IHostedService
         var existing = await userManager.FindByNameAsync(_settings.SeedAdminUserName);
         if (existing is not null)
         {
-            _logger.LogDebug("Seed admin {UserName} already exists", _settings.SeedAdminUserName);
+            if (_settings.ForceReseedAdmin)
+            {
+                await ForceResetAdminAsync(userManager, existing);
+            }
+            else
+            {
+                _logger.LogDebug("Seed admin {UserName} already exists", _settings.SeedAdminUserName);
+            }
             return;
         }
 
@@ -81,6 +88,36 @@ public class IdentitySeeder : IHostedService
             throw new InvalidOperationException($"Failed to grant Admin role to seed admin: {Describe(addRole)}");
 
         _logger.LogInformation("Seeded admin user {UserName}", _settings.SeedAdminUserName);
+    }
+
+    private async Task ForceResetAdminAsync(UserManager<ApplicationUser> userManager, ApplicationUser admin)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.SeedAdminInitialPassword))
+            throw new InvalidOperationException(
+                $"ForceReseedAdmin is true but {IdentitySettings.SectionName}:{nameof(IdentitySettings.SeedAdminInitialPassword)} is not configured.");
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(admin);
+        var reset = await userManager.ResetPasswordAsync(admin, token, _settings.SeedAdminInitialPassword);
+        if (!reset.Succeeded)
+            throw new InvalidOperationException($"Failed to reset seed admin password: {Describe(reset)}");
+
+        if (await userManager.IsLockedOutAsync(admin))
+            await userManager.SetLockoutEndDateAsync(admin, null);
+        await userManager.ResetAccessFailedCountAsync(admin);
+
+        if (!await userManager.IsInRoleAsync(admin, RoleNames.Admin))
+        {
+            var grant = await userManager.AddToRoleAsync(admin, RoleNames.Admin);
+            if (!grant.Succeeded)
+                throw new InvalidOperationException($"Failed to re-grant Admin role: {Describe(grant)}");
+        }
+
+        admin.MustChangePassword = true;
+        await userManager.UpdateAsync(admin);
+
+        _logger.LogWarning(
+            "ForceReseedAdmin reset password and lockout for {UserName}. Set Identity:ForceReseedAdmin=false after recovery.",
+            _settings.SeedAdminUserName);
     }
 
     private static string Describe(IdentityResult result) =>
