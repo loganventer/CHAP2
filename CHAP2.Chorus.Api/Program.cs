@@ -149,6 +149,7 @@ builder.Services.AddSingleton<IChorusGitHubSync>(provider =>
         owner: opts.Value.Owner,
         repo: opts.Value.Repo,
         branch: opts.Value.Branch,
+        autoCreateFrom: opts.Value.MainBranch,
         remotePathPrefix: opts.Value.RemotePathPrefix,
         authorName: opts.Value.AuthorName,
         authorEmail: opts.Value.AuthorEmail,

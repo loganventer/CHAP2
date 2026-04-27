@@ -32,6 +32,7 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
     private readonly string _owner;
     private readonly string _repo;
     private readonly string _branch;
+    private readonly string? _autoCreateFrom;      // when _branch 404s, create it from this base
     private readonly string _remotePathPrefix;     // e.g. "data/chorus"
     private readonly string _authorName;
     private readonly string _authorEmail;
@@ -43,6 +44,7 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
         string owner,
         string repo,
         string branch,
+        string? autoCreateFrom,
         string remotePathPrefix,
         string authorName,
         string authorEmail,
@@ -53,6 +55,9 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
         _owner = !string.IsNullOrWhiteSpace(owner) ? owner : throw new ArgumentException("owner required", nameof(owner));
         _repo = !string.IsNullOrWhiteSpace(repo) ? repo : throw new ArgumentException("repo required", nameof(repo));
         _branch = !string.IsNullOrWhiteSpace(branch) ? branch : "main";
+        _autoCreateFrom = string.IsNullOrWhiteSpace(autoCreateFrom) || string.Equals(autoCreateFrom, _branch, StringComparison.Ordinal)
+            ? null
+            : autoCreateFrom;
         _remotePathPrefix = (remotePathPrefix ?? "").Trim('/');
         _authorName = !string.IsNullOrWhiteSpace(authorName) ? authorName : "CHAP2 API";
         _authorEmail = !string.IsNullOrWhiteSpace(authorEmail) ? authorEmail : "chap2-api@noreply.local";
@@ -199,8 +204,45 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
     private async Task<string> GetBranchHeadAsync(CancellationToken ct)
     {
         using var req = NewRequest(HttpMethod.Get, $"/repos/{_owner}/{_repo}/git/refs/heads/{_branch}");
-        var doc = await SendJsonAsync(req, ct);
-        return doc.RootElement.GetProperty("object").GetProperty("sha").GetString()!;
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+
+        if (resp.IsSuccessStatusCode)
+        {
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.GetProperty("object").GetProperty("sha").GetString()!;
+        }
+
+        // First-time auto-bootstrap: if the edits branch doesn't exist yet
+        // and we know what to base it on (typically MainBranch), create it
+        // server-side instead of failing the sync.
+        if ((int)resp.StatusCode == 404 && _autoCreateFrom is not null)
+        {
+            _logger.LogInformation(
+                "Branch {Branch} not found on remote; creating it from {Base}.", _branch, _autoCreateFrom);
+            return await CreateBranchFromAsync(_autoCreateFrom, ct);
+        }
+
+        throw new InvalidOperationException(
+            $"GitHub API GET refs/heads/{_branch} returned {(int)resp.StatusCode}: {Truncate(body, 400)}");
+    }
+
+    private async Task<string> CreateBranchFromAsync(string baseBranch, CancellationToken ct)
+    {
+        using var headReq = NewRequest(HttpMethod.Get, $"/repos/{_owner}/{_repo}/git/refs/heads/{baseBranch}");
+        var headDoc = await SendJsonAsync(headReq, ct);
+        var baseSha = headDoc.RootElement.GetProperty("object").GetProperty("sha").GetString()!;
+
+        using var createReq = NewRequest(HttpMethod.Post, $"/repos/{_owner}/{_repo}/git/refs");
+        createReq.Content = JsonContent.Create(new
+        {
+            @ref = $"refs/heads/{_branch}",
+            sha = baseSha,
+        }, options: JsonOpts);
+        await SendJsonAsync(createReq, ct);
+
+        _logger.LogInformation("Created branch {Branch} from {Base} at {Sha}", _branch, baseBranch, baseSha);
+        return baseSha;
     }
 
     private async Task<string> GetCommitTreeAsync(string commitSha, CancellationToken ct)
