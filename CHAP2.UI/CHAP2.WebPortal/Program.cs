@@ -9,48 +9,73 @@ using CHAP2.Infrastructure.Repositories;
 using CHAP2.WebPortal.Configuration;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 
-// Configure response buffering for streaming
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
     options.AllowSynchronousIO = true;
 });
 
-// Configure HttpClient for API communication using shared configuration
+// API-forwarding auth: Portal authenticates a user by calling the API,
+// stores the returned bearer + refresh tokens in an encrypted cookie,
+// then attaches the bearer to every outgoing API call via a delegating
+// handler. Cookie auth is the browser session; bearer is the API session.
+builder.Services.Configure<ApiAuthSettings>(builder.Configuration.GetSection(ApiAuthSettings.SectionName));
+var apiAuthSettings = builder.Configuration.GetSection(ApiAuthSettings.SectionName).Get<ApiAuthSettings>() ?? new ApiAuthSettings();
+if (!string.IsNullOrWhiteSpace(apiAuthSettings.DataProtectionKeysPath))
+{
+    Directory.CreateDirectory(apiAuthSettings.DataProtectionKeysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(apiAuthSettings.DataProtectionKeysPath))
+        .SetApplicationName("CHAP2-Portal");
+}
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITokenStore, CookieTokenStore>();
+builder.Services.AddScoped<IApiAuthClient, ApiAuthClient>();
+builder.Services.AddTransient<BearerTokenHandler>();
+
 builder.Services.AddCHAP2ApiClient(builder.Configuration);
 
-// --- Single-user portal auth ---------------------------------------
-// Username + password hash come from configuration (Auth:Username,
-// Auth:PasswordHash) so the secret never appears in served HTML/JS.
-// Cookie auth keeps the session across requests via an httpOnly cookie.
-builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
-builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+// Append bearer handler to the existing API client so every outbound
+// API call carries the current user's access token automatically.
+builder.Services.AddHttpClient("CHAP2API")
+    .AddHttpMessageHandler<BearerTokenHandler>();
+
+// Auth client uses its own un-authenticated HttpClient (it's how we get
+// tokens in the first place).
+builder.Services.AddHttpClient(ApiAuthClient.HttpClientName, client =>
+{
+    var apiBaseUrl = Environment.GetEnvironmentVariable("ApiService__BaseUrl")
+        ?? builder.Configuration[ConfigSections.ApiBaseUrl]
+        ?? SharedApiSettings.DefaultApiBaseUrl;
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "CHAP2-WebPortal-Auth/1.0");
+});
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.Cookie.Name = "chap2-auth";
+        options.Cookie.Name = apiAuthSettings.CookieName;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/Login";
-        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.ExpireTimeSpan = apiAuthSettings.CookieLifetime;
         options.SlidingExpiration = true;
     });
 
-// Every endpoint requires authentication unless it explicitly opts out
-// with [AllowAnonymous] (Login, etc.).
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
@@ -58,20 +83,20 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-// Configure settings
 builder.Services.Configure<QdrantSettings>(builder.Configuration.GetSection("Qdrant"));
 builder.Services.Configure<OllamaSettings>(builder.Configuration.GetSection("Ollama"));
 builder.Services.Configure<LangChainSettings>(builder.Configuration.GetSection("LangChainService"));
 
-// Register settings as singleton
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<QdrantSettings>>().Value);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<OllamaSettings>>().Value);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<LangChainSettings>>().Value);
 
-// Register services
 builder.Services.AddScoped<IChorusApiService, ChorusApiService>();
 builder.Services.AddScoped<IBibleApiService, BibleApiService>();
 builder.Services.AddScoped<ISyncApiService, SyncApiService>();
+builder.Services.AddScoped<ISetlistApiService, SetlistApiService>();
+builder.Services.AddScoped<IUserPreferencesApiService, UserPreferencesApiService>();
+builder.Services.AddScoped<IUserAdminApiService, UserAdminApiService>();
 builder.Services.AddScoped<IChorusApplicationService, ChorusApplicationService>();
 builder.Services.AddScoped<IChorusCommandService, ChorusCommandService>();
 builder.Services.AddScoped<IChorusQueryService, ChorusQueryService>();
@@ -95,7 +120,6 @@ builder.Services.AddScoped<IChorusRepository>(provider =>
 });
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
-// Register AI services
 builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
 builder.Services.AddHttpClient<IOllamaService, OllamaService>(client =>
 {
@@ -104,7 +128,6 @@ builder.Services.AddHttpClient<IOllamaService, OllamaService>(client =>
     client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 });
 
-// Register LangChain service
 builder.Services.AddHttpClient<ILangChainSearchService, LangChainSearchService>(client =>
 {
     var langChainSettings = builder.Configuration.GetSection("LangChainService").Get<LangChainSettings>();
@@ -112,7 +135,6 @@ builder.Services.AddHttpClient<ILangChainSearchService, LangChainSearchService>(
     client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 });
 
-// Configure CORS
 builder.Services.AddCors(options =>
 {
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -132,8 +154,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Render terminates HTTPS at its edge; trust X-Forwarded-* so the
-// in-app scheme reflects the real client request.
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
@@ -145,33 +165,26 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
 
 var app = builder.Build();
 
-// Forwarded headers must be the first middleware so subsequent ones
-// see the corrected scheme and remote IP.
 app.UseForwardedHeaders();
 
-// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
-// Add middleware to disable response buffering for streaming endpoints
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/Home/IntelligentSearchStream"))
     {
-        context.Response.Headers.Add("X-Accel-Buffering", "no");
-        context.Response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate");
-        context.Response.Headers.Add("Pragma", "no-cache");
-        context.Response.Headers.Add("Expires", "0");
+        context.Response.Headers["X-Accel-Buffering"] = "no";
+        context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        context.Response.Headers["Pragma"] = "no-cache";
+        context.Response.Headers["Expires"] = "0";
     }
     await next();
 });
 
-// Skip HTTPS redirection in production: Render handles HTTPS at the
-// edge and the container only listens on HTTP, so an in-app redirect
-// would loop or break health checks.
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -180,11 +193,9 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();
 
-// Auth must come AFTER routing and BEFORE endpoint mapping so the
-// fallback authorize policy (set above) gates every controller route
-// except those marked [AllowAnonymous].
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<BearerTokenRefreshMiddleware>();
 
 app.MapHub<ChorusHub>("/chorusHub").RequireAuthorization();
 

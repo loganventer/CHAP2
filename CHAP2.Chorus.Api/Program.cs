@@ -1,22 +1,26 @@
 using CHAP2.Chorus.Api.Configuration;
 using CHAP2.Chorus.Api.HostedServices;
+using CHAP2.Chorus.Api.Identity;
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Services;
 using CHAP2.Application.EventHandlers;
 using CHAP2.Domain.Events;
+using CHAP2.Infrastructure.DependencyInjection;
 using CHAP2.Infrastructure.GitHub;
+using CHAP2.Infrastructure.Identity;
 using CHAP2.Infrastructure.Repositories;
 using CHAP2.Infrastructure.Repositories.Bible;
 using CHAP2.Shared.Configuration;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Note: No authentication configured - this API is designed for internal/local network use only
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 
-// Add CORS support
 builder.Services.AddCors(options =>
 {
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -49,7 +53,6 @@ builder.Services.Configure<SlideConversionSettings>(
 builder.Services.Configure<GitSyncOptions>(
     builder.Configuration.GetSection("GitSync"));
 
-// Register the base repository
 builder.Services.AddSingleton<DiskChorusRepository>(provider =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChorusResourceOptions>>().Value;
@@ -57,7 +60,6 @@ builder.Services.AddSingleton<DiskChorusRepository>(provider =>
     return new DiskChorusRepository(options.FolderPath, logger);
 });
 
-// Register the cached repository decorator
 builder.Services.AddSingleton<IChorusRepository>(provider =>
 {
     var innerRepository = provider.GetRequiredService<DiskChorusRepository>();
@@ -66,7 +68,6 @@ builder.Services.AddSingleton<IChorusRepository>(provider =>
     return new CachedChorusRepository(innerRepository, cache, logger);
 });
 
-// Bible repositories — disk reader wrapped by an in-memory caching decorator.
 builder.Services.AddSingleton<DiskBibleRepository>(provider =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BibleResourceOptions>>().Value;
@@ -80,9 +81,6 @@ builder.Services.AddSingleton<IBibleRepository>(provider =>
     var logger = provider.GetRequiredService<ILogger<CachedBibleRepository>>();
     return new CachedBibleRepository(inner, cache, logger);
 });
-// Forward the segregated interfaces to the same composite instance so
-// consumers (e.g. BibleReferenceParser) can depend on the narrowest
-// interface they need without DI failing to resolve them.
 builder.Services.AddSingleton<IBibleBookRepository>(p => p.GetRequiredService<IBibleRepository>());
 builder.Services.AddSingleton<IBibleChapterRepository>(p => p.GetRequiredService<IBibleRepository>());
 builder.Services.AddSingleton<IBibleVerseSearchRepository>(p => p.GetRequiredService<IBibleRepository>());
@@ -96,17 +94,37 @@ builder.Services.AddScoped<IChorusQueryService, ChorusQueryService>();
 builder.Services.AddScoped<IChorusCommandService, ChorusCommandService>();
 builder.Services.AddScoped<ISlideToChorusService, SlideToChorusService>();
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
-// Register domain event handlers
 builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreatedEventHandler>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedEventHandler>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedEventHandler>();
 
-// Chorus sync over the GitHub Git Data API. Mirrors /var/data/{id}.json
-// to {RemotePathPrefix}/{id}.json on the configured branch. One commit
-// per sync regardless of file count. No git binary, no .git on disk.
-//
-// The token accessor re-reads the PAT from options on every request so
-// a future PAT-rotation flow takes effect immediately.
+builder.Services.AddScoped<ISetlistOwnershipPolicy, SetlistOwnershipPolicy>();
+builder.Services.AddScoped<ISetlistQueryService, SetlistQueryService>();
+builder.Services.AddScoped<ISetlistCommandService, SetlistCommandService>();
+builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+
+builder.Services.AddCHAP2Persistence(builder.Configuration);
+
+var identitySettings = builder.Configuration.GetSection(IdentitySettings.SectionName).Get<IdentitySettings>() ?? new IdentitySettings();
+if (!string.IsNullOrWhiteSpace(identitySettings.DataProtectionKeysPath))
+{
+    Directory.CreateDirectory(identitySettings.DataProtectionKeysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(identitySettings.DataProtectionKeysPath))
+        .SetApplicationName("CHAP2");
+}
+
+builder.Services.AddAuthentication(IdentityConstants.BearerScheme)
+    .AddBearerToken(IdentityConstants.BearerScheme, options =>
+    {
+        options.BearerTokenExpiration = identitySettings.BearerTokenExpiration;
+        options.RefreshTokenExpiration = identitySettings.RefreshTokenExpiration;
+    });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.Admin))
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+
 builder.Services.AddHttpClient(nameof(GitHubChorusSync), client =>
 {
     client.Timeout = TimeSpan.FromSeconds(60);
@@ -124,10 +142,6 @@ builder.Services.AddSingleton<IChorusGitHubSync>(provider =>
         remotePathPrefix: opts.Value.RemotePathPrefix,
         authorName: opts.Value.AuthorName,
         authorEmail: opts.Value.AuthorEmail,
-        // Late-bound token: tries the structured config binding first,
-        // then falls back to whichever common GitHub-PAT env var Render
-        // has set. Means the existing secret on the dashboard works
-        // regardless of the exact env-var name.
         tokenAccessor: () =>
             FirstNonEmpty(
                 opts.Value.GitHubToken,
@@ -174,17 +188,12 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
     options.ForwardedHeaders =
         Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
         Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
-    // Render's proxy is on the same Docker network; we cannot enumerate
-    // its addresses up-front, so trust any proxy.
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
 var app = builder.Build();
 
-// Bootstrap the chorus disk before serving traffic so the very first
-// request finds a populated working tree (clones the remote when git
-// sync is enabled, seeds from the image otherwise). Idempotent.
 using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider
@@ -192,8 +201,6 @@ using (var scope = app.Services.CreateScope())
         .EnsureReadyAsync();
 }
 
-// Forwarded headers must be the FIRST middleware so subsequent ones
-// see the corrected scheme and remote IP.
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -201,9 +208,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Skip HTTPS redirection in production: Render handles HTTPS at the
-// edge and the container only listens on HTTP, so an in-app redirect
-// would loop or break health checks.
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -211,6 +215,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 app.UseResponseCompression();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapChap2Identity();
+
 app.MapControllers();
 app.Run();
 

@@ -1,0 +1,55 @@
+@model IReadOnlyList<CHAP2.Shared.DTOs.UserSummaryDto>
+@{
+    ViewData["Title"] = "Users";
+}
+
+<div class="container" style="padding: 20px;">
+    <h1>Users</h1>
+    <table class="table" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #555;">Username</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #555;">Email</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #555;">Roles</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #555;">Created</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #555;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td style="padding:8px;">@user.UserName @(user.MustChangePassword ? "(must change pwd)" : "")</td>
+                <td style="padding:8px;">@user.Email</td>
+                <td style="padding:8px;">@string.Join(", ", user.Roles)</td>
+                <td style="padding:8px;">@user.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                <td style="padding:8px;">
+                    @if (!user.Roles.Contains("Admin"))
+                    {
+                        <form method="post" asp-action="AssignRole" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <input type="hidden" name="role" value="Admin" />
+                            <button type="submit">Promote to Admin</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-action="RevokeRole" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <input type="hidden" name="role" value="Admin" />
+                            <button type="submit">Demote</button>
+                        </form>
+                    }
+                    <form method="post" asp-action="Delete" style="display:inline;" onsubmit="return confirm('Delete @user.UserName?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@user.Id" />
+                        <button type="submit" style="color:red;">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

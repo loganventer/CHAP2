@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using CHAP2.Application.Interfaces;
+using CHAP2.Infrastructure.Identity;
 using CHAP2.Shared.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace CHAP2.Chorus.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = RoleNames.Admin)]
 [Route("[controller]")]
 public class SlideController : ChapControllerAbstractBase
 {

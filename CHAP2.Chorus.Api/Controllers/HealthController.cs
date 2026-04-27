@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -7,6 +8,7 @@ namespace CHAP2.Chorus.Api.Controllers;
 /// Health controller for API health monitoring
 /// </summary>
 [ApiController]
+[AllowAnonymous]
 [Route("[controller]")]
 public class HealthController : ChapControllerAbstractBase
 {

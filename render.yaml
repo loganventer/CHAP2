@@ -47,6 +47,44 @@ services:
       - key: GitSync__GitHubToken
         sync: false   # set as a Render secret; the existing PAT
 
+      # --- Identity / RBAC / SQLite ---
+      - key: Identity__DatabasePath
+        value: /var/data/chap2.db
+      - key: Identity__DataProtectionKeysPath
+        value: /var/data/keys
+      - key: Identity__SeedAdminUserName
+        value: ekvjc
+      - key: Identity__SeedAdminEmail
+        value: ekvjc@chap2.local
+      - key: Identity__SeedAdminInitialPassword
+        sync: false   # Render secret; rotated by admin on first login
+      - key: Identity__BearerTokenExpiration
+        value: "01:00:00"
+      - key: Identity__RefreshTokenExpiration
+        value: "14.00:00:00"
+
+      # --- Email (SMTP) for password recovery + email confirmation ---
+      # Leave Host blank to disable outbound email (sends drop with a warning).
+      - key: Email__Host
+        sync: false
+      - key: Email__Port
+        value: "587"
+      - key: Email__UseStartTls
+        value: "true"
+      - key: Email__UserName
+        sync: false
+      - key: Email__Password
+        sync: false
+      - key: Email__FromAddress
+        sync: false
+      - key: Email__FromDisplayName
+        value: CHAP2
+      # The Portal handles these landing pages; templates take {email}/{token}/{userId}.
+      - key: Email__PasswordResetUrlTemplate
+        sync: false
+      - key: Email__EmailConfirmationUrlTemplate
+        sync: false
+
   - type: web
     name: chap2-web
     runtime: docker
@@ -66,3 +104,8 @@ services:
           name: chap2-api
           type: web
           envVarKey: RENDER_EXTERNAL_URL
+      # --- API-forwarding auth (browser cookie wraps API bearer tokens) ---
+      - key: ApiAuth__CookieName
+        value: chap2-auth
+      - key: ApiAuth__CookieLifetime
+        value: "30.00:00:00"

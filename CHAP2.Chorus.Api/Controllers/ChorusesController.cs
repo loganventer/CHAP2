@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using CHAP2.Domain.Enums;
 using CHAP2.Domain.Exceptions;
@@ -6,6 +7,7 @@ using CHAP2.Application.Interfaces;
 using CHAP2.Application.Helpers;
 using CHAP2.Chorus.Api.Configuration;
 using CHAP2.Chorus.Api.Requests;
+using CHAP2.Infrastructure.Identity;
 using CHAP2.Shared.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -32,6 +34,7 @@ public class ChorusesController : ChapControllerAbstractBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> AddChorus([FromBody] CreateChorusRequest request, CancellationToken cancellationToken = default)
     {
         LogAction("AddChorus", new { request.Name });
@@ -165,6 +168,7 @@ public class ChorusesController : ChapControllerAbstractBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateChorus(Guid id, [FromBody] UpdateChorusRequest request, CancellationToken cancellationToken = default)
     {
         LogAction("UpdateChorus", new { id, request.Name });
@@ -202,6 +206,7 @@ public class ChorusesController : ChapControllerAbstractBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteChorus(Guid id, CancellationToken cancellationToken = default)
     {
         LogAction("DeleteChorus", new { id });

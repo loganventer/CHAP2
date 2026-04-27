@@ -1,0 +1,18 @@
+@model CHAP2.WebPortal.Models.RegisterViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "CHAP2 - Create account";
+    ViewData["Subtitle"] = "Create a new account";
+}
+
+<form method="post" asp-action="Register" class="login-form" autocomplete="off">
+    @Html.AntiForgeryToken()
+    <input asp-for="UserName" type="text" placeholder="Username" autocomplete="username" autofocus required />
+    <input asp-for="Email" type="email" placeholder="Email" autocomplete="email" required />
+    <input asp-for="Password" type="password" placeholder="Password" autocomplete="new-password" required />
+    <input asp-for="ConfirmPassword" type="password" placeholder="Confirm password" autocomplete="new-password" required />
+    <button type="submit"><i class="fas fa-user-plus"></i> Create account</button>
+</form>
+<div class="login-links">
+    Already have an account? <a asp-action="Login">Sign in</a>
+</div>
