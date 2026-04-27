@@ -18,12 +18,12 @@ public static class IdentityEndpoints
     {
         var group = routes.MapGroup("/identity");
 
-        group.MapPost("/register", RegisterAsync);
-        group.MapPost("/login", LoginAsync);
-        group.MapPost("/refresh", RefreshAsync);
-        group.MapPost("/forgot-password", ForgotPasswordAsync);
-        group.MapPost("/reset-password", ResetPasswordAsync);
-        group.MapPost("/confirm-email", ConfirmEmailAsync);
+        group.MapPost("/register", RegisterAsync).AllowAnonymous();
+        group.MapPost("/login", LoginAsync).AllowAnonymous();
+        group.MapPost("/refresh", RefreshAsync).AllowAnonymous();
+        group.MapPost("/forgot-password", ForgotPasswordAsync).AllowAnonymous();
+        group.MapPost("/reset-password", ResetPasswordAsync).AllowAnonymous();
+        group.MapPost("/confirm-email", ConfirmEmailAsync).AllowAnonymous();
 
         group.MapGet("/me", GetMeAsync).RequireAuthorization();
         group.MapPost("/change-password", ChangePasswordAsync).RequireAuthorization();
