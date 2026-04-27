@@ -69,6 +69,13 @@ builder.Services.AddSingleton<IChorusRepository>(provider =>
     return new CachedChorusRepository(innerRepository, cache, logger);
 });
 
+// Forward the segregated chorus interfaces to the same composite
+// instance so consumers can depend on the narrowest interface they need
+// (mirrors the bible repository wiring below).
+builder.Services.AddSingleton<IChorusReadRepository>(p => p.GetRequiredService<IChorusRepository>());
+builder.Services.AddSingleton<IChorusWriteRepository>(p => p.GetRequiredService<IChorusRepository>());
+builder.Services.AddSingleton<IChorusSearchRepository>(p => p.GetRequiredService<IChorusRepository>());
+
 builder.Services.AddSingleton<DiskBibleRepository>(provider =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BibleResourceOptions>>().Value;
