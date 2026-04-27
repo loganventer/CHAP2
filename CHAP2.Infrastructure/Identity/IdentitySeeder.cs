@@ -77,9 +77,13 @@ public class IdentitySeeder : IHostedService
             Email = _settings.SeedAdminEmail,
             EmailConfirmed = true,
             MustChangePassword = true,
+            SecurityStamp = Guid.NewGuid().ToString(),
         };
+        admin.PasswordHash = userManager.PasswordHasher.HashPassword(admin, _settings.SeedAdminInitialPassword);
 
-        var create = await userManager.CreateAsync(admin, _settings.SeedAdminInitialPassword);
+        // Bypass password validators by passing the user with a pre-hashed
+        // password (CreateAsync without a password runs only user validators).
+        var create = await userManager.CreateAsync(admin);
         if (!create.Succeeded)
             throw new InvalidOperationException($"Failed to create seed admin: {Describe(create)}");
 
@@ -96,10 +100,9 @@ public class IdentitySeeder : IHostedService
             throw new InvalidOperationException(
                 $"ForceReseedAdmin is true but {IdentitySettings.SectionName}:{nameof(IdentitySettings.SeedAdminInitialPassword)} is not configured.");
 
-        var token = await userManager.GeneratePasswordResetTokenAsync(admin);
-        var reset = await userManager.ResetPasswordAsync(admin, token, _settings.SeedAdminInitialPassword);
-        if (!reset.Succeeded)
-            throw new InvalidOperationException($"Failed to reset seed admin password: {Describe(reset)}");
+        // Direct hash + stamp rotation; sidesteps password validators.
+        admin.PasswordHash = userManager.PasswordHasher.HashPassword(admin, _settings.SeedAdminInitialPassword);
+        admin.SecurityStamp = Guid.NewGuid().ToString();
 
         if (await userManager.IsLockedOutAsync(admin))
             await userManager.SetLockoutEndDateAsync(admin, null);
@@ -113,7 +116,9 @@ public class IdentitySeeder : IHostedService
         }
 
         admin.MustChangePassword = true;
-        await userManager.UpdateAsync(admin);
+        var update = await userManager.UpdateAsync(admin);
+        if (!update.Succeeded)
+            throw new InvalidOperationException($"Failed to update seed admin: {Describe(update)}");
 
         _logger.LogWarning(
             "ForceReseedAdmin reset password and lockout for {UserName}. Set Identity:ForceReseedAdmin=false after recovery.",
