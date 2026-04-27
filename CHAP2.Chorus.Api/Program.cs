@@ -121,7 +121,7 @@ builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDelete
 builder.Services.AddScoped<ISetlistOwnershipPolicy, SetlistOwnershipPolicy>();
 builder.Services.AddScoped<ISetlistQueryService, SetlistQueryService>();
 builder.Services.AddScoped<ISetlistCommandService, SetlistCommandService>();
-builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 
 builder.Services.AddCHAP2Persistence(builder.Configuration);
 

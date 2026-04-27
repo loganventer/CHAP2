@@ -48,7 +48,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.AddScoped<ISetlistRepository, SetlistRepository>();
-        services.AddScoped<IUserPreferencesRepository, UserPreferencesRepository>();
+        services.AddScoped<IUserSettingsRepository, UserSettingsRepository>();
 
         services.AddHostedService<IdentitySeeder>();
 

@@ -200,13 +200,75 @@ class SettingsManager {
         };
 
         this.currentSettings = this.loadSettings();
+        // Debounced server auto-save handle (per-user roaming settings).
+        this._serverSaveTimer = null;
+        this._suppressServerSave = false;
         this.init();
+        // Async overlay from the server-side per-user blob so settings
+        // follow the user across browsers / devices. May overwrite the
+        // freshly-loaded localStorage if the server has a newer copy.
+        this._loadServerSettings();
     }
 
     init() {
         this.createSettingsModal();
         this.applyTheme(this.currentSettings);
         this.setupEventListeners();
+    }
+
+    // ---------- per-user server roaming ----------
+    _scheduleServerSave() {
+        if (this._suppressServerSave) return;
+        if (this._serverSaveTimer) clearTimeout(this._serverSaveTimer);
+        this._serverSaveTimer = setTimeout(() => this._serverSaveNow(), 800);
+    }
+
+    async _serverSaveNow() {
+        this._serverSaveTimer = null;
+        const json = JSON.stringify(this.currentSettings || {});
+        try {
+            await fetch('/Settings/SaveMine', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ json }),
+            });
+        } catch (e) {
+            console.warn('Settings auto-save failed', e);
+        }
+    }
+
+    async _loadServerSettings() {
+        try {
+            const response = await fetch('/Settings/Mine', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            if (!response.ok) return;
+            const dto = await response.json();
+            if (!dto || typeof dto.json !== 'string' || dto.json.length === 0) {
+                // Server has no saved blob yet — push current localStorage so
+                // other devices pick it up next sign-in.
+                this._scheduleServerSave();
+                return;
+            }
+            let parsed;
+            try { parsed = JSON.parse(dto.json); }
+            catch (e) { console.warn('Server settings JSON unparseable; ignoring.', e); return; }
+            // Server is authoritative — replace the in-memory copy and
+            // mirror to localStorage. Suppress the auto-save round-trip
+            // since we just received this from the server.
+            this._suppressServerSave = true;
+            try {
+                this._persist(parsed);
+                this.applyTheme(parsed);
+            } finally {
+                this._suppressServerSave = false;
+            }
+        } catch (e) {
+            console.warn('Settings server load failed', e);
+        }
     }
 
     createSettingsModal() {
@@ -850,7 +912,7 @@ class SettingsManager {
         };
     }
 
-    /** @private Persist settings to localStorage + sessionStorage mirrors. */
+    /** @private Persist settings to localStorage + sessionStorage mirrors + schedule server roam. */
     _persist(settings) {
         localStorage.setItem('chap2Settings', JSON.stringify(settings));
         this.currentSettings = settings;
@@ -860,6 +922,7 @@ class SettingsManager {
         sessionStorage.setItem('textOutlineColor', settings.textOutlineColor);
         sessionStorage.setItem('textOutlineFeather', settings.textOutlineFeather);
         sessionStorage.setItem('showChurchSeal', settings.showChurchSeal ? 'true' : 'false');
+        this._scheduleServerSave();
     }
 
     loadSettings() {

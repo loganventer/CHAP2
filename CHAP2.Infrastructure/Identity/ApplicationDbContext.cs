@@ -12,7 +12,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Setlist> Setlists => Set<Setlist>();
     public DbSet<SetlistItem> SetlistItems => Set<SetlistItem>();
-    public DbSet<UserPreferences> UserPreferences => Set<UserPreferences>();
+    public DbSet<UserSettings> UserSettings => Set<UserSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,19 +68,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             builder.HasIndex(i => new { i.SetlistId, i.Position }).IsUnique();
         });
 
-        modelBuilder.Entity<UserPreferences>(builder =>
+        modelBuilder.Entity<UserSettings>(builder =>
         {
-            builder.ToTable("UserPreferences");
+            builder.ToTable("UserSettings");
             builder.HasKey(p => p.UserId);
             builder.Property(p => p.UserId).HasMaxLength(450);
-            builder.Property(p => p.Theme).HasConversion<string>().HasMaxLength(32);
-            builder.Property(p => p.DefaultSearchScope).HasConversion<string>().HasMaxLength(32);
-            builder.Property(p => p.Language).HasConversion<string>().HasMaxLength(16);
+            builder.Property(p => p.Json).IsRequired().HasMaxLength(65536);
             builder.Property(p => p.UpdatedAt);
 
             builder.HasOne<ApplicationUser>()
                 .WithOne()
-                .HasForeignKey<UserPreferences>(p => p.UserId)
+                .HasForeignKey<UserSettings>(p => p.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

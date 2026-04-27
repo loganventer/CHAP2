@@ -95,7 +95,7 @@ builder.Services.AddScoped<IChorusApiService, ChorusApiService>();
 builder.Services.AddScoped<IBibleApiService, BibleApiService>();
 builder.Services.AddScoped<ISyncApiService, SyncApiService>();
 builder.Services.AddScoped<ISetlistApiService, SetlistApiService>();
-builder.Services.AddScoped<IUserPreferencesApiService, UserPreferencesApiService>();
+builder.Services.AddScoped<IUserSettingsApiService, UserSettingsApiService>();
 builder.Services.AddScoped<IUserAdminApiService, UserAdminApiService>();
 builder.Services.AddScoped<IChorusApplicationService, ChorusApplicationService>();
 builder.Services.AddScoped<IChorusCommandService, ChorusCommandService>();
