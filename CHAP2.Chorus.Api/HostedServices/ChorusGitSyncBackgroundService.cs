@@ -1,6 +1,6 @@
 using System.Globalization;
 using CHAP2.Application.Interfaces;
-using CHAP2.Chorus.Api.Configuration;
+using CHAP2.Shared.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

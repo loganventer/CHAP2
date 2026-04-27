@@ -106,6 +106,18 @@ builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreate
 builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedEventHandler>();
 builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedEventHandler>();
 
+// Per-edit GitHub push handlers: chorus CRUD lands on the edits branch
+// immediately, no waiting for the daily mirror. Composed alongside the
+// log-only handlers above (multiple handlers per event by design).
+builder.Services.AddSingleton<IChorusFileGateway>(provider =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChorusResourceOptions>>().Value;
+    return new DiskChorusFileGateway(options.FolderPath);
+});
+builder.Services.AddScoped<IDomainEventHandler<ChorusCreatedEvent>, ChorusCreatedGitPushHandler>();
+builder.Services.AddScoped<IDomainEventHandler<ChorusUpdatedEvent>, ChorusUpdatedGitPushHandler>();
+builder.Services.AddScoped<IDomainEventHandler<ChorusDeletedEvent>, ChorusDeletedGitPushHandler>();
+
 builder.Services.AddScoped<ISetlistOwnershipPolicy, SetlistOwnershipPolicy>();
 builder.Services.AddScoped<ISetlistQueryService, SetlistQueryService>();
 builder.Services.AddScoped<ISetlistCommandService, SetlistCommandService>();

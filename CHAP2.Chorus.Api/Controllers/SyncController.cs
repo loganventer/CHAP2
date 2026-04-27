@@ -1,7 +1,7 @@
 using System.Text.Json;
 using CHAP2.Application.Interfaces;
 using CHAP2.Application.Models;
-using CHAP2.Chorus.Api.Configuration;
+using CHAP2.Shared.Configuration;
 using CHAP2.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

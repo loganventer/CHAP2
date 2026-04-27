@@ -89,8 +89,12 @@ namespace CHAP2.Application.Services
                 throw new ChorusNotFoundException(id);
             }
 
+            existingChorus.MarkDeleted();
             await _chorusRepository.DeleteAsync(id, cancellationToken);
-            
+
+            await _eventDispatcher.DispatchAndClearAsync(existingChorus.DomainEvents.ToList(), cancellationToken);
+            existingChorus.ClearDomainEvents();
+
             _logger.LogInformation("Successfully deleted chorus with ID: {Id}", id);
         }
         catch (Exception ex)

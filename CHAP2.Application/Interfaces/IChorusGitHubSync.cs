@@ -39,4 +39,25 @@ public interface IChorusGitHubSync
         string targetBranch,
         string commitMessage,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Single-file create-or-update on the configured edits branch via
+    /// the Contents API (one commit per call). Used by per-edit handlers
+    /// so an edit lands on GitHub before the user moves on, instead of
+    /// waiting for the daily mirror.
+    /// </summary>
+    Task<ChorusFilePushResult> PushFileAsync(
+        string fileName,
+        byte[] content,
+        string commitMessage,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Single-file delete on the configured edits branch via the Contents
+    /// API. NotFound semantics if the file isn't on the remote.
+    /// </summary>
+    Task<ChorusFilePushResult> DeleteFileAsync(
+        string fileName,
+        string commitMessage,
+        CancellationToken cancellationToken = default);
 }

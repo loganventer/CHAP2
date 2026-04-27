@@ -337,6 +337,156 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
         await SendJsonAsync(req, ct);
     }
 
+    public async Task<ChorusFilePushResult> PushFileAsync(
+        string fileName,
+        byte[] content,
+        string commitMessage,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return ChorusFilePushResult.Failure("fileName is required.");
+        if (content is null)
+            return ChorusFilePushResult.Failure("content is required.");
+
+        await GetBranchHeadAsync(cancellationToken);
+
+        var path = $"{_remotePathPrefix}/{fileName}";
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var existing = await GetContentMetadataAsync(path, cancellationToken);
+            if (existing is not null && BytesEqual(existing.Bytes, content))
+            {
+                return ChorusFilePushResult.NoChange();
+            }
+
+            using var req = NewRequest(HttpMethod.Put, $"/repos/{_owner}/{_repo}/contents/{path}");
+            req.Content = JsonContent.Create(new
+            {
+                message = commitMessage,
+                content = Convert.ToBase64String(content),
+                branch = _branch,
+                sha = existing?.Sha,
+                committer = new { name = _authorName, email = _authorEmail },
+            }, options: JsonOpts);
+
+            using var resp = await _http.SendAsync(req, cancellationToken);
+            var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(body);
+                var commitSha = doc.RootElement.TryGetProperty("commit", out var commit)
+                    && commit.TryGetProperty("sha", out var shaProp)
+                    ? shaProp.GetString() ?? string.Empty
+                    : string.Empty;
+                _logger.LogInformation(
+                    "Pushed {Path} to {Branch} as {Sha} (existing={Existed})",
+                    path, _branch, commitSha, existing is not null);
+                return existing is null
+                    ? ChorusFilePushResult.Created(commitSha)
+                    : ChorusFilePushResult.Updated(commitSha);
+            }
+
+            if (((int)resp.StatusCode == 409 || (int)resp.StatusCode == 422) && attempt < maxAttempts)
+            {
+                _logger.LogDebug("PUT contents/{Path} returned {Status}; retrying with fresh SHA (attempt {Attempt}).",
+                    path, (int)resp.StatusCode, attempt);
+                continue;
+            }
+
+            return ChorusFilePushResult.Failure(
+                $"GitHub PUT contents/{path} returned {(int)resp.StatusCode}: {Truncate(body, 200)}");
+        }
+
+        return ChorusFilePushResult.Failure($"PUT contents/{path} exceeded {maxAttempts} attempts.");
+    }
+
+    public async Task<ChorusFilePushResult> DeleteFileAsync(
+        string fileName,
+        string commitMessage,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return ChorusFilePushResult.Failure("fileName is required.");
+
+        await GetBranchHeadAsync(cancellationToken);
+
+        var path = $"{_remotePathPrefix}/{fileName}";
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var existing = await GetContentMetadataAsync(path, cancellationToken);
+            if (existing is null) return ChorusFilePushResult.NotFound();
+
+            using var req = NewRequest(HttpMethod.Delete, $"/repos/{_owner}/{_repo}/contents/{path}");
+            req.Content = JsonContent.Create(new
+            {
+                message = commitMessage,
+                sha = existing.Sha,
+                branch = _branch,
+                committer = new { name = _authorName, email = _authorEmail },
+            }, options: JsonOpts);
+
+            using var resp = await _http.SendAsync(req, cancellationToken);
+            var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(body);
+                var commitSha = doc.RootElement.TryGetProperty("commit", out var commit)
+                    && commit.TryGetProperty("sha", out var shaProp)
+                    ? shaProp.GetString() ?? string.Empty
+                    : string.Empty;
+                _logger.LogInformation("Deleted {Path} from {Branch} as {Sha}", path, _branch, commitSha);
+                return ChorusFilePushResult.Deleted(commitSha);
+            }
+
+            if (((int)resp.StatusCode == 409 || (int)resp.StatusCode == 422) && attempt < maxAttempts)
+            {
+                _logger.LogDebug("DELETE contents/{Path} returned {Status}; retrying (attempt {Attempt}).",
+                    path, (int)resp.StatusCode, attempt);
+                continue;
+            }
+
+            return ChorusFilePushResult.Failure(
+                $"GitHub DELETE contents/{path} returned {(int)resp.StatusCode}: {Truncate(body, 200)}");
+        }
+
+        return ChorusFilePushResult.Failure($"DELETE contents/{path} exceeded {maxAttempts} attempts.");
+    }
+
+    private sealed record ContentMetadata(string Sha, byte[] Bytes);
+
+    private async Task<ContentMetadata?> GetContentMetadataAsync(string path, CancellationToken cancellationToken)
+    {
+        using var req = NewRequest(HttpMethod.Get, $"/repos/{_owner}/{_repo}/contents/{path}?ref={_branch}");
+        using var resp = await _http.SendAsync(req, cancellationToken);
+        if ((int)resp.StatusCode == 404) return null;
+        var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(
+                $"GitHub GET contents/{path}?ref={_branch} returned {(int)resp.StatusCode}: {Truncate(body, 200)}");
+
+        using var doc = JsonDocument.Parse(body);
+        var sha = doc.RootElement.GetProperty("sha").GetString() ?? string.Empty;
+        var encoded = doc.RootElement.GetProperty("content").GetString() ?? string.Empty;
+        var encoding = doc.RootElement.TryGetProperty("encoding", out var encProp) ? encProp.GetString() : "base64";
+        var bytes = string.Equals(encoding, "base64", StringComparison.OrdinalIgnoreCase)
+            ? Convert.FromBase64String(encoded.Replace("\n", ""))
+            : System.Text.Encoding.UTF8.GetBytes(encoded);
+        return new ContentMetadata(sha, bytes);
+    }
+
+    private static bool BytesEqual(byte[] a, byte[] b)
+    {
+        if (a.Length != b.Length) return false;
+        for (var i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+        return true;
+    }
+
     public async Task<ChorusBranchMergeResult> MergeIntoAsync(
         string targetBranch,
         string commitMessage,

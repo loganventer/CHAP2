@@ -135,6 +135,11 @@ public class Chorus : IEquatable<Chorus>
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void MarkDeleted()
+    {
+        _domainEvents.Add(new ChorusDeletedEvent(Id, Name));
+    }
+
     public bool ContainsSearchTerm(string searchTerm, SearchScope scope = SearchScope.All)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))

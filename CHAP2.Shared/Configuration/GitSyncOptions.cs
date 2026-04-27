@@ -1,4 +1,4 @@
-namespace CHAP2.Chorus.Api.Configuration;
+namespace CHAP2.Shared.Configuration;
 
 /// <summary>
 /// Bound to the "GitSync" config section. Drives the GitHub-API mirror
