@@ -363,10 +363,10 @@ class SetlistManager {
         if (launchBtn) launchBtn.addEventListener('click', () => this.launchSetlist());
 
         const saveBtn = document.getElementById('saveSetlistBtn');
-        if (saveBtn) saveBtn.addEventListener('click', () => this.exportSetlist());
+        if (saveBtn) saveBtn.addEventListener('click', () => this.saveToServer());
 
         const loadBtn = document.getElementById('loadSetlistBtn');
-        if (loadBtn) loadBtn.addEventListener('click', () => this.importSetlist());
+        if (loadBtn) loadBtn.addEventListener('click', () => this.loadFromServer());
 
         const clearBtn = document.getElementById('clearSetlistBtn');
         if (clearBtn) clearBtn.addEventListener('click', () => this.clearAll());
@@ -380,60 +380,238 @@ class SetlistManager {
         });
     }
 
-    exportSetlist() {
+    // ---------- server save / load (per-user, named) ----------
+    // Save the in-memory setlist to the server under a name. Same name
+    // upserts (server replaces all items atomically). Verses + choruses
+    // are both first-class items.
+    async saveToServer() {
         if (this.setlist.length === 0) {
             this.showNotification('Setlist is empty', 'warning');
             return;
         }
-        const dataStr = JSON.stringify(this.setlist, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `setlist-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        this.showNotification('Setlist exported successfully', 'success');
+        const name = (prompt('Save setlist as:', this._currentSetlistName || '') || '').trim();
+        if (!name) return;
+
+        const payload = {
+            name,
+            items: this.setlist.map(SetlistManager.toServerPayload).filter(Boolean),
+        };
+
+        try {
+            const response = await fetch('/Setlists/Save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+                this.showNotification(`Save failed (${response.status})`, 'error');
+                return;
+            }
+            const saved = await response.json();
+            this._currentSetlistName = saved.name || name;
+            this.showNotification(`Saved "${this._currentSetlistName}"`, 'success');
+        } catch (e) {
+            console.error('saveToServer failed', e);
+            this.showNotification('Save failed', 'error');
+        }
     }
 
-    importSetlist() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const importedRaw = JSON.parse(event.target.result);
-                    if (!Array.isArray(importedRaw)) throw new Error('Invalid setlist format');
-                    const imported = importedRaw.map(SetlistManager.normalizeItem).filter(Boolean);
-                    if (this.setlist.length > 0) {
-                        if (confirm('Replace current setlist or append to it?\n\nOK = Replace\nCancel = Append')) {
-                            this.setlist = imported;
-                        } else {
-                            const existing = new Set(this.setlist.map(SetlistManager.keyOf));
-                            imported.forEach(item => {
-                                if (!existing.has(SetlistManager.keyOf(item))) this.setlist.push(item);
-                            });
-                        }
-                    } else {
-                        this.setlist = imported;
-                    }
-                    this.saveToLocalStorage();
-                    this.refreshDisplay();
-                    this.showNotification(`Loaded ${imported.length} items`, 'success');
-                } catch (error) {
-                    console.error('Error importing setlist:', error);
-                    this.showNotification('Error loading setlist file', 'error');
-                }
+    async loadFromServer() {
+        try {
+            const response = await fetch('/Setlists/Mine', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            if (!response.ok) {
+                this.showNotification(`Load failed (${response.status})`, 'error');
+                return;
+            }
+            const summaries = await response.json();
+            if (!Array.isArray(summaries) || summaries.length === 0) {
+                this.showNotification('No saved setlists yet', 'info');
+                return;
+            }
+            this._showLoadModal(summaries);
+        } catch (e) {
+            console.error('loadFromServer failed', e);
+            this.showNotification('Load failed', 'error');
+        }
+    }
+
+    async _loadById(id) {
+        try {
+            const response = await fetch(`/Setlists/Detail/${encodeURIComponent(id)}`, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            if (!response.ok) {
+                this.showNotification(`Load failed (${response.status})`, 'error');
+                return;
+            }
+            const setlist = await response.json();
+            const imported = (setlist.items || []).map(SetlistManager.fromServerItem).filter(Boolean);
+            this.setlist = imported;
+            this._currentSetlistName = setlist.name || '';
+            this.runnerIndex = -1;
+            this.saveToLocalStorage();
+            this.refreshDisplay();
+            this.showNotification(`Loaded "${this._currentSetlistName}" (${imported.length} items)`, 'success');
+        } catch (e) {
+            console.error('_loadById failed', e);
+            this.showNotification('Load failed', 'error');
+        }
+    }
+
+    async _deleteById(id, name) {
+        if (!confirm(`Delete saved setlist "${name}"? This cannot be undone.`)) return false;
+        try {
+            const response = await fetch(`/Setlists/Delete/${encodeURIComponent(id)}`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+            });
+            if (!response.ok) {
+                this.showNotification(`Delete failed (${response.status})`, 'error');
+                return false;
+            }
+            this.showNotification(`Deleted "${name}"`, 'info');
+            return true;
+        } catch (e) {
+            console.error('_deleteById failed', e);
+            this.showNotification('Delete failed', 'error');
+            return false;
+        }
+    }
+
+    _showLoadModal(summaries) {
+        // Tear down any previous modal so we don't stack overlays.
+        const previous = document.getElementById('setlistLoadModal');
+        if (previous) previous.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'setlistLoadModal';
+        overlay.style.cssText = `
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10001;`;
+
+        const card = document.createElement('div');
+        card.style.cssText = `
+            width: min(480px, 92vw); max-height: 80vh; overflow: auto;
+            background: #1f1c18; color: #f0ece2;
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+            padding: 20px; display: flex; flex-direction: column; gap: 12px;`;
+
+        const title = document.createElement('h3');
+        title.textContent = 'Load saved setlist';
+        title.style.cssText = 'margin: 0 0 8px; font-size: 1.05rem;';
+        card.appendChild(title);
+
+        const list = document.createElement('div');
+        list.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+
+        const esc = window.escapeHtml || (s => String(s));
+        const sorted = [...summaries].sort((a, b) =>
+            (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+
+        sorted.forEach(s => {
+            const row = document.createElement('div');
+            row.style.cssText = `
+                display: flex; align-items: center; gap: 10px;
+                padding: 10px 12px; background: rgba(255,255,255,0.04);
+                border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;`;
+
+            const meta = document.createElement('div');
+            meta.style.cssText = 'flex: 1; min-width: 0;';
+            meta.innerHTML = `
+                <div style="font-weight:600;">${esc(s.name)}</div>
+                <div style="font-size:0.8rem; color: rgba(245,241,234,0.6);">${s.itemCount} item${s.itemCount === 1 ? '' : 's'}</div>`;
+            row.appendChild(meta);
+
+            const loadBtn = document.createElement('button');
+            loadBtn.textContent = 'Load';
+            loadBtn.style.cssText = `
+                padding: 6px 12px; background: var(--primary-color, #c9a24a);
+                color: #1f1c18; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;`;
+            loadBtn.addEventListener('click', async () => {
+                overlay.remove();
+                await this._loadById(s.id);
+            });
+            row.appendChild(loadBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.cssText = `
+                padding: 6px 12px; background: rgba(168,52,42,0.5);
+                color: #f6c9c5; border: none; border-radius: 6px; cursor: pointer;`;
+            deleteBtn.addEventListener('click', async () => {
+                const ok = await this._deleteById(s.id, s.name);
+                if (ok) row.remove();
+            });
+            row.appendChild(deleteBtn);
+
+            list.appendChild(row);
+        });
+        card.appendChild(list);
+
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.style.cssText = `
+            margin-top: 8px; padding: 8px 14px; background: rgba(255,255,255,0.08);
+            color: #f0ece2; border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 6px; cursor: pointer; align-self: flex-end;`;
+        cancel.addEventListener('click', () => overlay.remove());
+        card.appendChild(cancel);
+
+        overlay.appendChild(card);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+        document.body.appendChild(overlay);
+    }
+
+    // Convert in-memory item -> server payload (drops chorus metadata; server hydrates).
+    static toServerPayload(item) {
+        if (!item) return null;
+        if (item.kind === 'verse') {
+            return {
+                kind: 'verse',
+                bookId: item.bookId,
+                bookName: item.bookName,
+                chapter: item.chapter,
+                verse: item.verse,
+                text: item.text,
+                ref: item.ref,
             };
-            reader.readAsText(file);
-        };
-        input.click();
+        }
+        if (!item.id) return null;
+        return { kind: 'chorus', chorusId: item.id };
+    }
+
+    // Convert server item -> in-memory item (uses server-hydrated chorus metadata when present).
+    static fromServerItem(it) {
+        if (!it) return null;
+        if (it.kind === 'verse') {
+            return SetlistManager.normalizeItem({
+                kind: 'verse',
+                bookId: it.bookId,
+                bookName: it.bookName,
+                chapter: it.chapter,
+                verse: it.verse,
+                text: it.text,
+                ref: it.ref,
+            });
+        }
+        // chorus
+        if (!it.chorusId) return null;
+        return SetlistManager.normalizeItem({
+            kind: 'chorus',
+            id: it.chorusId,
+            name: it.chorusName,
+            key: it.chorusKey,
+            type: it.chorusType,
+            timeSignature: it.chorusTimeSignature,
+        });
     }
 
     showNotification(message, type = 'info') {

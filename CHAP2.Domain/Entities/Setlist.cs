@@ -1,5 +1,6 @@
 using CHAP2.Domain.Events;
 using CHAP2.Domain.Exceptions;
+using CHAP2.Domain.ValueObjects;
 
 namespace CHAP2.Domain.Entities;
 
@@ -68,12 +69,32 @@ public class Setlist : IEquatable<Setlist>
 
     public SetlistItem AppendChorus(Guid chorusId)
     {
-        if (chorusId == Guid.Empty)
-            throw new DomainException("Chorus ID cannot be empty.");
-        var item = SetlistItem.Create(Id, chorusId, _items.Count);
+        return Append(SetlistItemPayload.ForChorus(chorusId));
+    }
+
+    public SetlistItem AppendVerse(string bookId, string bookName, int chapter, int verse, string verseText, string verseRef)
+    {
+        return Append(SetlistItemPayload.ForVerse(bookId, bookName, chapter, verse, verseText, verseRef));
+    }
+
+    private SetlistItem Append(SetlistItemPayload payload)
+    {
+        var item = SetlistItem.FromPayload(Id, payload, _items.Count);
         _items.Add(item);
         Touch();
         return item;
+    }
+
+    public void ReplaceItems(IReadOnlyList<SetlistItemPayload> payloads)
+    {
+        if (payloads is null) throw new DomainException("Item payloads cannot be null.");
+
+        _items.Clear();
+        for (var index = 0; index < payloads.Count; index++)
+        {
+            _items.Add(SetlistItem.FromPayload(Id, payloads[index], index));
+        }
+        Touch();
     }
 
     public void RemoveItem(Guid itemId)

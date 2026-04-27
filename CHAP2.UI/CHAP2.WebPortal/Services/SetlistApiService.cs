@@ -17,12 +17,12 @@ public class SetlistApiService : ISetlistApiService
         _http = httpClientFactory.CreateClient("CHAP2API");
     }
 
-    public async Task<IReadOnlyList<SetlistDto>> GetMineAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SetlistSummaryDto>> ListMineAsync(CancellationToken cancellationToken = default)
     {
         var response = await _http.GetAsync("/api/setlists", cancellationToken);
-        if (!response.IsSuccessStatusCode) return Array.Empty<SetlistDto>();
-        return await response.Content.ReadFromJsonAsync<IReadOnlyList<SetlistDto>>(JsonOptions, cancellationToken)
-               ?? Array.Empty<SetlistDto>();
+        if (!response.IsSuccessStatusCode) return Array.Empty<SetlistSummaryDto>();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<SetlistSummaryDto>>(JsonOptions, cancellationToken)
+               ?? Array.Empty<SetlistSummaryDto>();
     }
 
     public async Task<SetlistDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -32,16 +32,10 @@ public class SetlistApiService : ISetlistApiService
         return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
     }
 
-    public async Task<SetlistDto?> CreateAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<SetlistDto?> SaveByNameAsync(string name, IReadOnlyList<SetlistItemPayloadDto> items, CancellationToken cancellationToken = default)
     {
-        var response = await _http.PostAsJsonAsync("/api/setlists", new CreateSetlistRequestDto { Name = name }, JsonOptions, cancellationToken);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
-    }
-
-    public async Task<SetlistDto?> RenameAsync(Guid id, string newName, CancellationToken cancellationToken = default)
-    {
-        var response = await _http.PutAsJsonAsync($"/api/setlists/{id}", new RenameSetlistRequestDto { Name = newName }, JsonOptions, cancellationToken);
+        var request = new SaveSetlistRequestDto { Name = name, Items = items ?? Array.Empty<SetlistItemPayloadDto>() };
+        var response = await _http.PostAsJsonAsync("/api/setlists/save", request, JsonOptions, cancellationToken);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
     }
@@ -50,27 +44,5 @@ public class SetlistApiService : ISetlistApiService
     {
         var response = await _http.DeleteAsync($"/api/setlists/{id}", cancellationToken);
         return response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound;
-    }
-
-    public async Task<SetlistDto?> AppendChorusAsync(Guid id, Guid chorusId, CancellationToken cancellationToken = default)
-    {
-        var response = await _http.PostAsJsonAsync($"/api/setlists/{id}/items", new AppendChorusRequestDto { ChorusId = chorusId }, JsonOptions, cancellationToken);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
-    }
-
-    public async Task<SetlistDto?> RemoveItemAsync(Guid id, Guid itemId, CancellationToken cancellationToken = default)
-    {
-        var response = await _http.DeleteAsync($"/api/setlists/{id}/items/{itemId}", cancellationToken);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
-    }
-
-    public async Task<SetlistDto?> ReorderAsync(Guid id, IReadOnlyList<Guid> itemIdsInOrder, CancellationToken cancellationToken = default)
-    {
-        var response = await _http.PostAsJsonAsync($"/api/setlists/{id}/reorder",
-            new ReorderSetlistRequestDto { ItemIdsInOrder = itemIdsInOrder }, JsonOptions, cancellationToken);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<SetlistDto>(JsonOptions, cancellationToken);
     }
 }

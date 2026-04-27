@@ -1,17 +1,11 @@
 namespace CHAP2.Shared.DTOs;
 
-public class SetlistItemDto
+public class SetlistItemPayloadDto
 {
-    public Guid Id { get; set; }
-    public int Position { get; set; }
     public string Kind { get; set; } = "chorus";
 
     // chorus
     public Guid? ChorusId { get; set; }
-    public string? ChorusName { get; set; }
-    public string? ChorusKey { get; set; }
-    public string? ChorusType { get; set; }
-    public string? ChorusTimeSignature { get; set; }
 
     // verse
     public string? BookId { get; set; }

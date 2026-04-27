@@ -1,6 +1,7 @@
 using CHAP2.Application.Interfaces;
 using CHAP2.Domain.Entities;
 using CHAP2.Domain.Exceptions;
+using CHAP2.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace CHAP2.Application.Services;
@@ -78,6 +79,34 @@ public class SetlistCommandService : ISetlistCommandService
         setlist.MarkDeleted();
         await _repository.DeleteAsync(setlistId, cancellationToken);
         await DispatchAndClearAsync(setlist, cancellationToken);
+    }
+
+    public async Task<Setlist> SaveByNameAsync(string name, IReadOnlyList<SetlistItemPayload> items, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Setlist name cannot be empty.");
+
+        var ownerId = _currentUser.UserId;
+        var trimmed = name.Trim();
+        var existing = (await _repository.GetByOwnerAsync(ownerId, cancellationToken))
+            .FirstOrDefault(s => string.Equals(s.Name, trimmed, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is not null)
+        {
+            _logger.LogInformation("Updating existing setlist '{Name}' for {OwnerId}", trimmed, ownerId);
+            existing.Rename(trimmed);
+            existing.ReplaceItems(items ?? Array.Empty<SetlistItemPayload>());
+            await _repository.UpdateAsync(existing, cancellationToken);
+            await DispatchAndClearAsync(existing, cancellationToken);
+            return existing;
+        }
+
+        _logger.LogInformation("Creating new setlist '{Name}' for {OwnerId}", trimmed, ownerId);
+        var setlist = Setlist.Create(ownerId, trimmed);
+        setlist.ReplaceItems(items ?? Array.Empty<SetlistItemPayload>());
+        await _repository.AddAsync(setlist, cancellationToken);
+        await DispatchAndClearAsync(setlist, cancellationToken);
+        return setlist;
     }
 
     private async Task<Setlist> LoadAndAuthorizeAsync(Guid setlistId, CancellationToken cancellationToken)

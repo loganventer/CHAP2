@@ -52,8 +52,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             builder.HasKey(i => i.Id);
             builder.Property(i => i.Id).ValueGeneratedNever();
             builder.Property(i => i.SetlistId).IsRequired();
-            builder.Property(i => i.ChorusId).IsRequired();
             builder.Property(i => i.Position).IsRequired();
+            builder.Property(i => i.Kind).HasConversion<string>().HasMaxLength(16).IsRequired();
+
+            builder.Property(i => i.ChorusId);
+            builder.Property(i => i.BookId).HasMaxLength(64);
+            builder.Property(i => i.BookName).HasMaxLength(120);
+            builder.Property(i => i.Chapter);
+            builder.Property(i => i.Verse);
+            builder.Property(i => i.VerseText);
+            builder.Property(i => i.VerseRef).HasMaxLength(200);
+
             builder.HasIndex(i => new { i.SetlistId, i.Position }).IsUnique();
         });
 
