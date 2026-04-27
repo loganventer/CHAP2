@@ -36,7 +36,13 @@ services:
         value: loganventer
       - key: GitSync__Repo
         value: CHAP2
+      # Two-branch workflow: API mirrors edits to chorus-edits; admin
+      # promotes onto main from the Settings page (server-side merge via
+      # GitHub's POST /repos/{owner}/{repo}/merges). Set MainBranch="" to
+      # disable the promote endpoint (single-branch fallback).
       - key: GitSync__Branch
+        value: chorus-edits
+      - key: GitSync__MainBranch
         value: main
       - key: GitSync__RemotePathPrefix
         value: data/chorus

@@ -9,4 +9,11 @@ namespace CHAP2.WebPortal.Interfaces;
 public interface ISyncApiService
 {
     Task ForceSyncAsync(Stream destination, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Admin-triggered server-side merge of the chorus-edits branch into
+    /// main on GitHub. Returns the API's JSON outcome and HTTP status so
+    /// the controller can map 409 (conflict) / 503 (disabled) correctly.
+    /// </summary>
+    Task<PromoteChorusOutcome> PromoteChorusAsync(CancellationToken cancellationToken = default);
 }

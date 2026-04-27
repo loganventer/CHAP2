@@ -71,4 +71,27 @@ public sealed class SyncController : ChapControllerAbstractBase
         }
         catch (OperationCanceledException) { /* client disconnected */ }
     }
+
+    /// <summary>
+    /// Server-side merge of the edits branch into the protected main
+    /// branch. Returns the merge outcome JSON. 503 when GitSync is
+    /// disabled or single-branch mode; 409 if GitHub reports a conflict
+    /// (resolve on GitHub then retry).
+    /// </summary>
+    [HttpPost("promote")]
+    public async Task<IActionResult> Promote(CancellationToken cancellationToken)
+    {
+        if (!_options.Enabled) return StatusCode(503, new { error = "git-sync-disabled" });
+
+        LogAction("PromoteChorusEdits");
+        var result = await _orchestrator.PromoteAsync(cancellationToken);
+
+        if (!result.Succeeded && result.Merge?.Status == ChorusBranchMergeStatus.Conflict)
+            return Conflict(result);
+
+        if (!result.Succeeded)
+            return StatusCode(503, result);
+
+        return Ok(result);
+    }
 }

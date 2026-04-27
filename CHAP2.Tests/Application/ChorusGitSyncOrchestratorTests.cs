@@ -20,7 +20,7 @@ public class ChorusGitSyncOrchestratorTests
     public void SetUp()
     {
         _sync = Substitute.For<IChorusGitHubSync>();
-        _sut = new ChorusGitSyncOrchestrator(_sync, LocalDir, NullLogger<ChorusGitSyncOrchestrator>.Instance);
+        _sut = new ChorusGitSyncOrchestrator(_sync, LocalDir, "edits", "main", NullLogger<ChorusGitSyncOrchestrator>.Instance);
         _progressEvents = new List<ChorusGitSyncProgress>();
         _progress = new Progress<ChorusGitSyncProgress>(p => _progressEvents.Add(p));
     }

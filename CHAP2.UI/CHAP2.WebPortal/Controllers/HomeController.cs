@@ -223,6 +223,32 @@ public class HomeController : Controller
     /// browser. Auth gate fires here before we open the upstream
     /// connection; bytes copy through unbuffered.
     /// </summary>
+    /// <summary>
+    /// Admin-only same-origin bridge: forwards the promote action to the
+    /// API. Returns the API's status + JSON body unchanged so the JS can
+    /// distinguish merged / already-up-to-date / conflict / failure.
+    /// </summary>
+    [HttpPost]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = CHAP2.Infrastructure.Identity.RoleNames.Admin)]
+    public async Task<IActionResult> PromoteChorus(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var outcome = await _syncApiService.PromoteChorusAsync(cancellationToken);
+            return new ContentResult
+            {
+                StatusCode = outcome.StatusCode,
+                Content = outcome.Body,
+                ContentType = "application/json",
+            };
+        }
+        catch (CHAP2.Shared.Configuration.ApiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Sync API unavailable for promote");
+            return StatusCode(503, new { error = "api-unavailable" });
+        }
+    }
+
     [HttpPost]
     public async Task SyncForce(CancellationToken cancellationToken)
     {

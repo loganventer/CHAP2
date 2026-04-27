@@ -14,6 +14,21 @@ public sealed class SyncApiService : ISyncApiService
         _logger = logger;
     }
 
+    public async Task<PromoteChorusOutcome> PromoteChorusAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("/api/sync/promote", content: null, cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new PromoteChorusOutcome((int)response.StatusCode, body);
+        }
+        catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
+        {
+            _logger.LogWarning(ex, "Sync API unreachable for promote");
+            throw new ApiUnavailableException("Sync API unreachable for promote.", ex);
+        }
+    }
+
     public async Task ForceSyncAsync(Stream destination, CancellationToken cancellationToken = default)
     {
         HttpResponseMessage response;

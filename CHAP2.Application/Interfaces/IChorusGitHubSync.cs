@@ -28,4 +28,15 @@ public interface IChorusGitHubSync
         string commitMessage,
         IProgress<ChorusGitSyncProgress>? progress,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Server-side merge of the configured edits branch into <paramref name="targetBranch"/>
+    /// via POST /repos/{owner}/{repo}/merges. Used by the admin "promote
+    /// to main" action to land staged chorus edits onto the protected
+    /// branch without a local clone.
+    /// </summary>
+    Task<ChorusBranchMergeResult> MergeIntoAsync(
+        string targetBranch,
+        string commitMessage,
+        CancellationToken cancellationToken = default);
 }

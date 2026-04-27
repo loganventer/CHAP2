@@ -168,7 +168,7 @@ builder.Services.AddSingleton<IChorusGitSyncOrchestrator>(provider =>
     var opts = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitSyncOptions>>().Value;
     var sync = provider.GetRequiredService<IChorusGitHubSync>();
     var logger = provider.GetRequiredService<ILogger<ChorusGitSyncOrchestrator>>();
-    return new ChorusGitSyncOrchestrator(sync, opts.DataDirectory, logger);
+    return new ChorusGitSyncOrchestrator(sync, opts.DataDirectory, opts.Branch, opts.MainBranch, logger);
 });
 builder.Services.AddSingleton<IChorusDiskBootstrapper>(provider =>
 {

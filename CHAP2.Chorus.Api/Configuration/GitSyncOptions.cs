@@ -26,8 +26,20 @@ public sealed class GitSyncOptions
     /// <summary>GitHub repo name (e.g. "CHAP2").</summary>
     public string Repo { get; set; } = "CHAP2";
 
-    /// <summary>Branch to mirror against.</summary>
+    /// <summary>
+    /// Branch the API mirrors edits to (per-sync, one commit per cycle).
+    /// In the two-branch workflow this is the "staging" / "edits" branch;
+    /// in single-branch mode it's the only branch.
+    /// </summary>
     public string Branch { get; set; } = "main";
+
+    /// <summary>
+    /// Optional protected branch for the admin "promote" action. When set,
+    /// admins can server-side merge <see cref="Branch"/> into this branch
+    /// via POST /api/sync/promote. Leave empty for single-branch mode
+    /// (promote endpoint returns disabled).
+    /// </summary>
+    public string MainBranch { get; set; } = string.Empty;
 
     /// <summary>
     /// Path within the repo where chorus JSONs live (e.g. "data/chorus").

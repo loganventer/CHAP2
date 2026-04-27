@@ -13,4 +13,12 @@ public interface IChorusGitSyncOrchestrator
     Task<ChorusGitSyncResult> SyncNowAsync(
         IProgress<ChorusGitSyncProgress>? progress,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Promote the staged edits branch into the configured protected
+    /// branch ("main"). Admin-triggered. Returns
+    /// <see cref="ChorusGitPromoteResult.Disabled"/> when the deployment
+    /// hasn't configured a separate main branch (single-branch mode).
+    /// </summary>
+    Task<ChorusGitPromoteResult> PromoteAsync(CancellationToken cancellationToken = default);
 }

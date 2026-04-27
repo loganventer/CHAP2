@@ -26,6 +26,13 @@
         </main>
     </div>
 
+    <script>
+        // Server-rendered identity context: settings.js reads this to decide
+        // whether to render admin-only controls (Promote chorus edits to main).
+        window.__chap2 = window.__chap2 || {};
+        window.__chap2.isAdmin = @Json.Serialize(User?.IsInRole("Admin") ?? false);
+        window.__chap2.userName = @Json.Serialize(User?.Identity?.Name ?? "");
+    </script>
     <script src="~/js/utils.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/api-status-indicator.js" asp-append-version="true"></script>

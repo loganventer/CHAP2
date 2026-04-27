@@ -377,6 +377,16 @@ class SettingsManager {
                                 </div>
                                 <div class="sync-progress__status" id="syncProgressStatus">Starting…</div>
                             </div>
+                            ${(window.__chap2 && window.__chap2.isAdmin) ? `
+                            <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08);">
+                                <p style="color: #666; font-size: 14px; margin: 0 0 10px;">
+                                    Admin only: server-side merge the chorus-edits branch into the protected main branch on GitHub.
+                                </p>
+                                <button class="mass-edit-btn" id="promoteChorusBtn" style="width: 100%;">
+                                    <i class="fas fa-code-branch"></i> Promote chorus edits to main
+                                </button>
+                                <div id="promoteStatus" class="sync-progress__status" style="margin-top: 8px;" hidden></div>
+                            </div>` : ''}
                         </div>
                     </div>
 
@@ -513,6 +523,50 @@ class SettingsManager {
         const syncBtn = document.getElementById('syncForceBtn');
         if (syncBtn) {
             syncBtn.addEventListener('click', () => this.runForceSync());
+        }
+
+        // Admin-only: promote chorus edits to main
+        const promoteBtn = document.getElementById('promoteChorusBtn');
+        if (promoteBtn) {
+            promoteBtn.addEventListener('click', () => this.runPromote());
+        }
+    }
+
+    async runPromote() {
+        const btn = document.getElementById('promoteChorusBtn');
+        const status = document.getElementById('promoteStatus');
+        if (!btn || !status) return;
+
+        if (!confirm('Merge the chorus-edits branch into main on GitHub?\n\nThis lands all staged chorus edits on the protected branch.')) return;
+
+        btn.disabled = true;
+        status.hidden = false;
+        status.textContent = 'Promoting…';
+
+        try {
+            const response = await fetch('/Home/PromoteChorus', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+            });
+            const body = await response.json().catch(() => null);
+            if (response.ok) {
+                const merge = body && body.merge;
+                if (merge && merge.status === 1) status.textContent = 'Already up to date.';
+                else if (merge && merge.mergeCommitSha) status.textContent = `Merged as ${merge.mergeCommitSha.substring(0, 7)}.`;
+                else status.textContent = 'Promoted.';
+            } else if (response.status === 409) {
+                status.textContent = 'Merge conflict — resolve on GitHub then retry.';
+            } else if (response.status === 403) {
+                status.textContent = 'Forbidden (admin only).';
+            } else {
+                const err = body && (body.error || (body.merge && body.merge.error));
+                status.textContent = err ? `Failed: ${err}` : `Failed (HTTP ${response.status}).`;
+            }
+        } catch (e) {
+            status.textContent = `Failed: ${e.message || e}`;
+        } finally {
+            btn.disabled = false;
         }
     }
 

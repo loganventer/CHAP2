@@ -295,6 +295,50 @@ public sealed class GitHubChorusSync : IChorusGitHubSync
         await SendJsonAsync(req, ct);
     }
 
+    public async Task<ChorusBranchMergeResult> MergeIntoAsync(
+        string targetBranch,
+        string commitMessage,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(targetBranch))
+            return ChorusBranchMergeResult.Failure("targetBranch is required.");
+
+        using var req = NewRequest(HttpMethod.Post, $"/repos/{_owner}/{_repo}/merges");
+        req.Content = JsonContent.Create(new
+        {
+            @base = targetBranch,
+            head = _branch,
+            commit_message = commitMessage,
+        }, options: JsonOpts);
+
+        using var resp = await _http.SendAsync(req, cancellationToken);
+        var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+
+        if ((int)resp.StatusCode == 201)
+        {
+            using var doc = JsonDocument.Parse(body);
+            var sha = doc.RootElement.TryGetProperty("sha", out var shaProp) ? shaProp.GetString() : null;
+            _logger.LogInformation("Merged {Head} into {Base} as {Sha}", _branch, targetBranch, sha);
+            return ChorusBranchMergeResult.Merged(sha ?? string.Empty);
+        }
+
+        if ((int)resp.StatusCode == 204)
+        {
+            _logger.LogInformation("{Base} already contains {Head}; nothing to merge.", targetBranch, _branch);
+            return ChorusBranchMergeResult.AlreadyUpToDate();
+        }
+
+        if ((int)resp.StatusCode == 409)
+        {
+            _logger.LogWarning("Merge {Head} -> {Base} returned conflict: {Body}", _branch, targetBranch, Truncate(body, 200));
+            return ChorusBranchMergeResult.Conflict("Merge conflict — resolve on GitHub before retrying.");
+        }
+
+        var error = $"GitHub merge {_branch}->{targetBranch} returned {(int)resp.StatusCode}: {Truncate(body, 200)}";
+        _logger.LogWarning(error);
+        return ChorusBranchMergeResult.Failure(error);
+    }
+
     private async Task<JsonDocument> SendJsonAsync(HttpRequestMessage req, CancellationToken ct)
     {
         using var resp = await _http.SendAsync(req, ct);
