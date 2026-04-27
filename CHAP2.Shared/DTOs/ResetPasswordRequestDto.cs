@@ -12,6 +12,6 @@ public class ResetPasswordRequestDto
     public string ResetToken { get; set; } = string.Empty;
 
     [Required]
-    [StringLength(128, MinimumLength = 8)]
+    [StringLength(128)]
     public string NewPassword { get; set; } = string.Empty;
 }

@@ -28,7 +28,8 @@ public static class InfrastructureServiceCollectionExtensions
             {
                 options.User.RequireUniqueEmail = true;
                 options.SignIn.RequireConfirmedEmail = false;
-                options.Password.RequiredLength = 8;
+                options.Password.RequiredLength = 1;
+                options.Password.RequiredUniqueChars = 1;
                 options.Password.RequireDigit = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;

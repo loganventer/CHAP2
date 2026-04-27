@@ -7,7 +7,7 @@ public sealed class ChangePasswordViewModel
     [Required, DataType(DataType.Password)]
     public string CurrentPassword { get; set; } = string.Empty;
 
-    [Required, DataType(DataType.Password), StringLength(128, MinimumLength = 8)]
+    [Required, DataType(DataType.Password), StringLength(128)]
     public string NewPassword { get; set; } = string.Empty;
 
     [Required, DataType(DataType.Password), Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
